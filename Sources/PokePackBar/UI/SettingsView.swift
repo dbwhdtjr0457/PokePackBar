@@ -52,6 +52,7 @@ struct SettingsView: View {
                     generalGroup(store)
                     menuBarGroup(store)
                     collectorGroup
+                    ReliabilitySettingsView(wallet: wallet)
                     notificationsGroup(store)
                     updateGroup(store)
                     advancedGroup(store)
@@ -83,6 +84,7 @@ struct SettingsView: View {
     private var footer: some View {
         HStack(spacing: 5) {
             Text("v\(Self.appVersion)")
+            Text(AppLinks.updateChannel)
             Text("·")
             if let github = AppLinks.githubURL {
                 Text("·")
@@ -276,6 +278,13 @@ struct SettingsView: View {
     private func updateGroup(_ store: UsageStore) -> some View {
         @Bindable var store = store
         settingsSection(l.updateSectionTitle) {
+            if AppLinks.isCustomBuild {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(l.customBuild).font(Typography.bodySemibold)
+                    Text(l.customUpdateNote).font(Typography.label).foregroundStyle(.secondary)
+                    Button(l.releaseNotesOpen) { onOpenReleaseNotes() }
+                }.padding(12)
+            } else {
             toggleRow(l.updateNotificationsLabel, $store.updateNotificationsEnabled)
             Divider()
             groupRow {
@@ -316,6 +325,7 @@ struct SettingsView: View {
                         Spacer()
                     }
                 }
+            }
             }
         }
     }

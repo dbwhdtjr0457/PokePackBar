@@ -1,0 +1,1557 @@
+{
+  "cel25c-107_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/335977365293",
+      "https://i.ebayimg.com/images/g/GK0AAOSwQg9oMeOl/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "테두리와 그림 배경의 조밀한 혼합 크기 조각 반사가 앱에서 빠지고, 비교적 매끈한 몸통에 성긴 큰 네모가 올라온다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.86,
+      0.477
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-88_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/227320420933",
+      "https://i.ebayimg.com/images/g/GloAAeSwctZp8NND/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "녹색 배경과 은색 테두리에 조각 반사, 분홍 몸통은 상대적으로 불투명하다. 앱 배경·테두리는 밋밋하고 뮤 몸통에 큰 네모가 뜬다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.869,
+      0.467
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [
+      [
+        0.053,
+        0.835,
+        0.886,
+        0.864
+      ]
+    ],
+    "mattePanels": []
+  },
+  "cel25c-109_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.co.uk/itm/366635938284",
+      "https://i.ebayimg.com/images/g/hqIAAeSwptdqkrmm/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "그림 배경·은색 테두리·하단 Level X 규칙 바에 조각 반사가 보인다. 앱은 몸통의 큰 네모에 치우치고 테두리·규칙 바가 평평하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.13,
+      0.413
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [
+      [
+        0.076,
+        0.822,
+        0.922,
+        0.884
+      ]
+    ],
+    "mattePanels": []
+  },
+  "cel25c-113_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/406513844820",
+      "https://i.ebayimg.com/images/g/KZwAAeSwPuhpS3SB/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "배경뿐 아니라 흰 몸통과 은색 테두리에도 조밀한 조각 반사가 보인다. 앱은 밝은 흰 면 위 성긴 네모라 밀도·재질이 다르다. 몸통 일괄 제외는 부적절하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.87,
+      0.518
+    ],
+    "fullArt": true,
+    "subject": false,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-114_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/137771534993",
+      "https://i.ebayimg.com/images/g/GnoAAeSwi6RqtC7O/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "검은 배경과 몸통 일부에 조밀한 다색 조각, 테두리·외곽선에는 금속 반사가 보인다. 앱은 넓은 검은 면 위 큰 흰 네모와 약한 테두리 반사다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.87,
+      0.511
+    ],
+    "fullArt": true,
+    "subject": false,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-145_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267774613270",
+      "https://i.ebayimg.com/images/g/rzsAAeSwUABpG8DD/s-l500.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "작은 실물 사진에서도 은색 테두리와 하단 Level X 규칙 바의 조각 반사가 보인다. 앱의 해당 영역은 평평하다. 그림 속 미세 경계는 판정 보류.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.13,
+      0.451
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [
+      [
+        0.08,
+        0.803,
+        0.918,
+        0.866
+      ]
+    ],
+    "mattePanels": []
+  },
+  "cel25c-15_A1": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/820159937233",
+      "https://i.ebayimg.com/images/g/z6YAAeSw4otqrtn1/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "25주년 스탬프를 확인한 실물 사진에서 녹색 그림 배경은 조밀한 조각, 몸통은 다른 미세 질감이다. 앱은 기존 배경 이미지 위에 몸통까지 큰 네모를 겹친다. 노란 종이 테두리를 30주년 금박으로 혼동하면 안 된다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.88,
+      0.518
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-15_A2": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.co.uk/itm/137608971799",
+      "https://i.ebayimg.com/images/g/yo4AAeSwj-Vqexar/s-l1600.webp",
+      "https://i.ebayimg.com/images/g/zGwAAeSwDjZqexar/s-l1600.webp"
+    ],
+    "evidenceStatus": "additional_front_and_oblique_photos_background_compared",
+    "observedDifference": "Additional front/oblique photographs show fine background fragments distinct from faces, not large white squares over the characters. Exact micro-emboss remains unresolved.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.867,
+      0.534
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-15_A3": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267791082831",
+      "https://i.ebayimg.com/images/g/EVQAAeSwXFlqsGqi/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "어두운 배경에는 조밀한 조각 반사, 썬더 몸통에는 상대적으로 다른 미세 질감이 보인다. 앱은 몸통 위 큰 네모가 두드러져 실물의 영역 분리가 무너진다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.879,
+      0.507
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-15_A4": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.co.uk/itm/187354969231",
+      "https://i.ebayimg.com/images/g/Y5UAAOSwOGdi67VH/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "배경·지면에는 조밀한 조각, 몸통에는 큰 조각과 다른 미세 질감이 보인다. 앱의 몸통 위 큰 사각 패치와 성긴 배경은 실물 사진과 다르다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.876,
+      0.479
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-17_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/178238088394",
+      "https://i.ebayimg.com/images/g/SZQAAeSw4iBqNgQO/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "배경의 빛나는 조각과 검은 몸통이 구분된다. 앱은 큰 네모를 몸통에도 올린다. 하단 인쇄된 원형 문양을 곧바로 홀로 영역으로 간주하지 않는다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.869,
+      0.465
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-20_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.ca/itm/397863552365",
+      "https://i.ebayimg.com/images/g/S-AAAeSwVYZpbHy2/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "뜨개질·의자 배경의 조밀한 조각과 얼굴/몸통이 구분된다. 노란 가장자리에 잔 물결 같은 표면 질감이 보이지만 정확한 엠보싱 패턴은 확정 불가. 앱은 몸통 위 큰 네모, 매끈한 가장자리다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.856,
+      0.49
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": true,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-24_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/188592061214",
+      "https://i.ebayimg.com/images/g/CVgAAeSwxtpqRwc-/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "풍선·케이크 주변의 조밀한 조각과 피카츄 몸통이 다르다. 앱은 그림 전반에 큰 사각형을 올려 경계와 조각 밀도가 다르다. 25주년 노란 테두리는 30주년 금박과 별개다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.861,
+      0.5
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-2_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/117368666192",
+      "https://i.ebayimg.com/images/g/cWsAAeSwvDhqhhep/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "거북왕 주위 배경에 밝고 조밀한 조각 반사가 있다. 앱은 배경이 뿌옇고 몸통에 성긴 큰 네모가 보인다. 노란 외곽은 금박 조각 테두리가 아니다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.866,
+      0.511
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-4_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/398430939455",
+      "https://i.ebayimg.com/images/g/SQgAAeSw9aVqtn8B/s-l500.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "저해상도 실물 사진에서 그림 배경의 조밀한 금/적색 조각과 노란 테두리를 확인했다. 앱의 큰 네모와 낮은 배경 조각 밀도는 다르지만 미세 표면은 해상도 부족으로 미확인.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.868,
+      0.51
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-54_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/227015421881",
+      "https://i.ebayimg.com/images/g/2L4AAeSwhjxo5xPE/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "에너지 구체 주변 배경·은색 외곽·하단 EX 규칙 상자에 조각 반사가 보이고 몸통은 상대적으로 다르다. 앱은 위쪽 네모 중심이며 테두리·규칙 상자가 평평하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.136,
+      0.49
+    ],
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [
+      [
+        0.48,
+        0.85,
+        0.917,
+        0.935
+      ]
+    ],
+    "mattePanels": [
+      [
+        0.057,
+        0.561,
+        0.949,
+        0.845
+      ]
+    ]
+  },
+  "cel25c-60_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.co.uk/itm/298185490715",
+      "https://i.ebayimg.com/images/g/QOoAAeSwx2dpzkZJ/s-l960.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "작은 실물 사진에서 분홍 몸통 주변 배경과 하단 규칙 주위까지 조각이 보인다. 앱은 검은 얼굴에 네모가 올라가고 넓은 배경·텍스트 주변은 평평하다. 세부 경계 보류.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.886,
+      0.491
+    ],
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [
+      [
+        0.057,
+        0.902,
+        0.947,
+        0.96
+      ]
+    ],
+    "mattePanels": [
+      [
+        0.062,
+        0.71,
+        0.935,
+        0.873
+      ]
+    ]
+  },
+  "cel25c-73_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.it/itm/298671987239",
+      "https://i.ebayimg.com/images/g/hfYAAeSwn35qpzM4/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "판매자 개별 앞면 이미지에서 얼굴·코트와 배경의 조각 질감이 구분된다. 앱은 얼굴과 코트에 큰 네모가 걸린다. 사진/스캔 촬영 방식이 불명확하여 출처 신뢰는 잠정이다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.867,
+      0.541
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-76_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/366687778865",
+      "https://i.ebayimg.com/images/g/GLoAAeSwWhxqtEP9/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "테두리·효과 배경 및 하단 규칙 주변까지 조밀한 조각 반사가 보인다. 앱은 중앙의 큰 네모 중심이라 하단 반사가 부족하다. 글자 자체의 금속성은 이 사진으로 확정하지 않는다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.141,
+      0.556
+    ],
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [
+      [
+        0.48,
+        0.849,
+        0.905,
+        0.935
+      ]
+    ],
+    "mattePanels": [
+      [
+        0.061,
+        0.699,
+        0.95,
+        0.848
+      ]
+    ]
+  },
+  "cel25c-86_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.co.uk/itm/227326938805",
+      "https://i.ebayimg.com/images/g/9WMAAeSwY5xp9keJ/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "작은 슬랩 사진에서 인물 뒤 분홍 배경의 조각과 얼굴·규칙 면이 구분된다. 앱은 인물 얼굴에 큰 네모가 보인다. 정확한 경계·엠보싱은 더 가까운 사진 필요.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.87,
+      0.487
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-8_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/287384482428",
+      "https://i.ebayimg.com/images/g/jdoAAeSwPKVqKE7E/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "보라 배경의 촘촘한 조각, 몸통의 다른 미세 선형 표면, 노란 가장자리 질감이 보인다. 앱은 배경 이미지 위 몸통에 큰 흰 네모가 뜬다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.867,
+      0.511
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": true,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-97_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.co.uk/itm/198670978966",
+      "https://i.ebayimg.com/images/g/4IsAAeSwQhRqNt-6/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "작은 사진에서 은색 테두리와 하단 EX 규칙 바의 조각 반사를 확인했다. 앱은 규칙 바가 평평하고 외곽 반사 변화가 약하다. 그림 내부의 상세 마스크는 보류.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.866,
+      0.481
+    ],
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": false,
+    "paperEtching": false,
+    "ruleBoxes": [
+      [
+        0.478,
+        0.906,
+        0.91,
+        0.961
+      ]
+    ],
+    "mattePanels": [
+      [
+        0.057,
+        0.535,
+        0.95,
+        0.905
+      ]
+    ]
+  },
+  "cel25c-9_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/117197453674",
+      "https://i.ebayimg.com/images/g/LC8AAeSwwelqB~OW/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "주황·노랑 배경에는 조밀한 조각, 붉은 몸통에는 다른 미세 질감이 보인다. 앱의 큰 네모가 머리·몸통에 올라가 있다. 아래의 인쇄된 원 문양과 홀로를 구분해야 한다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.131,
+      0.469
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-93_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/188676690618",
+      "https://i.ebayimg.com/images/g/NawAAeSwUXxqX7sq/s-l500.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "저해상도 슬랩 사진에서 외곽의 조밀한 조각과 녹색 머리 부분의 반사가 보인다. Donphan처럼 몸통 전부를 불투명으로 처리할 근거는 없다. 앱은 큰 네모와 평평한 외곽이다. δ 몸통의 세밀한 마스크는 미확인.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": true,
+    "stampCentre": [
+      0.868,
+      0.47
+    ],
+    "fullArt": false,
+    "subject": false,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel25c-66_A": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/327369101942",
+      "https://i.ebayimg.com/images/g/TvoAAeSwBHdqsikK/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "물 배경의 조밀한 다색 조각과 금색 잉어킹의 별도 질감이 보인다. 앱은 잉어킹에 큰 흰 네모를 올린다. 원판 Neo의 홀로 규칙을 25주년 복각에 그대로 적용하면 안 된다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic25",
+    "silverRim": false,
+    "stampCentre": [
+      0.865,
+      0.511
+    ],
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "paperEtching": false,
+    "ruleBoxes": [],
+    "mattePanels": []
+  },
+  "cel30c-1": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/198671489406",
+      "https://i.ebayimg.com/images/g/Z3UAAeSwGAhquXzy/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "실물 사진의 금색 외곽에는 매우 조밀한 불규칙 조각과 다색 반사가 있고 그림 배경에도 조각 반사가 있다. 앱 외곽은 거의 균일한 금색이며 그림은 세밀한 노이즈처럼 보인다. 금색 바탕 유지와 조각의 선택적 다색 반사는 양립한다. 몸통은 배경과 다른 미세 표면, 규칙 면은 비교적 무광이다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic30",
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.871,
+      0.517
+    ],
+    "goldStars": false
+  },
+  "cel30-23": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/RD8AAeSwK45qrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "풀숲과 피카츄 몸통의 미세 방향성 무늬, 은색 외곽과 로고의 고밀도 조각 반사, 하단 원형 팬이 보인다. 앱은 사선 잔무늬가 주로 보이고 로고·외곽이 평평하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.32,
+        "y": 0.72,
+        "radius": 0.29,
+        "phase": 0.13
+      },
+      {
+        "x": 0.83,
+        "y": 0.725,
+        "radius": 0.25,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-24": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/KWQAAeSwC25qrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "번개 그림과 피카츄 얼굴을 가로지르는 큰 원형 방사 무늬가 다른 판매자 사진에서도 보인다. 앱은 그림에 사선 결, 로고 주변에 작은 별 모양이 흩어질 뿐 큰 팬과 조각 재질 분리가 약하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.29,
+        "y": 0.73,
+        "radius": 0.27,
+        "phase": 0.13
+      },
+      {
+        "x": 0.78,
+        "y": 0.71,
+        "radius": 0.28,
+        "phase": 0.6
+      },
+      {
+        "x": 0.54,
+        "y": 0.41,
+        "radius": 0.35,
+        "phase": 1.07
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-25": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/AN8AAeSwzmBqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "꽃 배경·몸통에 은은한 방향성 반사, 로고에는 녹금색 조각, 하단에는 원형 방사 무늬가 보인다. 앱 로고는 단색 노랑에 가깝고 외곽의 조각 반사가 빠진다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.32,
+        "y": 0.76,
+        "radius": 0.29,
+        "phase": 0.13
+      },
+      {
+        "x": 0.82,
+        "y": 0.72,
+        "radius": 0.27,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-27": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/FcIAAeSwt5dqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "뜨개질 인쇄의 요철 묘사와 실제 반사를 구분했다. 실물 로고·외곽의 조밀한 조각 및 아래 원형 팬과 달리 앱은 인쇄 이미지와 사선 결 위주다. 뜨개질을 실제 엠보싱이라고 확정하지 않는다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.28,
+        "y": 0.735,
+        "radius": 0.28,
+        "phase": 0.13
+      },
+      {
+        "x": 0.82,
+        "y": 0.72,
+        "radius": 0.26,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-28": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/0bkAAeSwKcdqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "방 안의 알록달록한 그림 위에도 방향성 무늬가 보이고 하단 로고는 조각 반사가 강하다. 앱은 그림의 작은 사선 결과 단색 로고가 두드러져 실물 재질 구분이 약하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.34,
+        "y": 0.73,
+        "radius": 0.29,
+        "phase": 0.13
+      },
+      {
+        "x": 0.8,
+        "y": 0.73,
+        "radius": 0.28,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-30": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/v3MAAeSwFXJqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "검은 배경·번개 및 피카츄 몸통 위 큰 방사형 무늬, 하단 원형 팬, 조각 로고를 확인했다. 앱에서는 성긴 작은 불꽃 스탬프와 대각선 무늬 중심이다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.4,
+        "y": 0.32,
+        "radius": 0.38,
+        "phase": 0.13
+      },
+      {
+        "x": 0.035,
+        "y": 0.655,
+        "radius": 0.34,
+        "phase": 0.6
+      },
+      {
+        "x": 0.91,
+        "y": 0.65,
+        "radius": 0.34,
+        "phase": 1.07
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-31": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/qUEAAeSw2GhqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "책상 그림과 피카츄 몸통에 넓게 보이는 방향성 광택, 하단 복수의 큰 원형 팬, 조각 로고·외곽을 확인했다. 앱은 촘촘한 사선과 평평한 노란 로고로 보인다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.39,
+        "y": 0.565,
+        "radius": 0.23,
+        "phase": 0.13
+      },
+      {
+        "x": 0.27,
+        "y": 0.915,
+        "radius": 0.3,
+        "phase": 0.6
+      },
+      {
+        "x": 0.8,
+        "y": 0.86,
+        "radius": 0.28,
+        "phase": 1.07
+      },
+      {
+        "x": 0.89,
+        "y": 0.56,
+        "radius": 0.23,
+        "phase": 1.54
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-32": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/3GUAAeSwRMlqrqOZ/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "작가의 손그림 획 자체를 홀로로 오인하지 않았다. 외곽·로고의 촘촘한 조각과 하단 원형 팬은 앱의 평평한 외곽·로고 및 작은 별 모양과 명확히 다르다. 그림 내부 미세 무늬는 판정 제한.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.22,
+        "y": 0.615,
+        "radius": 0.31,
+        "phase": 0.13
+      },
+      {
+        "x": 0.85,
+        "y": 0.73,
+        "radius": 0.29,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-34": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/CKQAAeSw7ydqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "단색에 가까운 초록 그림에서 피카츄 몸통을 가로지르는 큰 원형 팬이 특히 뚜렷하다. 앱의 몸통/배경은 사선·잔 스탬프 위주다. 추가 실물 사진에서도 같은 종류의 원형 무늬를 확인했다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.51,
+        "y": 0.365,
+        "radius": 0.34,
+        "phase": 0.13
+      },
+      {
+        "x": 0.1,
+        "y": 0.65,
+        "radius": 0.28,
+        "phase": 0.6
+      },
+      {
+        "x": 0.84,
+        "y": 0.67,
+        "radius": 0.27,
+        "phase": 1.07
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-37": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/unAAAeSw-TFqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "만화풍 몸통·배경 위 미세 방향성 반사, 하단의 큰 팬, 조각 로고·테두리를 확인했다. 앱은 테두리·로고가 매끈하고 큰 원형 구조가 빠져 있다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.23,
+        "y": 0.835,
+        "radius": 0.25,
+        "phase": 0.13
+      },
+      {
+        "x": 0.9,
+        "y": 0.675,
+        "radius": 0.3,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-38": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/tw8AAeSw2MBqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "인쇄된 동굴 그림의 점묘와 광학 무늬를 구분했다. 실물 하단의 큰 팬 및 고밀도 조각 로고·테두리가 앱보다 뚜렷하다. 그림 내부의 정확한 엠보싱 판은 미확인.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.24,
+        "y": 0.73,
+        "radius": 0.3,
+        "phase": 0.13
+      },
+      {
+        "x": 0.8,
+        "y": 0.69,
+        "radius": 0.27,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-39": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/6fAAAeSw69RqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "문·정원 그림의 방향성 광택과 하단 큰 원형 팬, 로고와 외곽의 다른 조각 재질을 확인했다. 앱은 사선 결 위주이며 로고·테두리 재질 차이가 약하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.29,
+        "y": 0.66,
+        "radius": 0.29,
+        "phase": 0.13
+      },
+      {
+        "x": 0.9,
+        "y": 0.73,
+        "radius": 0.25,
+        "phase": 0.6
+      },
+      {
+        "x": 0.31,
+        "y": 0.99,
+        "radius": 0.25,
+        "phase": 1.07
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-41": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/DhEAAeSwM0NqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "나무 그림의 하단 왼쪽과 배경에 큰 원형 팬 일부가 보인다. 하단 규칙 면에도 복수 팬과 조각 로고가 보인다. 앱의 대각선 결과 잔 별 무늬는 크기·형태가 다르다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.15,
+        "y": 0.78,
+        "radius": 0.3,
+        "phase": 0.13
+      },
+      {
+        "x": 0.95,
+        "y": 0.77,
+        "radius": 0.22,
+        "phase": 0.6
+      },
+      {
+        "x": 0.17,
+        "y": 0.44,
+        "radius": 0.28,
+        "phase": 1.07
+      },
+      {
+        "x": 0.86,
+        "y": 0.14,
+        "radius": 0.25,
+        "phase": 1.54
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-42": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/Nh8AAeSwuvJqrqOZ/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "파스텔 그림은 이 각도에서 밝은 광택 위주지만 하단 큰 원형 팬과 로고·테두리 조각은 분명하다. 앱의 단색 로고·평탄한 테두리 및 잔 스탬프와 다르다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.19,
+        "y": 0.87,
+        "radius": 0.27,
+        "phase": 0.13
+      },
+      {
+        "x": 0.96,
+        "y": 0.76,
+        "radius": 0.25,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-44": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/2AoAAeSwi8lqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "여러 피카츄의 몸통에 미세 표면 반사가 있고 하단에는 큰 원형 팬과 조각 로고가 보인다. 앱은 그림에 사선 결만 두드러지고 기념 로고 반사가 부족하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.28,
+        "y": 0.935,
+        "radius": 0.29,
+        "phase": 0.13
+      },
+      {
+        "x": 0.82,
+        "y": 0.71,
+        "radius": 0.27,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-46": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/AhQAAeSwEjRqrqOZ/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "수채화 그림의 넓은 밝은 광택과 하단 원형 팬, 외곽·로고 조각이 보인다. 앱의 로고는 단색에 가깝고 외곽 조각·큰 팬이 약하다. 그림의 흰 인쇄 부분을 반사로 단정하지 않는다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.24,
+        "y": 0.68,
+        "radius": 0.28,
+        "phase": 0.13
+      },
+      {
+        "x": 0.84,
+        "y": 0.64,
+        "radius": 0.26,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-47": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/m9oAAeSw7LZqrqOZ/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "풀밭 그림과 몸통에 미세 방향성 광택, 하단 큰 팬, 고밀도 조각 로고를 확인했다. 앱은 작은 사선 결과 단색 로고여서 재질 대비가 약하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.33,
+        "y": 0.725,
+        "radius": 0.29,
+        "phase": 0.13
+      },
+      {
+        "x": 0.83,
+        "y": 0.75,
+        "radius": 0.29,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-52": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/267790017237",
+      "https://i.ebayimg.com/images/g/~NsAAeSwYjtqrqOY/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "금빛 번개 그림 자체와 홀로를 구분했다. 실물 외곽·로고에는 조밀한 조각, 규칙 면에는 큰 원형 팬이 보이나 앱은 그림 인쇄의 화려함에 의존하고 로고는 평평하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.08,
+        "y": 0.64,
+        "radius": 0.29,
+        "phase": 0.13
+      },
+      {
+        "x": 0.87,
+        "y": 0.65,
+        "radius": 0.28,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-33": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/336815846200",
+      "https://i.ebayimg.com/images/g/yW8AAeSwTTtquWwL/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "꽃과 피카츄 얼굴을 가로지르는 큰 원형 무늬, 하늘/풀의 촘촘한 조각, 로고·은색 외곽의 조각 반사가 보인다. 앱은 사선 결에 치우치고 로고·테두리가 평평하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.49,
+        "y": 0.325,
+        "radius": 0.36,
+        "phase": 0.13
+      },
+      {
+        "x": 0.49,
+        "y": 0.62,
+        "radius": 0.27,
+        "phase": 0.6
+      },
+      {
+        "x": 0.51,
+        "y": 0.925,
+        "radius": 0.25,
+        "phase": 1.07
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-35": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/227542106081",
+      "https://i.ebayimg.com/images/g/mlYAAeSwNsRqrn40/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "실물 사진의 조각 로고·외곽과 앱의 단색 로고·매끈한 외곽 차이는 보인다. 다만 사진이 흐리고 그림은 인쇄 낙엽 무늬와 반사를 구분하기 어려워 정확한 팬·엠보싱은 판정 보류.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [],
+    "preserveUnresolvedInterior": true,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": false
+  },
+  "cel30-40": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/237085167865",
+      "https://i.ebayimg.com/images/g/z-QAAeSwh4Fqs0YE/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "복잡한 꽃 그림의 좌상단 및 테두리에 금빛 조각 반사, 하단 기념 로고에 조각 반사가 보인다. 앱은 인쇄 그림과 단색 로고 위주다. 이 조명에서 원형 팬은 잘 안 보여 추가 각도 필요.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [],
+    "preserveUnresolvedInterior": true,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": false
+  },
+  "cel30-45": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/198671964593",
+      "https://i.ebayimg.com/images/g/adoAAeSwnTpquc5l/s-l1600.webp",
+      "https://i.ebayimg.com/images/g/UjYAAeSw6OVquc5m/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "같은 판매 글의 앞면/기울인 사진을 비교했다. 정면에서는 그림이 비교적 조용하지만 기울이면 하늘·풀·피카츄 얼굴에 큰 원형 방사 무늬가 드러난다. 로고와 외곽에는 별도의 조각 반사가 보인다. 앱은 작은 사선과 별 모양 중심이라 이 변화가 약하다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.34,
+        "y": 0.355,
+        "radius": 0.25,
+        "phase": 0.13
+      },
+      {
+        "x": 0.34,
+        "y": 0.6,
+        "radius": 0.24,
+        "phase": 0.6
+      },
+      {
+        "x": 0.24,
+        "y": 0.87,
+        "radius": 0.24,
+        "phase": 1.07
+      },
+      {
+        "x": 0.88,
+        "y": 0.22,
+        "radius": 0.26,
+        "phase": 1.54
+      },
+      {
+        "x": 0.85,
+        "y": 0.76,
+        "radius": 0.3,
+        "phase": 2.01
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30c-14": {
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/398438737387",
+      "https://i.ebayimg.com/images/g/XmEAAeSwT59qudBB/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "실물 금색 외곽에 조밀한 미세 조각과 윗부분 별 모양이 보이며 적/녹색 반사도 있다. 보라 그림 배경에는 불규칙 미세 조각, 피카츄 몸통은 상대적으로 다른 표면, 규칙 면은 비교적 무광이다. 앱은 거의 단색 금테이고 그림 위 미세 노이즈가 몸통까지 퍼져 있다. 30주년 기념 로고의 정확한 홀로 여부는 보류.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "classic30",
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.139,
+      0.488
+    ],
+    "goldStars": true
+  },
+  "cel30-26": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/278415758004",
+      "https://i.ebayimg.com/images/g/jZUAAeSwVCdquc40/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "실물 촬영은 어둡고 그림의 반사 무늬가 잘 드러나지 않지만 로고에는 금색 알갱이, 은색 외곽에는 조각 반사가 보인다. 앱의 단색 로고·평평한 테두리와 차이는 확인되나 그림 팬·엠보싱 영역은 미확인.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [],
+    "preserveUnresolvedInterior": true,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": false
+  },
+  "cel30-29": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/327374345362",
+      "https://i.ebayimg.com/images/g/xGgAAeSwfEZqqZpb/s-l1600.webp",
+      "https://i.ebayimg.com/images/g/4RoAAeSw4jxqqZpI/s-l1600.webp",
+      "https://i.ebayimg.com/images/g/wNIAAeSw2aZqqZpI/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "세 장의 실물 사진에서 로고와 외곽의 고밀도 조각, 배경 및 피카츄 꼬리/얼굴을 가로지르는 큰 원형 팬을 확인했다. 정면의 조용한 몸통만 보고 홀로를 제외하면 틀린다. 앱의 작은 별 스탬프·사선 결·단색 로고와 크기·형태·재질이 다르다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.14,
+        "y": 0.51,
+        "radius": 0.27,
+        "phase": 0.13
+      },
+      {
+        "x": 0.14,
+        "y": 0.78,
+        "radius": 0.28,
+        "phase": 0.6
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": true,
+    "grainInArtwork": true
+  },
+  "cel30-36": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/257769021803",
+      "https://i.ebayimg.com/images/g/ajYAAeSw7xdquTKZ/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "실물 촬영은 확산 조명에 가까워 원형 팬이 드러나지 않는다. 로고의 미세 알갱이와 은색 외곽은 보이나 이 사진으로 몸통 마스크나 팬 경로는 확정 불가. 앱이 실물과 일치한다고 통과시키지 않는다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [],
+    "preserveUnresolvedInterior": true,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": false
+  },
+  "cel30-43": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/278415842572",
+      "https://i.ebayimg.com/images/g/jZ4AAeSw4z9qudgt/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "어두운 실물 촬영에서 로고 금색 알갱이·외곽 조각을 확인했지만 해변 그림의 원형 팬은 보이지 않는다. 앱의 단색 로고와 차이는 있으나 그림의 상세 반사/미세 엠보싱은 보류.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [],
+    "preserveUnresolvedInterior": true,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": false
+  },
+  "cel30-48": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/287592118059",
+      "https://i.ebayimg.com/images/g/SI8AAeSwmXNqq-tm/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "파란 바닥에 놓인 실물의 왼쪽 그림과 규칙 면에 큰 원형 팬이 보이고 로고·외곽에는 별도 미세 조각 반사가 있다. 앱은 그림의 사선 결·작은 별 모양, 단색 로고라 패턴 형태·크기 및 영역별 재질이 다르다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.09,
+        "y": 0.415,
+        "radius": 0.3,
+        "phase": 0.13
+      },
+      {
+        "x": 0.04,
+        "y": 0.685,
+        "radius": 0.29,
+        "phase": 0.6
+      },
+      {
+        "x": 0.36,
+        "y": 0.96,
+        "radius": 0.29,
+        "phase": 1.07
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": true
+  },
+  "cel30-49": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/287588438751",
+      "https://i.ebayimg.com/images/g/pmQAAeSwnsxqr6E8/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "판매자의 개별 앞면 사진/스캔에서 어두운 그림과 얼굴·몸통을 가로지르는 큰 원형 구조, 로고와 외곽의 조각을 확인했다. 앱은 사선 결과 단색 로고다. 앞뒷면 스캔 형태로 촬영 방식·광원/동적 반사와 원본 촬영 출처는 추가 확인 필요.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.06,
+        "y": 0.42,
+        "radius": 0.28,
+        "phase": 0.13
+      },
+      {
+        "x": 0.49,
+        "y": 0.37,
+        "radius": 0.26,
+        "phase": 0.6
+      },
+      {
+        "x": 0.89,
+        "y": 0.35,
+        "radius": 0.28,
+        "phase": 1.07
+      },
+      {
+        "x": 0.78,
+        "y": 0.06,
+        "radius": 0.28,
+        "phase": 1.54
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": true,
+    "preserveArtwork": false,
+    "grainInArtwork": false
+  },
+  "cel30-50": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/407232822092",
+      "https://i.ebayimg.com/images/g/zzIAAeSwvx5qsICW/s-l1600.webp"
+    ],
+    "evidenceStatus": "static_photo_compared",
+    "observedDifference": "실물에서 그림의 피카츄 얼굴·배경까지 큰 원형 방사 무늬가 보인다. 로고는 이 각도에서 저대비 금녹색 알갱이, 외곽은 촘촘한 조각이다. 앱의 작은 사선·별 스탬프와 매끈한 외곽은 다르다. 이 사진만으로 하단 팬 없음이라고 판단하지 않는다.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [
+      {
+        "x": 0.27,
+        "y": 0.395,
+        "radius": 0.32,
+        "phase": 0.13
+      },
+      {
+        "x": 0.37,
+        "y": 0.22,
+        "radius": 0.3,
+        "phase": 0.6
+      },
+      {
+        "x": 0.77,
+        "y": 0.11,
+        "radius": 0.3,
+        "phase": 1.07
+      }
+    ],
+    "preserveUnresolvedInterior": false,
+    "preserveLowerInterior": true,
+    "preserveArtwork": false,
+    "grainInArtwork": false
+  },
+  "cel30-51": {
+    "finish": "fullArt",
+    "referenceURLs": [
+      "https://www.ebay.com/itm/198667569391",
+      "https://i.ebayimg.com/images/g/AmQAAeSwQIlqtxnc/s-l1600.webp"
+    ],
+    "evidenceStatus": "partial_photo_compared",
+    "observedDifference": "슬랩 사진에서 배경의 원형 팬 일부와 외곽 미세 조각·금녹색 로고 질감이 보인다. 앱은 배경 사선 결과 단색 로고다. 그림의 복잡한 인쇄 선 및 슬랩 반사 때문에 세밀한 경계·엠보싱은 판정 보류.",
+    "reconstruction": "Photo-guided procedural approximation. Scan registration is not verification of the factory emboss or foil plate.",
+    "style": "pikachu30",
+    "fans": [],
+    "preserveUnresolvedInterior": true,
+    "preserveLowerInterior": false,
+    "preserveArtwork": false,
+    "grainInArtwork": false
+  }
+}

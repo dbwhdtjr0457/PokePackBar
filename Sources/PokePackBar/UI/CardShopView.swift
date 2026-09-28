@@ -128,7 +128,12 @@ struct CardShopView: View {
     private func couponRow(_ index: CardIndex, _ coupon: PackCoupon) -> some View {
         let l = wallet.l
         let list = wallet.listPrice(setID: coupon.setID, index: index)
-        let cut = wallet.packPrice(setID: coupon.setID, index: index)
+        // 쿠폰함에는 할인율이 다른 묶음이 함께 있을 수 있다. 지갑의 `packPrice`는 실제
+        // 결제에 쓸 가장 센 쿠폰을 고르므로, 각 행은 자기 쿠폰율로 직접 계산해야 한다.
+        let effectiveDiscount = max(wallet.perks.packDiscount, coupon.value)
+        let cut = MarketEconomy.quantized(
+            Int((Double(list) * (1 - effectiveDiscount)).rounded())
+        )
         return HStack(spacing: 8) {
             PackImageView(setID: coupon.setID, width: 26)
             VStack(alignment: .leading, spacing: 1) {
@@ -352,7 +357,7 @@ private struct PackDetailView: View {
     /// 쿠폰을 빼기 전의 값. 쿠폰이 있을 때만 줄을 그어 함께 보인다.
     private var listPrice: Int { wallet.listPrice(setID: set.id, index: index) }
     private var coupons: Int { wallet.couponCount(setID: set.id) }
-    private var cardsPerPack: Int { PackPricing.cardCount(setID: set.id, index: index, perks: wallet.perks) }
+    private var recipe: PackRecipe { PackRecipe.forSet(set.id, era: index.era(set.id)) }
     /// 이 팩에서 나올 수 있는 카드. **값이 비싼 것부터** — 무엇을 노리고 사는지가 먼저 읽혀야 한다.
     /// 인덱스가 이미 값순으로 세워 둔 것을 거르므로 여기서 다시 정렬하지 않는다.
     private var members: [CardEntry] { index.cardsByValue.filter { $0.setID == set.id } }
@@ -400,7 +405,7 @@ private struct PackDetailView: View {
                     Text(set.name)
                         .font(Typography.title)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("\(String(set.released.prefix(4)))  ·  \(l.packContents(cardsPerPack))")
+                    Text("\(String(set.released.prefix(4)))  ·  \(l.packContents(recipe.contents))")
                         .font(Typography.label).foregroundStyle(.secondary)
                     if let blurb = l.packBlurb(set.id) {
                         Text(blurb)
@@ -411,9 +416,14 @@ private struct PackDetailView: View {
                 Spacer(minLength: 0)
             }
 
+            Text(pricingSource(l))
+                .font(.system(size: 12))
+                .foregroundStyle(.tertiary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+
             summaryRows(l)
-            oddsTable(l)
-            Spacer(minLength: 0)
+            ScrollView { oddsTable(l) }
             purchaseBar(l)
         }
     }
@@ -475,7 +485,7 @@ private struct PackDetailView: View {
     /// "이 팩에서 UR 이 얼마나 나오나" 를 보려는 사람이 훨씬 많다. 대신 확정 한 장과
     /// 천장은 표 아래 한 줄로 적는다 — 보장을 숨기지는 않는다.
     private func oddsTable(_ l: L) -> some View {
-        let odds = PackOpening.packOdds(setID: set.id, index: index, perks: wallet.perks)
+        let odds = PackOpening.packOdds(setID: set.id, index: index, perks: wallet.openingPerks)
         let pool = index.pools[set.id] ?? [:]
 
         return VStack(alignment: .leading, spacing: 2) {
@@ -508,9 +518,15 @@ private struct PackDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(l.packGuaranteeNote(PackConfig.hitSlotCount(wallet.perks),
-                                         pity: PackConfig.pityThreshold))
-                Text(l.godPackNote(PackConfig.godPackOneIn))
+                if wallet.state.openingMode == .game {
+                    Text(l.packGuaranteeNote(PackConfig.hitSlotCount(wallet.perks), pity: PackConfig.pityThreshold))
+                } else { Text(l.realisticNote) }
+                ForEach(recipe.specialRules, id: \.variant) { rule in
+                    Text(l.specialPackEstimate(rule))
+                }
+                if set.id == "sv8pt5" {
+                    Text(l.observedPrismaticParallelRates)
+                }
             }
             .font(.system(size: 14)).foregroundStyle(.tertiary)
             .fixedSize(horizontal: false, vertical: true)
@@ -519,6 +535,13 @@ private struct PackDetailView: View {
         .padding(.horizontal, 8).padding(.vertical, 6)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 7))
+    }
+
+    private func pricingSource(_ l: L) -> String {
+        let detail = PackPricing.quote(setID: set.id, index: index)
+        let market = detail.marketUSD.map { String(format: "$%.2f", $0) } ?? "—"
+        let floor = String(format: "$%.2f", detail.economyFloorUSD)
+        return "\(l.quoteBasis(detail.basis))\n\(l.sealedMarket): \(market) · \(l.economyFloor): \(floor) (EV × \(MarketEconomy.packMargin))\n\(detail.marketDate ?? CardPrices.shared?.asOf ?? "—")"
     }
 
     /// 아주 낮은 확률을 0% 로 반올림하지 않는다 — 1.1% 와 0.04% 는 다른 이야기다.

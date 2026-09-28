@@ -40,7 +40,7 @@ struct PulledCardView: View {
     ///
     /// 개봉 화면(`RevealPeek.cardWidth`)보다 조금 작다. 상점 탭에는 「일반 팩 / 오리파」
     /// 갈래 선택이 한 줄 더 있어 세로가 그만큼 좁고, 새 카드일 때 NEW 배지가 한 줄 더 붙는다.
-    private static let cardWidth: CGFloat = 240
+    private static let cardWidth: CGFloat = PopoverMetrics.pulledCardWidth
 
     /// 이 거리 안에서 끝나면 민 것이 아니라 누른 것으로 본다(pt).
     /// 손을 떼는 순간 몇 px 흔들리는 것까지 밀기로 치면 눌러도 안 열린다.
@@ -134,7 +134,8 @@ struct PulledCardView: View {
                 // 나중에 그리면 밀어도 아무것도 없는 자리가 보인다.
                 TierGlow(tier: card.tier, width: Self.cardWidth)
                     .opacity(opened ? 1 : peek)
-                CardImageView(cardID: card.id, hires: true, width: Self.cardWidth)
+                HolographicCardView(cardID: card.id, tier: card.tier,
+                                    finish: card.finish, width: Self.cardWidth)
                     .shadow(radius: opened ? 10 : 0, y: opened ? 4 : 0)
 
                 if !opened { cover }
@@ -153,7 +154,11 @@ struct PulledCardView: View {
                             .font(Typography.badge)
                             .foregroundStyle(tierColor(card.tier))
                         Text(l.tierName(card.tier)).font(Typography.label).foregroundStyle(.secondary)
-                        if let prices = CardPrices.shared, let usd = prices.price(card.id) {
+                        Text("·").font(Typography.label).foregroundStyle(.tertiary)
+                        Text(l.cardFinishName(card.finish))
+                            .font(Typography.label).foregroundStyle(.secondary)
+                        if let prices = CardPrices.shared,
+                           let usd = prices.price(cardID: card.id, finish: card.finish) {
                             Text("·").font(Typography.label).foregroundStyle(.tertiary)
                             Text(prices.formattedWithKRW(usd, language: wallet.language))
                                 .font(Typography.labelSemibold).monospacedDigit()

@@ -65,6 +65,34 @@ enum AppResources {
         guard !DexIndex.loadBundled().dexes.isEmpty else {
             return "dex.json 을 읽지 못했거나 도감이 비어 있다"
         }
+        guard bundle.url(forResource: "pack-prices", withExtension: "json") != nil else {
+            return "번들은 찾았으나 pack-prices.json 이 없다: \(bundle.bundlePath)"
+        }
+        guard PackMarketPrices.loadBundled() != nil else {
+            return "pack-prices.json 을 읽지 못했다"
+        }
+        guard bundle.url(forResource: "card-prices", withExtension: "json") != nil else {
+            return "번들은 찾았으나 card-prices.json 이 없다: \(bundle.bundlePath)"
+        }
+        guard CardPrices.loadBundled() != nil else {
+            return "card-prices.json 을 읽지 못했다"
+        }
+        if let index = CardIndex.loadBundled() {
+            do { try FoilGeometry.verify(index: index) }
+            catch { return "홀로 이미지 좌표 누락 또는 불일치: \(error)" }
+        }
+        guard ExpansionFoil.entries.count == 852, ExpansionFoil.parallels.count == 140 else {
+            return "신규 팩 홀로 재질 목록 누락 또는 원본 이미지 불일치"
+        }
+        guard ReviewedFoilProfiles.entries.count == 85, RegisteredCrackedIce.entries.count == 12 else {
+            return "카드별 실물 참고 홀로 목록 누락 또는 원본 이미지 불일치"
+        }
+        // Full asset presence is a packaging gate. A SwiftPM unit-test runner
+        // legitimately has only the small resource manifest alongside it.
+        if Bundle.main.bundleURL.pathExtension == "app", let index = CardIndex.loadBundled() {
+            do { _ = try CardArtLibrary.verify(index: index) }
+            catch { return "오프라인 이미지 누락: \(error)" }
+        }
         return nil
     }
 }

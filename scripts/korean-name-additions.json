@@ -1,0 +1,6417 @@
+{
+ "cel25c-107_A": {
+  "kind": "existing-name",
+  "source": "swsh4-87",
+  "english": "Donphan"
+ },
+ "cel25c-109_A": {
+  "kind": "existing-name",
+  "source": "pl2-109",
+  "english": "Luxray GL LV.X"
+ },
+ "cel25c-113_A": {
+  "kind": "existing-name",
+  "source": "xy6-63",
+  "english": "Reshiram"
+ },
+ "cel25c-114_A": {
+  "kind": "existing-name",
+  "source": "xy6-64",
+  "english": "Zekrom"
+ },
+ "cel25c-145_A": {
+  "kind": "existing-name",
+  "source": "pl3-145",
+  "english": "Garchomp C LV.X"
+ },
+ "cel25c-15_A1": {
+  "kind": "existing-name",
+  "source": "sm35-3",
+  "english": "Venusaur"
+ },
+ "cel25c-15_A2": {
+  "kind": "existing-name",
+  "source": "xy12-113",
+  "english": "Here Comes Team Rocket!"
+ },
+ "cel25c-15_A3": {
+  "kind": "existing-name",
+  "source": "gym2-15",
+  "english": "Rocket's Zapdos"
+ },
+ "cel25c-15_A4": {
+  "kind": "existing-name",
+  "source": "xy7-33",
+  "english": "Claydol"
+ },
+ "cel25c-17_A": {
+  "kind": "reviewed-existing-pokemon",
+  "source": "bw5-60",
+  "english": "Umbreon ★"
+ },
+ "cel25c-20_A": {
+  "kind": "existing-name",
+  "source": "sv4pt5-150",
+  "english": "Cleffa"
+ },
+ "cel25c-24_A": {
+  "kind": "reviewed-existing-pokemon",
+  "source": "base1-58",
+  "english": "_____'s Pikachu"
+ },
+ "cel25c-2_A": {
+  "kind": "existing-name",
+  "source": "sm9-25",
+  "english": "Blastoise"
+ },
+ "cel25c-4_A": {
+  "kind": "existing-name",
+  "source": "xy12-11",
+  "english": "Charizard"
+ },
+ "cel25c-54_A": {
+  "kind": "existing-name",
+  "source": "xy8-62",
+  "english": "Mewtwo-EX"
+ },
+ "cel25c-60_A": {
+  "kind": "existing-name",
+  "source": "sm2-60a",
+  "english": "Tapu Lele-GX"
+ },
+ "cel25c-66_A": {
+  "kind": "existing-name",
+  "source": "neo3-66",
+  "english": "Shining Magikarp"
+ },
+ "cel25c-73_A": {
+  "kind": "existing-name",
+  "source": "base4-102",
+  "english": "Imposter Professor Oak"
+ },
+ "cel25c-76_A": {
+  "kind": "existing-name",
+  "source": "xy7-98",
+  "english": "M Rayquaza-EX"
+ },
+ "cel25c-86_A": {
+  "kind": "existing-name",
+  "source": "ex7-86",
+  "english": "Rocket's Admin."
+ },
+ "cel25c-88_A": {
+  "kind": "existing-name",
+  "source": "sv4pt5-232",
+  "english": "Mew ex"
+ },
+ "cel25c-8_A": {
+  "kind": "existing-name",
+  "source": "ex7-36",
+  "english": "Dark Gyarados"
+ },
+ "cel25c-93_A": {
+  "kind": "existing-name",
+  "source": "ex15-93",
+  "english": "Gardevoir ex δ"
+ },
+ "cel25c-97_A": {
+  "kind": "existing-name",
+  "source": "xy1-97",
+  "english": "Xerneas-EX"
+ },
+ "cel25c-9_A": {
+  "kind": "existing-name",
+  "source": "ex4-9",
+  "english": "Team Magma's Groudon"
+ },
+ "sma-SV1": {
+  "kind": "existing-name",
+  "source": "swsh2-4",
+  "english": "Scyther"
+ },
+ "sma-SV10": {
+  "kind": "existing-name",
+  "source": "xy7-39",
+  "english": "Quagsire"
+ },
+ "sma-SV11": {
+  "kind": "existing-name",
+  "source": "xy9-38",
+  "english": "Froakie"
+ },
+ "sma-SV12": {
+  "kind": "existing-name",
+  "source": "xy9-39",
+  "english": "Frogadier"
+ },
+ "sma-SV13": {
+  "kind": "existing-name",
+  "source": "xy6-21",
+  "english": "Voltorb"
+ },
+ "sma-SV14": {
+  "kind": "existing-name",
+  "source": "sm6-39",
+  "english": "Xurkitree"
+ },
+ "sma-SV15": {
+  "kind": "existing-name",
+  "source": "swsh6-102",
+  "english": "Seviper"
+ },
+ "sma-SV16": {
+  "kind": "existing-name",
+  "source": "xy6-30",
+  "english": "Shuppet"
+ },
+ "sma-SV17": {
+  "kind": "existing-name",
+  "source": "xy8-93",
+  "english": "Inkay"
+ },
+ "sma-SV18": {
+  "kind": "existing-name",
+  "source": "xy7-46",
+  "english": "Malamar"
+ },
+ "sma-SV19": {
+  "kind": "existing-name",
+  "source": "sm8-107",
+  "english": "Poipole"
+ },
+ "sma-SV2": {
+  "kind": "existing-name",
+  "source": "swsh45-6",
+  "english": "Rowlet"
+ },
+ "sma-SV20": {
+  "kind": "existing-name",
+  "source": "xy9-67",
+  "english": "Sudowoodo"
+ },
+ "sma-SV21": {
+  "kind": "existing-name",
+  "source": "xy10-46",
+  "english": "Riolu"
+ },
+ "sma-SV22": {
+  "kind": "existing-name",
+  "source": "xy10-63",
+  "english": "Lucario"
+ },
+ "sma-SV23": {
+  "kind": "existing-name",
+  "source": "swsh6-86",
+  "english": "Rockruff"
+ },
+ "sma-SV24": {
+  "kind": "existing-name",
+  "source": "sm6-77",
+  "english": "Buzzwole"
+ },
+ "sma-SV25": {
+  "kind": "existing-name",
+  "source": "xy8-90",
+  "english": "Zorua"
+ },
+ "sma-SV26": {
+  "kind": "existing-name",
+  "source": "sm6-80",
+  "english": "Guzzlord"
+ },
+ "sma-SV27": {
+  "kind": "existing-name",
+  "source": "xy8-52",
+  "english": "Magnemite"
+ },
+ "sma-SV28": {
+  "kind": "existing-name",
+  "source": "xy8-53",
+  "english": "Magneton"
+ },
+ "sma-SV29": {
+  "kind": "existing-name",
+  "source": "xy8-54",
+  "english": "Magnezone"
+ },
+ "sma-SV3": {
+  "kind": "existing-name",
+  "source": "swsh45-7",
+  "english": "Dartrix"
+ },
+ "sma-SV30": {
+  "kind": "existing-name",
+  "source": "xy7-47",
+  "english": "Beldum"
+ },
+ "sma-SV31": {
+  "kind": "existing-name",
+  "source": "xy7-48",
+  "english": "Metang"
+ },
+ "sma-SV32": {
+  "kind": "existing-name",
+  "source": "sm7-100",
+  "english": "Celesteela"
+ },
+ "sma-SV33": {
+  "kind": "existing-name",
+  "source": "sm7-101",
+  "english": "Kartana"
+ },
+ "sma-SV34": {
+  "kind": "existing-name",
+  "source": "xy8-68",
+  "english": "Ralts"
+ },
+ "sma-SV35": {
+  "kind": "existing-name",
+  "source": "xy8-69",
+  "english": "Kirlia"
+ },
+ "sma-SV36": {
+  "kind": "existing-name",
+  "source": "xy4-71",
+  "english": "Diancie"
+ },
+ "sma-SV37": {
+  "kind": "existing-name",
+  "source": "xy6-74",
+  "english": "Altaria"
+ },
+ "sma-SV38": {
+  "kind": "existing-name",
+  "source": "xy9-68",
+  "english": "Gible"
+ },
+ "sma-SV39": {
+  "kind": "existing-name",
+  "source": "xy9-69",
+  "english": "Gabite"
+ },
+ "sma-SV4": {
+  "kind": "existing-name",
+  "source": "swsh3-17",
+  "english": "Wimpod"
+ },
+ "sma-SV40": {
+  "kind": "existing-name",
+  "source": "xy9-70",
+  "english": "Garchomp"
+ },
+ "sma-SV41": {
+  "kind": "existing-name",
+  "source": "xy7-63",
+  "english": "Eevee"
+ },
+ "sma-SV42": {
+  "kind": "existing-name",
+  "source": "xy8-124",
+  "english": "Swablu"
+ },
+ "sma-SV43": {
+  "kind": "existing-name",
+  "source": "xy8-132",
+  "english": "Noibat"
+ },
+ "sma-SV44": {
+  "kind": "existing-name",
+  "source": "swsh4-199",
+  "english": "Oranguru"
+ },
+ "sma-SV45": {
+  "kind": "existing-name",
+  "source": "sm5-115",
+  "english": "Type: Null"
+ },
+ "sma-SV46": {
+  "kind": "existing-name",
+  "source": "sm5-157",
+  "english": "Leafeon-GX"
+ },
+ "sma-SV47": {
+  "kind": "existing-name",
+  "source": "sm2-146",
+  "english": "Decidueye-GX"
+ },
+ "sma-SV48": {
+  "kind": "existing-name",
+  "source": "sm3-17",
+  "english": "Golisopod-GX"
+ },
+ "sma-SV49": {
+  "kind": "existing-name",
+  "source": "sm3-20",
+  "english": "Charizard-GX"
+ },
+ "sma-SV5": {
+  "kind": "existing-name",
+  "source": "sm6-11",
+  "english": "Pheromosa"
+ },
+ "sma-SV50": {
+  "kind": "existing-name",
+  "source": "sm3-21",
+  "english": "Ho-Oh-GX"
+ },
+ "sma-SV51": {
+  "kind": "existing-name",
+  "source": "sm75-71",
+  "english": "Reshiram-GX"
+ },
+ "sma-SV52": {
+  "kind": "existing-name",
+  "source": "sm2-18",
+  "english": "Turtonator-GX"
+ },
+ "sma-SV53": {
+  "kind": "existing-name",
+  "source": "sm8-225",
+  "english": "Alolan Ninetales-GX"
+ },
+ "sma-SV54": {
+  "kind": "existing-name",
+  "source": "sm7-31",
+  "english": "Articuno-GX"
+ },
+ "sma-SV55": {
+  "kind": "existing-name",
+  "source": "sm5-39",
+  "english": "Glaceon-GX"
+ },
+ "sma-SV56": {
+  "kind": "existing-name",
+  "source": "sm6-24",
+  "english": "Greninja-GX"
+ },
+ "sma-SV57": {
+  "kind": "existing-name",
+  "source": "sm7-48",
+  "english": "Electrode-GX"
+ },
+ "sma-SV58": {
+  "kind": "existing-name",
+  "source": "sm5-160",
+  "english": "Xurkitree-GX"
+ },
+ "sma-SV59": {
+  "kind": "existing-name",
+  "source": "sm35-78",
+  "english": "Mewtwo-GX"
+ },
+ "sma-SV6": {
+  "kind": "existing-name",
+  "source": "xy12-9",
+  "english": "Charmander"
+ },
+ "sma-SV60": {
+  "kind": "existing-name",
+  "source": "sm1-61",
+  "english": "Espeon-GX"
+ },
+ "sma-SV61": {
+  "kind": "existing-name",
+  "source": "sm7-66",
+  "english": "Banette-GX"
+ },
+ "sma-SV62": {
+  "kind": "existing-name",
+  "source": "sm4-49",
+  "english": "Nihilego-GX"
+ },
+ "sma-SV63": {
+  "kind": "existing-name",
+  "source": "sm6-56",
+  "english": "Naganadel-GX"
+ },
+ "sma-SV64": {
+  "kind": "existing-name",
+  "source": "sm6-135",
+  "english": "Lucario-GX"
+ },
+ "sma-SV65": {
+  "kind": "existing-name",
+  "source": "sm6-73",
+  "english": "Zygarde-GX"
+ },
+ "sma-SV66": {
+  "kind": "existing-name",
+  "source": "sm9-82",
+  "english": "Lycanroc-GX"
+ },
+ "sma-SV67": {
+  "kind": "existing-name",
+  "source": "sm9-82",
+  "english": "Lycanroc-GX"
+ },
+ "sma-SV68": {
+  "kind": "existing-name",
+  "source": "sm4-57",
+  "english": "Buzzwole-GX"
+ },
+ "sma-SV69": {
+  "kind": "existing-name",
+  "source": "sm1-80",
+  "english": "Umbreon-GX"
+ },
+ "sma-SV7": {
+  "kind": "existing-name",
+  "source": "xy12-10",
+  "english": "Charmeleon"
+ },
+ "sma-SV70": {
+  "kind": "existing-name",
+  "source": "sm3-88a",
+  "english": "Darkrai-GX"
+ },
+ "sma-SV71": {
+  "kind": "existing-name",
+  "source": "sm4-63a",
+  "english": "Guzzlord-GX"
+ },
+ "sma-SV72": {
+  "kind": "existing-name",
+  "source": "sm7-90",
+  "english": "Scizor-GX"
+ },
+ "sma-SV73": {
+  "kind": "existing-name",
+  "source": "sm4-70",
+  "english": "Kartana-GX"
+ },
+ "sma-SV74": {
+  "kind": "existing-name",
+  "source": "sm7-176",
+  "english": "Stakataka-GX"
+ },
+ "sma-SV75": {
+  "kind": "existing-name",
+  "source": "sm3-93",
+  "english": "Gardevoir-GX"
+ },
+ "sma-SV76": {
+  "kind": "existing-name",
+  "source": "sm2-92a",
+  "english": "Sylveon-GX"
+ },
+ "sma-SV77": {
+  "kind": "existing-name",
+  "source": "sm75-72",
+  "english": "Altaria-GX"
+ },
+ "sma-SV78": {
+  "kind": "existing-name",
+  "source": "sm3-99",
+  "english": "Noivern-GX"
+ },
+ "sma-SV79": {
+  "kind": "existing-name",
+  "source": "sm5-116",
+  "english": "Silvally-GX"
+ },
+ "sma-SV8": {
+  "kind": "existing-name",
+  "source": "sm8-53",
+  "english": "Alolan Vulpix"
+ },
+ "sma-SV80": {
+  "kind": "existing-name",
+  "source": "sm2-160",
+  "english": "Drampa-GX"
+ },
+ "sma-SV81": {
+  "kind": "existing-name",
+  "source": "sm8-168",
+  "english": "Aether Foundation Employee"
+ },
+ "sma-SV82": {
+  "kind": "existing-name",
+  "source": "sm5-148",
+  "english": "Cynthia"
+ },
+ "sma-SV83": {
+  "kind": "existing-name",
+  "source": "xy8-136",
+  "english": "Fisherman"
+ },
+ "sma-SV84": {
+  "kind": "existing-name",
+  "source": "sm3-143",
+  "english": "Guzma"
+ },
+ "sma-SV85": {
+  "kind": "existing-name",
+  "source": "sm7-133",
+  "english": "Hiker"
+ },
+ "sma-SV86": {
+  "kind": "existing-name",
+  "source": "swsh11-208",
+  "english": "Lady"
+ },
+ "sma-SV87": {
+  "kind": "existing-name",
+  "source": "sm2-116",
+  "english": "Aether Paradise Conservation Area"
+ },
+ "sma-SV88": {
+  "kind": "existing-name",
+  "source": "sm2-120",
+  "english": "Brooklet Hill"
+ },
+ "sma-SV89": {
+  "kind": "existing-name",
+  "source": "sm5-130",
+  "english": "Mt. Coronet"
+ },
+ "sma-SV9": {
+  "kind": "existing-name",
+  "source": "xy7-38",
+  "english": "Wooper"
+ },
+ "sma-SV90": {
+  "kind": "existing-name",
+  "source": "sm7-143",
+  "english": "Shrine of Punishment"
+ },
+ "sma-SV91": {
+  "kind": "existing-name",
+  "source": "sm3-149",
+  "english": "Tapu Bulu-GX"
+ },
+ "sma-SV92": {
+  "kind": "existing-name",
+  "source": "sm3-39a",
+  "english": "Tapu Fini-GX"
+ },
+ "sma-SV93": {
+  "kind": "existing-name",
+  "source": "sm2-47",
+  "english": "Tapu Koko-GX"
+ },
+ "sma-SV94": {
+  "kind": "existing-name",
+  "source": "sm2-60a",
+  "english": "Tapu Lele-GX"
+ },
+ "swsh10tg-TG01": {
+  "kind": "existing-name",
+  "source": "xy8-40",
+  "english": "Abomasnow"
+ },
+ "swsh10tg-TG02": {
+  "kind": "existing-name",
+  "source": "swsh7-120",
+  "english": "Flapple"
+ },
+ "swsh10tg-TG03": {
+  "kind": "existing-name",
+  "source": "xy5-108",
+  "english": "Kingdra"
+ },
+ "swsh10tg-TG04": {
+  "kind": "existing-name",
+  "source": "swsh8-85",
+  "english": "Frosmoth"
+ },
+ "swsh10tg-TG05": {
+  "kind": "existing-name",
+  "source": "xy7-54",
+  "english": "Gardevoir"
+ },
+ "swsh10tg-TG06": {
+  "kind": "existing-name",
+  "source": "swsh10-69",
+  "english": "Wyrdeer"
+ },
+ "swsh10tg-TG07": {
+  "kind": "existing-name",
+  "source": "swsh8-155",
+  "english": "Falinks"
+ },
+ "swsh10tg-TG08": {
+  "kind": "existing-name",
+  "source": "swsh10-86",
+  "english": "Kleavor"
+ },
+ "swsh10tg-TG09": {
+  "kind": "existing-name",
+  "source": "xy4-54",
+  "english": "Mightyena"
+ },
+ "swsh10tg-TG10": {
+  "kind": "existing-name",
+  "source": "swsh8-161",
+  "english": "Galarian Obstagoon"
+ },
+ "swsh10tg-TG11": {
+  "kind": "existing-name",
+  "source": "xy8-96",
+  "english": "Bronzong"
+ },
+ "swsh10tg-TG12": {
+  "kind": "existing-name",
+  "source": "xy8-119",
+  "english": "Hoothoot"
+ },
+ "swsh10tg-TG13": {
+  "kind": "existing-name",
+  "source": "swsh10-30",
+  "english": "Starmie V"
+ },
+ "swsh10tg-TG14": {
+  "kind": "existing-name",
+  "source": "swsh6-45",
+  "english": "Ice Rider Calyrex V"
+ },
+ "swsh10tg-TG15": {
+  "kind": "existing-name",
+  "source": "swsh6-46",
+  "english": "Ice Rider Calyrex VMAX"
+ },
+ "swsh10tg-TG16": {
+  "kind": "existing-name",
+  "source": "swsh9-181",
+  "english": "Galarian Articuno V"
+ },
+ "swsh10tg-TG17": {
+  "kind": "existing-name",
+  "source": "swsh6-74",
+  "english": "Shadow Rider Calyrex V"
+ },
+ "swsh10tg-TG18": {
+  "kind": "existing-name",
+  "source": "swsh6-75",
+  "english": "Shadow Rider Calyrex VMAX"
+ },
+ "swsh10tg-TG19": {
+  "kind": "existing-name",
+  "source": "swsh9-182",
+  "english": "Galarian Zapdos V"
+ },
+ "swsh10tg-TG20": {
+  "kind": "existing-name",
+  "source": "swsh9-183",
+  "english": "Galarian Moltres V"
+ },
+ "swsh10tg-TG21": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-95",
+  "english": "Zacian V"
+ },
+ "swsh10tg-TG22": {
+  "kind": "existing-name",
+  "source": "swsh9-163",
+  "english": "Zamazenta V"
+ },
+ "swsh10tg-TG23": {
+  "kind": "existing-name",
+  "source": "swsh10-178",
+  "english": "Garchomp V"
+ },
+ "swsh10tg-TG24": {
+  "kind": "existing-name",
+  "source": "swsh4-192",
+  "english": "Allister"
+ },
+ "swsh10tg-TG25": {
+  "kind": "existing-name",
+  "source": "swsh4-193",
+  "english": "Bea"
+ },
+ "swsh10tg-TG26": {
+  "kind": "existing-name",
+  "source": "swsh6-218",
+  "english": "Melony"
+ },
+ "swsh10tg-TG27": {
+  "kind": "existing-name",
+  "source": "swsh35-57",
+  "english": "Milo"
+ },
+ "swsh10tg-TG28": {
+  "kind": "existing-name",
+  "source": "swsh45-69",
+  "english": "Piers"
+ },
+ "swsh10tg-TG29": {
+  "kind": "existing-name",
+  "source": "swsh6-46",
+  "english": "Ice Rider Calyrex VMAX"
+ },
+ "swsh10tg-TG30": {
+  "kind": "existing-name",
+  "source": "swsh6-75",
+  "english": "Shadow Rider Calyrex VMAX"
+ },
+ "swsh11tg-TG01": {
+  "kind": "existing-name",
+  "source": "xy8-2",
+  "english": "Parasect"
+ },
+ "swsh11tg-TG02": {
+  "kind": "existing-name",
+  "source": "xy2-9",
+  "english": "Roserade"
+ },
+ "swsh11tg-TG03": {
+  "kind": "existing-name",
+  "source": "xy12-11",
+  "english": "Charizard"
+ },
+ "swsh11tg-TG04": {
+  "kind": "existing-name",
+  "source": "xy4-43",
+  "english": "Chandelure"
+ },
+ "swsh11tg-TG05": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "swsh11tg-TG06": {
+  "kind": "existing-name",
+  "source": "xy8-60",
+  "english": "Gengar"
+ },
+ "swsh11tg-TG07": {
+  "kind": "existing-name",
+  "source": "xy6-32",
+  "english": "Banette"
+ },
+ "swsh11tg-TG08": {
+  "kind": "existing-name",
+  "source": "swsh11-84",
+  "english": "Hisuian Arcanine"
+ },
+ "swsh11tg-TG09": {
+  "kind": "existing-name",
+  "source": "xy4-55",
+  "english": "Spiritomb"
+ },
+ "swsh11tg-TG10": {
+  "kind": "existing-name",
+  "source": "xy8-118",
+  "english": "Snorlax"
+ },
+ "swsh11tg-TG11": {
+  "kind": "existing-name",
+  "source": "swsh9-116",
+  "english": "Castform"
+ },
+ "swsh11tg-TG12": {
+  "kind": "existing-name",
+  "source": "swsh4-20",
+  "english": "Orbeetle V"
+ },
+ "swsh11tg-TG13": {
+  "kind": "existing-name",
+  "source": "swsh4-21",
+  "english": "Orbeetle VMAX"
+ },
+ "swsh11tg-TG14": {
+  "kind": "existing-name",
+  "source": "swsh3-33",
+  "english": "Centiskorch V"
+ },
+ "swsh11tg-TG15": {
+  "kind": "existing-name",
+  "source": "swsh3-34",
+  "english": "Centiskorch VMAX"
+ },
+ "swsh11tg-TG16": {
+  "kind": "existing-name",
+  "source": "swsh9-157",
+  "english": "Pikachu V"
+ },
+ "swsh11tg-TG17": {
+  "kind": "existing-name",
+  "source": "swsh4-44",
+  "english": "Pikachu VMAX"
+ },
+ "swsh11tg-TG18": {
+  "kind": "existing-name",
+  "source": "swsh11-82",
+  "english": "Enamorus V"
+ },
+ "swsh11tg-TG19": {
+  "kind": "existing-name",
+  "source": "swsh11-181",
+  "english": "Gallade V"
+ },
+ "swsh11tg-TG20": {
+  "kind": "existing-name",
+  "source": "swsh45-44",
+  "english": "Crobat V"
+ },
+ "swsh11tg-TG21": {
+  "kind": "existing-name",
+  "source": "swsh3-116",
+  "english": "Eternatus V"
+ },
+ "swsh11tg-TG22": {
+  "kind": "existing-name",
+  "source": "swsh3-192",
+  "english": "Eternatus VMAX"
+ },
+ "swsh11tg-TG23": {
+  "kind": "existing-name",
+  "source": "swsh8-224",
+  "english": "Adventurer's Discovery"
+ },
+ "swsh11tg-TG24": {
+  "kind": "existing-name",
+  "source": "swsh9-132",
+  "english": "Boss's Orders"
+ },
+ "swsh11tg-TG25": {
+  "kind": "existing-name",
+  "source": "swsh8-228",
+  "english": "Cook"
+ },
+ "swsh11tg-TG26": {
+  "kind": "existing-name",
+  "source": "swsh35-77",
+  "english": "Kabu"
+ },
+ "swsh11tg-TG27": {
+  "kind": "existing-name",
+  "source": "swsh4-196",
+  "english": "Nessa"
+ },
+ "swsh11tg-TG28": {
+  "kind": "existing-name",
+  "source": "swsh4-197",
+  "english": "Opal"
+ },
+ "swsh11tg-TG29": {
+  "kind": "existing-name",
+  "source": "swsh4-44",
+  "english": "Pikachu VMAX"
+ },
+ "swsh11tg-TG30": {
+  "kind": "existing-name",
+  "source": "swsh8-269",
+  "english": "Mew VMAX"
+ },
+ "swsh12pt5gg-GG01": {
+  "kind": "existing-name",
+  "source": "swsh10-2",
+  "english": "Hisuian Voltorb"
+ },
+ "swsh12pt5gg-GG02": {
+  "kind": "existing-name",
+  "source": "xy9-6",
+  "english": "Kricketune"
+ },
+ "swsh12pt5gg-GG03": {
+  "kind": "existing-name",
+  "source": "xy3-11",
+  "english": "Magmortar"
+ },
+ "swsh12pt5gg-GG04": {
+  "kind": "existing-name",
+  "source": "swsh8-42",
+  "english": "Oricorio"
+ },
+ "swsh12pt5gg-GG05": {
+  "kind": "existing-name",
+  "source": "xy9-28",
+  "english": "Lapras"
+ },
+ "swsh12pt5gg-GG06": {
+  "kind": "existing-name",
+  "source": "xy5-56",
+  "english": "Manaphy"
+ },
+ "swsh12pt5gg-GG07": {
+  "kind": "existing-name",
+  "source": "swsh12-46",
+  "english": "Keldeo"
+ },
+ "swsh12pt5gg-GG08": {
+  "kind": "existing-name",
+  "source": "xy9-43",
+  "english": "Electivire"
+ },
+ "swsh12pt5gg-GG09": {
+  "kind": "existing-name",
+  "source": "swsh8-108",
+  "english": "Toxtricity"
+ },
+ "swsh12pt5gg-GG10": {
+  "kind": "existing-name",
+  "source": "xy12-53",
+  "english": "Mew"
+ },
+ "swsh12pt5gg-GG11": {
+  "kind": "existing-name",
+  "source": "xy1-63",
+  "english": "Lunatone"
+ },
+ "swsh12pt5gg-GG12": {
+  "kind": "existing-name",
+  "source": "xy6-33",
+  "english": "Deoxys"
+ },
+ "swsh12pt5gg-GG13": {
+  "kind": "existing-name",
+  "source": "xy4-71",
+  "english": "Diancie"
+ },
+ "swsh12pt5gg-GG14": {
+  "kind": "existing-name",
+  "source": "swsh11-79",
+  "english": "Comfey"
+ },
+ "swsh12pt5gg-GG15": {
+  "kind": "existing-name",
+  "source": "xy5-83",
+  "english": "Solrock"
+ },
+ "swsh12pt5gg-GG16": {
+  "kind": "existing-name",
+  "source": "xy6-40",
+  "english": "Absol"
+ },
+ "swsh12pt5gg-GG17": {
+  "kind": "existing-name",
+  "source": "swsh7-105",
+  "english": "Thievul"
+ },
+ "swsh12pt5gg-GG18": {
+  "kind": "existing-name",
+  "source": "xy8-54",
+  "english": "Magnezone"
+ },
+ "swsh12pt5gg-GG19": {
+  "kind": "existing-name",
+  "source": "xy6-74",
+  "english": "Altaria"
+ },
+ "swsh12pt5gg-GG20": {
+  "kind": "existing-name",
+  "source": "swsh8-193",
+  "english": "Latias"
+ },
+ "swsh12pt5gg-GG21": {
+  "kind": "existing-name",
+  "source": "swsh11-134",
+  "english": "Hisuian Goodra"
+ },
+ "swsh12pt5gg-GG22": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-107",
+  "english": "Ditto"
+ },
+ "swsh12pt5gg-GG23": {
+  "kind": "existing-name",
+  "source": "xy9-90",
+  "english": "Dunsparce"
+ },
+ "swsh12pt5gg-GG24": {
+  "kind": "existing-name",
+  "source": "xy2-83",
+  "english": "Miltank"
+ },
+ "swsh12pt5gg-GG25": {
+  "kind": "existing-name",
+  "source": "xy5-118",
+  "english": "Bibarel"
+ },
+ "swsh12pt5gg-GG26": {
+  "kind": "existing-name",
+  "source": "xy10-46",
+  "english": "Riolu"
+ },
+ "swsh12pt5gg-GG27": {
+  "kind": "existing-name",
+  "source": "xy8-124",
+  "english": "Swablu"
+ },
+ "swsh12pt5gg-GG28": {
+  "kind": "existing-name",
+  "source": "xy2-38",
+  "english": "Duskull"
+ },
+ "swsh12pt5gg-GG29": {
+  "kind": "existing-name",
+  "source": "xy5-117",
+  "english": "Bidoof"
+ },
+ "swsh12pt5gg-GG30": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "swsh12pt5gg-GG31": {
+  "kind": "existing-name",
+  "source": "swsh9-6",
+  "english": "Turtwig"
+ },
+ "swsh12pt5gg-GG32": {
+  "kind": "existing-name",
+  "source": "xy8-1",
+  "english": "Paras"
+ },
+ "swsh12pt5gg-GG33": {
+  "kind": "existing-name",
+  "source": "xy4-53",
+  "english": "Poochyena"
+ },
+ "swsh12pt5gg-GG34": {
+  "kind": "existing-name",
+  "source": "xy11-38",
+  "english": "Mareep"
+ },
+ "swsh12pt5gg-GG35": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-14",
+  "english": "Leafeon VSTAR"
+ },
+ "swsh12pt5gg-GG36": {
+  "kind": "existing-name",
+  "source": "swsh9-22",
+  "english": "Entei V"
+ },
+ "swsh12pt5gg-GG37": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-23",
+  "english": "Simisear VSTAR"
+ },
+ "swsh12pt5gg-GG38": {
+  "kind": "existing-name",
+  "source": "swsh7-31",
+  "english": "Suicune V"
+ },
+ "swsh12pt5gg-GG39": {
+  "kind": "existing-name",
+  "source": "swsh9-40",
+  "english": "Lumineon V"
+ },
+ "swsh12pt5gg-GG40": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy3-19",
+  "english": "Glaceon VSTAR"
+ },
+ "swsh12pt5gg-GG41": {
+  "kind": "existing-name",
+  "source": "swsh9-48",
+  "english": "Raikou V"
+ },
+ "swsh12pt5gg-GG42": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-54",
+  "english": "Zeraora VMAX"
+ },
+ "swsh12pt5gg-GG43": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-55",
+  "english": "Zeraora VSTAR"
+ },
+ "swsh12pt5gg-GG44": {
+  "kind": "existing-name",
+  "source": "pgo-86",
+  "english": "Mewtwo VSTAR"
+ },
+ "swsh12pt5gg-GG45": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-33",
+  "english": "Deoxys VMAX"
+ },
+ "swsh12pt5gg-GG46": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-33",
+  "english": "Deoxys VSTAR"
+ },
+ "swsh12pt5gg-GG47": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-66",
+  "english": "Hatterene VMAX"
+ },
+ "swsh12pt5gg-GG48": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-95",
+  "english": "Zacian V"
+ },
+ "swsh12pt5gg-GG49": {
+  "kind": "existing-name",
+  "source": "swsh4-175",
+  "english": "Drapion V"
+ },
+ "swsh12pt5gg-GG50": {
+  "kind": "existing-name",
+  "source": "swsh10-99",
+  "english": "Darkrai VSTAR"
+ },
+ "swsh12pt5gg-GG51": {
+  "kind": "existing-name",
+  "source": "swsh10-176",
+  "english": "Hisuian Samurott V"
+ },
+ "swsh12pt5gg-GG52": {
+  "kind": "existing-name",
+  "source": "swsh10-209",
+  "english": "Hisuian Samurott VSTAR"
+ },
+ "swsh12pt5gg-GG53": {
+  "kind": "existing-name",
+  "source": "swsh8-253",
+  "english": "Hoopa V"
+ },
+ "swsh12pt5gg-GG54": {
+  "kind": "existing-name",
+  "source": "swsh9-163",
+  "english": "Zamazenta V"
+ },
+ "swsh12pt5gg-GG55": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-114",
+  "english": "Regigigas VSTAR"
+ },
+ "swsh12pt5gg-GG56": {
+  "kind": "existing-name",
+  "source": "swsh11-213",
+  "english": "Hisuian Zoroark VSTAR"
+ },
+ "swsh12pt5gg-GG57": {
+  "kind": "existing-name",
+  "source": "swsh10-199",
+  "english": "Adaman"
+ },
+ "swsh12pt5gg-GG58": {
+  "kind": "existing-name",
+  "source": "swsh9-177",
+  "english": "Cheren's Care"
+ },
+ "swsh12pt5gg-GG59": {
+  "kind": "existing-name",
+  "source": "swsh11-205",
+  "english": "Colress's Experiment"
+ },
+ "swsh12pt5gg-GG60": {
+  "kind": "existing-name",
+  "source": "swsh9-178",
+  "english": "Cynthia's Ambition"
+ },
+ "swsh12pt5gg-GG61": {
+  "kind": "existing-name",
+  "source": "swsh10-202",
+  "english": "Gardenia's Vigor"
+ },
+ "swsh12pt5gg-GG62": {
+  "kind": "existing-name",
+  "source": "swsh10-203",
+  "english": "Grant"
+ },
+ "swsh12pt5gg-GG63": {
+  "kind": "existing-name",
+  "source": "swsh10-204",
+  "english": "Irida"
+ },
+ "swsh12pt5gg-GG64": {
+  "kind": "existing-name",
+  "source": "swsh6-218",
+  "english": "Melony"
+ },
+ "swsh12pt5gg-GG65": {
+  "kind": "existing-name",
+  "source": "swsh7-224",
+  "english": "Raihan"
+ },
+ "swsh12pt5gg-GG66": {
+  "kind": "existing-name",
+  "source": "swsh10-206",
+  "english": "Roxanne"
+ },
+ "swsh12pt5gg-GG67": {
+  "kind": "existing-name",
+  "source": "swsh10-40",
+  "english": "Origin Forme Palkia VSTAR"
+ },
+ "swsh12pt5gg-GG68": {
+  "kind": "existing-name",
+  "source": "swsh10-210",
+  "english": "Origin Forme Dialga VSTAR"
+ },
+ "swsh12pt5gg-GG69": {
+  "kind": "existing-name",
+  "source": "swsh11-212",
+  "english": "Giratina VSTAR"
+ },
+ "swsh12pt5gg-GG70": {
+  "kind": "existing-name",
+  "source": "swsh9-184",
+  "english": "Arceus VSTAR"
+ },
+ "swsh12tg-TG01": {
+  "kind": "existing-name",
+  "source": "xy8-26",
+  "english": "Braixen"
+ },
+ "swsh12tg-TG02": {
+  "kind": "existing-name",
+  "source": "xy5-44",
+  "english": "Milotic"
+ },
+ "swsh12tg-TG03": {
+  "kind": "existing-name",
+  "source": "xy11-39",
+  "english": "Flaaffy"
+ },
+ "swsh12tg-TG04": {
+  "kind": "existing-name",
+  "source": "xy3-37",
+  "english": "Jynx"
+ },
+ "swsh12tg-TG05": {
+  "kind": "existing-name",
+  "source": "xy7-54",
+  "english": "Gardevoir"
+ },
+ "swsh12tg-TG06": {
+  "kind": "existing-name",
+  "source": "xy7-46",
+  "english": "Malamar"
+ },
+ "swsh12tg-TG07": {
+  "kind": "existing-name",
+  "source": "swsh6-86",
+  "english": "Rockruff"
+ },
+ "swsh12tg-TG08": {
+  "kind": "existing-name",
+  "source": "swsh6-88",
+  "english": "Passimian"
+ },
+ "swsh12tg-TG09": {
+  "kind": "existing-name",
+  "source": "xy2-70",
+  "english": "Druddigon"
+ },
+ "swsh12tg-TG10": {
+  "kind": "existing-name",
+  "source": "xy8-123",
+  "english": "Smeargle"
+ },
+ "swsh12tg-TG11": {
+  "kind": "existing-name",
+  "source": "xy6-74",
+  "english": "Altaria"
+ },
+ "swsh12tg-TG12": {
+  "kind": "existing-name",
+  "source": "swsh5-6",
+  "english": "Kricketune V"
+ },
+ "swsh12tg-TG13": {
+  "kind": "existing-name",
+  "source": "swsh12-7",
+  "english": "Serperior V"
+ },
+ "swsh12tg-TG14": {
+  "kind": "existing-name",
+  "source": "swsh6-20",
+  "english": "Blaziken V"
+ },
+ "swsh12tg-TG15": {
+  "kind": "existing-name",
+  "source": "swsh6-21",
+  "english": "Blaziken VMAX"
+ },
+ "swsh12tg-TG16": {
+  "kind": "existing-name",
+  "source": "swsh6-53",
+  "english": "Zeraora V"
+ },
+ "swsh12tg-TG17": {
+  "kind": "existing-name",
+  "source": "swsh12-70",
+  "english": "Mawile V"
+ },
+ "swsh12tg-TG18": {
+  "kind": "existing-name",
+  "source": "swsh5-156",
+  "english": "Corviknight V"
+ },
+ "swsh12tg-TG19": {
+  "kind": "existing-name",
+  "source": "swsh5-171",
+  "english": "Corviknight VMAX"
+ },
+ "swsh12tg-TG20": {
+  "kind": "existing-name",
+  "source": "swsh7-218",
+  "english": "Rayquaza VMAX"
+ },
+ "swsh12tg-TG21": {
+  "kind": "existing-name",
+  "source": "swsh7-220",
+  "english": "Duraludon VMAX"
+ },
+ "swsh12tg-TG22": {
+  "kind": "existing-name",
+  "source": "swsh6-183",
+  "english": "Blissey V"
+ },
+ "swsh12tg-TG23": {
+  "kind": "existing-name",
+  "source": "swsh9-140",
+  "english": "Friends in Galar"
+ },
+ "swsh12tg-TG24": {
+  "kind": "existing-name",
+  "source": "swsh7-223",
+  "english": "Gordie"
+ },
+ "swsh12tg-TG25": {
+  "kind": "existing-name",
+  "source": "xy8-143",
+  "english": "Judge"
+ },
+ "swsh12tg-TG26": {
+  "kind": "official-ko-product",
+  "source": "https://pokemoncard.co.kr/card/385",
+  "english": "Professor Burnet"
+ },
+ "swsh12tg-TG27": {
+  "kind": "existing-name",
+  "source": "swsh7-224",
+  "english": "Raihan"
+ },
+ "swsh12tg-TG28": {
+  "kind": "existing-name",
+  "source": "swsh5-135",
+  "english": "Sordward & Shielbert"
+ },
+ "swsh12tg-TG29": {
+  "kind": "existing-name",
+  "source": "swsh7-218",
+  "english": "Rayquaza VMAX"
+ },
+ "swsh12tg-TG30": {
+  "kind": "existing-name",
+  "source": "swsh7-220",
+  "english": "Duraludon VMAX"
+ },
+ "swsh45sv-SV001": {
+  "kind": "existing-name",
+  "source": "swsh45-6",
+  "english": "Rowlet"
+ },
+ "swsh45sv-SV002": {
+  "kind": "existing-name",
+  "source": "swsh45-7",
+  "english": "Dartrix"
+ },
+ "swsh45sv-SV003": {
+  "kind": "existing-name",
+  "source": "swsh45-8",
+  "english": "Decidueye"
+ },
+ "swsh45sv-SV004": {
+  "kind": "existing-name",
+  "source": "swsh6-16",
+  "english": "Grookey"
+ },
+ "swsh45sv-SV005": {
+  "kind": "existing-name",
+  "source": "swsh6-17",
+  "english": "Thwackey"
+ },
+ "swsh45sv-SV006": {
+  "kind": "existing-name",
+  "source": "swsh6-18",
+  "english": "Rillaboom"
+ },
+ "swsh45sv-SV007": {
+  "kind": "existing-name",
+  "source": "swsh5-17",
+  "english": "Blipbug"
+ },
+ "swsh45sv-SV008": {
+  "kind": "existing-name",
+  "source": "swsh5-64",
+  "english": "Dottler"
+ },
+ "swsh45sv-SV009": {
+  "kind": "existing-name",
+  "source": "swsh5-65",
+  "english": "Orbeetle"
+ },
+ "swsh45sv-SV010": {
+  "kind": "existing-name",
+  "source": "swsh8-24",
+  "english": "Gossifleur"
+ },
+ "swsh45sv-SV011": {
+  "kind": "existing-name",
+  "source": "swsh8-25",
+  "english": "Eldegoss"
+ },
+ "swsh45sv-SV012": {
+  "kind": "existing-name",
+  "source": "swsh7-17",
+  "english": "Applin"
+ },
+ "swsh45sv-SV013": {
+  "kind": "existing-name",
+  "source": "swsh7-120",
+  "english": "Flapple"
+ },
+ "swsh45sv-SV014": {
+  "kind": "existing-name",
+  "source": "swsh7-121",
+  "english": "Appletun"
+ },
+ "swsh45sv-SV015": {
+  "kind": "existing-name",
+  "source": "swsh6-26",
+  "english": "Scorbunny"
+ },
+ "swsh45sv-SV016": {
+  "kind": "existing-name",
+  "source": "swsh6-27",
+  "english": "Raboot"
+ },
+ "swsh45sv-SV017": {
+  "kind": "existing-name",
+  "source": "swsh6-28",
+  "english": "Cinderace"
+ },
+ "swsh45sv-SV018": {
+  "kind": "existing-name",
+  "source": "swsh8-47",
+  "english": "Sizzlipede"
+ },
+ "swsh45sv-SV019": {
+  "kind": "existing-name",
+  "source": "swsh8-49",
+  "english": "Centiskorch"
+ },
+ "swsh45sv-SV020": {
+  "kind": "existing-name",
+  "source": "swsh5-34",
+  "english": "Galarian Mr. Mime"
+ },
+ "swsh45sv-SV021": {
+  "kind": "existing-name",
+  "source": "swsh5-35",
+  "english": "Galarian Mr. Rime"
+ },
+ "swsh45sv-SV022": {
+  "kind": "existing-name",
+  "source": "xy9-30",
+  "english": "Suicune"
+ },
+ "swsh45sv-SV023": {
+  "kind": "existing-name",
+  "source": "swsh8-71",
+  "english": "Galarian Darumaka"
+ },
+ "swsh45sv-SV024": {
+  "kind": "existing-name",
+  "source": "swsh8-72",
+  "english": "Galarian Darmanitan"
+ },
+ "swsh45sv-SV025": {
+  "kind": "existing-name",
+  "source": "swsh6-41",
+  "english": "Sobble"
+ },
+ "swsh45sv-SV026": {
+  "kind": "existing-name",
+  "source": "swsh6-42",
+  "english": "Drizzile"
+ },
+ "swsh45sv-SV027": {
+  "kind": "existing-name",
+  "source": "swsh7-227",
+  "english": "Inteleon"
+ },
+ "swsh45sv-SV028": {
+  "kind": "existing-name",
+  "source": "swsh8-80",
+  "english": "Chewtle"
+ },
+ "swsh45sv-SV029": {
+  "kind": "existing-name",
+  "source": "swsh8-81",
+  "english": "Drednaw"
+ },
+ "swsh45sv-SV030": {
+  "kind": "existing-name",
+  "source": "swsh45-28",
+  "english": "Cramorant"
+ },
+ "swsh45sv-SV031": {
+  "kind": "existing-name",
+  "source": "swsh8-82",
+  "english": "Arrokuda"
+ },
+ "swsh45sv-SV032": {
+  "kind": "existing-name",
+  "source": "swsh8-83",
+  "english": "Barraskewda"
+ },
+ "swsh45sv-SV033": {
+  "kind": "existing-name",
+  "source": "swsh8-84",
+  "english": "Snom"
+ },
+ "swsh45sv-SV034": {
+  "kind": "existing-name",
+  "source": "swsh8-85",
+  "english": "Frosmoth"
+ },
+ "swsh45sv-SV035": {
+  "kind": "existing-name",
+  "source": "swsh9-44",
+  "english": "Eiscue"
+ },
+ "swsh45sv-SV036": {
+  "kind": "existing-name",
+  "source": "swsh3-53",
+  "english": "Dracovish"
+ },
+ "swsh45sv-SV037": {
+  "kind": "existing-name",
+  "source": "swsh3-54",
+  "english": "Arctovish"
+ },
+ "swsh45sv-SV038": {
+  "kind": "existing-name",
+  "source": "xy7-29",
+  "english": "Rotom"
+ },
+ "swsh45sv-SV039": {
+  "kind": "existing-name",
+  "source": "swsh5-52",
+  "english": "Yamper"
+ },
+ "swsh45sv-SV040": {
+  "kind": "existing-name",
+  "source": "swsh5-53",
+  "english": "Boltund"
+ },
+ "swsh45sv-SV041": {
+  "kind": "existing-name",
+  "source": "swsh8-106",
+  "english": "Toxel"
+ },
+ "swsh45sv-SV042": {
+  "kind": "existing-name",
+  "source": "swsh8-108",
+  "english": "Toxtricity"
+ },
+ "swsh45sv-SV043": {
+  "kind": "existing-name",
+  "source": "swsh4-62",
+  "english": "Pincurchin"
+ },
+ "swsh45sv-SV044": {
+  "kind": "existing-name",
+  "source": "swsh8-179",
+  "english": "Morpeko"
+ },
+ "swsh45sv-SV045": {
+  "kind": "existing-name",
+  "source": "swsh3-65",
+  "english": "Dracozolt"
+ },
+ "swsh45sv-SV046": {
+  "kind": "existing-name",
+  "source": "swsh3-66",
+  "english": "Arctozolt"
+ },
+ "swsh45sv-SV047": {
+  "kind": "existing-name",
+  "source": "swsh1-81",
+  "english": "Galarian Ponyta"
+ },
+ "swsh45sv-SV048": {
+  "kind": "existing-name",
+  "source": "swsh1-82",
+  "english": "Galarian Rapidash"
+ },
+ "swsh45sv-SV049": {
+  "kind": "existing-name",
+  "source": "swsh8-117",
+  "english": "Galarian Corsola"
+ },
+ "swsh45sv-SV050": {
+  "kind": "existing-name",
+  "source": "swsh8-118",
+  "english": "Galarian Cursola"
+ },
+ "swsh45sv-SV051": {
+  "kind": "existing-name",
+  "source": "xy8-57",
+  "english": "Dedenne"
+ },
+ "swsh45sv-SV052": {
+  "kind": "existing-name",
+  "source": "swsh3-82",
+  "english": "Sinistea"
+ },
+ "swsh45sv-SV053": {
+  "kind": "existing-name",
+  "source": "swsh3-83",
+  "english": "Polteageist"
+ },
+ "swsh45sv-SV054": {
+  "kind": "existing-name",
+  "source": "swsh6-71",
+  "english": "Hatenna"
+ },
+ "swsh45sv-SV055": {
+  "kind": "existing-name",
+  "source": "swsh6-72",
+  "english": "Hattrem"
+ },
+ "swsh45sv-SV056": {
+  "kind": "existing-name",
+  "source": "swsh6-73",
+  "english": "Hatterene"
+ },
+ "swsh45sv-SV057": {
+  "kind": "existing-name",
+  "source": "swsh9-70",
+  "english": "Milcery"
+ },
+ "swsh45sv-SV058": {
+  "kind": "existing-name",
+  "source": "swsh9-71",
+  "english": "Alcremie"
+ },
+ "swsh45sv-SV059": {
+  "kind": "existing-name",
+  "source": "swsh8-127",
+  "english": "Indeedee"
+ },
+ "swsh45sv-SV060": {
+  "kind": "existing-name",
+  "source": "swsh8-128",
+  "english": "Dreepy"
+ },
+ "swsh45sv-SV061": {
+  "kind": "existing-name",
+  "source": "swsh8-129",
+  "english": "Drakloak"
+ },
+ "swsh45sv-SV062": {
+  "kind": "existing-name",
+  "source": "swsh8-130",
+  "english": "Dragapult"
+ },
+ "swsh45sv-SV063": {
+  "kind": "existing-name",
+  "source": "swsh6-78",
+  "english": "Galarian Farfetch'd"
+ },
+ "swsh45sv-SV064": {
+  "kind": "existing-name",
+  "source": "swsh6-79",
+  "english": "Galarian Sirfetch'd"
+ },
+ "swsh45sv-SV065": {
+  "kind": "existing-name",
+  "source": "swsh6-82",
+  "english": "Galarian Yamask"
+ },
+ "swsh45sv-SV066": {
+  "kind": "existing-name",
+  "source": "swsh6-83",
+  "english": "Galarian Runerigus"
+ },
+ "swsh45sv-SV067": {
+  "kind": "existing-name",
+  "source": "swsh5-78",
+  "english": "Rolycoly"
+ },
+ "swsh45sv-SV068": {
+  "kind": "existing-name",
+  "source": "swsh5-79",
+  "english": "Carkol"
+ },
+ "swsh45sv-SV069": {
+  "kind": "existing-name",
+  "source": "swsh5-80",
+  "english": "Coalossal"
+ },
+ "swsh45sv-SV070": {
+  "kind": "existing-name",
+  "source": "swsh5-81",
+  "english": "Silicobra"
+ },
+ "swsh45sv-SV071": {
+  "kind": "existing-name",
+  "source": "swsh5-82",
+  "english": "Sandaconda"
+ },
+ "swsh45sv-SV072": {
+  "kind": "existing-name",
+  "source": "swsh8-152",
+  "english": "Clobbopus"
+ },
+ "swsh45sv-SV073": {
+  "kind": "existing-name",
+  "source": "swsh8-153",
+  "english": "Grapploct"
+ },
+ "swsh45sv-SV074": {
+  "kind": "existing-name",
+  "source": "swsh8-155",
+  "english": "Falinks"
+ },
+ "swsh45sv-SV075": {
+  "kind": "existing-name",
+  "source": "swsh5-84",
+  "english": "Stonjourner"
+ },
+ "swsh45sv-SV076": {
+  "kind": "existing-name",
+  "source": "xy12-50",
+  "english": "Koffing"
+ },
+ "swsh45sv-SV077": {
+  "kind": "existing-name",
+  "source": "swsh6-96",
+  "english": "Galarian Weezing"
+ },
+ "swsh45sv-SV078": {
+  "kind": "existing-name",
+  "source": "swsh8-159",
+  "english": "Galarian Zigzagoon"
+ },
+ "swsh45sv-SV079": {
+  "kind": "existing-name",
+  "source": "swsh8-160",
+  "english": "Galarian Linoone"
+ },
+ "swsh45sv-SV080": {
+  "kind": "existing-name",
+  "source": "swsh8-161",
+  "english": "Galarian Obstagoon"
+ },
+ "swsh45sv-SV081": {
+  "kind": "existing-name",
+  "source": "swsh7-104",
+  "english": "Nickit"
+ },
+ "swsh45sv-SV082": {
+  "kind": "existing-name",
+  "source": "swsh7-105",
+  "english": "Thievul"
+ },
+ "swsh45sv-SV083": {
+  "kind": "existing-name",
+  "source": "swsh9-92",
+  "english": "Impidimp"
+ },
+ "swsh45sv-SV084": {
+  "kind": "existing-name",
+  "source": "swsh9-93",
+  "english": "Morgrem"
+ },
+ "swsh45sv-SV085": {
+  "kind": "existing-name",
+  "source": "swsh9-94",
+  "english": "Grimmsnarl"
+ },
+ "swsh45sv-SV086": {
+  "kind": "existing-name",
+  "source": "swsh8-180",
+  "english": "Galarian Meowth"
+ },
+ "swsh45sv-SV087": {
+  "kind": "existing-name",
+  "source": "swsh8-181",
+  "english": "Galarian Perrserker"
+ },
+ "swsh45sv-SV088": {
+  "kind": "existing-name",
+  "source": "swsh4-125",
+  "english": "Galarian Stunfisk"
+ },
+ "swsh45sv-SV089": {
+  "kind": "existing-name",
+  "source": "swsh8-190",
+  "english": "Corviknight"
+ },
+ "swsh45sv-SV090": {
+  "kind": "existing-name",
+  "source": "swsh8-191",
+  "english": "Cufant"
+ },
+ "swsh45sv-SV091": {
+  "kind": "existing-name",
+  "source": "swsh8-192",
+  "english": "Copperajah"
+ },
+ "swsh45sv-SV092": {
+  "kind": "existing-name",
+  "source": "swsh4-129",
+  "english": "Duraludon"
+ },
+ "swsh45sv-SV093": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-75",
+  "english": "Minccino"
+ },
+ "swsh45sv-SV094": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-76",
+  "english": "Cinccino"
+ },
+ "swsh45sv-SV095": {
+  "kind": "existing-name",
+  "source": "xy9-36",
+  "english": "Ducklett"
+ },
+ "swsh45sv-SV096": {
+  "kind": "existing-name",
+  "source": "xy9-37",
+  "english": "Swanna"
+ },
+ "swsh45sv-SV097": {
+  "kind": "existing-name",
+  "source": "xy5-121",
+  "english": "Bunnelby"
+ },
+ "swsh45sv-SV098": {
+  "kind": "existing-name",
+  "source": "swsh4-199",
+  "english": "Oranguru"
+ },
+ "swsh45sv-SV099": {
+  "kind": "existing-name",
+  "source": "swsh6-127",
+  "english": "Skwovet"
+ },
+ "swsh45sv-SV100": {
+  "kind": "existing-name",
+  "source": "swsh6-128",
+  "english": "Greedent"
+ },
+ "swsh45sv-SV101": {
+  "kind": "existing-name",
+  "source": "swsh8-219",
+  "english": "Rookidee"
+ },
+ "swsh45sv-SV102": {
+  "kind": "existing-name",
+  "source": "swsh8-220",
+  "english": "Corvisquire"
+ },
+ "swsh45sv-SV103": {
+  "kind": "existing-name",
+  "source": "swsh8-222",
+  "english": "Wooloo"
+ },
+ "swsh45sv-SV104": {
+  "kind": "existing-name",
+  "source": "swsh8-223",
+  "english": "Dubwool"
+ },
+ "swsh45sv-SV105": {
+  "kind": "existing-name",
+  "source": "swsh8-22",
+  "english": "Rillaboom V"
+ },
+ "swsh45sv-SV106": {
+  "kind": "existing-name",
+  "source": "swsh8-23",
+  "english": "Rillaboom VMAX"
+ },
+ "swsh45sv-SV107": {
+  "kind": "existing-name",
+  "source": "swsh35-74",
+  "english": "Charizard VMAX"
+ },
+ "swsh45sv-SV108": {
+  "kind": "existing-name",
+  "source": "swsh3-33",
+  "english": "Centiskorch V"
+ },
+ "swsh45sv-SV109": {
+  "kind": "existing-name",
+  "source": "swsh3-34",
+  "english": "Centiskorch VMAX"
+ },
+ "swsh45sv-SV110": {
+  "kind": "existing-name",
+  "source": "swsh1-49",
+  "english": "Lapras V"
+ },
+ "swsh45sv-SV111": {
+  "kind": "existing-name",
+  "source": "swsh1-50",
+  "english": "Lapras VMAX"
+ },
+ "swsh45sv-SV112": {
+  "kind": "existing-name",
+  "source": "swsh2-70",
+  "english": "Toxtricity V"
+ },
+ "swsh45sv-SV113": {
+  "kind": "existing-name",
+  "source": "swsh2-71",
+  "english": "Toxtricity VMAX"
+ },
+ "swsh45sv-SV114": {
+  "kind": "existing-name",
+  "source": "swsh45-39",
+  "english": "Indeedee V"
+ },
+ "swsh45sv-SV115": {
+  "kind": "existing-name",
+  "source": "swsh2-185",
+  "english": "Falinks V"
+ },
+ "swsh45sv-SV116": {
+  "kind": "existing-name",
+  "source": "swsh3-114",
+  "english": "Grimmsnarl V"
+ },
+ "swsh45sv-SV117": {
+  "kind": "existing-name",
+  "source": "swsh3-115",
+  "english": "Grimmsnarl VMAX"
+ },
+ "swsh45sv-SV118": {
+  "kind": "existing-name",
+  "source": "swsh45-50",
+  "english": "Ditto V"
+ },
+ "swsh45sv-SV119": {
+  "kind": "existing-name",
+  "source": "swsh45-51",
+  "english": "Ditto VMAX"
+ },
+ "swsh45sv-SV120": {
+  "kind": "existing-name",
+  "source": "swsh2-188",
+  "english": "Dubwool V"
+ },
+ "swsh45sv-SV121": {
+  "kind": "existing-name",
+  "source": "swsh3-116",
+  "english": "Eternatus V"
+ },
+ "swsh45sv-SV122": {
+  "kind": "existing-name",
+  "source": "swsh3-192",
+  "english": "Eternatus VMAX"
+ },
+ "swsh9tg-TG01": {
+  "kind": "existing-name",
+  "source": "xy7-13",
+  "english": "Flareon"
+ },
+ "swsh9tg-TG02": {
+  "kind": "existing-name",
+  "source": "xy7-22",
+  "english": "Vaporeon"
+ },
+ "swsh9tg-TG03": {
+  "kind": "existing-name",
+  "source": "xy8-33",
+  "english": "Octillery"
+ },
+ "swsh9tg-TG04": {
+  "kind": "existing-name",
+  "source": "xy7-26",
+  "english": "Jolteon"
+ },
+ "swsh9tg-TG05": {
+  "kind": "existing-name",
+  "source": "xy6-64",
+  "english": "Zekrom"
+ },
+ "swsh9tg-TG06": {
+  "kind": "existing-name",
+  "source": "xy2-40",
+  "english": "Dusknoir"
+ },
+ "swsh9tg-TG07": {
+  "kind": "existing-name",
+  "source": "xy8-57",
+  "english": "Dedenne"
+ },
+ "swsh9tg-TG08": {
+  "kind": "existing-name",
+  "source": "swsh9-71",
+  "english": "Alcremie"
+ },
+ "swsh9tg-TG09": {
+  "kind": "existing-name",
+  "source": "xy7-6",
+  "english": "Ariados"
+ },
+ "swsh9tg-TG10": {
+  "kind": "existing-name",
+  "source": "swsh5-96",
+  "english": "Houndoom"
+ },
+ "swsh9tg-TG11": {
+  "kind": "existing-name",
+  "source": "xy7-63",
+  "english": "Eevee"
+ },
+ "swsh9tg-TG12": {
+  "kind": "existing-name",
+  "source": "swsh4-199",
+  "english": "Oranguru"
+ },
+ "swsh9tg-TG13": {
+  "kind": "existing-name",
+  "source": "swsh8-249",
+  "english": "Boltund V"
+ },
+ "swsh9tg-TG14": {
+  "kind": "existing-name",
+  "source": "swsh7-74",
+  "english": "Sylveon V"
+ },
+ "swsh9tg-TG15": {
+  "kind": "existing-name",
+  "source": "swsh7-75",
+  "english": "Sylveon VMAX"
+ },
+ "swsh9tg-TG16": {
+  "kind": "existing-name",
+  "source": "swsh9-68",
+  "english": "Mimikyu V"
+ },
+ "swsh9tg-TG17": {
+  "kind": "existing-name",
+  "source": "swsh9-69",
+  "english": "Mimikyu VMAX"
+ },
+ "swsh9tg-TG18": {
+  "kind": "existing-name",
+  "source": "swsh5-85",
+  "english": "Single Strike Urshifu V"
+ },
+ "swsh9tg-TG19": {
+  "kind": "existing-name",
+  "source": "swsh5-86",
+  "english": "Single Strike Urshifu VMAX"
+ },
+ "swsh9tg-TG20": {
+  "kind": "existing-name",
+  "source": "swsh5-87",
+  "english": "Rapid Strike Urshifu V"
+ },
+ "swsh9tg-TG21": {
+  "kind": "existing-name",
+  "source": "swsh5-88",
+  "english": "Rapid Strike Urshifu VMAX"
+ },
+ "swsh9tg-TG22": {
+  "kind": "existing-name",
+  "source": "swsh7-94",
+  "english": "Umbreon V"
+ },
+ "swsh9tg-TG23": {
+  "kind": "existing-name",
+  "source": "swsh7-95",
+  "english": "Umbreon VMAX"
+ },
+ "swsh9tg-TG24": {
+  "kind": "existing-name",
+  "source": "swsh9-129",
+  "english": "Acerola's Premonition"
+ },
+ "swsh9tg-TG25": {
+  "kind": "existing-name",
+  "source": "swsh9-133",
+  "english": "Café Master"
+ },
+ "swsh9tg-TG26": {
+  "kind": "existing-name",
+  "source": "swsh9-141",
+  "english": "Gloria"
+ },
+ "swsh9tg-TG27": {
+  "kind": "existing-name",
+  "source": "swsh5-176",
+  "english": "Rapid Strike Style Mustard"
+ },
+ "swsh9tg-TG28": {
+  "kind": "existing-name",
+  "source": "swsh5-177",
+  "english": "Single Strike Style Mustard"
+ },
+ "swsh9tg-TG29": {
+  "kind": "existing-name",
+  "source": "swsh5-86",
+  "english": "Single Strike Urshifu VMAX"
+ },
+ "swsh9tg-TG30": {
+  "kind": "existing-name",
+  "source": "swsh5-88",
+  "english": "Rapid Strike Urshifu VMAX"
+ },
+ "me2pt5-1": {
+  "kind": "existing-name",
+  "source": "gym2-70",
+  "english": "Erika's Oddish"
+ },
+ "me2pt5-2": {
+  "kind": "existing-name",
+  "source": "gym1-46",
+  "english": "Erika's Gloom"
+ },
+ "me2pt5-3": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy7-3",
+  "english": "Erika's Vileplume ex"
+ },
+ "me2pt5-4": {
+  "kind": "existing-name",
+  "source": "gym2-38",
+  "english": "Erika's Bellsprout"
+ },
+ "me2pt5-5": {
+  "kind": "existing-name",
+  "source": "gym1-49",
+  "english": "Erika's Weepinbell"
+ },
+ "me2pt5-6": {
+  "kind": "existing-name",
+  "source": "gym1-26",
+  "english": "Erika's Victreebel"
+ },
+ "me2pt5-7": {
+  "kind": "existing-name",
+  "source": "gym1-79",
+  "english": "Erika's Tangela"
+ },
+ "me2pt5-8": {
+  "kind": "existing-name",
+  "source": "xy9-1",
+  "english": "Chikorita"
+ },
+ "me2pt5-9": {
+  "kind": "existing-name",
+  "source": "xy9-2",
+  "english": "Bayleef"
+ },
+ "me2pt5-10": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-3",
+  "english": "Mega Meganium ex"
+ },
+ "me2pt5-11": {
+  "kind": "existing-name",
+  "source": "xy6-3",
+  "english": "Wurmple"
+ },
+ "me2pt5-12": {
+  "kind": "existing-name",
+  "source": "xy6-4",
+  "english": "Silcoon"
+ },
+ "me2pt5-13": {
+  "kind": "existing-name",
+  "source": "xy6-5",
+  "english": "Beautifly"
+ },
+ "me2pt5-14": {
+  "kind": "existing-name",
+  "source": "xy6-6",
+  "english": "Cascoon"
+ },
+ "me2pt5-15": {
+  "kind": "existing-name",
+  "source": "xy6-8",
+  "english": "Dustox"
+ },
+ "me2pt5-16": {
+  "kind": "existing-name",
+  "source": "sv8pt5-4",
+  "english": "Budew"
+ },
+ "me2pt5-17": {
+  "kind": "existing-name",
+  "source": "swsh8-18",
+  "english": "Grubbin"
+ },
+ "me2pt5-18": {
+  "kind": "existing-name",
+  "source": "sv10-19",
+  "english": "Team Rocket's Tarountula"
+ },
+ "me2pt5-19": {
+  "kind": "existing-name",
+  "source": "sv10-20",
+  "english": "Team Rocket's Spidops"
+ },
+ "me2pt5-20": {
+  "kind": "existing-name",
+  "source": "xy12-9",
+  "english": "Charmander"
+ },
+ "me2pt5-21": {
+  "kind": "existing-name",
+  "source": "xy12-10",
+  "english": "Charmeleon"
+ },
+ "me2pt5-22": {
+  "kind": "reviewed-existing-pokemon",
+  "source": "me2-109",
+  "english": "Mega Charizard Y ex"
+ },
+ "me2pt5-23": {
+  "kind": "existing-name",
+  "source": "sv10-35",
+  "english": "Ethan's Slugma"
+ },
+ "me2pt5-24": {
+  "kind": "existing-name",
+  "source": "sv10-36",
+  "english": "Ethan's Magcargo"
+ },
+ "me2pt5-25": {
+  "kind": "existing-name",
+  "source": "xy7-15",
+  "english": "Entei"
+ },
+ "me2pt5-26": {
+  "kind": "existing-name",
+  "source": "sv10-39",
+  "english": "Ethan's Ho-Oh ex"
+ },
+ "me2pt5-27": {
+  "kind": "existing-name",
+  "source": "xy9-12",
+  "english": "Numel"
+ },
+ "me2pt5-28": {
+  "kind": "existing-name",
+  "source": "xy9-13",
+  "english": "Camerupt"
+ },
+ "me2pt5-29": {
+  "kind": "existing-name",
+  "source": "swsh5-23",
+  "english": "Tepig"
+ },
+ "me2pt5-30": {
+  "kind": "existing-name",
+  "source": "swsh5-24",
+  "english": "Pignite"
+ },
+ "me2pt5-31": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh5-25",
+  "english": "Mega Emboar ex"
+ },
+ "me2pt5-32": {
+  "kind": "existing-name",
+  "source": "sv9-26",
+  "english": "N's Darumaka"
+ },
+ "me2pt5-33": {
+  "kind": "existing-name",
+  "source": "sv9-27",
+  "english": "N's Darmanitan"
+ },
+ "me2pt5-34": {
+  "kind": "existing-name",
+  "source": "swsh5-27",
+  "english": "Salandit"
+ },
+ "me2pt5-35": {
+  "kind": "existing-name",
+  "source": "swsh5-28",
+  "english": "Salazzle"
+ },
+ "me2pt5-36": {
+  "kind": "existing-name",
+  "source": "swsh6-26",
+  "english": "Scorbunny"
+ },
+ "me2pt5-37": {
+  "kind": "existing-name",
+  "source": "swsh6-27",
+  "english": "Raboot"
+ },
+ "me2pt5-38": {
+  "kind": "existing-name",
+  "source": "sv7-28",
+  "english": "Cinderace ex"
+ },
+ "me2pt5-39": {
+  "kind": "existing-name",
+  "source": "xy9-16",
+  "english": "Psyduck"
+ },
+ "me2pt5-40": {
+  "kind": "existing-name",
+  "source": "xy9-17",
+  "english": "Golduck"
+ },
+ "me2pt5-41": {
+  "kind": "existing-name",
+  "source": "xy4-15",
+  "english": "Totodile"
+ },
+ "me2pt5-42": {
+  "kind": "existing-name",
+  "source": "xy4-16",
+  "english": "Croconaw"
+ },
+ "me2pt5-43": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-17",
+  "english": "Mega Feraligatr ex"
+ },
+ "me2pt5-44": {
+  "kind": "existing-name",
+  "source": "xy2-51",
+  "english": "Sneasel"
+ },
+ "me2pt5-45": {
+  "kind": "existing-name",
+  "source": "xy2-52",
+  "english": "Weavile"
+ },
+ "me2pt5-46": {
+  "kind": "existing-name",
+  "source": "swsh9-34",
+  "english": "Snorunt"
+ },
+ "me2pt5-47": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh7-226",
+  "english": "Mega Froslass ex"
+ },
+ "me2pt5-48": {
+  "kind": "existing-name",
+  "source": "ex9-98",
+  "english": "Regice ex"
+ },
+ "me2pt5-49": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-43",
+  "english": "N's Vanillite"
+ },
+ "me2pt5-50": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-44",
+  "english": "N's Vanillish"
+ },
+ "me2pt5-51": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-45",
+  "english": "N's Vanilluxe"
+ },
+ "me2pt5-52": {
+  "kind": "existing-name",
+  "source": "swsh8-84",
+  "english": "Snom"
+ },
+ "me2pt5-53": {
+  "kind": "existing-name",
+  "source": "swsh8-85",
+  "english": "Frosmoth"
+ },
+ "me2pt5-54": {
+  "kind": "existing-name",
+  "source": "swsh11-51",
+  "english": "Glastrier"
+ },
+ "me2pt5-55": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "me2pt5-56": {
+  "kind": "existing-name",
+  "source": "xy8-49",
+  "english": "Raichu"
+ },
+ "me2pt5-57": {
+  "kind": "existing-name",
+  "source": "sv8pt5-28",
+  "english": "Pikachu ex"
+ },
+ "me2pt5-58": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-21",
+  "english": "Voltorb ex"
+ },
+ "me2pt5-59": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-30",
+  "english": "Tynamo"
+ },
+ "me2pt5-60": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-31",
+  "english": "Eelektrik"
+ },
+ "me2pt5-61": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-32",
+  "english": "Mega Eelektross ex"
+ },
+ "me2pt5-62": {
+  "kind": "existing-name",
+  "source": "xy8-56",
+  "english": "Stunfisk"
+ },
+ "me2pt5-63": {
+  "kind": "existing-name",
+  "source": "xy4-29",
+  "english": "Helioptile"
+ },
+ "me2pt5-64": {
+  "kind": "existing-name",
+  "source": "xy4-30",
+  "english": "Heliolisk"
+ },
+ "me2pt5-65": {
+  "kind": "existing-name",
+  "source": "swsh8-100",
+  "english": "Charjabug"
+ },
+ "me2pt5-66": {
+  "kind": "existing-name",
+  "source": "swsh8-101",
+  "english": "Vikavolt"
+ },
+ "me2pt5-67": {
+  "kind": "existing-name",
+  "source": "swsh3-61",
+  "english": "Tapu Koko"
+ },
+ "me2pt5-68": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh4-62",
+  "english": "Hop's Pincurchin ex"
+ },
+ "me2pt5-69": {
+  "kind": "existing-name",
+  "source": "sv9-52",
+  "english": "Iono's Tadbulb"
+ },
+ "me2pt5-70": {
+  "kind": "existing-name",
+  "source": "sv9-53",
+  "english": "Iono's Bellibolt ex"
+ },
+ "me2pt5-71": {
+  "kind": "existing-name",
+  "source": "sv9-54",
+  "english": "Iono's Wattrel"
+ },
+ "me2pt5-72": {
+  "kind": "existing-name",
+  "source": "sv9-55",
+  "english": "Iono's Kilowattrel"
+ },
+ "me2pt5-73": {
+  "kind": "existing-name",
+  "source": "sv5-122",
+  "english": "Miraidon ex"
+ },
+ "me2pt5-74": {
+  "kind": "existing-name",
+  "source": "xy9-81",
+  "english": "Clefairy"
+ },
+ "me2pt5-75": {
+  "kind": "existing-name",
+  "source": "xy9-82",
+  "english": "Clefable"
+ },
+ "me2pt5-76": {
+  "kind": "existing-name",
+  "source": "sv9-56",
+  "english": "Lillie's Clefairy ex"
+ },
+ "me2pt5-77": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-1",
+  "english": "Team Rocket's Exeggcute"
+ },
+ "me2pt5-78": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-2",
+  "english": "Team Rocket's Exeggutor"
+ },
+ "me2pt5-79": {
+  "kind": "existing-name",
+  "source": "sv10-81",
+  "english": "Team Rocket's Mewtwo ex"
+ },
+ "me2pt5-80": {
+  "kind": "existing-name",
+  "source": "xy6-43",
+  "english": "Togepi"
+ },
+ "me2pt5-81": {
+  "kind": "existing-name",
+  "source": "xy6-44",
+  "english": "Togetic"
+ },
+ "me2pt5-82": {
+  "kind": "existing-name",
+  "source": "xy6-46",
+  "english": "Togekiss"
+ },
+ "me2pt5-83": {
+  "kind": "existing-name",
+  "source": "xy5-102",
+  "english": "Marill"
+ },
+ "me2pt5-84": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy5-104",
+  "english": "Azumarill ex"
+ },
+ "me2pt5-85": {
+  "kind": "existing-name",
+  "source": "xy8-65",
+  "english": "Misdreavus"
+ },
+ "me2pt5-86": {
+  "kind": "existing-name",
+  "source": "xy8-66",
+  "english": "Mismagius"
+ },
+ "me2pt5-87": {
+  "kind": "existing-name",
+  "source": "xy8-68",
+  "english": "Ralts"
+ },
+ "me2pt5-88": {
+  "kind": "existing-name",
+  "source": "xy8-69",
+  "english": "Kirlia"
+ },
+ "me2pt5-89": {
+  "kind": "existing-name",
+  "source": "me1-60",
+  "english": "Mega Gardevoir ex"
+ },
+ "me2pt5-90": {
+  "kind": "existing-name",
+  "source": "xy6-30",
+  "english": "Shuppet"
+ },
+ "me2pt5-91": {
+  "kind": "existing-name",
+  "source": "xy6-32",
+  "english": "Banette"
+ },
+ "me2pt5-92": {
+  "kind": "existing-name",
+  "source": "xy7-29",
+  "english": "Rotom"
+ },
+ "me2pt5-93": {
+  "kind": "existing-name",
+  "source": "xy4-68",
+  "english": "Swirlix"
+ },
+ "me2pt5-94": {
+  "kind": "existing-name",
+  "source": "xy4-69",
+  "english": "Slurpuff"
+ },
+ "me2pt5-95": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-64",
+  "english": "Hop's Phantump"
+ },
+ "me2pt5-96": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-65",
+  "english": "Hop's Trevenant"
+ },
+ "me2pt5-97": {
+  "kind": "existing-name",
+  "source": "sv10-87",
+  "english": "Team Rocket's Mimikyu"
+ },
+ "me2pt5-98": {
+  "kind": "existing-name",
+  "source": "swsh11-81",
+  "english": "Spectrier"
+ },
+ "me2pt5-99": {
+  "kind": "existing-name",
+  "source": "sv8pt5-44",
+  "english": "Munkidori"
+ },
+ "me2pt5-100": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy12-55",
+  "english": "Team Rocket's Diglett"
+ },
+ "me2pt5-101": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy12-56",
+  "english": "Team Rocket's Dugtrio"
+ },
+ "me2pt5-102": {
+  "kind": "existing-name",
+  "source": "xy3-49",
+  "english": "Hitmontop"
+ },
+ "me2pt5-103": {
+  "kind": "existing-name",
+  "source": "xy5-79",
+  "english": "Meditite"
+ },
+ "me2pt5-104": {
+  "kind": "existing-name",
+  "source": "xy5-81",
+  "english": "Medicham"
+ },
+ "me2pt5-105": {
+  "kind": "existing-name",
+  "source": "xy1-63",
+  "english": "Lunatone"
+ },
+ "me2pt5-106": {
+  "kind": "existing-name",
+  "source": "xy5-83",
+  "english": "Solrock"
+ },
+ "me2pt5-107": {
+  "kind": "existing-name",
+  "source": "sv10-214",
+  "english": "Regirock ex"
+ },
+ "me2pt5-108": {
+  "kind": "existing-name",
+  "source": "xy5-84",
+  "english": "Groudon"
+ },
+ "me2pt5-109": {
+  "kind": "existing-name",
+  "source": "sv10-102",
+  "english": "Cynthia's Gible"
+ },
+ "me2pt5-110": {
+  "kind": "existing-name",
+  "source": "sv10-103",
+  "english": "Cynthia's Gabite"
+ },
+ "me2pt5-111": {
+  "kind": "existing-name",
+  "source": "sv10-241",
+  "english": "Cynthia's Garchomp ex"
+ },
+ "me2pt5-112": {
+  "kind": "existing-name",
+  "source": "xy10-46",
+  "english": "Riolu"
+ },
+ "me2pt5-113": {
+  "kind": "existing-name",
+  "source": "me1-77",
+  "english": "Mega Lucario ex"
+ },
+ "me2pt5-114": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-56",
+  "english": "Stunfisk ex"
+ },
+ "me2pt5-115": {
+  "kind": "existing-name",
+  "source": "xy9-71",
+  "english": "Pancham"
+ },
+ "me2pt5-116": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-87",
+  "english": "Mega Hawlucha ex"
+ },
+ "me2pt5-117": {
+  "kind": "existing-name",
+  "source": "xy6-47",
+  "english": "Carbink"
+ },
+ "me2pt5-118": {
+  "kind": "existing-name",
+  "source": "swsh5-78",
+  "english": "Rolycoly"
+ },
+ "me2pt5-119": {
+  "kind": "existing-name",
+  "source": "swsh5-79",
+  "english": "Carkol"
+ },
+ "me2pt5-120": {
+  "kind": "existing-name",
+  "source": "swsh5-80",
+  "english": "Coalossal"
+ },
+ "me2pt5-121": {
+  "kind": "existing-name",
+  "source": "sv5-120",
+  "english": "Koraidon ex"
+ },
+ "me2pt5-122": {
+  "kind": "existing-name",
+  "source": "sv8pt5-57",
+  "english": "Okidogi"
+ },
+ "me2pt5-123": {
+  "kind": "existing-name",
+  "source": "xy8-58",
+  "english": "Gastly"
+ },
+ "me2pt5-124": {
+  "kind": "existing-name",
+  "source": "xy8-59",
+  "english": "Haunter"
+ },
+ "me2pt5-125": {
+  "kind": "existing-name",
+  "source": "me2-56",
+  "english": "Mega Gengar ex"
+ },
+ "me2pt5-126": {
+  "kind": "existing-name",
+  "source": "sv10-200",
+  "english": "Team Rocket's Murkrow"
+ },
+ "me2pt5-127": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-52",
+  "english": "Team Rocket's Honchkrow"
+ },
+ "me2pt5-128": {
+  "kind": "existing-name",
+  "source": "xy4-53",
+  "english": "Poochyena"
+ },
+ "me2pt5-129": {
+  "kind": "existing-name",
+  "source": "xy4-54",
+  "english": "Mightyena"
+ },
+ "me2pt5-130": {
+  "kind": "existing-name",
+  "source": "swsh8-159",
+  "english": "Galarian Zigzagoon"
+ },
+ "me2pt5-131": {
+  "kind": "existing-name",
+  "source": "swsh8-160",
+  "english": "Galarian Linoone"
+ },
+ "me2pt5-132": {
+  "kind": "existing-name",
+  "source": "swsh8-161",
+  "english": "Galarian Obstagoon"
+ },
+ "me2pt5-133": {
+  "kind": "existing-name",
+  "source": "sv10-129",
+  "english": "Cynthia's Spiritomb"
+ },
+ "me2pt5-134": {
+  "kind": "existing-name",
+  "source": "xy3-66",
+  "english": "Scraggy"
+ },
+ "me2pt5-135": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy3-67",
+  "english": "Mega Scrafty ex"
+ },
+ "me2pt5-136": {
+  "kind": "existing-name",
+  "source": "sv9-97",
+  "english": "N's Zorua"
+ },
+ "me2pt5-137": {
+  "kind": "existing-name",
+  "source": "sv9-98",
+  "english": "N's Zoroark ex"
+ },
+ "me2pt5-138": {
+  "kind": "existing-name",
+  "source": "xy10-57",
+  "english": "Vullaby"
+ },
+ "me2pt5-139": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy10-58",
+  "english": "Mandibuzz ex"
+ },
+ "me2pt5-140": {
+  "kind": "existing-name",
+  "source": "xy9-75",
+  "english": "Pangoro"
+ },
+ "me2pt5-141": {
+  "kind": "existing-name",
+  "source": "xy11-51",
+  "english": "Hoopa"
+ },
+ "me2pt5-142": {
+  "kind": "existing-name",
+  "source": "sv6pt5-92",
+  "english": "Fezandipiti ex"
+ },
+ "me2pt5-143": {
+  "kind": "reviewed-existing-pokemon",
+  "source": "sv6pt5-39",
+  "english": "Pecharunt"
+ },
+ "me2pt5-144": {
+  "kind": "existing-name",
+  "source": "xy9-78",
+  "english": "Mawile"
+ },
+ "me2pt5-145": {
+  "kind": "existing-name",
+  "source": "ex9-100",
+  "english": "Registeel ex"
+ },
+ "me2pt5-146": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-64",
+  "english": "Pawniard"
+ },
+ "me2pt5-147": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-65",
+  "english": "Bisharp"
+ },
+ "me2pt5-148": {
+  "kind": "existing-name",
+  "source": "sv4pt5-187",
+  "english": "Kingambit"
+ },
+ "me2pt5-149": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-187",
+  "english": "Togedemaru ex"
+ },
+ "me2pt5-150": {
+  "kind": "existing-name",
+  "source": "xy6-49",
+  "english": "Dratini"
+ },
+ "me2pt5-151": {
+  "kind": "existing-name",
+  "source": "xy6-50",
+  "english": "Dragonair"
+ },
+ "me2pt5-152": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-52",
+  "english": "Mega Dragonite ex"
+ },
+ "me2pt5-153": {
+  "kind": "existing-name",
+  "source": "swsh4-138",
+  "english": "Rayquaza"
+ },
+ "me2pt5-154": {
+  "kind": "existing-name",
+  "source": "sv9-167",
+  "english": "N's Reshiram"
+ },
+ "me2pt5-155": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-64",
+  "english": "N's Zekrom"
+ },
+ "me2pt5-156": {
+  "kind": "existing-name",
+  "source": "xy8-132",
+  "english": "Noibat"
+ },
+ "me2pt5-157": {
+  "kind": "existing-name",
+  "source": "xy8-112",
+  "english": "Noivern"
+ },
+ "me2pt5-158": {
+  "kind": "existing-name",
+  "source": "swsh8-128",
+  "english": "Dreepy"
+ },
+ "me2pt5-159": {
+  "kind": "existing-name",
+  "source": "swsh8-129",
+  "english": "Drakloak"
+ },
+ "me2pt5-160": {
+  "kind": "existing-name",
+  "source": "sv8pt5-73",
+  "english": "Dragapult ex"
+ },
+ "me2pt5-161": {
+  "kind": "existing-name",
+  "source": "sv10-203",
+  "english": "Team Rocket's Meowth"
+ },
+ "me2pt5-162": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy10-75",
+  "english": "Team Rocket's Kangaskhan ex"
+ },
+ "me2pt5-163": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-90",
+  "english": "Larry's Dunsparce"
+ },
+ "me2pt5-164": {
+  "kind": "composed-existing-pokemon",
+  "source": "sv8pt5-80",
+  "english": "Larry's Dudunsparce ex"
+ },
+ "me2pt5-165": {
+  "kind": "existing-name",
+  "source": "xy5-113",
+  "english": "Skitty"
+ },
+ "me2pt5-166": {
+  "kind": "existing-name",
+  "source": "xy5-114",
+  "english": "Delcatty"
+ },
+ "me2pt5-167": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh6-120",
+  "english": "Zangoose ex"
+ },
+ "me2pt5-168": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-125",
+  "english": "Larry's Starly"
+ },
+ "me2pt5-169": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-126",
+  "english": "Larry's Staravia"
+ },
+ "me2pt5-170": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-127",
+  "english": "Larry's Staraptor"
+ },
+ "me2pt5-171": {
+  "kind": "existing-name",
+  "source": "sv8pt5-85",
+  "english": "Fan Rotom"
+ },
+ "me2pt5-172": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-74",
+  "english": "Mega Audino ex"
+ },
+ "me2pt5-173": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-77",
+  "english": "Larry's Rufflet"
+ },
+ "me2pt5-174": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-78",
+  "english": "Larry's Braviary"
+ },
+ "me2pt5-175": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh11-149",
+  "english": "Larry's Komala"
+ },
+ "me2pt5-176": {
+  "kind": "existing-name",
+  "source": "swsh7-119",
+  "english": "Drampa"
+ },
+ "me2pt5-177": {
+  "kind": "existing-name",
+  "source": "sv9-138",
+  "english": "Hop's Cramorant"
+ },
+ "me2pt5-178": {
+  "kind": "existing-name",
+  "source": "sv8-161",
+  "english": "Terapagos"
+ },
+ "me2pt5-179": {
+  "kind": "existing-name",
+  "source": "sv8pt5-92",
+  "english": "Terapagos ex"
+ },
+ "me2pt5-180": {
+  "kind": "existing-name",
+  "source": "me1-183",
+  "english": "Acerola's Mischief"
+ },
+ "me2pt5-181": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-79",
+  "english": "Air Balloon"
+ },
+ "me2pt5-182": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2025015174",
+  "english": "Anthea & Concordia"
+ },
+ "me2pt5-183": {
+  "kind": "existing-name",
+  "source": "swsh9-132",
+  "english": "Boss's Orders"
+ },
+ "me2pt5-184": {
+  "kind": "existing-name",
+  "source": "sv8pt5-101",
+  "english": "Buddy-Buddy Poffin"
+ },
+ "me2pt5-185": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2025015179",
+  "english": "Canari"
+ },
+ "me2pt5-186": {
+  "kind": "existing-name",
+  "source": "sv8-249",
+  "english": "Counter Gain"
+ },
+ "me2pt5-187": {
+  "kind": "existing-name",
+  "source": "me1-168",
+  "english": "Fighting Gong"
+ },
+ "me2pt5-188": {
+  "kind": "existing-name",
+  "source": "me1-117",
+  "english": "Forest of Vitality"
+ },
+ "me2pt5-189": {
+  "kind": "existing-name",
+  "source": "sv8pt5-110",
+  "english": "Glass Trumpet"
+ },
+ "me2pt5-190": {
+  "kind": "existing-name",
+  "source": "sv9-180",
+  "english": "Iris's Fighting Spirit"
+ },
+ "me2pt5-191": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2025015164",
+  "english": "Light Ball"
+ },
+ "me2pt5-192": {
+  "kind": "existing-name",
+  "source": "me1-184",
+  "english": "Lillie's Determination"
+ },
+ "me2pt5-193": {
+  "kind": "existing-name",
+  "source": "me1-171",
+  "english": "Mega Signal"
+ },
+ "me2pt5-194": {
+  "kind": "existing-name",
+  "source": "me1-172",
+  "english": "Mystery Garden"
+ },
+ "me2pt5-195": {
+  "kind": "existing-name",
+  "source": "sv9-153",
+  "english": "N's PP Up"
+ },
+ "me2pt5-196": {
+  "kind": "existing-name",
+  "source": "sv8-251",
+  "english": "Night Stretcher"
+ },
+ "me2pt5-197": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2025015187",
+  "english": "Nighttime Mine"
+ },
+ "me2pt5-198": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002071",
+  "english": "Poké Pad"
+ },
+ "me2pt5-199": {
+  "kind": "existing-name",
+  "source": "me1-174",
+  "english": "Premium Power Pro"
+ },
+ "me2pt5-200": {
+  "kind": "existing-name",
+  "source": "sv8-235",
+  "english": "Surfer"
+ },
+ "me2pt5-201": {
+  "kind": "existing-name",
+  "source": "sv10-223",
+  "english": "Team Rocket's Archer"
+ },
+ "me2pt5-202": {
+  "kind": "existing-name",
+  "source": "sv10-237",
+  "english": "Team Rocket's Ariana"
+ },
+ "me2pt5-203": {
+  "kind": "existing-name",
+  "source": "sv10-173",
+  "english": "Team Rocket's Factory"
+ },
+ "me2pt5-204": {
+  "kind": "existing-name",
+  "source": "sv10-238",
+  "english": "Team Rocket's Giovanni"
+ },
+ "me2pt5-205": {
+  "kind": "existing-name",
+  "source": "sv10-175",
+  "english": "Team Rocket's Great Ball"
+ },
+ "me2pt5-206": {
+  "kind": "reviewed-secondary",
+  "source": "https://bulbapedia.bulbagarden.net/wiki/Team_Rocket%27s_Hypnotizer_(Ascended_Heroes_206)",
+  "english": "Team Rocket's Hypnotizer"
+ },
+ "me2pt5-207": {
+  "kind": "existing-name",
+  "source": "sv10-226",
+  "english": "Team Rocket's Petrel"
+ },
+ "me2pt5-208": {
+  "kind": "existing-name",
+  "source": "sv10-227",
+  "english": "Team Rocket's Proton"
+ },
+ "me2pt5-209": {
+  "kind": "existing-name",
+  "source": "sv10-178",
+  "english": "Team Rocket's Transceiver"
+ },
+ "me2pt5-210": {
+  "kind": "existing-name",
+  "source": "sv10-180",
+  "english": "Team Rocket's Watchtower"
+ },
+ "me2pt5-211": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2025015162",
+  "english": "Thick Scale"
+ },
+ "me2pt5-212": {
+  "kind": "existing-name",
+  "source": "swsh2-208",
+  "english": "Tool Scrapper"
+ },
+ "me2pt5-213": {
+  "kind": "existing-name",
+  "source": "xy6-93",
+  "english": "Ultra Ball"
+ },
+ "me2pt5-214": {
+  "kind": "reviewed-secondary",
+  "source": "https://kream.co.kr/products/932797",
+  "english": "Urbain"
+ },
+ "me2pt5-215": {
+  "kind": "reviewed-secondary",
+  "source": "https://daldagury.com/tcg/pokemon/card/13304",
+  "english": "Waitress"
+ },
+ "me2pt5-216": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-86",
+  "english": "Prism Energy"
+ },
+ "me2pt5-217": {
+  "kind": "existing-name",
+  "source": "sv10-182",
+  "english": "Team Rocket's Energy"
+ },
+ "me2pt5-218": {
+  "kind": "existing-name",
+  "source": "gym1-79",
+  "english": "Erika's Tangela"
+ },
+ "me2pt5-219": {
+  "kind": "existing-name",
+  "source": "xy6-5",
+  "english": "Beautifly"
+ },
+ "me2pt5-220": {
+  "kind": "existing-name",
+  "source": "xy6-8",
+  "english": "Dustox"
+ },
+ "me2pt5-221": {
+  "kind": "existing-name",
+  "source": "sv8pt5-4",
+  "english": "Budew"
+ },
+ "me2pt5-222": {
+  "kind": "existing-name",
+  "source": "sv10-36",
+  "english": "Ethan's Magcargo"
+ },
+ "me2pt5-223": {
+  "kind": "existing-name",
+  "source": "xy9-12",
+  "english": "Numel"
+ },
+ "me2pt5-224": {
+  "kind": "existing-name",
+  "source": "swsh5-28",
+  "english": "Salazzle"
+ },
+ "me2pt5-225": {
+  "kind": "existing-name",
+  "source": "swsh6-26",
+  "english": "Scorbunny"
+ },
+ "me2pt5-226": {
+  "kind": "existing-name",
+  "source": "xy9-16",
+  "english": "Psyduck"
+ },
+ "me2pt5-227": {
+  "kind": "existing-name",
+  "source": "swsh9-34",
+  "english": "Snorunt"
+ },
+ "me2pt5-228": {
+  "kind": "existing-name",
+  "source": "xy2-52",
+  "english": "Weavile"
+ },
+ "me2pt5-229": {
+  "kind": "existing-name",
+  "source": "xy4-30",
+  "english": "Heliolisk"
+ },
+ "me2pt5-230": {
+  "kind": "existing-name",
+  "source": "swsh8-101",
+  "english": "Vikavolt"
+ },
+ "me2pt5-231": {
+  "kind": "existing-name",
+  "source": "sv9-54",
+  "english": "Iono's Wattrel"
+ },
+ "me2pt5-232": {
+  "kind": "existing-name",
+  "source": "xy5-102",
+  "english": "Marill"
+ },
+ "me2pt5-233": {
+  "kind": "existing-name",
+  "source": "xy8-65",
+  "english": "Misdreavus"
+ },
+ "me2pt5-234": {
+  "kind": "existing-name",
+  "source": "xy6-32",
+  "english": "Banette"
+ },
+ "me2pt5-235": {
+  "kind": "existing-name",
+  "source": "xy6-46",
+  "english": "Togekiss"
+ },
+ "me2pt5-236": {
+  "kind": "existing-name",
+  "source": "xy4-69",
+  "english": "Slurpuff"
+ },
+ "me2pt5-237": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-65",
+  "english": "Hop's Trevenant"
+ },
+ "me2pt5-238": {
+  "kind": "existing-name",
+  "source": "sv10-87",
+  "english": "Team Rocket's Mimikyu"
+ },
+ "me2pt5-239": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy12-56",
+  "english": "Team Rocket's Dugtrio"
+ },
+ "me2pt5-240": {
+  "kind": "existing-name",
+  "source": "xy3-49",
+  "english": "Hitmontop"
+ },
+ "me2pt5-241": {
+  "kind": "existing-name",
+  "source": "xy5-81",
+  "english": "Medicham"
+ },
+ "me2pt5-242": {
+  "kind": "existing-name",
+  "source": "xy6-47",
+  "english": "Carbink"
+ },
+ "me2pt5-243": {
+  "kind": "existing-name",
+  "source": "xy4-54",
+  "english": "Mightyena"
+ },
+ "me2pt5-244": {
+  "kind": "existing-name",
+  "source": "sv10-129",
+  "english": "Cynthia's Spiritomb"
+ },
+ "me2pt5-245": {
+  "kind": "existing-name",
+  "source": "swsh8-161",
+  "english": "Galarian Obstagoon"
+ },
+ "me2pt5-246": {
+  "kind": "existing-name",
+  "source": "xy9-78",
+  "english": "Mawile"
+ },
+ "me2pt5-247": {
+  "kind": "existing-name",
+  "source": "swsh8-128",
+  "english": "Dreepy"
+ },
+ "me2pt5-248": {
+  "kind": "existing-name",
+  "source": "swsh8-129",
+  "english": "Drakloak"
+ },
+ "me2pt5-249": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-127",
+  "english": "Larry's Staraptor"
+ },
+ "me2pt5-250": {
+  "kind": "existing-name",
+  "source": "sv8pt5-85",
+  "english": "Fan Rotom"
+ },
+ "me2pt5-251": {
+  "kind": "composed-existing-pokemon",
+  "source": "sv9-16",
+  "english": "Sprigatito ex"
+ },
+ "me2pt5-252": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-56",
+  "english": "Stunfisk ex"
+ },
+ "me2pt5-253": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-74",
+  "english": "Mega Audino ex"
+ },
+ "me2pt5-254": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2025015174",
+  "english": "Anthea & Concordia"
+ },
+ "me2pt5-255": {
+  "kind": "existing-name",
+  "source": "sv9-145",
+  "english": "Black Belt's Training"
+ },
+ "me2pt5-256": {
+  "kind": "existing-name",
+  "source": "swsh9-132",
+  "english": "Boss's Orders"
+ },
+ "me2pt5-257": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2025015179",
+  "english": "Canari"
+ },
+ "me2pt5-258": {
+  "kind": "existing-name",
+  "source": "rsv10pt5-81",
+  "english": "Cheren"
+ },
+ "me2pt5-259": {
+  "kind": "existing-name",
+  "source": "sv8-249",
+  "english": "Counter Gain"
+ },
+ "me2pt5-260": {
+  "kind": "existing-name",
+  "source": "sv8pt5-110",
+  "english": "Glass Trumpet"
+ },
+ "me2pt5-261": {
+  "kind": "existing-name",
+  "source": "sv6-153",
+  "english": "Jamming Tower"
+ },
+ "me2pt5-262": {
+  "kind": "existing-name",
+  "source": "sv9-153",
+  "english": "N's PP Up"
+ },
+ "me2pt5-263": {
+  "kind": "existing-name",
+  "source": "sv10-178",
+  "english": "Team Rocket's Transceiver"
+ },
+ "me2pt5-264": {
+  "kind": "existing-name",
+  "source": "xy6-93",
+  "english": "Ultra Ball"
+ },
+ "me2pt5-265": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh7-226",
+  "english": "Mega Froslass ex"
+ },
+ "me2pt5-266": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-32",
+  "english": "Mega Eelektross ex"
+ },
+ "me2pt5-267": {
+  "kind": "existing-name",
+  "source": "me2-41",
+  "english": "Mega Diancie ex"
+ },
+ "me2pt5-268": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-87",
+  "english": "Mega Hawlucha ex"
+ },
+ "me2pt5-269": {
+  "kind": "existing-name",
+  "source": "me2-56",
+  "english": "Mega Gengar ex"
+ },
+ "me2pt5-270": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy3-67",
+  "english": "Mega Scrafty ex"
+ },
+ "me2pt5-271": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-52",
+  "english": "Mega Dragonite ex"
+ },
+ "me2pt5-272": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-3",
+  "english": "Mega Meganium ex"
+ },
+ "me2pt5-273": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh5-25",
+  "english": "Mega Emboar ex"
+ },
+ "me2pt5-274": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-17",
+  "english": "Mega Feraligatr ex"
+ },
+ "me2pt5-275": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh7-226",
+  "english": "Mega Froslass ex"
+ },
+ "me2pt5-276": {
+  "kind": "existing-name",
+  "source": "sv8pt5-28",
+  "english": "Pikachu ex"
+ },
+ "me2pt5-277": {
+  "kind": "existing-name",
+  "source": "sv8pt5-28",
+  "english": "Pikachu ex"
+ },
+ "me2pt5-278": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-32",
+  "english": "Mega Eelektross ex"
+ },
+ "me2pt5-279": {
+  "kind": "existing-name",
+  "source": "sv9-53",
+  "english": "Iono's Bellibolt ex"
+ },
+ "me2pt5-280": {
+  "kind": "existing-name",
+  "source": "sv9-56",
+  "english": "Lillie's Clefairy ex"
+ },
+ "me2pt5-281": {
+  "kind": "existing-name",
+  "source": "sv10-81",
+  "english": "Team Rocket's Mewtwo ex"
+ },
+ "me2pt5-282": {
+  "kind": "existing-name",
+  "source": "me2-41",
+  "english": "Mega Diancie ex"
+ },
+ "me2pt5-283": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-87",
+  "english": "Mega Hawlucha ex"
+ },
+ "me2pt5-284": {
+  "kind": "existing-name",
+  "source": "me2-56",
+  "english": "Mega Gengar ex"
+ },
+ "me2pt5-285": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy3-67",
+  "english": "Mega Scrafty ex"
+ },
+ "me2pt5-286": {
+  "kind": "existing-name",
+  "source": "sv9-98",
+  "english": "N's Zoroark ex"
+ },
+ "me2pt5-287": {
+  "kind": "existing-name",
+  "source": "sv10-136",
+  "english": "Marnie's Grimmsnarl ex"
+ },
+ "me2pt5-288": {
+  "kind": "existing-name",
+  "source": "sv6pt5-92",
+  "english": "Fezandipiti ex"
+ },
+ "me2pt5-289": {
+  "kind": "existing-name",
+  "source": "sv10-145",
+  "english": "Steven's Metagross ex"
+ },
+ "me2pt5-290": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-52",
+  "english": "Mega Dragonite ex"
+ },
+ "me2pt5-291": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2025015179",
+  "english": "Canari"
+ },
+ "me2pt5-292": {
+  "kind": "existing-name",
+  "source": "sv9-180",
+  "english": "Iris's Fighting Spirit"
+ },
+ "me2pt5-293": {
+  "kind": "existing-name",
+  "source": "sv8-235",
+  "english": "Surfer"
+ },
+ "me2pt5-294": {
+  "kind": "reviewed-existing-pokemon",
+  "source": "me2-109",
+  "english": "Mega Charizard Y ex"
+ },
+ "me2pt5-295": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-52",
+  "english": "Mega Dragonite ex"
+ },
+ "me3-1": {
+  "kind": "existing-name",
+  "source": "xy7-5",
+  "english": "Spinarak"
+ },
+ "me3-2": {
+  "kind": "existing-name",
+  "source": "xy7-6",
+  "english": "Ariados"
+ },
+ "me3-3": {
+  "kind": "existing-name",
+  "source": "swsh6-123",
+  "english": "Shaymin"
+ },
+ "me3-4": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-87",
+  "english": "Snivy"
+ },
+ "me3-5": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-88",
+  "english": "Servine"
+ },
+ "me3-6": {
+  "kind": "existing-name",
+  "source": "xy10-7",
+  "english": "Serperior"
+ },
+ "me3-7": {
+  "kind": "existing-name",
+  "source": "xy8-13",
+  "english": "Scatterbug"
+ },
+ "me3-8": {
+  "kind": "existing-name",
+  "source": "xy8-14",
+  "english": "Spewpa"
+ },
+ "me3-9": {
+  "kind": "existing-name",
+  "source": "xy8-15",
+  "english": "Vivillon"
+ },
+ "me3-10": {
+  "kind": "existing-name",
+  "source": "swsh45-6",
+  "english": "Rowlet"
+ },
+ "me3-11": {
+  "kind": "existing-name",
+  "source": "swsh45-7",
+  "english": "Dartrix"
+ },
+ "me3-12": {
+  "kind": "existing-name",
+  "source": "sv3-15",
+  "english": "Decidueye ex"
+ },
+ "me3-13": {
+  "kind": "existing-name",
+  "source": "xy6-14",
+  "english": "Fletchinder"
+ },
+ "me3-14": {
+  "kind": "existing-name",
+  "source": "xy6-15",
+  "english": "Talonflame"
+ },
+ "me3-15": {
+  "kind": "existing-name",
+  "source": "swsh5-27",
+  "english": "Salandit"
+ },
+ "me3-16": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh5-28",
+  "english": "Salazzle ex"
+ },
+ "me3-17": {
+  "kind": "existing-name",
+  "source": "swsh8-198",
+  "english": "Turtonator"
+ },
+ "me3-18": {
+  "kind": "existing-name",
+  "source": "xy12-28",
+  "english": "Seel"
+ },
+ "me3-19": {
+  "kind": "existing-name",
+  "source": "xy12-29",
+  "english": "Dewgong"
+ },
+ "me3-20": {
+  "kind": "existing-name",
+  "source": "xy9-25",
+  "english": "Staryu"
+ },
+ "me3-21": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-30",
+  "english": "Mega Starmie ex"
+ },
+ "me3-22": {
+  "kind": "existing-name",
+  "source": "sv7-32",
+  "english": "Lapras ex"
+ },
+ "me3-23": {
+  "kind": "existing-name",
+  "source": "xy3-25",
+  "english": "Amaura"
+ },
+ "me3-24": {
+  "kind": "existing-name",
+  "source": "xy3-26",
+  "english": "Aurorus"
+ },
+ "me3-25": {
+  "kind": "existing-name",
+  "source": "xy11-25",
+  "english": "Volcanion"
+ },
+ "me3-26": {
+  "kind": "existing-name",
+  "source": "xy9-44",
+  "english": "Shinx"
+ },
+ "me3-27": {
+  "kind": "existing-name",
+  "source": "xy9-45",
+  "english": "Luxio"
+ },
+ "me3-28": {
+  "kind": "existing-name",
+  "source": "xy9-46",
+  "english": "Luxray"
+ },
+ "me3-29": {
+  "kind": "existing-name",
+  "source": "xy8-57",
+  "english": "Dedenne"
+ },
+ "me3-30": {
+  "kind": "existing-name",
+  "source": "xy9-81",
+  "english": "Clefairy"
+ },
+ "me3-31": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-82",
+  "english": "Mega Clefable ex"
+ },
+ "me3-32": {
+  "kind": "existing-name",
+  "source": "xy9-78",
+  "english": "Mawile"
+ },
+ "me3-33": {
+  "kind": "existing-name",
+  "source": "xy9-58",
+  "english": "Espurr"
+ },
+ "me3-34": {
+  "kind": "existing-name",
+  "source": "xy9-59",
+  "english": "Meowstic"
+ },
+ "me3-35": {
+  "kind": "existing-name",
+  "source": "xy9-84",
+  "english": "Spritzee"
+ },
+ "me3-36": {
+  "kind": "existing-name",
+  "source": "xy9-85",
+  "english": "Aromatisse"
+ },
+ "me3-37": {
+  "kind": "existing-name",
+  "source": "xy5-78",
+  "english": "Nosepass"
+ },
+ "me3-38": {
+  "kind": "existing-name",
+  "source": "xy5-95",
+  "english": "Probopass"
+ },
+ "me3-39": {
+  "kind": "existing-name",
+  "source": "xy8-83",
+  "english": "Hippopotas"
+ },
+ "me3-40": {
+  "kind": "existing-name",
+  "source": "xy5-88",
+  "english": "Hippowdon"
+ },
+ "me3-41": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-53",
+  "english": "Landorus"
+ },
+ "me3-42": {
+  "kind": "existing-name",
+  "source": "xy6-38",
+  "english": "Binacle"
+ },
+ "me3-43": {
+  "kind": "existing-name",
+  "source": "xy2-49",
+  "english": "Barbaracle"
+ },
+ "me3-44": {
+  "kind": "existing-name",
+  "source": "xy3-61",
+  "english": "Tyrunt"
+ },
+ "me3-45": {
+  "kind": "existing-name",
+  "source": "xy3-62",
+  "english": "Tyrantrum"
+ },
+ "me3-46": {
+  "kind": "existing-name",
+  "source": "xy8-87",
+  "english": "Hawlucha"
+ },
+ "me3-47": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy10-53",
+  "english": "Mega Zygarde ex"
+ },
+ "me3-48": {
+  "kind": "existing-name",
+  "source": "xy8-58",
+  "english": "Gastly"
+ },
+ "me3-49": {
+  "kind": "existing-name",
+  "source": "xy8-59",
+  "english": "Haunter"
+ },
+ "me3-50": {
+  "kind": "existing-name",
+  "source": "xy8-60",
+  "english": "Gengar"
+ },
+ "me3-51": {
+  "kind": "existing-name",
+  "source": "xy9-53",
+  "english": "Skorupi"
+ },
+ "me3-52": {
+  "kind": "existing-name",
+  "source": "xy9-54",
+  "english": "Drapion"
+ },
+ "me3-53": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-94",
+  "english": "Yveltal ex"
+ },
+ "me3-54": {
+  "kind": "existing-name",
+  "source": "sv8-56",
+  "english": "Chien-Pao"
+ },
+ "me3-55": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-69",
+  "english": "Mega Skarmory ex"
+ },
+ "me3-56": {
+  "kind": "existing-name",
+  "source": "xy9-60",
+  "english": "Honedge"
+ },
+ "me3-57": {
+  "kind": "existing-name",
+  "source": "xy9-61",
+  "english": "Doublade"
+ },
+ "me3-58": {
+  "kind": "existing-name",
+  "source": "xy9-62",
+  "english": "Aegislash"
+ },
+ "me3-59": {
+  "kind": "existing-name",
+  "source": "xy6-48",
+  "english": "Klefki"
+ },
+ "me3-60": {
+  "kind": "existing-name",
+  "source": "xy9-87",
+  "english": "Rattata"
+ },
+ "me3-61": {
+  "kind": "existing-name",
+  "source": "xy9-88",
+  "english": "Raticate"
+ },
+ "me3-62": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-114",
+  "english": "Meowth ex"
+ },
+ "me3-63": {
+  "kind": "existing-name",
+  "source": "xy8-118",
+  "english": "Snorlax"
+ },
+ "me3-64": {
+  "kind": "existing-name",
+  "source": "xy5-121",
+  "english": "Bunnelby"
+ },
+ "me3-65": {
+  "kind": "existing-name",
+  "source": "xy5-90",
+  "english": "Diggersby"
+ },
+ "me3-66": {
+  "kind": "existing-name",
+  "source": "xy6-82",
+  "english": "Fletchling"
+ },
+ "me3-67": {
+  "kind": "existing-name",
+  "source": "xy9-95",
+  "english": "Furfrou"
+ },
+ "me3-68": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002070",
+  "english": "Antique Jaw Fossil"
+ },
+ "me3-69": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002069",
+  "english": "Antique Sail Fossil"
+ },
+ "me3-70": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002072",
+  "english": "Core Memory"
+ },
+ "me3-71": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-125",
+  "english": "Crushing Hammer"
+ },
+ "me3-72": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-128",
+  "english": "Energy Search"
+ },
+ "me3-73": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002068",
+  "english": "Energy Swatter"
+ },
+ "me3-74": {
+  "kind": "reviewed-secondary",
+  "source": "https://bulbapedia.bulbagarden.net/wiki/Hole-Digging_Shovel_(M-P_Promo_16)",
+  "english": "Hole-Digging Shovel"
+ },
+ "me3-75": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002074",
+  "english": "Jacinthe"
+ },
+ "me3-76": {
+  "kind": "existing-name",
+  "source": "xy8-143",
+  "english": "Judge"
+ },
+ "me3-77": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002077",
+  "english": "Lumiose City"
+ },
+ "me3-78": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002067",
+  "english": "Lumiose Galette"
+ },
+ "me3-79": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002075",
+  "english": "Naveen"
+ },
+ "me3-80": {
+  "kind": "existing-name",
+  "source": "swsh35-59",
+  "english": "Poké Ball"
+ },
+ "me3-81": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002071",
+  "english": "Poké Pad"
+ },
+ "me3-82": {
+  "kind": "existing-name",
+  "source": "xy9-105",
+  "english": "Pokémon Catcher"
+ },
+ "me3-83": {
+  "kind": "existing-name",
+  "source": "xy9-106",
+  "english": "Potion"
+ },
+ "me3-84": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002073",
+  "english": "Rosa's Encouragement"
+ },
+ "me3-85": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002076",
+  "english": "Tarragon"
+ },
+ "me3-86": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002078",
+  "english": "Growing Grass Energy"
+ },
+ "me3-87": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002080",
+  "english": "Rocky Fighting Energy"
+ },
+ "me3-88": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002079",
+  "english": "Telepathic Psychic Energy"
+ },
+ "me3-89": {
+  "kind": "existing-name",
+  "source": "xy8-14",
+  "english": "Spewpa"
+ },
+ "me3-90": {
+  "kind": "existing-name",
+  "source": "swsh45-6",
+  "english": "Rowlet"
+ },
+ "me3-91": {
+  "kind": "existing-name",
+  "source": "xy6-15",
+  "english": "Talonflame"
+ },
+ "me3-92": {
+  "kind": "existing-name",
+  "source": "xy3-26",
+  "english": "Aurorus"
+ },
+ "me3-93": {
+  "kind": "existing-name",
+  "source": "xy8-57",
+  "english": "Dedenne"
+ },
+ "me3-94": {
+  "kind": "existing-name",
+  "source": "xy9-81",
+  "english": "Clefairy"
+ },
+ "me3-95": {
+  "kind": "existing-name",
+  "source": "xy9-58",
+  "english": "Espurr"
+ },
+ "me3-96": {
+  "kind": "existing-name",
+  "source": "xy5-95",
+  "english": "Probopass"
+ },
+ "me3-97": {
+  "kind": "existing-name",
+  "source": "xy9-54",
+  "english": "Drapion"
+ },
+ "me3-98": {
+  "kind": "existing-name",
+  "source": "xy9-61",
+  "english": "Doublade"
+ },
+ "me3-99": {
+  "kind": "existing-name",
+  "source": "xy9-88",
+  "english": "Raticate"
+ },
+ "me3-100": {
+  "kind": "existing-name",
+  "source": "sv3-15",
+  "english": "Decidueye ex"
+ },
+ "me3-101": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh5-28",
+  "english": "Salazzle ex"
+ },
+ "me3-102": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-30",
+  "english": "Mega Starmie ex"
+ },
+ "me3-103": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-82",
+  "english": "Mega Clefable ex"
+ },
+ "me3-104": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy10-53",
+  "english": "Mega Zygarde ex"
+ },
+ "me3-105": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-94",
+  "english": "Yveltal ex"
+ },
+ "me3-106": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy6-69",
+  "english": "Mega Skarmory ex"
+ },
+ "me3-107": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-114",
+  "english": "Meowth ex"
+ },
+ "me3-108": {
+  "kind": "existing-name",
+  "source": "xy7-72",
+  "english": "Energy Recycler"
+ },
+ "me3-109": {
+  "kind": "existing-name",
+  "source": "me1-117",
+  "english": "Forest of Vitality"
+ },
+ "me3-110": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002074",
+  "english": "Jacinthe"
+ },
+ "me3-111": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002077",
+  "english": "Lumiose City"
+ },
+ "me3-112": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002075",
+  "english": "Naveen"
+ },
+ "me3-113": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002071",
+  "english": "Poké Pad"
+ },
+ "me3-114": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002073",
+  "english": "Rosa's Encouragement"
+ },
+ "me3-115": {
+  "kind": "existing-name",
+  "source": "xy2-96",
+  "english": "Sacred Ash"
+ },
+ "me3-116": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002076",
+  "english": "Tarragon"
+ },
+ "me3-117": {
+  "kind": "existing-name",
+  "source": "me2-94",
+  "english": "Wondrous Patch"
+ },
+ "me3-118": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-30",
+  "english": "Mega Starmie ex"
+ },
+ "me3-119": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-82",
+  "english": "Mega Clefable ex"
+ },
+ "me3-120": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy10-53",
+  "english": "Mega Zygarde ex"
+ },
+ "me3-121": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-114",
+  "english": "Meowth ex"
+ },
+ "me3-122": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002074",
+  "english": "Jacinthe"
+ },
+ "me3-123": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002073",
+  "english": "Rosa's Encouragement"
+ },
+ "me3-124": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy10-53",
+  "english": "Mega Zygarde ex"
+ },
+ "me4-1": {
+  "kind": "existing-name",
+  "source": "xy5-1",
+  "english": "Weedle"
+ },
+ "me4-2": {
+  "kind": "existing-name",
+  "source": "xy5-2",
+  "english": "Kakuna"
+ },
+ "me4-3": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy5-3",
+  "english": "Beedrill ex"
+ },
+ "me4-4": {
+  "kind": "existing-name",
+  "source": "swsh5-9",
+  "english": "Carnivine"
+ },
+ "me4-5": {
+  "kind": "existing-name",
+  "source": "xy8-9",
+  "english": "Chespin"
+ },
+ "me4-6": {
+  "kind": "existing-name",
+  "source": "xy8-10",
+  "english": "Quilladin"
+ },
+ "me4-7": {
+  "kind": "existing-name",
+  "source": "xy8-11",
+  "english": "Chesnaught"
+ },
+ "me4-8": {
+  "kind": "existing-name",
+  "source": "xy5-20",
+  "english": "Vulpix"
+ },
+ "me4-9": {
+  "kind": "existing-name",
+  "source": "xy5-21",
+  "english": "Ninetales"
+ },
+ "me4-10": {
+  "kind": "existing-name",
+  "source": "sv8-19",
+  "english": "Ho-Oh"
+ },
+ "me4-11": {
+  "kind": "existing-name",
+  "source": "xy8-25",
+  "english": "Fennekin"
+ },
+ "me4-12": {
+  "kind": "existing-name",
+  "source": "xy8-26",
+  "english": "Braixen"
+ },
+ "me4-13": {
+  "kind": "existing-name",
+  "source": "xy10-13",
+  "english": "Delphox"
+ },
+ "me4-14": {
+  "kind": "existing-name",
+  "source": "xy4-11",
+  "english": "Litleo"
+ },
+ "me4-15": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-12",
+  "english": "Mega Pyroar ex"
+ },
+ "me4-16": {
+  "kind": "existing-name",
+  "source": "xy8-32",
+  "english": "Remoraid"
+ },
+ "me4-17": {
+  "kind": "existing-name",
+  "source": "xy8-33",
+  "english": "Octillery"
+ },
+ "me4-18": {
+  "kind": "existing-name",
+  "source": "swsh6-32",
+  "english": "Delibird"
+ },
+ "me4-19": {
+  "kind": "existing-name",
+  "source": "swsh12-46",
+  "english": "Keldeo"
+ },
+ "me4-20": {
+  "kind": "existing-name",
+  "source": "xy9-38",
+  "english": "Froakie"
+ },
+ "me4-21": {
+  "kind": "existing-name",
+  "source": "xy9-39",
+  "english": "Frogadier"
+ },
+ "me4-22": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-40",
+  "english": "Mega Greninja ex"
+ },
+ "me4-23": {
+  "kind": "existing-name",
+  "source": "xy2-30",
+  "english": "Bergmite"
+ },
+ "me4-24": {
+  "kind": "existing-name",
+  "source": "xy2-31",
+  "english": "Avalugg"
+ },
+ "me4-25": {
+  "kind": "existing-name",
+  "source": "swsh3-17",
+  "english": "Wimpod"
+ },
+ "me4-26": {
+  "kind": "existing-name",
+  "source": "swsh3-18",
+  "english": "Golisopod"
+ },
+ "me4-27": {
+  "kind": "existing-name",
+  "source": "xy11-38",
+  "english": "Mareep"
+ },
+ "me4-28": {
+  "kind": "existing-name",
+  "source": "xy11-39",
+  "english": "Flaaffy"
+ },
+ "me4-29": {
+  "kind": "existing-name",
+  "source": "xy11-40",
+  "english": "Ampharos"
+ },
+ "me4-30": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-29",
+  "english": "Emolga"
+ },
+ "me4-31": {
+  "kind": "existing-name",
+  "source": "xy6-33",
+  "english": "Deoxys"
+ },
+ "me4-32": {
+  "kind": "existing-name",
+  "source": "xy6-33",
+  "english": "Deoxys"
+ },
+ "me4-33": {
+  "kind": "existing-name",
+  "source": "xy6-33",
+  "english": "Deoxys"
+ },
+ "me4-34": {
+  "kind": "existing-name",
+  "source": "xy6-33",
+  "english": "Deoxys"
+ },
+ "me4-35": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-102",
+  "english": "Mega Floette ex"
+ },
+ "me4-36": {
+  "kind": "existing-name",
+  "source": "xy9-58",
+  "english": "Espurr"
+ },
+ "me4-37": {
+  "kind": "existing-name",
+  "source": "xy9-59",
+  "english": "Meowstic"
+ },
+ "me4-38": {
+  "kind": "existing-name",
+  "source": "xy9-64",
+  "english": "Phantump"
+ },
+ "me4-39": {
+  "kind": "existing-name",
+  "source": "xy9-65",
+  "english": "Trevenant"
+ },
+ "me4-40": {
+  "kind": "existing-name",
+  "source": "xy4-44",
+  "english": "Pumpkaboo"
+ },
+ "me4-41": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-45",
+  "english": "Gourgeist ex"
+ },
+ "me4-42": {
+  "kind": "existing-name",
+  "source": "xy8-107",
+  "english": "Xerneas"
+ },
+ "me4-43": {
+  "kind": "existing-name",
+  "source": "xy9-67",
+  "english": "Sudowoodo"
+ },
+ "me4-44": {
+  "kind": "existing-name",
+  "source": "swsh4-86",
+  "english": "Phanpy"
+ },
+ "me4-45": {
+  "kind": "existing-name",
+  "source": "swsh4-87",
+  "english": "Donphan"
+ },
+ "me4-46": {
+  "kind": "existing-name",
+  "source": "xy7-32",
+  "english": "Baltoy"
+ },
+ "me4-47": {
+  "kind": "existing-name",
+  "source": "xy7-33",
+  "english": "Claydol"
+ },
+ "me4-48": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-84",
+  "english": "Mega Gallade ex"
+ },
+ "me4-49": {
+  "kind": "existing-name",
+  "source": "xy4-31",
+  "english": "Zubat"
+ },
+ "me4-50": {
+  "kind": "existing-name",
+  "source": "xy4-32",
+  "english": "Golbat"
+ },
+ "me4-51": {
+  "kind": "existing-name",
+  "source": "xy4-33",
+  "english": "Crobat"
+ },
+ "me4-52": {
+  "kind": "existing-name",
+  "source": "xy2-21",
+  "english": "Qwilfish"
+ },
+ "me4-53": {
+  "kind": "existing-name",
+  "source": "xy2-54",
+  "english": "Stunky"
+ },
+ "me4-54": {
+  "kind": "existing-name",
+  "source": "xy2-55",
+  "english": "Skuntank"
+ },
+ "me4-55": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-59",
+  "english": "Krookodile ex"
+ },
+ "me4-56": {
+  "kind": "existing-name",
+  "source": "xy9-56",
+  "english": "Trubbish"
+ },
+ "me4-57": {
+  "kind": "existing-name",
+  "source": "xy9-57",
+  "english": "Garbodor"
+ },
+ "me4-58": {
+  "kind": "existing-name",
+  "source": "xy9-63",
+  "english": "Skrelp"
+ },
+ "me4-59": {
+  "kind": "existing-name",
+  "source": "xy7-47",
+  "english": "Beldum"
+ },
+ "me4-60": {
+  "kind": "existing-name",
+  "source": "xy7-48",
+  "english": "Metang"
+ },
+ "me4-61": {
+  "kind": "existing-name",
+  "source": "xy7-50",
+  "english": "Metagross"
+ },
+ "me4-62": {
+  "kind": "existing-name",
+  "source": "xy9-79",
+  "english": "Ferroseed"
+ },
+ "me4-63": {
+  "kind": "existing-name",
+  "source": "xy9-80",
+  "english": "Ferrothorn"
+ },
+ "me4-64": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-66",
+  "english": "Cobalion ex"
+ },
+ "me4-65": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-86",
+  "english": "Mega Dragalge ex"
+ },
+ "me4-66": {
+  "kind": "existing-name",
+  "source": "xy7-58",
+  "english": "Goomy"
+ },
+ "me4-67": {
+  "kind": "existing-name",
+  "source": "xy7-59",
+  "english": "Sliggoo"
+ },
+ "me4-68": {
+  "kind": "existing-name",
+  "source": "xy7-60",
+  "english": "Goodra"
+ },
+ "me4-69": {
+  "kind": "existing-name",
+  "source": "xy1-100",
+  "english": "Tauros"
+ },
+ "me4-70": {
+  "kind": "existing-name",
+  "source": "xy3-84",
+  "english": "Patrat"
+ },
+ "me4-71": {
+  "kind": "existing-name",
+  "source": "xy3-85",
+  "english": "Watchog"
+ },
+ "me4-72": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-75",
+  "english": "Minccino"
+ },
+ "me4-73": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-76",
+  "english": "Cinccino ex"
+ },
+ "me4-74": {
+  "kind": "reviewed-secondary",
+  "source": "https://bulbapedia.bulbagarden.net/wiki/Adversity_Policy_(Chaos_Rising_74)",
+  "english": "Adversity Policy"
+ },
+ "me4-75": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003079",
+  "english": "Ange Floette"
+ },
+ "me4-76": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003075",
+  "english": "AZ's Tranquility"
+ },
+ "me4-77": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003076",
+  "english": "Emma"
+ },
+ "me4-78": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003074",
+  "english": "Great Haul Net"
+ },
+ "me4-79": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003078",
+  "english": "Philippe"
+ },
+ "me4-80": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003080",
+  "english": "Prism Tower"
+ },
+ "me4-81": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003077",
+  "english": "Roxie's Performance"
+ },
+ "me4-82": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003073",
+  "english": "Special Red Card"
+ },
+ "me4-83": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003072",
+  "english": "Transformation Tome"
+ },
+ "me4-84": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003082",
+  "english": "Bubbly Water Energy"
+ },
+ "me4-85": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003083",
+  "english": "Magnetic Metal Energy"
+ },
+ "me4-86": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003081",
+  "english": "Nitro Fire Energy"
+ },
+ "me4-87": {
+  "kind": "existing-name",
+  "source": "xy8-9",
+  "english": "Chespin"
+ },
+ "me4-88": {
+  "kind": "existing-name",
+  "source": "xy9-38",
+  "english": "Froakie"
+ },
+ "me4-89": {
+  "kind": "existing-name",
+  "source": "xy9-39",
+  "english": "Frogadier"
+ },
+ "me4-90": {
+  "kind": "existing-name",
+  "source": "xy11-40",
+  "english": "Ampharos"
+ },
+ "me4-91": {
+  "kind": "existing-name",
+  "source": "xy8-107",
+  "english": "Xerneas"
+ },
+ "me4-92": {
+  "kind": "existing-name",
+  "source": "xy7-33",
+  "english": "Claydol"
+ },
+ "me4-93": {
+  "kind": "existing-name",
+  "source": "xy4-33",
+  "english": "Crobat"
+ },
+ "me4-94": {
+  "kind": "existing-name",
+  "source": "xy7-48",
+  "english": "Metang"
+ },
+ "me4-95": {
+  "kind": "existing-name",
+  "source": "xy7-59",
+  "english": "Sliggoo"
+ },
+ "me4-96": {
+  "kind": "existing-name",
+  "source": "xy1-100",
+  "english": "Tauros"
+ },
+ "me4-97": {
+  "kind": "existing-name",
+  "source": "xy3-85",
+  "english": "Watchog"
+ },
+ "me4-98": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy5-3",
+  "english": "Beedrill ex"
+ },
+ "me4-99": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-12",
+  "english": "Mega Pyroar ex"
+ },
+ "me4-100": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-40",
+  "english": "Mega Greninja ex"
+ },
+ "me4-101": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-102",
+  "english": "Mega Floette ex"
+ },
+ "me4-102": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-45",
+  "english": "Gourgeist ex"
+ },
+ "me4-103": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-66",
+  "english": "Cobalion ex"
+ },
+ "me4-104": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-86",
+  "english": "Mega Dragalge ex"
+ },
+ "me4-105": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-76",
+  "english": "Cinccino ex"
+ },
+ "me4-106": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003075",
+  "english": "AZ's Tranquility"
+ },
+ "me4-107": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003076",
+  "english": "Emma"
+ },
+ "me4-108": {
+  "kind": "existing-name",
+  "source": "xy7-99",
+  "english": "Energy Retrieval"
+ },
+ "me4-109": {
+  "kind": "existing-name",
+  "source": "me2-91",
+  "english": "Jumbo Ice Cream"
+ },
+ "me4-110": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003078",
+  "english": "Philippe"
+ },
+ "me4-111": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003080",
+  "english": "Prism Tower"
+ },
+ "me4-112": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003077",
+  "english": "Roxie's Performance"
+ },
+ "me4-113": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003073",
+  "english": "Special Red Card"
+ },
+ "me4-114": {
+  "kind": "existing-name",
+  "source": "me1-129",
+  "english": "Surfing Beach"
+ },
+ "me4-115": {
+  "kind": "existing-name",
+  "source": "swsh2-208",
+  "english": "Tool Scrapper"
+ },
+ "me4-116": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-40",
+  "english": "Mega Greninja ex"
+ },
+ "me4-117": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy8-102",
+  "english": "Mega Floette ex"
+ },
+ "me4-118": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-86",
+  "english": "Mega Dragalge ex"
+ },
+ "me4-119": {
+  "kind": "composed-existing-pokemon",
+  "source": "zsv10pt5-76",
+  "english": "Cinccino ex"
+ },
+ "me4-120": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003075",
+  "english": "AZ's Tranquility"
+ },
+ "me4-121": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026003077",
+  "english": "Roxie's Performance"
+ },
+ "me4-122": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-40",
+  "english": "Mega Greninja ex"
+ },
+ "me5-1": {
+  "kind": "existing-name",
+  "source": "xy6-12",
+  "english": "Tropius"
+ },
+ "me5-2": {
+  "kind": "existing-name",
+  "source": "swsh8-18",
+  "english": "Grubbin"
+ },
+ "me5-3": {
+  "kind": "existing-name",
+  "source": "swsh5-14",
+  "english": "Fomantis"
+ },
+ "me5-4": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh5-15",
+  "english": "Lurantis ex"
+ },
+ "me5-5": {
+  "kind": "existing-name",
+  "source": "sv6-21",
+  "english": "Poltchageist"
+ },
+ "me5-6": {
+  "kind": "existing-name",
+  "source": "sv6-22",
+  "english": "Sinistcha"
+ },
+ "me5-7": {
+  "kind": "existing-name",
+  "source": "xy4-63",
+  "english": "Heatran"
+ },
+ "me5-8": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy10-13",
+  "english": "Mega Delphox ex"
+ },
+ "me5-9": {
+  "kind": "existing-name",
+  "source": "swsh8-47",
+  "english": "Sizzlipede"
+ },
+ "me5-10": {
+  "kind": "existing-name",
+  "source": "swsh8-49",
+  "english": "Centiskorch"
+ },
+ "me5-11": {
+  "kind": "existing-name",
+  "source": "sv8-33",
+  "english": "Charcadet"
+ },
+ "me5-12": {
+  "kind": "existing-name",
+  "source": "sv8-34",
+  "english": "Armarouge"
+ },
+ "me5-13": {
+  "kind": "existing-name",
+  "source": "xy8-27",
+  "english": "Goldeen"
+ },
+ "me5-14": {
+  "kind": "existing-name",
+  "source": "xy8-28",
+  "english": "Seaking"
+ },
+ "me5-15": {
+  "kind": "existing-name",
+  "source": "swsh4-31",
+  "english": "Wailmer"
+ },
+ "me5-16": {
+  "kind": "existing-name",
+  "source": "ex2-100",
+  "english": "Wailord ex"
+ },
+ "me5-17": {
+  "kind": "existing-name",
+  "source": "xy7-23",
+  "english": "Relicanth"
+ },
+ "me5-18": {
+  "kind": "existing-name",
+  "source": "sm8-65",
+  "english": "Popplio"
+ },
+ "me5-19": {
+  "kind": "existing-name",
+  "source": "sm8-66",
+  "english": "Brionne"
+ },
+ "me5-20": {
+  "kind": "existing-name",
+  "source": "sm8-67",
+  "english": "Primarina"
+ },
+ "me5-21": {
+  "kind": "existing-name",
+  "source": "sv6-59",
+  "english": "Finizen"
+ },
+ "me5-22": {
+  "kind": "existing-name",
+  "source": "sv6-60",
+  "english": "Palafin"
+ },
+ "me5-23": {
+  "kind": "existing-name",
+  "source": "xy6-24",
+  "english": "Electrike"
+ },
+ "me5-24": {
+  "kind": "existing-name",
+  "source": "xy6-25",
+  "english": "Manectric"
+ },
+ "me5-25": {
+  "kind": "existing-name",
+  "source": "swsh8-100",
+  "english": "Charjabug"
+ },
+ "me5-26": {
+  "kind": "existing-name",
+  "source": "swsh8-101",
+  "english": "Vikavolt"
+ },
+ "me5-27": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-102",
+  "english": "Mega Zeraora ex"
+ },
+ "me5-28": {
+  "kind": "existing-name",
+  "source": "sv8-69",
+  "english": "Miraidon"
+ },
+ "me5-29": {
+  "kind": "existing-name",
+  "source": "xy9-19",
+  "english": "Slowpoke"
+ },
+ "me5-30": {
+  "kind": "existing-name",
+  "source": "xy9-20",
+  "english": "Slowbro"
+ },
+ "me5-31": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy9-20",
+  "english": "Mega Slowbro ex"
+ },
+ "me5-32": {
+  "kind": "existing-name",
+  "source": "xy3-37",
+  "english": "Jynx"
+ },
+ "me5-33": {
+  "kind": "existing-name",
+  "source": "xy6-30",
+  "english": "Shuppet"
+ },
+ "me5-34": {
+  "kind": "existing-name",
+  "source": "xy6-32",
+  "english": "Banette"
+ },
+ "me5-35": {
+  "kind": "existing-name",
+  "source": "xy4-55",
+  "english": "Spiritomb"
+ },
+ "me5-36": {
+  "kind": "existing-name",
+  "source": "xy4-41",
+  "english": "Litwick"
+ },
+ "me5-37": {
+  "kind": "existing-name",
+  "source": "xy4-42",
+  "english": "Lampent"
+ },
+ "me5-38": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-43",
+  "english": "Mega Chandelure ex"
+ },
+ "me5-39": {
+  "kind": "existing-name",
+  "source": "swsh4-19",
+  "english": "Dhelmise"
+ },
+ "me5-40": {
+  "kind": "existing-name",
+  "source": "swsh7-80",
+  "english": "Marshadow"
+ },
+ "me5-41": {
+  "kind": "existing-name",
+  "source": "sv8-100",
+  "english": "Annihilape"
+ },
+ "me5-42": {
+  "kind": "existing-name",
+  "source": "xy11-52",
+  "english": "Mankey"
+ },
+ "me5-43": {
+  "kind": "existing-name",
+  "source": "xy11-53",
+  "english": "Primeape"
+ },
+ "me5-44": {
+  "kind": "existing-name",
+  "source": "swsh10-76",
+  "english": "Cranidos"
+ },
+ "me5-45": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh10-77",
+  "english": "Rampardos ex"
+ },
+ "me5-46": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-45",
+  "english": "Drilbur"
+ },
+ "me5-47": {
+  "kind": "existing-name",
+  "source": "sv8-116",
+  "english": "Koraidon"
+ },
+ "me5-48": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-167",
+  "english": "Mega Darkrai ex"
+ },
+ "me5-49": {
+  "kind": "existing-name",
+  "source": "xy10-57",
+  "english": "Vullaby"
+ },
+ "me5-50": {
+  "kind": "existing-name",
+  "source": "xy10-58",
+  "english": "Mandibuzz"
+ },
+ "me5-51": {
+  "kind": "existing-name",
+  "source": "xy8-93",
+  "english": "Inkay"
+ },
+ "me5-52": {
+  "kind": "existing-name",
+  "source": "xy7-46",
+  "english": "Malamar"
+ },
+ "me5-53": {
+  "kind": "existing-name",
+  "source": "swsh7-104",
+  "english": "Nickit"
+ },
+ "me5-54": {
+  "kind": "existing-name",
+  "source": "swsh7-105",
+  "english": "Thievul"
+ },
+ "me5-55": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-179",
+  "english": "Morpeko ex"
+ },
+ "me5-56": {
+  "kind": "existing-name",
+  "source": "swsh8-27",
+  "english": "Zarude"
+ },
+ "me5-57": {
+  "kind": "existing-name",
+  "source": "sv4pt5-62",
+  "english": "Maschiff"
+ },
+ "me5-58": {
+  "kind": "existing-name",
+  "source": "sv4pt5-63",
+  "english": "Mabosstiff"
+ },
+ "me5-59": {
+  "kind": "existing-name",
+  "source": "sv6-39",
+  "english": "Chi-Yu"
+ },
+ "me5-60": {
+  "kind": "existing-name",
+  "source": "xy6-69",
+  "english": "Skarmory"
+ },
+ "me5-61": {
+  "kind": "existing-name",
+  "source": "xy11-69",
+  "english": "Shieldon"
+ },
+ "me5-62": {
+  "kind": "existing-name",
+  "source": "xy11-70",
+  "english": "Bastiodon"
+ },
+ "me5-63": {
+  "kind": "existing-name",
+  "source": "xy8-95",
+  "english": "Bronzor"
+ },
+ "me5-64": {
+  "kind": "existing-name",
+  "source": "xy8-96",
+  "english": "Bronzong"
+ },
+ "me5-65": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy5-97",
+  "english": "Mega Excadrill ex"
+ },
+ "me5-66": {
+  "kind": "existing-name",
+  "source": "swsh4-143",
+  "english": "Pikipek"
+ },
+ "me5-67": {
+  "kind": "existing-name",
+  "source": "swsh4-144",
+  "english": "Trumbeak"
+ },
+ "me5-68": {
+  "kind": "existing-name",
+  "source": "swsh4-145",
+  "english": "Toucannon"
+ },
+ "me5-69": {
+  "kind": "existing-name",
+  "source": "sm5-115",
+  "english": "Type: Null"
+ },
+ "me5-70": {
+  "kind": "existing-name",
+  "source": "sm11-184",
+  "english": "Silvally"
+ },
+ "me5-71": {
+  "kind": "existing-name",
+  "source": "sv9-101",
+  "english": "Bombirdier"
+ },
+ "me5-72": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004072",
+  "english": "Antique Armor Fossil"
+ },
+ "me5-73": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004071",
+  "english": "Antique Skull Fossil"
+ },
+ "me5-74": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004073",
+  "english": "Backtrack Badge"
+ },
+ "me5-75": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004070",
+  "english": "Dark Bell"
+ },
+ "me5-76": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004079",
+  "english": "Fossil Quarry"
+ },
+ "me5-77": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004075",
+  "english": "Gladion's Final Battle"
+ },
+ "me5-78": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004077",
+  "english": "Gwynn"
+ },
+ "me5-79": {
+  "kind": "reviewed-secondary",
+  "source": "https://pokemon.fandom.com/ko/wiki/제트",
+  "english": "Jett"
+ },
+ "me5-80": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004078",
+  "english": "Misty's Vitality"
+ },
+ "me5-81": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004076",
+  "english": "Rust Syndicate Grunt"
+ },
+ "me5-82": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004074",
+  "english": "Tremendous Bomb"
+ },
+ "me5-83": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004081",
+  "english": "Shadowy Darkness Energy"
+ },
+ "me5-84": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004080",
+  "english": "Voltaic Lightning Energy"
+ },
+ "me5-85": {
+  "kind": "existing-name",
+  "source": "swsh5-14",
+  "english": "Fomantis"
+ },
+ "me5-86": {
+  "kind": "existing-name",
+  "source": "sv8-34",
+  "english": "Armarouge"
+ },
+ "me5-87": {
+  "kind": "existing-name",
+  "source": "xy8-27",
+  "english": "Goldeen"
+ },
+ "me5-88": {
+  "kind": "existing-name",
+  "source": "sm8-67",
+  "english": "Primarina"
+ },
+ "me5-89": {
+  "kind": "existing-name",
+  "source": "xy6-25",
+  "english": "Manectric"
+ },
+ "me5-90": {
+  "kind": "existing-name",
+  "source": "xy9-20",
+  "english": "Slowbro"
+ },
+ "me5-91": {
+  "kind": "existing-name",
+  "source": "swsh4-19",
+  "english": "Dhelmise"
+ },
+ "me5-92": {
+  "kind": "existing-name",
+  "source": "swsh7-105",
+  "english": "Thievul"
+ },
+ "me5-93": {
+  "kind": "existing-name",
+  "source": "xy11-70",
+  "english": "Bastiodon"
+ },
+ "me5-94": {
+  "kind": "existing-name",
+  "source": "swsh4-145",
+  "english": "Toucannon"
+ },
+ "me5-95": {
+  "kind": "existing-name",
+  "source": "sm11-184",
+  "english": "Silvally"
+ },
+ "me5-96": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh5-15",
+  "english": "Lurantis ex"
+ },
+ "me5-97": {
+  "kind": "existing-name",
+  "source": "ex2-100",
+  "english": "Wailord ex"
+ },
+ "me5-98": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-102",
+  "english": "Mega Zeraora ex"
+ },
+ "me5-99": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-43",
+  "english": "Mega Chandelure ex"
+ },
+ "me5-100": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh10-77",
+  "english": "Rampardos ex"
+ },
+ "me5-101": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-167",
+  "english": "Mega Darkrai ex"
+ },
+ "me5-102": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-179",
+  "english": "Morpeko ex"
+ },
+ "me5-103": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy5-97",
+  "english": "Mega Excadrill ex"
+ },
+ "me5-104": {
+  "kind": "existing-name",
+  "source": "rsv10pt5-80",
+  "english": "Brave Bangle"
+ },
+ "me5-105": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-125",
+  "english": "Crushing Hammer"
+ },
+ "me5-106": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004070",
+  "english": "Dark Bell"
+ },
+ "me5-107": {
+  "kind": "existing-name",
+  "source": "xy6-109",
+  "english": "Energy Switch"
+ },
+ "me5-108": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004075",
+  "english": "Gladion's Final Battle"
+ },
+ "me5-109": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004077",
+  "english": "Gwynn"
+ },
+ "me5-110": {
+  "kind": "existing-name",
+  "source": "me1-118",
+  "english": "Iron Defender"
+ },
+ "me5-111": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004078",
+  "english": "Misty's Vitality"
+ },
+ "me5-112": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004076",
+  "english": "Rust Syndicate Grunt"
+ },
+ "me5-113": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004074",
+  "english": "Tremendous Bomb"
+ },
+ "me5-114": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-102",
+  "english": "Mega Zeraora ex"
+ },
+ "me5-115": {
+  "kind": "composed-existing-pokemon",
+  "source": "xy4-43",
+  "english": "Mega Chandelure ex"
+ },
+ "me5-116": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-167",
+  "english": "Mega Darkrai ex"
+ },
+ "me5-117": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-179",
+  "english": "Morpeko ex"
+ },
+ "me5-118": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004075",
+  "english": "Gladion's Final Battle"
+ },
+ "me5-119": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026004077",
+  "english": "Gwynn"
+ },
+ "me5-120": {
+  "kind": "composed-existing-pokemon",
+  "source": "swsh8-167",
+  "english": "Mega Darkrai ex"
+ },
+ "cel30-1": {
+  "kind": "existing-name",
+  "source": "xy6-1",
+  "english": "Exeggcute"
+ },
+ "cel30-2": {
+  "kind": "existing-name",
+  "source": "sm9-115",
+  "english": "Alolan Exeggutor"
+ },
+ "cel30-3": {
+  "kind": "existing-name",
+  "source": "xy5-17",
+  "english": "Volbeat"
+ },
+ "cel30-4": {
+  "kind": "existing-name",
+  "source": "xy5-18",
+  "english": "Illumise"
+ },
+ "cel30-5": {
+  "kind": "existing-name",
+  "source": "xy6-12",
+  "english": "Tropius"
+ },
+ "cel30-6": {
+  "kind": "existing-name",
+  "source": "swsh9-12",
+  "english": "Cherubi"
+ },
+ "cel30-7": {
+  "kind": "existing-name",
+  "source": "swsh5-8",
+  "english": "Cherrim"
+ },
+ "cel30-8": {
+  "kind": "existing-name",
+  "source": "xy8-15",
+  "english": "Vivillon"
+ },
+ "cel30-9": {
+  "kind": "existing-name",
+  "source": "xy5-20",
+  "english": "Vulpix"
+ },
+ "cel30-10": {
+  "kind": "existing-name",
+  "source": "xy5-21",
+  "english": "Ninetales"
+ },
+ "cel30-11": {
+  "kind": "existing-name",
+  "source": "xy10-9",
+  "english": "Moltres"
+ },
+ "cel30-12": {
+  "kind": "existing-name",
+  "source": "sv8-19",
+  "english": "Ho-Oh"
+ },
+ "cel30-13": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-171",
+  "english": "Victini"
+ },
+ "cel30-14": {
+  "kind": "existing-name",
+  "source": "xy6-63",
+  "english": "Reshiram"
+ },
+ "cel30-15": {
+  "kind": "composed-existing-pokemon",
+  "source": "sv8-29",
+  "english": "Fuecoco ex"
+ },
+ "cel30-16": {
+  "kind": "existing-name",
+  "source": "xy9-19",
+  "english": "Slowpoke"
+ },
+ "cel30-17": {
+  "kind": "existing-name",
+  "source": "xy9-28",
+  "english": "Lapras"
+ },
+ "cel30-18": {
+  "kind": "existing-name",
+  "source": "xy6-17",
+  "english": "Articuno"
+ },
+ "cel30-19": {
+  "kind": "existing-name",
+  "source": "xy5-53",
+  "english": "Kyogre"
+ },
+ "cel30-20": {
+  "kind": "existing-name",
+  "source": "sv8-136",
+  "english": "Palkia"
+ },
+ "cel30-21": {
+  "kind": "existing-name",
+  "source": "sv7-41",
+  "english": "Greninja ex"
+ },
+ "cel30-22": {
+  "kind": "existing-name",
+  "source": "swsh7-46",
+  "english": "Wishiwashi"
+ },
+ "cel30-23": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-24": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-25": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-26": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-27": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-28": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-29": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-30": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-31": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-32": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-33": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-34": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-35": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-36": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-37": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-38": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-39": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-40": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-41": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-42": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-43": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-44": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-45": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-46": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-47": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-48": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-49": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-50": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-51": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-52": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30-53": {
+  "kind": "existing-name",
+  "source": "sv8pt5-28",
+  "english": "Pikachu ex"
+ },
+ "cel30-54": {
+  "kind": "existing-name",
+  "source": "sv8pt5-28",
+  "english": "Pikachu ex"
+ },
+ "cel30-55": {
+  "kind": "existing-name",
+  "source": "xy6-23",
+  "english": "Zapdos"
+ },
+ "cel30-56": {
+  "kind": "existing-name",
+  "source": "xy6-64",
+  "english": "Zekrom"
+ },
+ "cel30-57": {
+  "kind": "existing-name",
+  "source": "swsh8-102",
+  "english": "Zeraora"
+ },
+ "cel30-58": {
+  "kind": "existing-name",
+  "source": "swsh8-106",
+  "english": "Toxel"
+ },
+ "cel30-59": {
+  "kind": "existing-name",
+  "source": "swsh8-108",
+  "english": "Toxtricity"
+ },
+ "cel30-60": {
+  "kind": "existing-name",
+  "source": "swsh8-108",
+  "english": "Toxtricity"
+ },
+ "cel30-61": {
+  "kind": "existing-name",
+  "source": "swsh8-179",
+  "english": "Morpeko"
+ },
+ "cel30-62": {
+  "kind": "existing-name",
+  "source": "sv8-69",
+  "english": "Miraidon"
+ },
+ "cel30-63": {
+  "kind": "existing-name",
+  "source": "xy12-51",
+  "english": "Mewtwo"
+ },
+ "cel30-64": {
+  "kind": "existing-name",
+  "source": "sv4-58",
+  "english": "Mewtwo ex"
+ },
+ "cel30-65": {
+  "kind": "existing-name",
+  "source": "xy12-53",
+  "english": "Mew"
+ },
+ "cel30-66": {
+  "kind": "existing-name",
+  "source": "sv4pt5-232",
+  "english": "Mew ex"
+ },
+ "cel30-67": {
+  "kind": "existing-name",
+  "source": "xy5-102",
+  "english": "Marill"
+ },
+ "cel30-68": {
+  "kind": "existing-name",
+  "source": "xy5-104",
+  "english": "Azumarill"
+ },
+ "cel30-69": {
+  "kind": "existing-name",
+  "source": "sv8pt5-33",
+  "english": "Espeon"
+ },
+ "cel30-70": {
+  "kind": "existing-name",
+  "source": "sv8pt5-34",
+  "english": "Espeon ex"
+ },
+ "cel30-71": {
+  "kind": "existing-name",
+  "source": "sv8pt5-41",
+  "english": "Sylveon ex"
+ },
+ "cel30-72": {
+  "kind": "existing-name",
+  "source": "xy7-30",
+  "english": "Unown"
+ },
+ "cel30-73": {
+  "kind": "existing-name",
+  "source": "xy11-46",
+  "english": "Drifloon"
+ },
+ "cel30-74": {
+  "kind": "existing-name",
+  "source": "xy8-70",
+  "english": "Cresselia"
+ },
+ "cel30-75": {
+  "kind": "existing-name",
+  "source": "xy4-43",
+  "english": "Chandelure"
+ },
+ "cel30-76": {
+  "kind": "existing-name",
+  "source": "xy8-107",
+  "english": "Xerneas"
+ },
+ "cel30-77": {
+  "kind": "existing-name",
+  "source": "swsh11-79",
+  "english": "Comfey"
+ },
+ "cel30-78": {
+  "kind": "existing-name",
+  "source": "sm9-69",
+  "english": "Cosmog"
+ },
+ "cel30-79": {
+  "kind": "existing-name",
+  "source": "sm9-70",
+  "english": "Cosmoem"
+ },
+ "cel30-80": {
+  "kind": "existing-name",
+  "source": "sm7-70",
+  "english": "Lunala"
+ },
+ "cel30-81": {
+  "kind": "existing-name",
+  "source": "sv8-97",
+  "english": "Gimmighoul"
+ },
+ "cel30-82": {
+  "kind": "existing-name",
+  "source": "xy5-84",
+  "english": "Groudon"
+ },
+ "cel30-83": {
+  "kind": "existing-name",
+  "source": "xy10-63",
+  "english": "Lucario"
+ },
+ "cel30-84": {
+  "kind": "existing-name",
+  "source": "zsv10pt5-21",
+  "english": "Seismitoad"
+ },
+ "cel30-85": {
+  "kind": "existing-name",
+  "source": "swsh6-87",
+  "english": "Lycanroc"
+ },
+ "cel30-86": {
+  "kind": "existing-name",
+  "source": "sv8-116",
+  "english": "Koraidon"
+ },
+ "cel30-87": {
+  "kind": "existing-name",
+  "source": "xy5-66",
+  "english": "Nidoran♀"
+ },
+ "cel30-88": {
+  "kind": "existing-name",
+  "source": "xy5-67",
+  "english": "Nidorina"
+ },
+ "cel30-89": {
+  "kind": "existing-name",
+  "source": "sm8-118",
+  "english": "Alolan Meowth"
+ },
+ "cel30-90": {
+  "kind": "existing-name",
+  "source": "sv5-193",
+  "english": "Gengar ex"
+ },
+ "cel30-91": {
+  "kind": "existing-name",
+  "source": "sv8pt5-59",
+  "english": "Umbreon"
+ },
+ "cel30-92": {
+  "kind": "existing-name",
+  "source": "sv8pt5-60",
+  "english": "Umbreon ex"
+ },
+ "cel30-93": {
+  "kind": "existing-name",
+  "source": "xy4-51",
+  "english": "Murkrow"
+ },
+ "cel30-94": {
+  "kind": "existing-name",
+  "source": "xy3-66",
+  "english": "Scraggy"
+ },
+ "cel30-95": {
+  "kind": "existing-name",
+  "source": "xy8-90",
+  "english": "Zorua"
+ },
+ "cel30-96": {
+  "kind": "existing-name",
+  "source": "xy8-91",
+  "english": "Zoroark"
+ },
+ "cel30-97": {
+  "kind": "existing-name",
+  "source": "xy4-72",
+  "english": "Deino"
+ },
+ "cel30-98": {
+  "kind": "existing-name",
+  "source": "xy4-73",
+  "english": "Zweilous"
+ },
+ "cel30-99": {
+  "kind": "existing-name",
+  "source": "xy4-74",
+  "english": "Hydreigon"
+ },
+ "cel30-100": {
+  "kind": "existing-name",
+  "source": "xy8-94",
+  "english": "Yveltal"
+ },
+ "cel30-101": {
+  "kind": "existing-name",
+  "source": "swsh8-180",
+  "english": "Galarian Meowth"
+ },
+ "cel30-102": {
+  "kind": "existing-name",
+  "source": "ex14-94",
+  "english": "Jirachi ex"
+ },
+ "cel30-103": {
+  "kind": "existing-name",
+  "source": "swsh7-112",
+  "english": "Dialga"
+ },
+ "cel30-104": {
+  "kind": "existing-name",
+  "source": "xy9-80",
+  "english": "Ferrothorn"
+ },
+ "cel30-105": {
+  "kind": "existing-name",
+  "source": "sm7-99",
+  "english": "Solgaleo"
+ },
+ "cel30-106": {
+  "kind": "existing-name",
+  "source": "swsh4-82",
+  "english": "Zacian"
+ },
+ "cel30-107": {
+  "kind": "existing-name",
+  "source": "swsh4-102",
+  "english": "Zamazenta"
+ },
+ "cel30-108": {
+  "kind": "existing-name",
+  "source": "sv8-131",
+  "english": "Gholdengo"
+ },
+ "cel30-109": {
+  "kind": "existing-name",
+  "source": "sv9-187",
+  "english": "Salamence ex"
+ },
+ "cel30-110": {
+  "kind": "existing-name",
+  "source": "sm75-52",
+  "english": "Jangmo-o"
+ },
+ "cel30-111": {
+  "kind": "existing-name",
+  "source": "sm75-53",
+  "english": "Hakamo-o"
+ },
+ "cel30-112": {
+  "kind": "existing-name",
+  "source": "sm75-54",
+  "english": "Kommo-o"
+ },
+ "cel30-113": {
+  "kind": "existing-name",
+  "source": "xy8-114",
+  "english": "Meowth"
+ },
+ "cel30-114": {
+  "kind": "existing-name",
+  "source": "xy10-75",
+  "english": "Kangaskhan"
+ },
+ "cel30-115": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-107",
+  "english": "Ditto"
+ },
+ "cel30-116": {
+  "kind": "existing-name",
+  "source": "xy7-63",
+  "english": "Eevee"
+ },
+ "cel30-117": {
+  "kind": "existing-name",
+  "source": "xy7-63",
+  "english": "Eevee"
+ },
+ "cel30-118": {
+  "kind": "existing-name",
+  "source": "xy7-63",
+  "english": "Eevee"
+ },
+ "cel30-119": {
+  "kind": "existing-name",
+  "source": "xy8-118",
+  "english": "Snorlax"
+ },
+ "cel30-120": {
+  "kind": "existing-name",
+  "source": "sm12-168",
+  "english": "Igglybuff"
+ },
+ "cel30-121": {
+  "kind": "existing-name",
+  "source": "xy10-78",
+  "english": "Lugia"
+ },
+ "cel30-122": {
+  "kind": "existing-name",
+  "source": "swsh11-75",
+  "english": "Hisuian Zorua"
+ },
+ "cel30-123": {
+  "kind": "existing-name",
+  "source": "swsh11-76",
+  "english": "Hisuian Zoroark"
+ },
+ "cel30-124": {
+  "kind": "existing-name",
+  "source": "sv4-99",
+  "english": "Minior"
+ },
+ "cel30-125": {
+  "kind": "existing-name",
+  "source": "sv8-158",
+  "english": "Maushold"
+ },
+ "cel30-126": {
+  "kind": "official-ko-card",
+  "source": "https://pokemoncard.co.kr/cards/detail/BS2026002071",
+  "english": "Poké Pad"
+ },
+ "cel30-127": {
+  "kind": "existing-name",
+  "source": "xy6-91",
+  "english": "Switch"
+ },
+ "cel30-128": {
+  "kind": "existing-name",
+  "source": "xy6-93",
+  "english": "Ultra Ball"
+ },
+ "cel30-129": {
+  "kind": "existing-name",
+  "source": "sm9-115",
+  "english": "Alolan Exeggutor"
+ },
+ "cel30-130": {
+  "kind": "existing-name",
+  "source": "xy10-9",
+  "english": "Moltres"
+ },
+ "cel30-131": {
+  "kind": "existing-name",
+  "source": "xy9-28",
+  "english": "Lapras"
+ },
+ "cel30-132": {
+  "kind": "existing-name",
+  "source": "xy6-17",
+  "english": "Articuno"
+ },
+ "cel30-133": {
+  "kind": "existing-name",
+  "source": "xy6-23",
+  "english": "Zapdos"
+ },
+ "cel30-134": {
+  "kind": "existing-name",
+  "source": "swsh8-108",
+  "english": "Toxtricity"
+ },
+ "cel30-135": {
+  "kind": "existing-name",
+  "source": "swsh8-179",
+  "english": "Morpeko"
+ },
+ "cel30-136": {
+  "kind": "existing-name",
+  "source": "xy11-46",
+  "english": "Drifloon"
+ },
+ "cel30-137": {
+  "kind": "existing-name",
+  "source": "xy4-43",
+  "english": "Chandelure"
+ },
+ "cel30-138": {
+  "kind": "existing-name",
+  "source": "swsh6-87",
+  "english": "Lycanroc"
+ },
+ "cel30-139": {
+  "kind": "existing-name",
+  "source": "sm8-118",
+  "english": "Alolan Meowth"
+ },
+ "cel30-140": {
+  "kind": "existing-name",
+  "source": "xy3-66",
+  "english": "Scraggy"
+ },
+ "cel30-141": {
+  "kind": "existing-name",
+  "source": "swsh8-180",
+  "english": "Galarian Meowth"
+ },
+ "cel30-142": {
+  "kind": "existing-name",
+  "source": "sv8-131",
+  "english": "Gholdengo"
+ },
+ "cel30-143": {
+  "kind": "existing-name",
+  "source": "sm75-54",
+  "english": "Kommo-o"
+ },
+ "cel30-144": {
+  "kind": "existing-name",
+  "source": "xy8-114",
+  "english": "Meowth"
+ },
+ "cel30-145": {
+  "kind": "existing-name",
+  "source": "swsh11-75",
+  "english": "Hisuian Zorua"
+ },
+ "cel30-146": {
+  "kind": "existing-name",
+  "source": "sv8-158",
+  "english": "Maushold"
+ },
+ "cel30-147": {
+  "kind": "composed-existing-pokemon",
+  "source": "sv8-29",
+  "english": "Fuecoco ex"
+ },
+ "cel30-148": {
+  "kind": "existing-name",
+  "source": "sv7-41",
+  "english": "Greninja ex"
+ },
+ "cel30-149": {
+  "kind": "existing-name",
+  "source": "sv8pt5-28",
+  "english": "Pikachu ex"
+ },
+ "cel30-150": {
+  "kind": "existing-name",
+  "source": "sv8pt5-28",
+  "english": "Pikachu ex"
+ },
+ "cel30-151": {
+  "kind": "existing-name",
+  "source": "sv4-58",
+  "english": "Mewtwo ex"
+ },
+ "cel30-152": {
+  "kind": "existing-name",
+  "source": "sv4pt5-232",
+  "english": "Mew ex"
+ },
+ "cel30-153": {
+  "kind": "existing-name",
+  "source": "sv8pt5-41",
+  "english": "Sylveon ex"
+ },
+ "cel30-154": {
+  "kind": "existing-name",
+  "source": "sv5-193",
+  "english": "Gengar ex"
+ },
+ "cel30-155": {
+  "kind": "existing-name",
+  "source": "ex14-94",
+  "english": "Jirachi ex"
+ },
+ "cel30-156": {
+  "kind": "existing-name",
+  "source": "sv9-187",
+  "english": "Salamence ex"
+ },
+ "cel30-157": {
+  "kind": "existing-name",
+  "source": "sv4-58",
+  "english": "Mewtwo ex"
+ },
+ "cel30-158": {
+  "kind": "existing-name",
+  "source": "sv4pt5-232",
+  "english": "Mew ex"
+ },
+ "cel30-R_RGB": {
+  "kind": "existing-name",
+  "source": "xy12-53",
+  "english": "Mew"
+ },
+ "cel30-G_RGB": {
+  "kind": "existing-name",
+  "source": "xy12-53",
+  "english": "Mew"
+ },
+ "cel30-B_RGB": {
+  "kind": "existing-name",
+  "source": "xy12-53",
+  "english": "Mew"
+ },
+ "cel30c-1": {
+  "kind": "existing-name",
+  "source": "xy12-11",
+  "english": "Charizard"
+ },
+ "cel30c-2": {
+  "kind": "existing-name",
+  "source": "xy5-114",
+  "english": "Delcatty"
+ },
+ "cel30c-3": {
+  "kind": "existing-name",
+  "source": "xy7-50",
+  "english": "Metagross"
+ },
+ "cel30c-4": {
+  "kind": "existing-name",
+  "source": "xy10-64",
+  "english": "Genesect EX"
+ },
+ "cel30c-5": {
+  "kind": "existing-name",
+  "source": "gym1-18",
+  "english": "Misty"
+ },
+ "cel30c-6": {
+  "kind": "existing-name",
+  "source": "neo4-11",
+  "english": "Dark Tyranitar"
+ },
+ "cel30c-7": {
+  "kind": "existing-name",
+  "source": "xy2-51",
+  "english": "Sneasel"
+ },
+ "cel30c-8": {
+  "kind": "existing-name",
+  "source": "sm9-33",
+  "english": "Pikachu & Zekrom GX"
+ },
+ "cel30c-9": {
+  "kind": "existing-name",
+  "source": "xy9-41",
+  "english": "Greninja BREAK"
+ },
+ "cel30c-10": {
+  "kind": "existing-name",
+  "source": "swsh10-65",
+  "english": "Uxie"
+ },
+ "cel30c-11": {
+  "kind": "existing-name",
+  "source": "pl1-47",
+  "english": "Crobat G"
+ },
+ "cel30c-12": {
+  "kind": "existing-name",
+  "source": "xy8-55",
+  "english": "Raikou"
+ },
+ "cel30c-13": {
+  "kind": "existing-name",
+  "source": "sm4-57",
+  "english": "Buzzwole GX"
+ },
+ "cel30c-14": {
+  "kind": "existing-name",
+  "source": "xy8-48",
+  "english": "Pikachu"
+ },
+ "cel30c-15": {
+  "kind": "existing-name",
+  "source": "gym2-69",
+  "english": "Erika's Jigglypuff"
+ },
+ "cel30c-16": {
+  "kind": "existing-name",
+  "source": "xy6-75",
+  "english": "Rayquaza EX"
+ },
+ "cel30c-17": {
+  "kind": "existing-name",
+  "source": "sm5-173",
+  "english": "Solgaleo GX"
+ },
+ "cel30c-18": {
+  "kind": "existing-name",
+  "source": "xy8-60",
+  "english": "Gengar"
+ },
+ "cel30c-19": {
+  "kind": "existing-name",
+  "source": "hgss4-99",
+  "english": "Darkrai & Cresselia LEGEND"
+ },
+ "cel30c-20": {
+  "kind": "existing-name",
+  "source": "hgss4-99",
+  "english": "Darkrai & Cresselia LEGEND"
+ },
+ "cel30c-21": {
+  "kind": "existing-name",
+  "source": "xy10-105a",
+  "english": "N"
+ },
+ "cel30c-22": {
+  "kind": "existing-name",
+  "source": "sv8-136",
+  "english": "Palkia"
+ },
+ "cel30c-23": {
+  "kind": "existing-name",
+  "source": "xy5-156",
+  "english": "M Gardevoir EX"
+ },
+ "cel30c-24": {
+  "kind": "existing-name",
+  "source": "neo4-106",
+  "english": "Shining Celebi"
+ },
+ "cel30c-25": {
+  "kind": "existing-name",
+  "source": "sv5-195",
+  "english": "Scizor ex"
+ },
+ "cel30c-26": {
+  "kind": "existing-name",
+  "source": "swsh8-269",
+  "english": "Mew VMAX"
+ },
+ "cel30c-27": {
+  "kind": "existing-name",
+  "source": "swsh9-184",
+  "english": "Arceus VSTAR"
+ },
+ "cel30c-28": {
+  "kind": "existing-name",
+  "source": "swsh12pt5-95",
+  "english": "Zacian V"
+ },
+ "cel30c-29": {
+  "kind": "existing-name",
+  "source": "xy10-78",
+  "english": "Lugia"
+ },
+ "cel30c-30": {
+  "kind": "existing-name",
+  "source": "xy7-19",
+  "english": "Magikarp"
+ }
+}

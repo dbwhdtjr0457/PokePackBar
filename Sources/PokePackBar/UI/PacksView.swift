@@ -19,8 +19,9 @@ struct PacksView: View {
         let setID: String
         let setName: String
         let cards: [PulledCard]
-        /// 전 칸이 레어 이상으로 나온 팩. 대기 화면과 개봉 화면이 다르게 움직인다.
-        let isGodPack: Bool
+        /// 세트 전용 특수 구성. 151 진화라인과 프리즈마틱 갓팩을 구분한다.
+        let variant: PackVariant
+        let supplement: PackSupplement
         /// 이 개봉으로 새로 완성된 도감. 요약 화면에서 알린다.
         let completions: [DexCompletion]
     }
@@ -32,7 +33,8 @@ struct PacksView: View {
         /// 미리 받아 둔 그림. 표시 시점에 네트워크를 타지 않는다.
         let hires: [String: NSImage]
         let thumbs: [String: NSImage]
-        let isGodPack: Bool
+        let variant: PackVariant
+        let supplement: PackSupplement
         let completions: [DexCompletion]
     }
 
@@ -101,21 +103,16 @@ struct PacksView: View {
 
     private func open(set: CardSet, index: CardIndex) {
         // 보유량을 먼저 줄인다. 뽑기가 먼저면 실패 시 팩이 사라진 채 카드도 없는 상태가 된다.
-        guard wallet.consumePack(setID: set.id) else { return }
-        var generator = SystemRandomNumberGenerator()
-        let owned = Set(wallet.state.cards.keys)
-        var pity = wallet.pity(setID: set.id)
-        let pulled = PackOpening.draw(setID: set.id, index: index, alreadyOwned: owned,
-                                      perks: wallet.perks, pity: &pity, using: &generator)
-        wallet.setPity(pity, setID: set.id)
+        guard let result = wallet.openPack(setID: set.id, index: index) else { return }
+        let pulled = result.opened
         // 수집이 도감 완성까지 처리하고 그 목록을 돌려준다.
-        let completions = wallet.collect(pulled.cards.map(\.id))
+        let completions = result.completions
         // 카드는 이미 들어갔지만 머리글의 컬렉션 가치는 뒤집은 만큼만 올린다 —
         // 값이 먼저 오르면 무엇이 나왔는지 카드를 보기 전에 알게 된다.
-        wallet.holdForReveal(pulled.cards.map(\.id))
         preparing = PendingPack(setID: set.id, setName: set.name,
                                 cards: PackOpening.revealOrder(pulled.cards),
-                                isGodPack: pulled.isGodPack,
+                                variant: pulled.variant,
+                                supplement: .contents(setID: set.id, era: index.era(set.id), variant: pulled.variant),
                                 completions: completions)
     }
 }
@@ -135,10 +132,11 @@ private struct PreparingView: View {
     /// 갓팩일 때 부풀어 오르는 빛. 대기 화면에서 미리 터뜨려 개봉 전에 알린다 —
     /// 카드가 다 지나간 뒤에 알면 기대할 시간이 없다.
     @State private var glow = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         let l = wallet.l
-        let god = pending.isGodPack
+        let special = pending.variant.isSpecialHit
         return VStack(spacing: 12) {
             Spacer(minLength: 0)
             // 기다리는 동안 무엇을 뜯고 있는지 보여준다. 팩 아트는 상점에서 이미 받아 둔
@@ -146,7 +144,7 @@ private struct PreparingView: View {
             PackImageView(setID: pending.setID, width: 150)
                 .shadow(radius: 8, y: 3)
                 .background {
-                    if god {
+                    if special {
                         RoundedRectangle(cornerRadius: 24)
                             .fill(Color.orange)
                             .blur(radius: 44)
@@ -154,13 +152,15 @@ private struct PreparingView: View {
                             .scaleEffect(glow ? 1.2 : 0.8)
                     }
                 }
-                .scaleEffect(god && glow ? 1.06 : 1)
+                .scaleEffect(special && glow ? 1.06 : 1)
             VStack(spacing: 3) {
-                if god {
-                    Text(l.godPackTitle)
+                if special {
+                    Text(l.specialPackTitle(pending.variant))
                         .font(Typography.display)
                         .foregroundStyle(Color.orange)
-                    Text(l.godPackHint).font(Typography.body).foregroundStyle(.secondary)
+                    Text(l.specialPackHint(pending.variant))
+                        .font(Typography.body).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
                 } else {
                     Text(l.packPreparing).font(Typography.title)
                     Text(pending.setName).font(Typography.body).foregroundStyle(.secondary)
@@ -171,7 +171,11 @@ private struct PreparingView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
-            guard god else { return }
+            guard special else { return }
+            if reduceMotion {
+                glow = true
+                return
+            }
             withAnimation(.easeOut(duration: 0.7).repeatForever(autoreverses: true)) {
                 glow = true
             }
@@ -187,7 +191,8 @@ private struct PreparingView: View {
             guard !Task.isCancelled else { return }
             onReady(PacksView.OpenedPack(id: pending.id, setName: pending.setName,
                                          cards: pending.cards, hires: big, thumbs: small,
-                                         isGodPack: pending.isGodPack,
+                                         variant: pending.variant,
+                                         supplement: pending.supplement,
                                          completions: pending.completions))
         }
     }
@@ -210,7 +215,8 @@ private struct OwnedPackRow: View {
                 Text(l.packName(set.name))
                     .font(Typography.title)
                     .fixedSize(horizontal: false, vertical: true)
-                Text("\(l.packContents(PackPricing.cardCount(setID: set.id, index: index, perks: wallet.perks)))  ·  ×\(count)")
+                let contents = PackRecipe.forSet(set.id, era: index.era(set.id)).contents
+                Text("\(l.packContents(contents))  ·  ×\(count)")
                     .font(Typography.body).foregroundStyle(.secondary).monospacedDigit()
             }
             Spacer(minLength: 0)
@@ -251,6 +257,7 @@ private struct RevealView: View {
                                   setID: index?.card(focused.id)?.setID ?? "",
                                   setName: opened.setName,
                                   rarity: index?.card(focused.id)?.rarity,
+                                  finish: focused.finish,
                                   ownedCount: wallet.cardCount(focused.id),
                                   preloaded: opened.hires[focused.id]) {
                     spotlight = nil
@@ -278,7 +285,8 @@ private struct RevealView: View {
     /// 마지막 장에서 요약으로 넘어갈 때만 화면이 통째로 바뀌므로 그때는 애니메이션을 준다.
     private func advance() {
         // 방금 본 장을 컬렉션 가치에 얹는다. 넘긴 뒤에 올려야 머리글이 카드보다 앞서지 않는다.
-        wallet.markRevealed(opened.cards[min(position, opened.cards.count - 1)].id)
+        let card = opened.cards[min(position, opened.cards.count - 1)]
+        wallet.markRevealed(CardPrintingKey(cardID: card.id, finish: card.finish))
         if position + 1 >= opened.cards.count {
             wallet.markAllRevealed()
             withAnimation(.easeOut(duration: 0.22)) { position += 1 }
@@ -312,7 +320,11 @@ private struct RevealView: View {
                     .font(Typography.badge)
                     .foregroundStyle(tierColor(card.tier))
                 Text(l.tierName(card.tier)).font(Typography.label).foregroundStyle(.secondary)
-                if let prices = CardPrices.shared, let usd = prices.price(card.id) {
+                Text("·").font(Typography.label).foregroundStyle(.tertiary)
+                Text(l.cardFinishName(card.finish))
+                    .font(Typography.label).foregroundStyle(.secondary)
+                if let prices = CardPrices.shared,
+                   let usd = prices.price(cardID: card.id, finish: card.finish) {
                     Text("·").font(Typography.label).foregroundStyle(.tertiary)
                     Text(prices.formattedWithKRW(usd, language: wallet.language))
                         .font(Typography.labelSemibold).monospacedDigit()
@@ -334,8 +346,8 @@ private struct RevealView: View {
         let isLast = position + 1 >= opened.cards.count
         return VStack(spacing: 8) {
             HStack {
-                if opened.isGodPack {
-                    Text(l.godPackBadge)
+                if opened.variant.isSpecialHit {
+                    Text(l.specialPackBadge(opened.variant))
                         .font(.system(size: 14, weight: .heavy))
                         .padding(.horizontal, 5).padding(.vertical, 2)
                         .background(Color.orange, in: Capsule())
@@ -386,16 +398,21 @@ private struct RevealView: View {
         let l = wallet.l
         return VStack(spacing: 8) {
             VStack(spacing: 2) {
-                Text(opened.isGodPack ? l.godPackTitle : l.packOpened)
-                    .font(opened.isGodPack ? Typography.badgeLarge : Typography.title)
-                    .foregroundStyle(opened.isGodPack ? Color.orange : Color.primary)
+                Text(opened.variant.isSpecialHit ? l.specialPackTitle(opened.variant) : l.packOpened)
+                    .font(opened.variant.isSpecialHit ? Typography.badgeLarge : Typography.title)
+                    .foregroundStyle(opened.variant.isSpecialHit ? Color.orange : Color.primary)
                 Text("\(opened.setName)  ·  \(l.packOpenSummary(new: newCount, total: opened.cards.count))")
                     .font(Typography.body).foregroundStyle(.secondary)
+                if opened.supplement.energyCount > 0 {
+                    Text(l.supplement(opened.supplement))
+                        .font(Typography.label).foregroundStyle(.secondary)
+                }
                 // 무엇이 나왔는지는 카드 그림이 말해 주지만, 얼마어치가 나왔는지는 숫자로만
                 // 알 수 있다. 팩값과 나란히 놓고 보라고 여기 둔다.
                 if let prices = CardPrices.shared {
                     let worth = opened.cards.reduce(0.0) {
-                        $0 + MarketEconomy.usd(cardID: $1.id, prices: prices)
+                        $0 + MarketEconomy.usd(cardID: $1.id, finish: $1.finish,
+                                               prices: prices)
                     }
                     Text(l.packTotalValue(prices.formattedWithKRW(worth,
                                                                   language: wallet.language)))
@@ -470,8 +487,9 @@ private struct RevealStack: View {
             if let next {
                 ZStack {
                     TierGlow(tier: next.tier, width: RevealPeek.cardWidth).opacity(peek)
-                    CardImageView(cardID: next.id, hires: true, width: RevealPeek.cardWidth,
-                                  preloaded: nextPreloaded)
+                    HolographicCardView(cardID: next.id, tier: next.tier,
+                                        finish: next.finish, width: RevealPeek.cardWidth,
+                                        preloaded: nextPreloaded)
                 }
                 .scaleEffect(RevealPeek.deckScale)
                 .offset(y: RevealPeek.deckOffset)
@@ -535,8 +553,9 @@ private struct SpotlightCard: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             TierGlow(tier: card.tier, width: RevealPeek.cardWidth)
-            CardImageView(cardID: card.id, hires: true, width: RevealPeek.cardWidth,
-                          preloaded: preloaded)
+            HolographicCardView(cardID: card.id, tier: card.tier,
+                                finish: card.finish, width: RevealPeek.cardWidth,
+                                preloaded: preloaded)
             if card.isNew {
                 NewBadge(text: newBadge)
                     .padding(5)
@@ -638,7 +657,7 @@ enum RevealPeek {
     /// 탭 높이(`PopoverMetrics.tabHeight`) 안에서 머리글·이름·등급·값·버튼·여백이 130pt
     /// 남짓을 쓰고, 밑장이 7pt 더 삐져나온다. 남는 세로를 카드가 다 먹으면 위아래가
     /// 답답해지므로 45pt 정도를 남긴 값이다.
-    static let cardWidth: CGFloat = 260
+    static let cardWidth: CGFloat = PopoverMetrics.revealCardWidth
 
     // MARK: 덱 — 밑에 깔리는 다음 장
 
@@ -742,6 +761,18 @@ private struct PulledCardCell: View {
                     // 카드 안쪽에 붙인다. 바깥으로 내밀면 격자 경계에서 위가 잘린다.
                     NewBadge(text: wallet.l.newCardBadge).padding(3)
                 }
+                if card.finish != .normal {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 10, weight: .bold))
+                        .padding(3)
+                        .background(.black.opacity(0.62), in: Circle())
+                        .foregroundStyle(.white)
+                        .padding(3)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity,
+                               alignment: .bottomLeading)
+                        .help(wallet.l.cardFinishName(card.finish))
+                        .accessibilityLabel(wallet.l.cardFinishName(card.finish))
+                }
             }
             Text(wallet.l.tierBadge(card.tier))
                 .font(.system(size: 14, weight: .heavy))
@@ -773,7 +804,7 @@ func tierColor(_ tier: CardTier) -> Color {
     case .shining:        return Color(red: 0.95, green: 0.85, blue: 0.55)   // 빛나는 포켓몬
     case .hyperRare:      return Color(red: 0.75, green: 0.45, blue: 0.95)   // 레인보우
     case .ultraRare:      return .yellow
-    case .blackWhiteRare: return Color(red: 0.40, green: 0.40, blue: 0.45)   // 블랙볼트·화이트플레어
+    case .blackWhiteRare: return Color(white: 0.42)                          // 블랙볼트·화이트플레어
     case .megaAttack:     return Color(red: 0.95, green: 0.40, blue: 0.55)   // 메가어택레어
     case .megaUltraRare:  return Color(red: 1.00, green: 0.55, blue: 0.10)   // 메가 울트라레어
     case .futureUltra:    return Color(red: 0.20, green: 0.85, blue: 0.80)   // 퓨처울트라레어

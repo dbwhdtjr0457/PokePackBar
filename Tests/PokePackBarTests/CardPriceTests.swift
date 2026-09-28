@@ -9,6 +9,11 @@ final class CardPriceTests: XCTestCase {
 
     private static let prices = CardPrices.loadBundled()
 
+    @MainActor
+    func testRGBAndReferenceProvenance() throws {
+        try PriceSnapshotAudit.verify(index: XCTUnwrap(CardIndex.loadBundled()))
+    }
+
     func testBundleCarriesPrices() throws {
         let prices = try XCTUnwrap(Self.prices, "card-prices.json 이 번들에 없다")
         XCTAssertFalse(prices.asOf.isEmpty, "기준일이 비어 있으면 언제 값인지 알 수 없다")
@@ -40,6 +45,58 @@ final class CardPriceTests: XCTestCase {
         let unit = try XCTUnwrap(prices.price(id))
         XCTAssertEqual(prices.total(id, count: 3) ?? 0, unit * 3, accuracy: 0.0001)
         XCTAssertNil(prices.total(id, count: 0), "갖고 있지 않으면 보유액이 없다")
+    }
+
+    /// v2에는 판형별 값이 없다. 새 API도 카드 대표값으로 폴백해야 기존 번들을 그대로 쓴다.
+    func testLegacyV2PriceFallsBackForEveryFinish() throws {
+        let prices = try XCTUnwrap(CardPrices.decode(Data("""
+            {"version":2,"asOf":"2026-09-01","currency":"USD","krwPerUsd":1300,
+             "prices":{"sample-1":1.25}}
+            """.utf8)))
+        XCTAssertEqual(prices.price("sample-1"), 1.25)
+        XCTAssertEqual(prices.price(cardID: "sample-1", finish: .normal), 1.25)
+        XCTAssertEqual(prices.price(cardID: "sample-1", finish: .masterBall), 1.25)
+    }
+
+    /// 새 스냅샷은 정확한 인쇄본 값을 우선하고, 없는 판형만 카드 대표값으로 폴백한다.
+    func testPrintingPriceOverridesCardFallback() throws {
+        let prices = try XCTUnwrap(CardPrices.decode(Data("""
+            {"version":3,"asOf":"2026-09-22","currency":"USD","krwPerUsd":1300,
+             "prices":{"sample-1":10.0},
+             "printingPrices":{"sample-1#normal":1.0,"sample-1#reverseHolo":2.5}}
+            """.utf8)))
+        XCTAssertEqual(prices.price(cardID: "sample-1", finish: .normal), 1.0)
+        XCTAssertEqual(prices.price(cardID: "sample-1", finish: .reverseHolo), 2.5)
+        XCTAssertEqual(prices.price(cardID: "sample-1", finish: .gold), 10.0,
+                       "정확한 판형 시세가 없으면 카드 대표값이어야 한다")
+    }
+
+    func testPrintingPriceDoesNotReplaceAnExistingCardRepresentative() throws {
+        let prices = try XCTUnwrap(CardPrices.decode(Data("""
+            {"version":3,"asOf":"2026-09-01","currency":"USD","krwPerUsd":1300,
+             "prices":{"sample-1":1.0},
+             "printingPrices":{"sample-1#masterBall":100.0},
+             "printingPriceSnapshot":{"asOf":"2026-09-21"}}
+            """.utf8)))
+        XCTAssertEqual(prices.price("sample-1"), 1.0,
+                       "일반 추첨까지 Master Ball 가격으로 부풀면 안 된다")
+        XCTAssertEqual(prices.price(cardID: "sample-1", finish: .masterBall), 100.0)
+        XCTAssertEqual(prices.exactPrice(cardID: "sample-1", finish: .masterBall), 100.0)
+        XCTAssertNil(prices.exactPrice(cardID: "sample-1", finish: .normal))
+        XCTAssertEqual(prices.sourceDate(cardID: "sample-1", finish: .masterBall), "2026-09-21")
+        XCTAssertEqual(prices.sourceDate(cardID: "sample-1", finish: .normal), "2026-09-01")
+    }
+
+    /// importer가 `prices` 자체를 card → finish 맵으로 넓힌 포맷도 읽는다.
+    func testNestedPrintingOnlySnapshotKeepsLegacyCardAPI() throws {
+        let prices = try XCTUnwrap(CardPrices.decode(Data("""
+            {"version":3,"asOf":"2026-09-22","currency":"USD","krwPerUsd":1300,
+             "prices":{"sample-1":{"normal":0.5,"masterBall":24.0}}}
+            """.utf8)))
+        XCTAssertEqual(prices.price(cardID: "sample-1", finish: .normal), 0.5)
+        XCTAssertEqual(prices.price(cardID: "sample-1", finish: .masterBall), 24.0)
+        XCTAssertEqual(prices.price("sample-1"), 24.0,
+                       "기존 호출부에는 가장 비싼 판형의 대표값을 준다")
     }
 
     /// 큰 값에서는 소수점이 잡음이고, 작은 값에서는 두 자리가 의미를 갖는다.

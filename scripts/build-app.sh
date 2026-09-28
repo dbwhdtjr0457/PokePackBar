@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="0.8.0"
+VERSION="0.11.11"
 APP_NAME="PokePackBar"
 BUILD_DIR="build"
 # 원본과 겹치면 로그인 항목·Keychain ACL·LaunchServices 상태가 섞인다.
@@ -12,6 +12,20 @@ BUNDLE_ID="dev.local.pokepackbar"
 APP="$BUILD_DIR/$APP_NAME.app"
 
 echo "==> swift build -c release"
+python3 -m unittest discover -s scripts -p 'test_update_printing_prices.py'
+python3 -m unittest discover -s scripts -p 'test_update_korean_card_names.py'
+python3 -m unittest discover -s scripts -p 'test_offline_art_snapshot.py'
+python3 scripts/update_korean_card_names.py --verify
+python3 scripts/offline_art_snapshot.py restore
+local-assets/.venv/bin/python scripts/build_card_art_library.py --verify
+local-assets/.venv/bin/python scripts/build_foil_geometry.py --verify
+local-assets/.venv/bin/python scripts/build_expansion_foil.py --verify
+local-assets/.venv/bin/python scripts/audit_subject_masks.py
+local-assets/.venv/bin/python scripts/build_physical_foil_marks.py --verify
+local-assets/.venv/bin/python scripts/build_reviewed_foil.py --verify
+local-assets/.venv/bin/python scripts/build_cracked_facets.py --verify
+local-assets/.venv/bin/python -m unittest discover -s scripts -p 'test_reviewed_foil.py'
+local-assets/.venv/bin/python -m unittest discover -s scripts -p 'test_audit_foil_visibility.py'
 swift build -c release
 
 echo "==> $APP 조립"
@@ -26,6 +40,8 @@ cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # 빼먹으면 빌드도 테스트도 통과하는데(테스트는 .build 에서 직접 읽는다) 설치된 앱만
 # "카드 목록을 불러올 수 없어요" 가 된다. 그래서 아래에서 존재를 확인한다.
 cp -R ".build/release/${APP_NAME}_${APP_NAME}.bundle" "$APP/Contents/Resources/"
+mkdir -p "$APP/Contents/Resources/CardArt"
+local-assets/.venv/bin/python scripts/build_card_art_library.py --copy-to "$APP/Contents/Resources/CardArt"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -38,6 +54,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>CFBundleVersion</key><string>$VERSION</string>
+    <key>PPBBuildChannel</key><string>local-custom</string>
+    <key>PPBUpstreamVersion</key><string>0.8.0</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>LSUIElement</key><true/>
@@ -94,6 +112,7 @@ echo "   dex.json $(wc -c < "$DEX" | tr -d ' ') bytes"
 # 한국어 카드명 — 빠지면 이름이 조용히 전부 영문으로 나온다. 앱은 정상 동작해서 눈치채기 어렵다.
 KO_NAMES="$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/card-names-ko.json"
 PRICES="$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/card-prices.json"
+PACK_PRICES="$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/pack-prices.json"
 if [ ! -f "$KO_NAMES" ]; then
     echo "   \u2717 한국어 카드명이 번들에 없다: $KO_NAMES" >&2
     exit 1
@@ -101,6 +120,8 @@ fi
 echo "   card-names-ko.json $(wc -c < "$KO_NAMES" | tr -d ' ') bytes"
 [[ -s "$PRICES" ]] || { echo "✗ card-prices.json 이 번들에 없다" >&2; exit 1; }
 echo "   card-prices.json $(wc -c < "$PRICES" | tr -d ' ') bytes"
+[[ -s "$PACK_PRICES" ]] || { echo "✗ pack-prices.json 이 번들에 없다" >&2; exit 1; }
+echo "   pack-prices.json $(wc -c < "$PACK_PRICES" | tr -d ' ') bytes"
 
 # 팩 아트 — 판매 세트 수만큼 있어야 한다. 빠지면 상점이 빈 상자로 뜬다.
 PACK_DIR="$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/packs"
@@ -120,6 +141,14 @@ if ! VERIFY_OUT=$("$APP/Contents/MacOS/$APP_NAME" --verify-resources 2>&1); then
 fi
 echo "   $VERIFY_OUT"
 
+# Check the packaged renderer too; source-only tests cannot catch omitted masks.
+PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-confirmed-foil-fixes
+PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-foil-optics
+PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-price-snapshot
+PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-korean-names
+PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-foil-geometry
+PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-reviewed-foil
+
 echo "==> codesign"
 SIGN_IDENTITY="${CODESIGN_IDENTITY:-PokePackBar Local}"
 # 안정적 Keychain ACL 을 위해서는 인증서 존재가 아니라 유효한 codesigning identity 가 필요하다.
@@ -137,6 +166,11 @@ else
     echo "   ('$SIGN_IDENTITY' 유효 codesigning identity 없음 → ad-hoc 서명 — 로컬 개발용)"
     echo "   반복 Keychain 허용 프롬프트를 줄이려면 ./scripts/create-signing-cert.sh 실행 후 다시 빌드하세요."
     codesign --force -s - "$APP"
+fi
+
+if [[ "${PPB_SKIP_INSTALL:-0}" == "1" ]]; then
+    echo "완료: $APP (검증용 조립만 수행; 설치 앱과 세이브 변경 없음)"
+    exit 0
 fi
 
 echo "==> 기존 인스턴스 종료 + /Applications 설치"

@@ -22,6 +22,31 @@ extension L {
                                     "Valor de la colección", "Valeur de la collection",
                                     "Valor da coleção") }
     var marketHoldings: String { t("보유", "Holdings", "保有", "En posesión", "En stock", "Em posse") }
+    func cardFinishName(_ finish: CardFinish) -> String {
+        switch finish {
+        case .normal: return t("일반", "Non-foil", "ノーマル", "Normal", "Standard", "Normal")
+        case .holo: return t("홀로", "Holo", "ホロ", "Holo", "Holo", "Holo")
+        case .reverseHolo: return t("역홀로", "Reverse holo", "リバースホロ", "Holo inverso", "Holo inversé", "Holo reverso")
+        case .patternedReverse: return t("볼·로켓단 미러", "Ball / Team Rocket mirror", "ボール・ロケット団ミラー", "Espejo Ball / Team Rocket", "Miroir Ball / Team Rocket", "Espelho Ball / Equipe Rocket")
+        case .fullArt: return t("풀아트 홀로", "Full-art foil", "フルアート", "Full Art", "Full Art", "Full Art")
+        case .etched: return t("텍스처 홀로", "Textured foil", "テクスチャーホロ", "Holo texturizado", "Holo texturé", "Holo texturizado")
+        case .radiant: return t("찬란한 홀로", "Radiant foil", "かがやくホロ", "Holo Radiante", "Holo Radieux", "Holo Radiante")
+        case .amazingRare: return t("어메이징 홀로", "Amazing Rare foil", "アメイジングレア", "Amazing Rare", "Amazing Rare", "Amazing Rare")
+        case .rainbow: return t("레인보우", "Rainbow foil", "レインボー", "Arcoíris", "Arc-en-ciel", "Arco-íris")
+        case .gold: return t("골드", "Gold foil", "ゴールド", "Dorada", "Dorée", "Dourada")
+        case .shiny: return t("이로치 홀로", "Shiny foil", "色違いホロ", "Holo variocolor", "Holo chromatique", "Holo Brilhante")
+        case .shinyFullArt: return t("이로치 풀아트 홀로", "Shiny full-art foil", "色違いフルアートホロ", "Full Art variocolor", "Full Art chromatique", "Full Art brilhante")
+        case .aceSpec: return t("ACE SPEC 홀로", "ACE SPEC foil", "ACE SPECホロ", "Holo ACE SPEC", "Holo ACE SPEC", "Holo ACE SPEC")
+        case .pokeBall: return t("몬스터볼 미러", "Poké Ball parallel", "モンスターボールミラー", "Paralela Poké Ball", "Parallèle Poké Ball", "Paralela Poké Ball")
+        case .masterBall: return t("마스터볼 미러", "Master Ball parallel", "マスターボールミラー", "Paralela Master Ball", "Parallèle Master Ball", "Paralela Master Ball")
+        case .celebrationsClassic: return t("클래식 컬렉션", "Classic Collection foil", "クラシックコレクション", "Colección clásica", "Collection classique", "Coleção clássica")
+        case .radiantCollection: return t("래디언트 컬렉션 코팅", "Radiant Collection foil", "ラディアントコレクションホロ", "Holo Radiant Collection", "Holo Radiant Collection", "Holo Radiant Collection")
+        case .prism: return t("프리즘스타 홀로", "Prism Star foil", "プリズムスターホロ", "Holo Estrella Prisma", "Holo Prisme Étoile", "Holo Estrela Prisma")
+        case .breakFoil: return t("BREAK 골드 홀로", "BREAK gold foil", "BREAKゴールドホロ", "Holo dorado BREAK", "Holo doré BREAK", "Holo dourado BREAK")
+        case .blackWhite: return t("블랙·화이트 레어", "Black & White rare foil", "白黒レア", "Rara Blanco y Negro", "Rare noir et blanc", "Rara preta e branca")
+        case .megaAttack: return t("메가어택 홀로", "Mega Attack foil", "メガアタックホロ", "Holo Megaataque", "Holo Méga-Attaque", "Holo Mega Ataque")
+        }
+    }
     func marketPriceSource(_ date: String) -> String {
         t("TCGplayer 시장가 · \(date) 기준",
           "TCGplayer market price, as of \(date)",
@@ -83,6 +108,70 @@ extension L {
            "\(count) cartas", "\(count) cartes", "\(count) cartas")
     }
 
+    /// 실제 밀봉 팩 구성. 확장팩 카드와 별도 동봉 에너지·코드 카드를 구분한다.
+    func packContents(_ contents: PackContents) -> String {
+        let game = t("게임 카드 \(contents.gameCardCount)장",
+                     "\(contents.gameCardCount) game cards",
+                     "ゲームカード\(contents.gameCardCount)枚",
+                     "\(contents.gameCardCount) cartas de juego",
+                     "\(contents.gameCardCount) cartes de jeu",
+                     "\(contents.gameCardCount) cartas de jogo")
+        var parts = [game]
+        if contents.energyCardCount > 0 {
+            parts.append(t("기본 에너지 \(contents.energyCardCount)장",
+                           "\(contents.energyCardCount) Basic Energy",
+                           "基本エネルギー\(contents.energyCardCount)枚",
+                           "\(contents.energyCardCount) Energía Básica",
+                           "\(contents.energyCardCount) Énergie de base",
+                           "\(contents.energyCardCount) Energia Básica"))
+        }
+        if contents.codeCardCount > 0 {
+            parts.append(t("코드 카드 \(contents.codeCardCount)장",
+                           "\(contents.codeCardCount) code card",
+                           "コードカード\(contents.codeCardCount)枚",
+                           "\(contents.codeCardCount) carta de código",
+                           "\(contents.codeCardCount) carte à code",
+                           "\(contents.codeCardCount) carta de código"))
+        }
+        return parts.joined(separator: " + ")
+    }
+
+    func sealedPackMarketSource(_ date: String) -> String {
+        t("밀봉 팩 TCGplayer 시장가 · \(date) 기준",
+          "Sealed pack TCGplayer market, as of \(date)",
+          "未開封パック TCGplayer 市場価格・\(date) 時点",
+          "Mercado TCGplayer del sobre sellado, a \(date)",
+          "Marché TCGplayer du booster scellé, au \(date)",
+          "Mercado TCGplayer do pacote lacrado, em \(date)")
+    }
+
+    func sealedPackSafetyFloorSource(_ quote: String, _ date: String) -> String {
+        t("밀봉 시세 \(quote) (\(date)) · 카드 기대값 안전 하한 적용",
+          "Sealed quote \(quote) (\(date)) · expected-value safety floor applied",
+          "未開封相場 \(quote)（\(date)）・期待値の安全下限を適用",
+          "Cotización sellada \(quote) (\(date)) · mínimo seguro por valor esperado",
+          "Cote scellée \(quote) (\(date)) · plancher de sécurité appliqué",
+          "Cotação lacrada \(quote) (\(date)) · piso seguro por valor esperado")
+    }
+
+    var estimatedPackValueSource: String {
+        t("밀봉 시세 없음 · 카드 기대값으로 계산",
+          "No sealed quote · priced from expected card value",
+          "未開封相場なし・カード期待値から算出",
+          "Sin cotización sellada · valor esperado de las cartas",
+          "Pas de cote scellée · valeur attendue des cartes",
+          "Sem cotação lacrada · valor esperado das cartas")
+    }
+
+    var observedPrismaticParallelRates: String {
+        t("병렬판형 관측치: 몬스터볼 33.10% · 마스터볼 4.92% (TCGplayer 1,200팩 이상, 공식 확률 아님)",
+          "Observed parallels: Poké Ball 33.10% · Master Ball 4.92% (1,200+ TCGplayer packs; not official)",
+          "並行柄の実測値：モンスターボール33.10%・マスターボール4.92%（TCGplayer 1,200パック超、非公式）",
+          "Paralelas observadas: Poké Ball 33,10 % · Master Ball 4,92 % (más de 1.200 sobres; no oficial)",
+          "Parallèles observées : Poké Ball 33,10 % · Master Ball 4,92 % (plus de 1 200 boosters ; non officiel)",
+          "Paralelas observadas: Poké Ball 33,10% · Master Ball 4,92% (mais de 1.200 pacotes; não oficial)")
+    }
+
     /// 팩 한 줄 소개. 그 세트가 왜 특별한지 실제 사실로 적는다 —
     /// 이름과 연도만으로는 어느 팩을 살지 정하기 어렵다.
     ///
@@ -107,6 +196,15 @@ extension L {
         case "cel25":
             return blurb("25주년 기념 세트. 역대 명장면 카드를 복각해 25장만 담은 작은 팩입니다.",
                          "The 25th-anniversary set: 25 reprinted classics in a deliberately tiny pack.")
+        case "cel30":
+            return blurb("30주년 기념 세트. 피카츄 레어 1장 포함 홀로 5장과 별도 홀로 에너지 1장. 세부 봉입률은 시뮬레이터 추정치입니다.",
+                         "Five foil cards including one Pikachu Rare, plus one foil Energy. Unpublished sheet odds are simulator estimates.")
+        case "me2pt5":
+            return blurb("메가어택 레어가 등장한 Ascended Heroes. 새 등급의 봉입률은 공식 확률이 아닌 시뮬레이터 추정치입니다.",
+                         "Ascended Heroes introduces Mega Attack Rare. New-rarity pull rates are simulator estimates, not official odds.")
+        case "me3", "me4", "me5":
+            return blurb("2026년 메가진화 시리즈. 10장과 별도 기본 에너지 구성. 세부 봉입률은 현대 영문판 추정 모델을 사용합니다.",
+                         "A 2026 Mega Evolution expansion: ten cards plus Basic Energy. Detailed odds use an estimated modern English model.")
         case "swsh12pt5":
             return blurb("소드·실드 시리즈를 마무리한 세트. 갈라르 갤러리 일러스트가 들어 있습니다.",
                          "The send-off for Sword & Shield, carrying the Galarian Gallery illustrations.")
@@ -194,8 +292,9 @@ extension L {
            "Primera vez \(date)", "Obtenue le \(date)", "Primeira vez \(date)")
     }
 
-    var packOdds: String { t("등급별 확률", "Odds by rarity", "レアリティ別確率",
-                              "Probabilidad por rareza", "Probabilité par rareté", "Chance por raridade") }
+    var packOdds: String { t("시뮬레이터 등급 확률", "Simulator odds by rarity", "シミュレーターのレアリティ確率",
+                              "Probabilidad simulada por rareza", "Probabilités simulées par rareté",
+                              "Chance simulada por raridade") }
     /// 이 팩에서 나올 수 있는 카드를 다 보여 주는 화면으로 들어가는 말.
     var packSeeCards: String { t("나올 수 있는 카드", "Cards in this pack", "出るカード一覧",
                                   "Cartas de este sobre", "Cartes de ce booster",
@@ -205,12 +304,12 @@ extension L {
                                "Comprar este sobre", "Acheter ce booster", "Comprar este pacote") }
     /// 확정 한 장과 천장을 한 줄로. 표를 칸별로 쪼개는 대신 이 줄로 보장을 알린다.
     func packGuaranteeNote(_ guaranteed: Int, pity: Int) -> String {
-        t("팩마다 레어 이상 \(guaranteed)장 확정 · 레어만 \(pity)팩 연속이면 다음은 RR 이상 보장",
-           "\(guaranteed) rare or better guaranteed per pack · RR+ guaranteed after \(pity) plain-rare packs",
-           "パックごとにレア以上\(guaranteed)枚確定・レアのみ\(pity)パック連続で次はRR以上保証",
-           "\(guaranteed) rara o mejor por sobre · RR+ garantizado tras \(pity) sobres",
-           "\(guaranteed) rare ou mieux par booster · RR+ garanti après \(pity) boosters",
-           "\(guaranteed) rara ou melhor por pacote · RR+ garantido após \(pity) pacotes")
+        t("시뮬레이터 규칙: 레어 이상 \(guaranteed)장 · 레어만 \(pity)팩 연속이면 다음은 RR 이상",
+           "Simulator rule: \(guaranteed) rare+ per pack · RR+ after \(pity) plain-rare packs",
+           "シミュレーター規則：レア以上\(guaranteed)枚・レアのみ\(pity)パック連続で次はRR以上",
+           "Regla del simulador: \(guaranteed) rara+ · RR+ tras \(pity) sobres solo raros",
+           "Règle du simulateur : \(guaranteed) rare+ · RR+ après \(pity) boosters sans hit",
+           "Regra do simulador: \(guaranteed) rara+ · RR+ após \(pity) pacotes só raros")
     }
 
     var packOddsColumns: String { t("카드 한 장 기준", "Per card", "カード1枚あたり",
@@ -305,6 +404,14 @@ extension L {
         return t("판매 추가금 +\(percent) 포함", "includes +\(percent) sale bonus",
                   "販売ボーナス +\(percent) 込み", "incluye +\(percent) de bonificación",
                   "bonus de vente +\(percent) inclus", "inclui bônus de venda +\(percent)")
+    }
+    var sellLowestFinishFirst: String {
+        t("가치가 낮은 판형부터 판매됩니다.",
+          "Lower-value printings are sold first.",
+          "価値の低い仕様から売却されます。",
+          "Primero se venden los acabados de menor valor.",
+          "Les finitions de moindre valeur sont vendues d'abord.",
+          "Os acabamentos de menor valor são vendidos primeiro.")
     }
     func sellDone(_ money: String) -> String {
         t("+\(money)", "+\(money)", "+\(money)", "+\(money)", "+\(money)", "+\(money)")
@@ -524,14 +631,94 @@ extension L {
                                  "Toutes les cartes sont rares ou mieux.", "Todas as cartas são raras ou melhores.") }
     var godPackBadge: String { t("갓팩", "God Pack", "神引き", "Dorado", "Divin", "Divino") }
 
-    /// 갓팩 확률 공시. 숨기면 지금까지 맞춰 온 원칙과 어긋난다.
-    func godPackNote(_ oneIn: Int) -> String {
-        t("\(oneIn)팩에 한 번꼴로 전 칸이 레어 이상인 갓팩이 나와요.",
-           "About one pack in \(oneIn) is a God Pack — every card rare or better.",
-           "約\(oneIn)パックに1回、全てレア以上の神引きが出ます。",
-           "Uno de cada \(oneIn) sobres es dorado: todas las cartas raras o mejores.",
-           "Environ 1 booster sur \(oneIn) est divin — toutes les cartes rares ou mieux.",
-           "Cerca de 1 em \(oneIn) pacotes é divino — todas as cartas raras ou melhores.")
+    func specialPackTitle(_ variant: PackVariant) -> String {
+        switch variant {
+        case .prismaticEvolutionsDemigod: return prismaticDemiTitle
+        case .scarletViolet151Demigod:
+            return t("진화라인 특수팩!", "Evolution-line special pack!", "進化ライン特別パック！",
+                     "¡Sobre especial de evolución!", "Booster spécial évolution !",
+                     "Pacote especial de evolução!")
+        case .prismaticEvolutionsGod:
+            return godPackTitle
+        case .blackBoltWhiteFlareGod:
+            return godPackTitle
+        case .standard, .celebrations:
+            return packOpened
+        }
+    }
+
+    func specialPackHint(_ variant: PackVariant) -> String {
+        switch variant {
+        case .prismaticEvolutionsDemigod: return prismaticDemiHint
+        case .scarletViolet151Demigod:
+            return t("스타팅 포켓몬 한 계열의 AR 2장과 SAR 1장이 함께 들어 있어요.",
+                     "One starter evolution line appears together: two IRs and one SIR.",
+                     "御三家1系統のAR2枚とSAR1枚が一緒に入っています。",
+                     "Una línea inicial completa: dos IR y una SIR.",
+                     "Une lignée de starter complète : deux IR et une SIR.",
+                     "Uma linha inicial completa: duas IR e uma SIR.")
+        case .prismaticEvolutionsGod:
+            return t("마스터볼 이브이와 이브이 진화형 SIR 9장이 들어 있어요.",
+                     "Master Ball Eevee plus all nine Eeveelution SIR cards.",
+                     "マスターボール柄イーブイと進化形SIR9枚入りです。",
+                     "Eevee Master Ball y las nueve SIR de sus evoluciones.",
+                     "Évoli Master Ball et les neuf SIR de ses évolutions.",
+                     "Eevee Master Ball e as nove SIR de suas evoluções.")
+        case .blackBoltWhiteFlareGod:
+            return t("일러스트레이션 레어 9장과 스페셜 일러스트레이션 레어 1장이 들어 있어요.",
+                     "Nine Illustration Rares plus one Special Illustration Rare.",
+                     "イラストレア9枚とスペシャルイラストレア1枚入りです。",
+                     "Nueve cartas de Ilustración Rara y una Ilustración Especial Rara.",
+                     "Neuf Illustration Rares et une Illustration Spéciale Rare.",
+                     "Nove Raras de Ilustração e uma Rara de Ilustração Especial.")
+        case .standard, .celebrations:
+            return ""
+        }
+    }
+
+    func specialPackBadge(_ variant: PackVariant) -> String {
+        switch variant {
+        case .prismaticEvolutionsDemigod: return prismaticDemiTitle
+        case .scarletViolet151Demigod:
+            return t("151 특수팩", "151 Special", "151特別", "Especial 151", "Spécial 151", "Especial 151")
+        case .prismaticEvolutionsGod:
+            return godPackBadge
+        case .blackBoltWhiteFlareGod:
+            return godPackBadge
+        case .standard, .celebrations:
+            return ""
+        }
+    }
+
+    func specialPackEstimate(_ rule: PackSpecialVariantRule) -> String {
+        let odds = rule.estimatedSimulatorOneIn
+        switch rule.variant {
+        case .prismaticEvolutionsDemigod:
+            return "\(prismaticDemiTitle) · 1/\(odds) · \(estimatedRate)"
+        case .scarletViolet151Demigod:
+            return t("151 진화라인 특수팩 · 시뮬레이터 설정 약 1/\(odds) (공식 확률 아님)",
+                     "151 evolution-line pack · simulator setting ~1/\(odds) (not an official rate)",
+                     "151進化ライン特別パック・シミュレーター設定 約1/\(odds)（公式確率ではありません）",
+                     "Sobre de evolución 151 · ajuste ~1/\(odds) (no es una tasa oficial)",
+                     "Booster évolution 151 · réglage ~1/\(odds) (taux non officiel)",
+                     "Pacote de evolução 151 · ajuste ~1/\(odds) (taxa não oficial)")
+        case .prismaticEvolutionsGod:
+            return t("프리즈마틱 갓팩 · 시뮬레이터 설정 약 1/\(odds) (공식 확률 아님)",
+                     "Prismatic God Pack · simulator setting ~1/\(odds) (not an official rate)",
+                     "プリズマティック神パック・シミュレーター設定 約1/\(odds)（公式確率ではありません）",
+                     "God Pack Prismático · ajuste ~1/\(odds) (no es una tasa oficial)",
+                     "God Pack Prismatique · réglage ~1/\(odds) (taux non officiel)",
+                     "God Pack Prismático · ajuste ~1/\(odds) (taxa não oficial)")
+        case .blackBoltWhiteFlareGod:
+            return t("블랙 보트·화이트 플레어 갓팩 · 시뮬레이터 설정 약 1/\(odds) (공식 확률 아님)",
+                     "Black Bolt / White Flare God Pack · simulator setting ~1/\(odds) (not an official rate)",
+                     "ブラックボルト・ホワイトフレア神パック・シミュレーター設定 約1/\(odds)（公式確率ではありません）",
+                     "God Pack de Black Bolt / White Flare · ajuste ~1/\(odds) (no es una tasa oficial)",
+                     "God Pack Black Bolt / White Flare · réglage ~1/\(odds) (taux non officiel)",
+                     "God Pack Black Bolt / White Flare · ajuste ~1/\(odds) (taxa não oficial)")
+        case .standard, .celebrations:
+            return ""
+        }
     }
 
     // MARK: 조합 도감

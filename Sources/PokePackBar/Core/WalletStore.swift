@@ -64,6 +64,19 @@ struct DexCompletion: Equatable, Sendable, Identifiable {
     var id: String { dexID }
 }
 
+extension CardSale {
+    /// 특정 인쇄본 한 장의 판매가. 정확한 판형 시세가 없으면 카드 대표 시세로 폴백한다.
+    static func price(cardID: String, finish: CardFinish,
+                      prices: CardPrices? = CardPrices.shared,
+                      perks: DexPerks = .none) -> Int {
+        let usd = MarketEconomy.usd(cardID: cardID, finish: finish, prices: prices)
+        let base = MarketEconomy.tokens(usd: usd, prices: prices)
+        guard perks.dustBonus > 0 else { return base }
+        return MarketEconomy.quantized(Int((Double(base) * (1 + perks.dustBonus)).rounded()),
+                                       prices: prices)
+    }
+}
+
 /// 재화(토큰) 지갑과 카드·팩 보유량을 관리한다.
 ///
 /// 사용량 적립 로직은 기존 컴패니언 저장소의 것을 그대로 옮겼다. 프로바이더별 장부,
@@ -75,6 +88,13 @@ final class WalletStore {
 
     private(set) var state = GameState()
     private let fileURL: URL
+    @ObservationIgnored private var durableState = GameState()
+    @ObservationIgnored private var transactionDepth = 0
+    @ObservationIgnored private var savingBlocked = false
+    @ObservationIgnored private var commitState: ((GameState) throws -> Void)?
+    private(set) var persistenceError: String?
+    private(set) var recoveredSave = false
+    var saveBackupDirectory: URL { GamePersistence(url: fileURL).backupDirectory }
 
     /// 개봉 결과 등 UI 가 한 번만 소비해야 하는 알림. nil 이면 표시할 것이 없다.
     var lastGrant: PackGrant?
@@ -91,8 +111,10 @@ final class WalletStore {
     /// 사용량 적립도 매 새로고침마다 읽는다.
     private(set) var perks: DexPerks = .none
 
-    init(fileURL: URL? = nil, dexes: [Dex]? = nil, ladder: [DexLadderStep]? = nil) {
+    init(fileURL: URL? = nil, dexes: [Dex]? = nil, ladder: [DexLadderStep]? = nil,
+         commitState: ((GameState) throws -> Void)? = nil) {
         self.fileURL = fileURL ?? Self.defaultURL()
+        self.commitState = commitState
         let bundled = (dexes == nil || ladder == nil) ? DexIndex.loadBundled() : nil
         self.dexes = dexes ?? bundled?.dexes ?? []
         self.ladder = ladder ?? bundled?.ladder ?? []
@@ -127,6 +149,8 @@ final class WalletStore {
 
     var l: L { L(state.language) }
     var language: AppLanguage { state.language }
+    var openingPerks: DexPerks { state.openingMode == .realistic ? .none : perks }
+    func setOpeningMode(_ mode: OpeningMode) { state.openingMode = mode; save() }
     func setLanguage(_ lang: AppLanguage) { state.language = lang; save() }
 
     // MARK: 재화
@@ -147,8 +171,7 @@ final class WalletStore {
     func spend(_ amount: Int) -> Bool {
         guard amount > 0, availableTokens >= amount else { return false }
         state.spentTokens += amount
-        save()
-        return true
+        return save()
     }
 
     // MARK: 사용량 적립
@@ -266,14 +289,88 @@ final class WalletStore {
         guard owned > 0 else { return false }
         if owned == 1 { state.packs.removeValue(forKey: setID) } else { state.packs[setID] = owned - 1 }
         state.packsOpened += 1
-        save()
-        return true
+        return save()
     }
 
     // MARK: 카드 갈기
 
     /// 갈 수 있는 장수 — 보유분에서 한 장은 남긴다. 컬렉션에서 사라지면 안 된다.
     func spareCount(_ cardID: String) -> Int { max(0, cardCount(cardID) - 1) }
+
+    private struct PrintingSaleLine {
+        let printing: CardPrintingKey
+        let count: Int
+        let unitTokens: Int
+    }
+
+    /// 싼 인쇄본부터 팔 판매 계획. 상태를 바꾸지 않는다.
+    private func lowestValueSalePlan(cardID: String, count: Int,
+                                     prices: CardPrices?) -> [PrintingSaleLine] {
+        var remaining = min(max(0, count), spareCount(cardID))
+        guard remaining > 0 else { return [] }
+
+        // 대표가만 있는 구형 가격표에서는 모든 판형 가격이 동률이다. 그때 문자열 순으로
+        // 정렬하면 `holo`가 `normal`보다 먼저 팔려, 특별한 판형을 남긴다는 기대를 뒤집는다.
+        // `allCases`는 보통 인쇄본부터 희귀 재질 순으로 선언되어 있으므로 그 순서를 안전한
+        // 동률 해소 규칙으로 쓴다.
+        let finishRank = Dictionary(uniqueKeysWithValues:
+            CardFinish.allCases.enumerated().map { ($0.element, $0.offset) })
+        let ordered = ownedPrintings(cardID: cardID).sorted { lhs, rhs in
+            let left = MarketEconomy.usd(lhs.printing, prices: prices)
+            let right = MarketEconomy.usd(rhs.printing, prices: prices)
+            if left != right { return left < right }
+            return finishRank[lhs.printing.finish, default: .max]
+                < finishRank[rhs.printing.finish, default: .max]
+        }
+
+        var result: [PrintingSaleLine] = []
+        for owned in ordered where remaining > 0 {
+            let amount = min(owned.count, remaining)
+            guard amount > 0 else { continue }
+            result.append(PrintingSaleLine(
+                printing: owned.printing,
+                count: amount,
+                unitTokens: CardSale.price(cardID: cardID, finish: owned.printing.finish,
+                                           prices: prices, perks: perks)))
+            remaining -= amount
+        }
+        return result
+    }
+
+    /// 중복분을 전부 팔 때 받을 값. 실제 판매와 같은 최저가 판형 우선 계획을 쓴다.
+    func spareSaleValue(cardID: String, prices: CardPrices? = CardPrices.shared) -> Int {
+        lowestValueSalePlan(cardID: cardID, count: .max, prices: prices)
+            .reduce(0) { $0 + $1.unitTokens * $1.count }
+    }
+
+    /// 옛 aggregate 수량을 normal 인쇄본으로 구체화해, 이후 감소를 정확히 기록할 수 있게 한다.
+    private func materializePrintings(cardID: String) {
+        let counts = ownedPrintingCounts(cardID: cardID)
+        for storageKey in Array(state.printingCards.keys) {
+            if CardPrintingKey(storageKey: storageKey).cardID == cardID {
+                state.printingCards.removeValue(forKey: storageKey)
+            }
+        }
+        for (finish, count) in counts where count > 0 {
+            let key = CardPrintingKey(cardID: cardID, finish: finish).storageKey
+            state.printingCards[key] = count
+        }
+    }
+
+    private func apply(_ plan: [PrintingSaleLine], cardID: String) {
+        guard !plan.isEmpty else { return }
+        materializePrintings(cardID: cardID)
+        for line in plan {
+            let storageKey = line.printing.storageKey
+            let left = (state.printingCards[storageKey] ?? 0) - line.count
+            if left > 0 {
+                state.printingCards[storageKey] = left
+            } else {
+                state.printingCards.removeValue(forKey: storageKey)
+            }
+        }
+        state.cards[cardID] = max(1, cardCount(cardID) - plan.reduce(0) { $0 + $1.count })
+    }
 
     /// 중복분을 판다. 받은 액수를 반환하고, 팔 것이 없으면 0.
     ///
@@ -282,16 +379,24 @@ final class WalletStore {
     /// 잃은 것이 크다.
     @discardableResult
     func sellSpares(cardID: String, tier: CardTier, count: Int) -> Int {
-        let spare = spareCount(cardID)
-        let amount = min(max(count, 0), spare)
-        guard amount > 0 else { return 0 }
+        sellLowestValueSpares(cardID: cardID, tier: tier, count: count)
+    }
 
-        state.cards[cardID] = cardCount(cardID) - amount
-        let refund = CardSale.price(cardID: cardID, perks: perks) * amount
+    /// 중복분 중 가치가 낮은 인쇄본부터 판다. 어떤 판형 조합이어도 카드 번호별 마지막 한 장은
+    /// 남긴다. 가격 주입은 미리보기·테스트가 같은 스냅샷을 쓰게 하기 위한 것이다.
+    @discardableResult
+    func sellLowestValueSpares(cardID: String, tier: CardTier, count: Int,
+                               prices: CardPrices? = CardPrices.shared) -> Int {
+        let plan = lowestValueSalePlan(cardID: cardID, count: count, prices: prices)
+        guard !plan.isEmpty else { return 0 }
+
+        apply(plan, cardID: cardID)
+        let amount = plan.reduce(0) { $0 + $1.count }
+        let refund = plan.reduce(0) { $0 + $1.unitTokens * $1.count }
         state.refundedTokens += refund
         state.cardsDisenchanted += amount
-        save()
-        AppLog.write("sold \(amount)x \(cardID) (\(tier.rawValue)) for \(refund)")
+        guard save() else { return 0 }
+        AppLog.write("sold \(amount)x \(cardID) (\(tier.rawValue), lowest printing first) for \(refund)")
         return refund
     }
 
@@ -329,12 +434,15 @@ final class WalletStore {
 
     /// 팔면 무엇이 얼마인가. 상태를 바꾸지 않는다 — 화면이 매 프레임 부른다.
     func bulkSalePreview(_ targets: [String]) -> BulkSale {
-        targets.reduce(into: BulkSale()) { sale, cardID in
-            let spare = spareCount(cardID)
-            guard spare > 0 else { return }
+        var seen = Set<String>()
+        return targets.reduce(into: BulkSale()) { sale, cardID in
+            guard seen.insert(cardID).inserted else { return }
+            let plan = lowestValueSalePlan(cardID: cardID, count: .max,
+                                           prices: CardPrices.shared)
+            guard !plan.isEmpty else { return }
             sale.kinds += 1
-            sale.copies += spare
-            sale.tokens += CardSale.price(cardID: cardID, perks: perks) * spare
+            sale.copies += plan.reduce(0) { $0 + $1.count }
+            sale.tokens += plan.reduce(0) { $0 + $1.unitTokens * $1.count }
         }
     }
 
@@ -347,14 +455,16 @@ final class WalletStore {
         let sale = bulkSalePreview(targets)
         guard !sale.isEmpty else { return .none }
 
+        var seen = Set<String>()
         for cardID in targets {
-            let spare = spareCount(cardID)
-            guard spare > 0 else { continue }
-            state.cards[cardID] = cardCount(cardID) - spare
+            guard seen.insert(cardID).inserted else { continue }
+            let plan = lowestValueSalePlan(cardID: cardID, count: .max,
+                                           prices: CardPrices.shared)
+            apply(plan, cardID: cardID)
         }
         state.refundedTokens += sale.tokens
         state.cardsDisenchanted += sale.copies
-        save()
+        guard save() else { return .none }
         AppLog.write("bulk sold \(sale.copies)x from \(sale.kinds) kinds for \(sale.tokens)")
         return sale
     }
@@ -429,7 +539,7 @@ final class WalletStore {
         if let index, gift.packsPerSet > 0 {
             for setID in index.setIDs { state.packs[setID, default: 0] += gift.packsPerSet }
         }
-        save()
+        guard save() else { return false }
         lastGift = gift
         AppLog.write("gift \(gift.id) granted tokens=\(gift.tokens) packs=\(gift.packsPerSet)/set")
         return true
@@ -461,6 +571,61 @@ final class WalletStore {
 
     func cardCount(_ cardID: String) -> Int { state.cards[cardID] ?? 0 }
 
+    /// 판형별 기록에 없는 aggregate 잔량은 옛 세이브에서 온 것이다.
+    ///
+    /// SIR·Radiant·Gold처럼 카드 자체가 한 판형으로 정해지는 경우에는 번들 rarity로 복원한다.
+    /// Common·Uncommon·Rare처럼 reverse 여부를 알 수 없는 카드만 보수적으로 normal로 둔다.
+    /// 상태를 바꾸지 않는 계산이라 업데이트 직후에도 기존 보유량을 그대로 읽을 수 있다.
+    private func ownedPrintingCounts(cardID: String) -> [CardFinish: Int] {
+        var result: [CardFinish: Int] = [:]
+        for (storageKey, count) in state.printingCards where count > 0 {
+            let printing = CardPrintingKey(storageKey: storageKey)
+            guard printing.cardID == cardID else { continue }
+            result[printing.finish, default: 0] += count
+        }
+        let recorded = result.values.reduce(0, +)
+        let legacy = max(0, cardCount(cardID) - recorded)
+        if legacy > 0 {
+            let entry = CardIndex.shared?.card(cardID)
+            let finish = entry.map {
+                CardFinishResolver.resolve(cardID: cardID,
+                                           setID: $0.setID,
+                                           originalRarity: $0.rarity,
+                                           tier: $0.tier).finish
+            } ?? .normal
+            result[finish, default: 0] += legacy
+        }
+        return result
+    }
+
+    /// 특정 인쇄본 보유량. 옛 aggregate 잔량은 고유 판형을 복원하고, 모호할 때만 normal이다.
+    func printingCount(_ printing: CardPrintingKey) -> Int {
+        ownedPrintingCounts(cardID: printing.cardID)[printing.finish] ?? 0
+    }
+
+    func cardCount(_ cardID: String, finish: CardFinish) -> Int {
+        printingCount(CardPrintingKey(cardID: cardID, finish: finish))
+    }
+
+    /// 카드 번호 하나에 대해 실제로 보유한 인쇄본 목록.
+    func ownedPrintings(cardID: String) -> [(printing: CardPrintingKey, count: Int)] {
+        ownedPrintingCounts(cardID: cardID)
+            .filter { $0.value > 0 }
+            .map { (CardPrintingKey(cardID: cardID, finish: $0.key), $0.value) }
+    }
+
+    /// 가진 인쇄본 중 시장가가 가장 높은 판형. 시세가 같거나 없으면 더 특수한 finish 를 택한다.
+    func bestOwnedFinish(cardID: String,
+                         prices: CardPrices? = CardPrices.shared) -> CardFinish? {
+        let rank = Dictionary(uniqueKeysWithValues: CardFinish.allCases.enumerated().map { ($1, $0) })
+        return ownedPrintings(cardID: cardID).max { lhs, rhs in
+            let left = MarketEconomy.usd(lhs.printing, prices: prices)
+            let right = MarketEconomy.usd(rhs.printing, prices: prices)
+            if left != right { return left < right }
+            return (rank[lhs.printing.finish] ?? 0) < (rank[rhs.printing.finish] ?? 0)
+        }?.printing.finish
+    }
+
     /// 이 카드를 처음 얻은 때. 기록이 생기기 전에 모은 카드는 nil 이다.
     func firstAcquired(_ cardID: String) -> Date? {
         state.cardFirstAt[cardID].map { Date(timeIntervalSince1970: TimeInterval($0)) }
@@ -478,11 +643,15 @@ final class WalletStore {
     /// "몇 장 모았나" 만으로는 컬렉션이 자라는 감각이 약하다. 1999년 커먼 한 장이 최신
     /// SR 보다 비싸기도 해서, 장수와 값이 서로 다른 이야기를 한다.
     func collectionValueUSD(prices: CardPrices? = CardPrices.shared) -> Double {
-        let owned = state.cards.reduce(0.0) { running, entry in
-            running + MarketEconomy.usd(cardID: entry.key, prices: prices) * Double(entry.value)
+        let owned = state.cards.keys.reduce(0.0) { running, cardID in
+            running + ownedPrintings(cardID: cardID).reduce(0.0) { printingTotal, owned in
+                printingTotal + MarketEconomy.usd(owned.printing, prices: prices)
+                    * Double(owned.count)
+            }
         }
-        let held = unrevealed.reduce(0.0) { running, entry in
-            running + MarketEconomy.usd(cardID: entry.key, prices: prices) * Double(entry.value)
+        let held = unrevealedPrintings.reduce(0.0) { running, entry in
+            let printing = CardPrintingKey(storageKey: entry.key)
+            return running + MarketEconomy.usd(printing, prices: prices) * Double(entry.value)
         }
         return max(0, owned - held)
     }
@@ -497,24 +666,63 @@ final class WalletStore {
     ///
     /// 저장하지 않는다. 앱을 다시 켜면 이미 다 본 것으로 친다 — 연출은 그 자리에서 끝난다.
     private(set) var unrevealed: [String: Int] = [:]
+    /// 아직 보지 않은 실제 판형. `unrevealed` 는 기존 화면용 aggregate로 함께 유지한다.
+    private var unrevealedPrintings: [String: Int] = [:]
 
     /// 이 카드들을 아직 안 본 것으로 둔다.
     func holdForReveal(_ cardIDs: [String]) {
+        holdForReveal(cardIDs.map { CardPrintingKey(cardID: $0) })
+    }
+
+    /// 이 인쇄본들을 아직 안 본 것으로 둔다. 판형별 가격이 공개를 앞질러 스포일러하지 않는다.
+    func holdForReveal(_ printings: [CardPrintingKey]) {
         var held: [String: Int] = [:]
-        for id in cardIDs { held[id, default: 0] += 1 }
+        var heldPrintings: [String: Int] = [:]
+        for printing in printings {
+            held[printing.cardID, default: 0] += 1
+            heldPrintings[printing.storageKey, default: 0] += 1
+        }
         unrevealed = held
+        unrevealedPrintings = heldPrintings
     }
 
     /// 한 장을 봤다.
     func markRevealed(_ cardID: String) {
         guard let count = unrevealed[cardID] else { return }
         if count <= 1 { unrevealed.removeValue(forKey: cardID) } else { unrevealed[cardID] = count - 1 }
+
+        // 옛 호출부는 판형을 모른다. 같은 카드의 첫 인쇄본 하나를 함께 연다.
+        if let storageKey = unrevealedPrintings.keys.sorted().first(where: {
+            CardPrintingKey(storageKey: $0).cardID == cardID
+        }) {
+            decrementUnrevealedPrinting(storageKey)
+        }
+    }
+
+    func markRevealed(_ printing: CardPrintingKey) {
+        guard let count = unrevealed[printing.cardID] else { return }
+        if count <= 1 {
+            unrevealed.removeValue(forKey: printing.cardID)
+        } else {
+            unrevealed[printing.cardID] = count - 1
+        }
+        decrementUnrevealedPrinting(printing.storageKey)
+    }
+
+    private func decrementUnrevealedPrinting(_ storageKey: String) {
+        guard let count = unrevealedPrintings[storageKey] else { return }
+        if count <= 1 {
+            unrevealedPrintings.removeValue(forKey: storageKey)
+        } else {
+            unrevealedPrintings[storageKey] = count - 1
+        }
     }
 
     /// 남은 전부를 봤다 — 요약 화면은 카드를 한꺼번에 보여 준다.
     func markAllRevealed() {
         guard !unrevealed.isEmpty else { return }
         unrevealed = [:]
+        unrevealedPrintings = [:]
     }
 
     /// 개봉 결과를 수집함에 넣는다. 같은 카드가 여러 장 나오면 그만큼 쌓인다.
@@ -524,19 +732,35 @@ final class WalletStore {
     /// 언젠가 한 곳이 빠지고, 그 화면으로 얻은 카드는 도감을 완성시키지 못한다.
     @discardableResult
     func collect(_ cardIDs: [String]) -> [DexCompletion] {
-        guard !cardIDs.isEmpty else { return [] }
+        collect(cardIDs.map { CardPrintingKey(cardID: $0) })
+    }
+
+    /// 인쇄본을 한 장 이상 수집한다. 기존 `cards` 합계와 새 `printingCards` 를 원자적으로
+    /// 함께 올려, 옛 UI·도감과 새 판형 UI가 서로 다른 장수를 보지 않게 한다.
+    @discardableResult
+    func collect(_ printings: [CardPrintingKey]) -> [DexCompletion] {
+        guard !printings.isEmpty else { return [] }
         let before = Set(state.cards.keys)
         let now = Int(Date().timeIntervalSince1970)
-        for id in cardIDs {
+        for printing in printings {
+            let id = printing.cardID
             state.cards[id, default: 0] += 1
+            state.printingCards[printing.storageKey, default: 0] += 1
             // 처음 얻은 때만 적는다. 두 번째부터 덮어쓰면 「최초」가 아니게 된다.
             if state.cardFirstAt[id] == nil { state.cardFirstAt[id] = now }
         }
-        save()
+        guard save() else { return [] }
 
         return DexProgress.newlyFilled(dexes: dexes, owned: { (state.cards[$0] ?? 0) > 0 },
                                        claimed: claimedDexIDs, before: before)
             .map { DexCompletion(dexID: $0.id, name: $0.name, tier: $0.tier) }
+    }
+
+    /// 한 인쇄본을 여러 장 넣는 편의 API. 도감 완성 판정과 저장은 `collect` 와 동일하다.
+    @discardableResult
+    func addCard(_ printing: CardPrintingKey, count: Int = 1) -> [DexCompletion] {
+        guard count > 0 else { return [] }
+        return collect(Array(repeating: printing, count: count))
     }
 
     /// 세트의 천장 카운터. 개봉이 이 값을 읽고, 개봉 후 `setPity` 로 되돌려 준다.
@@ -561,7 +785,7 @@ final class WalletStore {
         }
         state.oripa = freshOripaBox(index: index)
         save()
-        return state.oripa!
+        return state.oripa ?? freshOripaBox(index: index)
     }
 
     /// 미보유 카드를 앞세워 박스를 채운다. 최소 보상을 올리는 것이 목적이다.
@@ -608,6 +832,15 @@ final class WalletStore {
     @discardableResult
     func pullOripa(index: CardIndex, envelope: Int)
         -> (card: PulledCard, completions: [DexCompletion])? {
+        let result = transaction(failure: Optional<(card: PulledCard, completions: [DexCompletion])>.none) {
+            pullOripaTransaction(index: index, envelope: envelope)
+        }
+        if let result { holdForReveal([CardPrintingKey(cardID: result.card.id, finish: result.card.finish)]) }
+        return result
+    }
+
+    private func pullOripaTransaction(index: CardIndex, envelope: Int)
+        -> (card: PulledCard, completions: [DexCompletion])? {
         var box = oripaBox(index: index)
         guard box.cards.indices.contains(envelope), !box.opened.contains(envelope),
               spend(oripaPrice(index: index)) else { return nil }
@@ -615,11 +848,13 @@ final class WalletStore {
         guard let id = Oripa.open(envelope, in: &box) else { return nil }
         let isNew = cardCount(id) == 0
         state.oripa = box
-        let completions = collect([id])   // 저장까지 여기서 한다
+        let entry = index.card(id)
+        let printing = inferredPrinting(cardID: id, entry: entry)
+        let completions = collect([printing])   // 저장까지 여기서 한다
         // 가림막을 걷기 전까지는 값을 올리지 않는다 — 오리파도 뒤집어 보는 연출이다.
-        holdForReveal([id])
         AppLog.write("oripa opened \(envelope) -> \(id) box=\(box.serial) remaining=\(box.remaining)")
-        return (PulledCard(id: id, tier: index.card(id)?.tier ?? .doubleRare, isNew: isNew),
+        return (PulledCard(id: id, tier: entry?.tier ?? .doubleRare, isNew: isNew,
+                           finish: printing.finish),
                 completions)
     }
 
@@ -688,9 +923,12 @@ final class WalletStore {
             .map(\.value).max() ?? 0
     }
 
-    /// 정가 — 영구 할인만 반영한다. 상점이 줄을 그어 보여 줄 값이다.
+    /// 할인 전 정가. 쿠폰이 있으면 상점이 이 값에 줄을 그어 보여 준다.
+    ///
+    /// 영구 할인과 쿠폰은 서로 겹치지 않는다. 쿠폰 문구가 「정가에서 50%」를 뜻해야 하고,
+    /// 둘을 곱하면 팩을 사서 바로 파는 것만으로 잔액이 늘어나는 세트가 생기기 때문이다.
     func listPrice(setID: String, index: CardIndex) -> Int {
-        PackPricing.price(setID: setID, index: index, perks: perks)
+        PackPricing.basePrice(setID: setID, index: index, prices: CardPrices.shared)
     }
 
     /// **실제로 낼 값.** 쿠폰이 있으면 그만큼 더 깎인다.
@@ -699,20 +937,38 @@ final class WalletStore {
     /// 그래서 총액은 낱개 값의 곱이 아니라 이 함수로 세어야 한다.
     func packTotal(setID: String, count: Int, index: CardIndex) -> Int {
         let list = listPrice(setID: setID, index: index)
-        let discounted = couponCount(setID: setID)
-        guard discounted > 0 else { return list * count }
-        let rate = couponDiscount(setID: setID)
-        let cut = MarketEconomy.quantized(Int((Double(list) * (1 - rate)).rounded()))
-        let withCoupon = min(count, discounted)
-        return cut * withCoupon + list * (count - withCoupon)
+        let permanent = PackPricing.price(setID: setID, index: index, perks: perks)
+        var remaining = max(0, count)
+        var total = 0
+
+        // 실제 소모 순서와 같이 센 쿠폰부터 쓴다. 50% 한 장과 25% 네 장을 가졌다고
+        // 다섯 팩 모두 50%로 계산하면 표시 총액보다 적게 차감되는 경제 버그가 된다.
+        let coupons = state.coupons
+            .filter { $0.setID == setID && $0.left > 0 }
+            .sorted { $0.value > $1.value }
+        for coupon in coupons where remaining > 0 {
+            let used = min(remaining, coupon.left)
+            let effectiveDiscount = max(perks.packDiscount, coupon.value)
+            let cut = MarketEconomy.quantized(
+                Int((Double(list) * (1 - effectiveDiscount)).rounded())
+            )
+            total += cut * used
+            remaining -= used
+        }
+        return total + permanent * remaining
     }
 
     /// 낱개 값 — 쿠폰이 있으면 쿠폰가다. 상점이 큰 글씨로 적는 값이다.
     func packPrice(setID: String, index: CardIndex) -> Int {
-        let list = listPrice(setID: setID, index: index)
         let rate = couponDiscount(setID: setID)
-        guard rate > 0 else { return list }
-        return MarketEconomy.quantized(Int((Double(list) * (1 - rate)).rounded()))
+        guard rate > 0 else {
+            return PackPricing.price(setID: setID, index: index, perks: perks)
+        }
+        let list = listPrice(setID: setID, index: index)
+        let effectiveDiscount = max(perks.packDiscount, rate)
+        return MarketEconomy.quantized(
+            Int((Double(list) * (1 - effectiveDiscount)).rounded())
+        )
     }
 
     /// 도감 진행. 세트 도감은 그 세트의 종 목록이 필요하다.
@@ -737,6 +993,13 @@ final class WalletStore {
     @discardableResult
     func claim(_ dexID: String, step: Int = 0,
                index: CardIndex? = CardIndex.shared) -> DexClaim? {
+        transaction(failure: Optional<DexClaim>.none) {
+            claimTransaction(dexID, step: step, index: index)
+        }
+    }
+
+    private func claimTransaction(_ dexID: String, step: Int,
+                                  index: CardIndex?) -> DexClaim? {
         guard let dex = dexes.first(where: { $0.id == dexID }) else { return nil }
         let status = dexStatus(dex, index: index)
         guard status.steps.contains(step), status.isReached(step), !status.isClaimed(step)
@@ -795,8 +1058,18 @@ final class WalletStore {
         guard let picked else { return nil }
         // 「처음 얻은 때」는 `collect` 가 적는다. 확정 카드도 같은 길을 지나야
         // 컬렉션의 최근 획득순 정렬에 들어간다.
-        _ = collect([picked.id])
+        _ = collect([inferredPrinting(cardID: picked.id, entry: picked)])
         return picked.id
+    }
+
+    /// 슬롯 힌트가 없는 단일 카드 보상은 원본 rarity로 기본 판형을 정한다.
+    private func inferredPrinting(cardID: String, entry: CardEntry?) -> CardPrintingKey {
+        guard let entry else { return CardPrintingKey(cardID: cardID) }
+        let finish = CardFinishResolver.resolve(cardID: cardID,
+                                                setID: entry.setID,
+                                                originalRarity: entry.rarity,
+                                                tier: entry.tier).finish
+        return CardPrintingKey(cardID: cardID, finish: finish)
     }
 
     /// 그 세트 쿠폰 한 장을 쓴다. 다 쓴 묶음은 목록에서 지운다.
@@ -822,11 +1095,11 @@ final class WalletStore {
     /// 세 가지를 따로 부르면 한 군데를 잊는다 — 실제로 쿠폰을 안 깎아 영구 할인이 됐다.
     @discardableResult
     func buyPacks(setID: String, count: Int, total: Int) -> Bool {
-        guard count > 0, spend(total) else { return false }
+        guard count > 0, total > 0, availableTokens >= total else { return false }
+        state.spentTokens += total
         state.packs[setID, default: 0] += count
         consumeCoupons(setID: setID, times: count)
-        save()
-        return true
+        return save()
     }
 
     // MARK: 보너스 팩 (한도 달성 보상)
@@ -954,25 +1227,87 @@ final class WalletStore {
         // 한다. 안 하면 재시작 시 남은 표시 때문에 다음 도달을 "이미 지급" 으로 오판하거나,
         // 반대로 이미 준 판을 다시 준다.
         if !grants.isEmpty || state.packGrantTier != before
-            || state.packGrantedInstances != beforeInstances { save() }
+            || state.packGrantedInstances != beforeInstances {
+            if !save() { lastGrant = nil; return [] }
+        }
         return grants
     }
 
     // MARK: 영속
 
+    /// Draw, consume, collect, pity and audit trail either all commit or none do.
+    func openPack(setID: String, index: CardIndex, seed: UInt64? = nil)
+        -> (opened: OpenedCards, completions: [DexCompletion])? {
+        guard packCount(setID: setID) > 0 else { return nil }
+        let seed = seed ?? UInt64.random(in: .min ... .max)
+        var generator = PackSeedGenerator(seed: seed)
+        let before = state.openingMode == .realistic ? 0 : pity(setID: setID)
+        var after = before
+        let opened = PackOpening.draw(setID: setID, index: index,
+            alreadyOwned: Set(state.cards.keys), perks: openingPerks, pity: &after,
+            mode: state.openingMode, using: &generator)
+        guard opened.cards.count == PackRecipe.forSet(setID, era: index.era(setID)).contents.gameCardCount else {
+            persistenceError = "Incomplete pack catalogue. The pack was not consumed."
+            return nil
+        }
+        let printings = opened.cards.map { CardPrintingKey(cardID: $0.id, finish: $0.finish) }
+        let record = OpeningRecord(id: UUID(), openedAt: Date(), setID: setID, seed: String(seed),
+            rulesVersion: OpeningRules.version, catalogueDigest: OpeningRules.catalogueDigest,
+            mode: state.openingMode, hitOddsBonus: openingPerks.hitOdds,
+            pityBefore: before, pityAfter: after, variant: opened.variant, printings: printings,
+            supplement: .contents(setID: setID, era: index.era(setID), variant: opened.variant),
+            cardPriceDate: CardPrices.shared?.asOf, printingPriceDate: CardPrices.shared?.printingAsOf,
+            priceSnapshotDigest: CardPrices.shared?.snapshotDigest,
+            packQuote: PackPricing.quote(setID: setID, index: index))
+        let result = transaction(failure: Optional<(opened: OpenedCards, completions: [DexCompletion])>.none) {
+            guard consumePack(setID: setID) else { return nil }
+            let completions = collect(printings)
+            if state.openingMode == .game { setPity(after, setID: setID) }
+            state.openingHistory.append(record)
+            if state.openingHistory.count > OpeningRules.historyLimit {
+                state.openingHistory.removeFirst(state.openingHistory.count - OpeningRules.historyLimit)
+            }
+            return (opened, completions)
+        }
+        if result != nil { holdForReveal(printings) }
+        return result
+    }
+
     private func load() {
-        guard let data = try? Data(contentsOf: fileURL) else { return }   // 파일 없음 = 신규 설치
-        guard let decoded = try? JSONDecoder().decode(GameState.self, from: data) else {
-            // 디코드 실패(전면 손상) → 새로 시작하되, 다음 저장이 원본을 덮어써 영구 유실되기 전에
-            // 보존해 수동 복구 여지를 남긴다.
-            let backup = fileURL.appendingPathExtension("corrupt")
-            try? FileManager.default.removeItem(at: backup)
-            try? FileManager.default.moveItem(at: fileURL, to: backup)
-            AppLog.write("game state decode failed — original backed up to \(backup.lastPathComponent), starting fresh")
+        do {
+            let loaded = try GamePersistence(url: fileURL).load()
+            state = loaded.state
+            durableState = state
+            recoveredSave = loaded.recovered
+        } catch {
+            savingBlocked = true
+            persistenceError = error.localizedDescription
+            AppLog.write("game state protected: \(error.localizedDescription)")
             return
         }
-        state = decoded
+        if reconcilePrintingCards() { save() }
         backfillFirstAcquired()
+    }
+
+    /// 인쇄본 장부는 aggregate 장부보다 구체적이므로, 둘이 어긋났을 때 어느 쪽도 버리지 않는다.
+    /// bare legacy key는 normal storage key로 정규화하고 인쇄본 합이 더 크면 aggregate를 올린다.
+    @discardableResult
+    private func reconcilePrintingCards() -> Bool {
+        var canonical: [String: Int] = [:]
+        var totals: [String: Int] = [:]
+        for (storageKey, count) in state.printingCards where count > 0 {
+            let printing = CardPrintingKey(storageKey: storageKey)
+            canonical[printing.storageKey, default: 0] += count
+            totals[printing.cardID, default: 0] += count
+        }
+
+        var changed = canonical != state.printingCards
+        state.printingCards = canonical
+        for (cardID, total) in totals where total > cardCount(cardID) {
+            state.cards[cardID] = total
+            changed = true
+        }
+        return changed
     }
 
     /// 획득 날짜 기록이 생기기 전에 모은 카드에 **오늘 날짜를 채운다.**
@@ -993,8 +1328,32 @@ final class WalletStore {
         AppLog.write("card first-seen backfilled for \(missing.count) cards")
     }
 
-    private func save() {
-        guard let data = try? JSONEncoder().encode(state) else { return }
-        try? data.write(to: fileURL, options: .atomic)   // 부분 쓰기 손상 방지
+    @discardableResult
+    private func save() -> Bool {
+        if transactionDepth > 0 { return !savingBlocked }
+        do {
+            guard !savingBlocked else { throw GamePersistence.Failure.unrecoverable }
+            if let commitState { try commitState(state) }
+            else { try GamePersistence(url: fileURL).commit(state) }
+            durableState = state
+            persistenceError = nil
+            return true
+        } catch {
+            state = durableState
+            refreshPerks()
+            persistenceError = error.localizedDescription
+            AppLog.write("game transaction cancelled: \(error.localizedDescription)")
+            return false
+        }
+    }
+
+    /// Nested legacy mutators may stage saves, but only the outer operation commits.
+    private func transaction<T>(failure: T, _ body: () -> T) -> T {
+        guard !savingBlocked else { return failure }
+        transactionDepth += 1
+        let result = body()
+        transactionDepth -= 1
+        guard save() else { return failure }
+        return result
     }
 }

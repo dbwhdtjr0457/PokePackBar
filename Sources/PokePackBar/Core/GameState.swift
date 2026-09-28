@@ -6,6 +6,9 @@ import Foundation
 /// 토큰 장부 관련 필드는 기존 구조를 그대로 물려받았다 — 프로바이더별 적립 기준을
 /// 다루는 부분은 실제 결함을 고쳐 온 산물이라 재설계하지 않는다.
 struct GameState: Codable, Sendable {
+    var schemaVersion = 2
+    var openingMode: OpeningMode = .game
+    var openingHistory: [OpeningRecord] = []
 
     // MARK: 토큰 장부 (재화)
 
@@ -44,7 +47,17 @@ struct GameState: Codable, Sendable {
     var packs: [String: Int] = [:]
 
     /// 수집한 카드 — 카드 ID → 보유 장수. 같은 카드를 여러 장 가질 수 있다.
+    ///
+    /// 이 값은 기존 세이브와 도감·통계를 위한 **인쇄본 합계**다. 판형별 장수는
+    /// `printingCards` 에 따로 적되, 이 합계도 항상 함께 갱신한다.
     var cards: [String: Int] = [:]
+
+    /// 수집한 카드의 인쇄본 — `CardPrintingKey.storageKey` → 보유 장수.
+    ///
+    /// v0.8.0 이전 세이브에는 이 필드가 없다. 그 경우 `cards` 의 수량을 잃지 않고
+    /// 고유 판형은 rarity로 복원하고, reverse처럼 알 수 없는 경우만 normal로 두는 fallback을
+    /// `WalletStore`가 제공한다. 따라서 업데이트 직후 세이브를 억지로 다시 쓰지 않는다.
+    var printingCards: [String: Int] = [:]
 
     /// 카드를 **처음 얻은 때** — 카드 ID → 1970년 기준 초.
     ///
@@ -150,6 +163,9 @@ struct GameState: Codable, Sendable {
         func value<T: Decodable>(_ key: CodingKeys, _ fallback: T) -> T {
             (try? c.decode(T.self, forKey: key)) ?? fallback
         }
+        schemaVersion = value(.schemaVersion, 2)
+        openingMode = value(.openingMode, .game)
+        openingHistory = value(.openingHistory, [])
         installBaselineSet = value(.installBaselineSet, false)
         usedSinceInstall = value(.usedSinceInstall, 0)
         spentTokens = value(.spentTokens, 0)
@@ -161,6 +177,7 @@ struct GameState: Codable, Sendable {
         lastDate = value(.lastDate, "")
         packs = value(.packs, [:])
         cards = value(.cards, [:])
+        printingCards = value(.printingCards, [:])
         cardFirstAt = value(.cardFirstAt, [:])
         packsOpened = value(.packsOpened, 0)
         favoriteCardID = try? c.decodeIfPresent(String.self, forKey: .favoriteCardID)

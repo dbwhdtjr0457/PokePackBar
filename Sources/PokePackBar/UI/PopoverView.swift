@@ -8,15 +8,19 @@ enum PopoverTab: CaseIterable { case shop, packs, collection, dex }
 /// 팝오버 치수의 단일 소스. 자식이 쓸 수 있는 폭을 알아야 할 때 이 값을 쓴다 — 넘치는 자식이
 /// 부모 폭을 부풀리므로 GeometryReader 로 재면 순환한다.
 enum PopoverMetrics {
-    /// 팝오버 폭. 360 이던 것을 넓혔다 — 좁은 폭에 맞추려고 글자를 계속 줄이다 보니
-    /// 정보가 읽히지 않았다. 창을 넓히는 편이 글자를 줄이는 것보다 낫다.
-    static let width: CGFloat = 440
+    /// 글자 크기는 유지하고 창과 카드 격자만 약 10% 줄인 기본 크기.
+    static let width: CGFloat = 400
     static let padding: CGFloat = 14
     /// 이 폭을 넘는 자식은 팝오버 창에 좌우로 잘린다.
     static let contentWidth: CGFloat = width - padding * 2
 
     /// 탭 하나가 쓰는 세로 길이.
-    static let tabHeight: CGFloat = 540
+    static let tabHeight: CGFloat = 480
+
+    /// 개봉 화면의 이름·가격·이동 버튼·밑장 여백을 먼저 확보한다.
+    static let revealCardWidth = min(260, ((tabHeight - 170) * 0.717).rounded(.down))
+    /// 오리파는 상점 갈래 선택과 NEW 배지 자리가 추가로 필요하다.
+    static let pulledCardWidth = min(240, ((tabHeight - 190) * 0.717).rounded(.down))
 }
 
 /// 팝오버 내부 내비게이션 상태.
@@ -60,9 +64,18 @@ struct PopoverView: View {
     /// 물음표에 마우스가 올라와 있는가. 환산 안내가 이 값만 보고 뜬다 — 누르고 닫는
     /// 동작을 만들지 않는다. 한 줄짜리 안내를 보려고 두 번 누르게 할 이유가 없다.
     @State private var hoveringRate = false
+    @State private var priceRevision = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if let error = wallet.persistenceError {
+                VStack(alignment: .leading, spacing: 3) {
+                    Label(l.saveFailed, systemImage: "exclamationmark.triangle")
+                    Text(error).font(Typography.label).textSelection(.enabled)
+                }.foregroundStyle(.red)
+            } else if wallet.recoveredSave {
+                Text(l.saveRecovered).font(Typography.label).foregroundStyle(.orange)
+            }
             // 패치 노트를 먼저 본다 — 설정에서 열었을 때 닫으면 설정으로 돌아가게 하려는 것이다.
             if nav.showReleaseNotes {
                 ReleaseNotesView(wallet: wallet, store: store,
@@ -78,6 +91,10 @@ struct PopoverView: View {
                 tabPicker
                 tabContent
             }
+        }
+        .id(priceRevision)
+        .onReceive(NotificationCenter.default.publisher(for: PriceSnapshotStore.changed)) { _ in
+            priceRevision += 1
         }
         // 안쪽 폭을 못 박는다. 자식이 이 폭보다 넓으면 창이 통째로 넓어지고, 창은
         // `width` 로 고정돼 있으므로 남는 만큼 왼쪽으로 밀린다 — 탭 하나만 넓어도
@@ -168,7 +185,7 @@ struct PopoverView: View {
                        WonFormatter.money(prices.krw(wallet.collectionValueUSD(prices: prices)),
                                           language: wallet.language),
                        tint: .accentColor)
-                .help(l.marketPriceSource(prices.asOf))
+                .help(l.mixedPriceSource)
         }
     }
 

@@ -13,6 +13,16 @@ let package = Package(
                 .process("Resources/dex.json"),
                 .process("Resources/card-names-ko.json"),
                 .process("Resources/card-prices.json"),
+                .process("Resources/pack-prices.json"),
+                .process("Resources/card-art.json"),
+                .process("Resources/foil-geometry.json"),
+                .process("Resources/foil-subject-masks.json"),
+                .process("Resources/physical-foil-marks.json"),
+                .copy("Resources/foil-marks"),
+                .process("Resources/expansion-foil.json"),
+                .process("Resources/reviewed-foil.json"),
+                .process("Resources/cracked-ice-facets.json"),
+                .process("Resources/catalogue-sources.json"),
                 // 판매 중인 세트의 팩 아트는 번들에 넣는다 — 상점과 개봉 대기 화면에서
                 // 로딩을 기다리지 않게 한다. 나머지 세트는 필요할 때 받아서 캐시한다.
                 .copy("Resources/packs"),

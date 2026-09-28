@@ -24,6 +24,8 @@ struct CardSpotlightView: View {
     var canVisitPack = true
     /// 원본 등급 이름. 커뮤니티 약칭으로 옮겨 등급 배지 옆에 적는다.
     var rarity: String?
+    /// 팩에서 막 뽑은 병렬 판형. 없으면 보유 판형 중 대표를 고른다.
+    var finish: CardFinish? = nil
     /// 보유 장수. 0 이면 아직 얻지 못한 카드로 표시한다.
     let ownedCount: Int
     /// 미리 받아 둔 큰 그림이 있으면 기다리지 않는다.
@@ -34,12 +36,41 @@ struct CardSpotlightView: View {
 
     @State private var landed = false
     @State private var confirmingSale = false
+    /// 같은 카드 번호의 판형을 직접 바꿔 보게 한다. `nil`이면 방금 뽑은 판형이나
+    /// 보유 판형 중 가장 값이 높은 것을 기본으로 쓴다.
+    @State private var selectedFinish: CardFinish? = nil
     /// 방금 받은 액수. 잠깐 보여주고 지운다.
     @State private var lastRefund: Int?
 
     var body: some View {
+        GeometryReader { geometry in
+            // The shop has an extra picker above this view. Measure its real
+            // height instead of assuming that every caller gets the whole tab.
+            let informationHeight: CGFloat = ownedCount > 1 ? 182 : 160
+            let dexHeight: CGFloat = relatedDexes.isEmpty ? 0 : 42
+            let saleHeight: CGFloat = wallet.spareCount(cardID) == 0 ? 0 : (confirmingSale ? 110 : 36)
+            let cardWidth = min(230, max(150,
+                ((geometry.size.height - informationHeight - dexHeight - saleHeight) * 0.717).rounded(.down)))
+            ScrollView {
+                detail(cardWidth: cardWidth)
+                    .frame(minHeight: geometry.size.height)
+            }
+            .scrollIndicators(.hidden)
+        }
+        .onAppear {
+            selectedFinish = finish ?? wallet.bestOwnedFinish(cardID: cardID)
+            withAnimation(.spring(response: 0.34, dampingFraction: 0.75)) { landed = true }
+        }
+        .onChange(of: cardID) {
+            confirmingSale = false
+            lastRefund = nil
+            selectedFinish = finish ?? wallet.bestOwnedFinish(cardID: cardID)
+        }
+    }
+
+    private func detail(cardWidth: CGFloat) -> some View {
         let l = wallet.l
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             // 뒤로가기는 왼쪽, 손대는 것은 오른쪽. 다른 화면과 같은 자리다.
             HStack {
                 BackButton(action: onClose, hint: l.close)
@@ -51,15 +82,24 @@ struct CardSpotlightView: View {
 
             // 마우스를 올리면 기울고 광택이 흐른다 — 확대 화면에서만 준다.
             // 격자에서는 크기가 작아 각도가 읽히지 않고, 지나가는 커서마다 반응하면 산만하다.
-            HolographicCardView(cardID: cardID, tier: tier, width: 230,
-                                dimmed: ownedCount == 0, preloaded: preloaded)
+            Group {
+                if let displayedFinish {
+                    HolographicCardView(cardID: cardID, tier: tier,
+                                        finish: displayedFinish, setID: setID,
+                                        originalRarity: rarity, width: cardWidth,
+                                        dimmed: ownedCount == 0, preloaded: preloaded)
+                } else {
+                    HolographicCardView(cardID: cardID, tier: tier, width: cardWidth,
+                                        dimmed: ownedCount == 0, preloaded: preloaded)
+                }
+            }
                 .scaleEffect(landed ? 1 : 0.9)
                 .opacity(landed ? 1 : 0)
 
             Spacer(minLength: 0)
 
             // 글자를 키우면서 줄 수를 줄였다. 등급·세트·보유량을 한 줄에 모으고 이름을
-            // 한 줄로 묶어, 스크롤 없이 470pt 안에 들어오게 한다.
+            // 한 줄로 묶는다. 작은 창이나 긴 판매 안내는 스크롤로 끝까지 볼 수 있다.
             VStack(spacing: 4) {
                 Text(name)
                     .font(Typography.heading)
@@ -111,14 +151,7 @@ struct CardSpotlightView: View {
                 .padding(.top, 5)
                 .padding(.bottom, 4)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            withAnimation(.spring(response: 0.34, dampingFraction: 0.75)) { landed = true }
-        }
-        .onChange(of: cardID) {
-            confirmingSale = false
-            lastRefund = nil
-        }
+        .frame(maxWidth: .infinity)
     }
 
     /// 이 카드를 처음 얻은 날. **값 줄 끝에 붙인다.**
@@ -148,6 +181,21 @@ struct CardSpotlightView: View {
         return f
     }()
 
+    private var displayedFinish: CardFinish? {
+        selectedFinish ?? finish ?? wallet.bestOwnedFinish(cardID: cardID)
+    }
+
+    /// 보유한 판형을 재질 선언 순서로 보여 준다. 가격순이면 시세 갱신 때 메뉴 위치가 움직여
+    /// 같은 항목을 다시 찾기 어렵다.
+    private var availablePrintings: [(printing: CardPrintingKey, count: Int)] {
+        let rank = Dictionary(uniqueKeysWithValues:
+            CardFinish.allCases.enumerated().map { ($1, $0) })
+        return wallet.ownedPrintings(cardID: cardID).sorted {
+            rank[$0.printing.finish, default: .max]
+                < rank[$1.printing.finish, default: .max]
+        }
+    }
+
     /// 팩 그림과 이름. **여기를 누르면 상점의 그 팩으로 간다.**
     ///
     /// 갈매기를 달아 봤더니 눈에 띄지도 않으면서 자리만 먹었다. 대신 이름에 강조색을 준다 —
@@ -170,22 +218,80 @@ struct CardSpotlightView: View {
     /// 스무 배 넘게 차이가 나고, 1999년 세트의 커먼이 최신 세트의 SR 보다 비싸기도 하다.
     @ViewBuilder
     private func priceRow(_ l: L) -> some View {
-        if let prices = CardPrices.shared, let unit = prices.price(cardID) {
-            // 한 줄로 둔다. 줄을 나누면 그만큼 아래가 밀려 판매 버튼이 화면 밖으로 나간다.
+        if let prices = CardPrices.shared,
+           let unit = displayedFinish.flatMap({ prices.price(cardID: cardID, finish: $0) })
+                ?? prices.price(cardID) {
+            // 개별 가격은 자르지 않는다. 중복 보유 총액은 별도 행을 쓴다.
             HStack(spacing: 5) {
+                if let displayedFinish {
+                    finishPicker(l, displayedFinish)
+                    Text("·").font(Typography.label).foregroundStyle(.tertiary)
+                }
                 Text(prices.formattedWithKRW(unit, language: wallet.language))
                     .font(Typography.bodySemibold).monospacedDigit()
-                if ownedCount > 1, let total = prices.total(cardID, count: ownedCount) {
-                    Text("·").font(Typography.label).foregroundStyle(.tertiary)
+                if ownedCount <= 1 { acquiredTag(l) }
+            }
+            .lineLimit(1).minimumScaleFactor(0.75)
+            .help(l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
+            if ownedCount > 1 {
+                HStack(spacing: 5) {
+                    let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
+                        $0 + MarketEconomy.usd($1.printing, prices: prices) * Double($1.count)
+                    }
                     Text(l.marketHoldings).font(.system(size: 14)).foregroundStyle(.tertiary)
                     Text(WonFormatter.money(prices.krw(total), language: wallet.language))
                         .font(Typography.bodySemibold).monospacedDigit()
                         .foregroundStyle(Color.accentColor)
+                    acquiredTag(l)
                 }
-                acquiredTag(l)
+                .lineLimit(1).minimumScaleFactor(0.75)
             }
-            .lineLimit(1).minimumScaleFactor(0.75)
-            .help(l.marketPriceSource(prices.asOf))
+            priceBasisLabel(l, prices)
+        }
+    }
+
+    private func priceBasisLabel(_ l: L, _ prices: CardPrices) -> some View {
+        let label: String
+        if prices.isReference(cardID: cardID, finish: displayedFinish) {
+            label = l.completedSalesReference
+        } else if displayedFinish.flatMap({ prices.exactPrice(cardID: cardID, finish: $0) }) == nil {
+            label = l.fallbackPrintingPrice
+        } else {
+            label = l.exactPrintingPrice
+        }
+        return Text(label).font(Typography.label).foregroundStyle(.secondary)
+            .help(l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
+    }
+
+    /// 판형이 둘 이상이면 이름 자체를 메뉴로 쓴다. 별도 행을 만들지 않아 작은 팝오버에서도
+    /// 카드 크기와 판매 버튼을 밀어내지 않는다.
+    @ViewBuilder
+    private func finishPicker(_ l: L, _ displayedFinish: CardFinish) -> some View {
+        if availablePrintings.count > 1 {
+            Menu {
+                ForEach(availablePrintings.map(\.printing.finish), id: \.self) { candidate in
+                    let count = wallet.cardCount(cardID, finish: candidate)
+                    Button {
+                        selectedFinish = candidate
+                    } label: {
+                        Text("\(l.cardFinishName(candidate)) · ×\(count)")
+                    }
+                }
+            } label: {
+                HStack(spacing: 3) {
+                    Text(l.cardFinishName(displayedFinish))
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 9, weight: .semibold))
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.secondary)
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+        } else {
+            Text(l.cardFinishName(displayedFinish))
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -278,7 +384,7 @@ struct CardSpotlightView: View {
     @ViewBuilder
     private func saleControls(_ l: L) -> some View {
         let spare = wallet.spareCount(cardID)
-        let refund = CardSale.price(cardID: cardID, perks: wallet.perks) * spare
+        let refund = wallet.spareSaleValue(cardID: cardID)
         let bonus = wallet.perks.dustBonus
 
         if let lastRefund {
@@ -302,6 +408,10 @@ struct CardSpotlightView: View {
                 if bonus > 0 {
                     Text(l.sellBonusIncluded(bonus))
                         .font(Typography.caption).foregroundStyle(Color.accentColor)
+                }
+                if availablePrintings.count > 1 {
+                    Text(l.sellLowestFinishFirst)
+                        .font(Typography.caption).foregroundStyle(.tertiary)
                 }
                 HStack(spacing: 8) {
                     Button(l.sellSpares) {

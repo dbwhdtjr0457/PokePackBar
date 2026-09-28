@@ -5,6 +5,9 @@ Package.resolved
 
 # App bundle build output
 build/
+local-assets/
+__pycache__/
+*.pyc
 
 # OMC / agent local state
 .omc/
@@ -28,6 +31,8 @@ docs/*
 
 # Agent worktrees / local state
 .claude/
+.cursor/
+.ui-craft/
 .worktrees/
 
 # Local-only review-gate opt-out (not published)

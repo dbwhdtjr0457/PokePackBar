@@ -8,25 +8,24 @@ import Foundation
 ///
 /// ```
 /// 분해값(카드) = 시세 × tokensPerUSD
-/// 팩값(세트)   = 팩 기대 시세 × tokensPerUSD × packMargin
+/// 팩값(세트)   = max(밀봉 부스터 시세, 카드 기대 시세 × packMargin) × tokensPerUSD
 /// ```
 ///
-/// 두 식이 같은 환율을 쓰므로 **어느 세트를 사도 기대 수익률이 같다**(`1/packMargin`).
-/// 무엇이 이득인지 고르는 게임이 아니라, 바닥이 높은 옛날 팩과 천장이 높은 최신 팩 중
-/// 성향을 고르는 게임이 된다.
+/// 밀봉 팩과 낱장 카드가 같은 환율을 쓴다. 수집품 프리미엄이 큰 오래된 팩은 실제 시세를
+/// 유지하고, 낱장 기대값이 비정상적으로 더 큰 데이터에서는 무한 되팔이를 막는 하한을 둔다.
 enum MarketEconomy {
 
     /// 1달러가 몇 토큰인가.
     ///
-    /// 세트별 팩 기대값의 중앙값이 $11 남짓이라, 이 값이면 중간 세트 팩이 예전과 같은
-    /// 1,000만 언저리에 남는다. 이 상수 하나가 팩값·분해값·오리파값에 동시에 걸린다.
+    /// 밀봉 팩·낱장 카드·오리파가 같은 환율을 쓴다.
     static let tokensPerUSD: Double = 292_000
 
-    /// 팩값이 그 안에 든 것의 기대 시세보다 몇 배 비싼가.
+    /// 카드 기대값이 밀봉 부스터 시세보다 높은 세트에 쓰는 안전 하한 마진.
     ///
-    /// 곧 "사서 갈기만 할 때 돌려받는 비율" 의 역수다. 3 이면 3분의 1이 돌아온다 —
-    /// 등급표를 쓰던 시절의 회수율과 같아 체감이 유지된다.
-    static let packMargin: Double = 3
+    /// 곧 "사서 갈기만 할 때 돌려받는 비율" 의 역수다. 최대 도감 히트·판매 혜택과
+    /// 반값 쿠폰까지 적용해도 장기 기대 환급이 구매가의 90% 아래에 머물도록 잡았다.
+    /// 쿠폰과 영구 할인은 `WalletStore` 에서 더 강한 하나만 적용한다.
+    static let packMargin: Double = 3.4
 
     /// 시세를 모르는 카드에 쓸 값. 0 으로 두면 갈 수도 없는 카드가 된다.
     static let unknownUSD: Double = 0.05
@@ -86,6 +85,16 @@ enum MarketEconomy {
         prices?.price(cardID) ?? unknownUSD
     }
 
+    /// 특정 인쇄본의 시세. v2 가격표처럼 판형 값이 없으면 `CardPrices` 가 카드 대표값으로
+    /// 폴백하므로, 호출부는 스냅샷 버전을 따로 알 필요가 없다.
+    static func usd(cardID: String, finish: CardFinish, prices: CardPrices?) -> Double {
+        prices?.price(cardID: cardID, finish: finish) ?? unknownUSD
+    }
+
+    static func usd(_ printing: CardPrintingKey, prices: CardPrices?) -> Double {
+        usd(cardID: printing.cardID, finish: printing.finish, prices: prices)
+    }
+
     /// 한 세트에서 그 등급 카드의 평균 시세.
     ///
     /// 팩 기대값은 "이 칸에서 이 등급이 나올 확률" 까지만 아는데, 같은 등급 안에서도 값이
@@ -99,8 +108,10 @@ enum MarketEconomy {
 
     /// 팩 하나에 들어 있는 것의 기대 시세(달러).
     ///
-    /// 확률은 `PackOpening.packOdds` 를 그대로 쓴다. 갓팩과 천장이 이미 반영된 값이라
-    /// 여기서 다시 계산하면 화면에 보이는 확률과 값이 갈라진다.
+    /// 확률은 `PackOpening.packOdds` 를 그대로 쓴다. 세트 전용 특수팩은 반영하지만,
+    /// 플레이어마다 현재 카운터가 다른 천장은 가격에서 제외한 무혜택 기준선이다.
+    /// 등급 평균만으로는 정확한 카드가 정해진 특수팩과 병렬판형 가격이 사라지므로 그 차이만
+    /// `printingAdjustmentUSD` 에서 더한다.
     ///
     /// **혜택은 넣지 않는다.** 카드를 한 장 더 받는 혜택까지 반영하면 혜택을 얻은 사람의
     /// 팩값이 올라간다 — 혜택이 벌이 되어서는 안 된다.
@@ -108,9 +119,118 @@ enum MarketEconomy {
         let odds = PackOpening.packOdds(setID: setID, index: index)   // 혜택 제외 — 아래 주석
         guard !odds.isEmpty else { return 0 }
         let cards = Double(PackPricing.cardCount(setID: setID, index: index))   // 혜택 제외
-        return odds.reduce(0.0) {
+        let tierValue = odds.reduce(0.0) {
             $0 + $1.probability * cards * meanUSD(setID: setID, tier: $1.tier,
                                                   index: index, prices: prices)
         }
+        return max(0, tierValue + printingAdjustmentUSD(setID: setID, index: index,
+                                                         prices: prices))
+    }
+
+    /// `packOdds`가 등급 평균으로 세어 둔 값을 실제 고정 카드·판형 가격으로 교체하는 보정값.
+    private static func printingAdjustmentUSD(setID: String, index: CardIndex,
+                                               prices: CardPrices?) -> Double {
+        let recipe = PackRecipe.forSet(setID, era: index.era(setID))
+        let pool = index.pools[setID] ?? [:]
+        let specialChance = recipe.specialVariant.map {
+            1.0 / Double($0.estimatedSimulatorOneIn)
+        } ?? 0
+
+        var adjustment = 0.0
+
+        // Subsets and some legacy reverse sheets use only part of a rarity
+        // tier. Replace the tier-average contribution with the exact slot pool
+        // and finish while keeping `packOdds` as the public rarity disclosure.
+        let tables = PackConfig.slotTables(setID: setID, era: index.era(setID))
+        for (slot, table) in zip(recipe.slots, tables) {
+            let slotPool = PackOpening.slotPool(
+                setID: setID, slot: slot.kind, pool: pool, index: index
+            )
+            let weights = slot.kind == .radiantCollectionHigh
+                ? table.weights
+                : PackConfig.weights(table.weights, perks: .none)
+            let available = weights.filter { !(slotPool[$0.tier] ?? []).isEmpty }
+            let totalWeight = available.reduce(0) { $0 + $1.weight }
+            guard totalWeight > 0 else { continue }
+
+            for entry in available {
+                let ids = slotPool[entry.tier] ?? []
+                guard !ids.isEmpty else { continue }
+                let hint = PackOpening.finishHint(
+                    setID: setID, slot: slot.kind,
+                    tier: entry.tier, era: index.era(setID)
+                )
+                let actualMean = ids.reduce(0.0) { total, cardID in
+                    let pulled = PulledCard(id: cardID, tier: entry.tier, isNew: false)
+                    let printing = PackSlotResult(card: pulled, finishHint: hint)
+                        .printing(setID: setID, index: index)
+                    return total + usd(printing, prices: prices)
+                } / Double(ids.count)
+                let tierMean = meanUSD(setID: setID, tier: entry.tier,
+                                       index: index, prices: prices)
+                let probability = Double(entry.weight) / Double(totalWeight)
+                let parallelChance = Double(PackRecipe.observedParallelHits(setID: setID, slot: slot.kind) ?? 0)
+                    / Double(PackRecipe.prismaticParallelRolls)
+                adjustment += (actualMean - tierMean)
+                    * probability * Double(slot.count) * recipe.standardShare(for: slot.kind) * (1 - parallelChance)
+            }
+        }
+
+        for slot in recipe.slots {
+            guard let hits = PackRecipe.observedParallelHits(setID: setID, slot: slot.kind)
+            else { continue }
+            let isMasterBall = slot.kind == .reverseHoloHit
+            let finish: CardFinish = isMasterBall ? .masterBall : .pokeBall
+            let candidates = PackOpening.prismaticParallelCandidates(
+                setID: setID,
+                pool: pool,
+                masterBallOnly: isMasterBall
+            )
+            guard !candidates.isEmpty else { continue }
+
+            let actualMean = candidates.reduce(0.0) {
+                $0 + usd(cardID: $1.id, finish: finish, prices: prices)
+            } / Double(candidates.count)
+            let tierMeanAlreadyCounted = candidates.reduce(0.0) {
+                $0 + meanUSD(setID: setID, tier: $1.tier, index: index, prices: prices)
+            } / Double(candidates.count)
+            let chance = Double(hits) / Double(PackRecipe.prismaticParallelRolls)
+            adjustment += (actualMean - tierMeanAlreadyCounted)
+                * chance * recipe.standardShare(for: slot.kind) * Double(slot.count)
+        }
+
+        func requestsAdjustment(_ requests: [PackCardRequest]) -> Double {
+            requests.reduce(0.0) { total, request in
+                let ids = request.exactCardID.map { [$0] } ?? (pool[request.tier] ?? [])
+                guard !ids.isEmpty else { return total }
+                let delta = ids.reduce(0.0) { sum, cardID in
+                    guard let entry = index.card(cardID), entry.setID == setID else { return sum }
+                    let pulled = PulledCard(id: cardID, tier: entry.tier, isNew: false)
+                    let printing = PackSlotResult(card: pulled, finishHint: request.finishHint)
+                        .printing(setID: setID, index: index)
+                    return sum + usd(printing, prices: prices)
+                        - meanUSD(setID: setID, tier: entry.tier, index: index, prices: prices)
+                } / Double(ids.count)
+                return total + delta
+            }
+        }
+
+        switch recipe.specialVariant?.variant {
+        case .scarletViolet151Demigod:
+            let lineMean = PackRecipe.scarletViolet151Lines
+                .map(requestsAdjustment)
+                .reduce(0, +) / Double(PackRecipe.scarletViolet151Lines.count)
+            adjustment += lineMean * specialChance
+        case .prismaticEvolutionsGod:
+            adjustment += requestsAdjustment(PackRecipe.prismaticEvolutionsGodPack)
+                * specialChance
+            adjustment += requestsAdjustment(Array(repeating: PackCardRequest(tier: .specialArtRare), count: 3))
+                * specialChance
+        case .blackBoltWhiteFlareGod:
+            adjustment += requestsAdjustment(PackRecipe.blackBoltWhiteFlareGodPack) * specialChance
+        case .standard, .celebrations, .prismaticEvolutionsDemigod, nil:
+            break
+        }
+        return adjustment
     }
 }

@@ -90,6 +90,7 @@ final class UpdateChecker {
 
     /// 업데이트 적용: brew cask 설치본이면 `brew upgrade` 후 재시작, 아니면 릴리스 페이지.
     func applyUpdate() {
+        guard AppLinks.updatesConfigured else { available = nil; return }
         guard let update = available, !isUpdating else { return }
         isUpdating = true
         Task { @MainActor in

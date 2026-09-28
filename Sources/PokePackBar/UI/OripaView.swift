@@ -68,6 +68,7 @@ struct OripaView: View {
                                   tier: entry.tier, setID: entry.setID,
                                   setName: index.set(entry.setID)?.name ?? entry.setID,
                                   rarity: entry.rarity,
+                                  finish: drawn?.id == entry.id ? drawn?.finish : nil,
                                   ownedCount: wallet.cardCount(entry.id)) {
                     self.focused = nil
                 }

@@ -1,0 +1,815 @@
+{
+  "cel30c-1": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_137_ov1ta9dw.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Gold fragmented outer rim; confetti behind Charizard, fine lines on body; attack panel not confetti.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.49
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-2": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_143_tkv9pnr9.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Delcatty and foreground flowers differ from confetti in blue background; silver description panel stays smooth.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.43
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-3": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_146_7q1ri4wz.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Background flecks and fine body lines; printed diagonal lower panel is not a second all-face foil plate.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": false,
+    "stampCentre": [
+      0.88,
+      0.43
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-4": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_155_nv863iwf.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Genesect body has fine curved lines; lightning/background and irregular frame contain fragments; green attack panel is smooth.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.49
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [
+      [
+        0.055,
+        0.548,
+        0.94,
+        0.833
+      ]
+    ],
+    "ruleBoxes": [
+      [
+        0.49,
+        0.844,
+        0.93,
+        0.917
+      ]
+    ]
+  },
+  "cel30c-5": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_138_27pxj1k3.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Misty and ribbon are protected from background confetti; metallic trainer frame differs from gold outer rim.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.53
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-6": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_144_o4ld91ij.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Tyranitar line texture distinct from red fractured background; dark lower attacks are not confetti.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.43
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-7": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_140_9ql7o1gu.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Sneasel body lines differ from star/confetti background; dark lower panel is smooth.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.13,
+      0.49
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-8": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_160_rrj8zrtn.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Both Pokemon have fine line texture; background and blue GX strip have fragments; retain yellow tag framing.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.5
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [
+      [
+        0.06,
+        0.872,
+        0.94,
+        0.911
+      ]
+    ],
+    "ruleBoxes": []
+  },
+  "cel30c-9": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_157_d6pq8jnu.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Landscape BREAK: gold body and water rings differ from silver/confetti gaps; heading and rule box are printed.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.69,
+      0.08
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [
+      [
+        0.04,
+        0.056,
+        0.135,
+        0.946
+      ]
+    ],
+    "ruleBoxes": []
+  },
+  "cel30c-10": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_148_dd49ioj9.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Uxie body lines; sparse stars and dense background fragments; purple attacks are smooth.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.48
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-11": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_149_qtbgchsx.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Crobat wings/body exclude background confetti; trainer portrait and lower attacks stay printed.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.34
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-12": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_162_rlm9pae6.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Amazing paint splash continues below picture frame; Raikou body has lines, yellow paper is not confetti.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.46
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": [],
+    "artExtension": [
+      [
+        [
+          0.081,
+          0.448
+        ],
+        [
+          0.928,
+          0.448
+        ],
+        [
+          0.83,
+          0.499
+        ],
+        [
+          0.68,
+          0.541
+        ],
+        [
+          0.465,
+          0.587
+        ],
+        [
+          0.295,
+          0.59
+        ],
+        [
+          0.528,
+          0.556
+        ],
+        [
+          0.191,
+          0.58
+        ],
+        [
+          0.49,
+          0.525
+        ],
+        [
+          0.17,
+          0.54
+        ],
+        [
+          0.345,
+          0.493
+        ],
+        [
+          0.09,
+          0.52
+        ]
+      ]
+    ]
+  },
+  "cel30c-13": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_159_u1b7a1nt.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Buzzwole body lines; confetti continues behind attacks and GX strip; gold rim follows angular layout.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.44
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-14": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_136_ed4rm53k.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Pikachu body/tail have fine lines; background confetti and stars; cream attacks remain smooth.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.14,
+      0.49
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-15": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_139_cjvkon6h.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Jigglypuff body lines, pink confetti background, silver lower paper distinct; trainer portrait stays printed.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.46
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-16": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_154_qr5wtsjv.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Rayquaza gloss/body separate from background confetti; lower brown attacks mainly smooth; rule tab foil.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": false,
+    "stampCentre": [
+      0.13,
+      0.48
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [
+      [
+        0.05,
+        0.535,
+        0.95,
+        0.86
+      ]
+    ],
+    "ruleBoxes": [
+      [
+        0.49,
+        0.873,
+        0.94,
+        0.94
+      ]
+    ]
+  },
+  "cel30c-17": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_158_an7yc6hm.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Solgaleo lines; full-art fragments around body and GX strip; printed white bottom bars protected.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.45
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [
+      [
+        0.06,
+        0.866,
+        0.94,
+        0.902
+      ]
+    ],
+    "ruleBoxes": []
+  },
+  "cel30c-18": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_150_afjdkhy2.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Gengar body fine lines, eyes and background visibly fragmented; purple attacks remain smooth.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.13,
+      0.48
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-19": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_151152_49uhte7p.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "LEGEND upper half: Darkrai silhouette distinct from scattered blue background fragments; landscape source rotates.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.68,
+      0.08
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-20": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_151152_49uhte7p.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "LEGEND lower half: Cresselia/ribbons have lines; fragments continue behind attacks; landscape source rotates.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.92,
+      0.48
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-21": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_153_his8neod.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "N: fragments visibly cross hat/clothing and full background, so no universal subject cutout.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": false,
+    "subjectEtching": false,
+    "stampCentre": [
+      0.88,
+      0.55
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": [],
+    "fullArtEtching": true
+  },
+  "cel30c-22": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_147_hultri51.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Palkia body line texture; red background fragments; cyan attack panel smooth; LV.X rule tab foil.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.48
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": [
+      [
+        0.084,
+        0.815,
+        0.94,
+        0.877
+      ]
+    ]
+  },
+  "cel30c-23": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_156_u09dho0m.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Mega Gardevoir: body lines, background fragments, attack lettering and both rule tabs reflective; pink attack panel smoother.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.13,
+      0.53
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [
+      [
+        0.05,
+        0.686,
+        0.95,
+        0.835
+      ]
+    ],
+    "ruleBoxes": [
+      [
+        0.12,
+        0.623,
+        0.88,
+        0.672
+      ],
+      [
+        0.49,
+        0.875,
+        0.93,
+        0.94
+      ]
+    ]
+  },
+  "cel30c-24": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_141_a40xqoy2.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Shining Celebi: pink background has confetti unlike original Neo subject-only printing; green lower paper distinct.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.49
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-25": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_145_1i3qu19p.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Scizor body lines; blue background fragments; diagonal printed lower panel not confetti.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.43
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": []
+  },
+  "cel30c-26": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_163_s6x8ovr8.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Mew VMAX: confetti visibly crosses pink body as well as background; do not exclude all Pokemon silhouettes.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": false,
+    "subjectEtching": false,
+    "stampCentre": [
+      0.88,
+      0.53
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": [],
+    "fullArtEtching": true
+  },
+  "cel30c-27": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_164_0ntdncsf.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Arceus body lines; background and VSTAR power strip fragmented; white bottom and name bars distinct.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.13,
+      0.48
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [
+      [
+        0.065,
+        0.876,
+        0.935,
+        0.969
+      ]
+    ],
+    "ruleBoxes": []
+  },
+  "cel30c-28": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_161_kqjwcejr.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Zacian and sword have fine lines; background fragments; black V-rule footer is not confetti.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.88,
+      0.55
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [
+      [
+        0.06,
+        0.9,
+        0.95,
+        0.976
+      ]
+    ],
+    "ruleBoxes": []
+  },
+  "cel30c-29": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_142_a3jxu2i6.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Lugia body lines, picture and lower silver panel fragments; wide e-reader gold margin differs from narrow rims.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": false,
+    "subject": true,
+    "subjectEtching": true,
+    "stampCentre": [
+      0.13,
+      0.48
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": [],
+    "extraFoilBoxes": [
+      [
+        0.16,
+        0.505,
+        0.948,
+        0.918
+      ]
+    ]
+  },
+  "cel30c-30": {
+    "style": "classic30",
+    "finish": "celebrationsClassic",
+    "referenceURLs": [
+      "https://www.30th.pokemon-card.com/product/m6a",
+      "https://www.30th.pokemon-card.com/images/m6a/cards/m6a_165_kdj1zvxj.png"
+    ],
+    "evidenceStatus": "individual_official_JP_static_reference_compared_to_EN_source",
+    "observedDifference": "Magikarp illustration has distributed fragments/stars across full art; use fine low-strength lines without invented body plate.",
+    "reconstruction": "Observed region/material reconstruction on EN scan geometry; JP static image is not proof of identical language plates or measured angular response.",
+    "fullArt": true,
+    "subject": false,
+    "subjectEtching": false,
+    "stampCentre": [
+      0.88,
+      0.55
+    ],
+    "goldStars": true,
+    "backgroundStars": true,
+    "mattePanels": [],
+    "ruleBoxes": [],
+    "fullArtEtching": true
+  }
+}

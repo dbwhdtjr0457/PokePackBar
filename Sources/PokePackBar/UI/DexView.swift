@@ -83,7 +83,12 @@ struct DexView: View {
     private func show(_ claim: DexClaim) {
         guard let card = claim.card, let entry = index?.card(card) else { return }
         revealed = false
-        granted = PulledCard(id: card, tier: entry.tier, isNew: wallet.cardCount(card) <= 1)
+        let finish = CardFinishResolver.resolve(cardID: card,
+                                                setID: entry.setID,
+                                                originalRarity: entry.rarity,
+                                                tier: entry.tier).finish
+        granted = PulledCard(id: card, tier: entry.tier,
+                             isNew: wallet.cardCount(card) <= 1, finish: finish)
     }
 
     /// 세트 도감 — 시대를 한 단계 두고 그 안에서 세트를 늘어놓는다.
