@@ -1,9 +1,5 @@
 # PokePackBar
 
-> This branch contains a draft local-custom build, not an upstream release.
-> See [the review and build guide](docs/reference/local-custom-review.md) for its scope,
-> optional offline artwork, verification limits, and integration decisions.
-
 AI 코딩 도구로 태운 토큰을 포켓몬 카드팩으로 바꿔 주는 macOS 메뉴바 앱.
 
 코딩하면 토큰이 쌓이고, 쌓인 토큰으로 카드팩을 산다. 팩을 뜯어 카드를 모은다.

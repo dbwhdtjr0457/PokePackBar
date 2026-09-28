@@ -48,8 +48,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>$VERSION</string>
     <key>CFBundleVersion</key><string>$VERSION</string>
-    <key>PPBBuildChannel</key><string>local-custom</string>
-    <key>PPBUpstreamVersion</key><string>0.8.0</string>
+    <key>PPBBuildChannel</key><string>stable</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>LSUIElement</key><true/>

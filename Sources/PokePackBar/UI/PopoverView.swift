@@ -91,6 +91,18 @@ struct PopoverView: View {
                 tabPicker
                 tabContent
             }
+
+            Divider()
+            HStack {
+                Spacer()
+                Button {
+                    NSApp.terminate(nil)
+                } label: {
+                    Label(l.quit, systemImage: "power")
+                }
+                .buttonStyle(.borderless)
+                .keyboardShortcut("q", modifiers: .command)
+            }
         }
         .id(priceRevision)
         .onReceive(NotificationCenter.default.publisher(for: PriceSnapshotStore.changed)) { _ in

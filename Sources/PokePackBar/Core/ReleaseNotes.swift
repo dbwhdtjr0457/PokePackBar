@@ -63,6 +63,12 @@ extension L {
                   "Ventana de 400pt y contenido de 480pt, con cartas adaptables y precios y ventas accesibles. Corregido el relieve erróneo de 19 cartas Generations RC y excluido el borde amarillo de RC29. La revisión física individual sigue incompleta.",
                   "Fenêtre de 400pt et contenu de 480pt, cartes adaptées et prix et ventes accessibles. Relief erroné retiré de 19 cartes Generations RC et bord jaune de RC29 exclu. La vérification physique individuelle reste incomplète.",
                   "Janela de 400pt e conteúdo de 480pt, com cartas adaptáveis e preços e vendas acessíveis. Removido o relevo incorreto de 19 cartas Generations RC e excluída a borda amarela de RC29. A verificação física individual continua incompleta."),
+                t("카드·팩 원본을 앱에서 분리하고 CloudFront에서 저화질·고화질 이미지를 필요한 때 받아 캐시하도록 변경했습니다. 팝오버에 종료 버튼과 ⌘Q 단축키도 추가했습니다.",
+                  "Moved card and pack originals out of the app. Low- and high-resolution artwork is now fetched from CloudFront on demand and cached locally. Added a visible Quit button and Command-Q shortcut.",
+                  "カード・パック原画をアプリから分離し、低・高解像度画像をCloudFrontから必要時に取得してキャッシュします。終了ボタンと⌘Qも追加しました。",
+                  "Las imágenes originales ya no se incluyen en la app; las versiones de baja y alta resolución se descargan de CloudFront y se guardan en caché. Añadidos Salir y ⌘Q.",
+                  "Les images originales ne sont plus intégrées ; les versions basse et haute résolution viennent de CloudFront et sont mises en cache. Ajout d'un bouton Quitter et de ⌘Q.",
+                  "As imagens originais saíram do app; versões de baixa e alta resolução vêm do CloudFront e ficam em cache. Adicionados Sair e ⌘Q."),
             ]),
             ReleaseNote(version: "0.11.10", lines: [
                 t("30주년 복각 30종의 금박·배경·피사체를 개별 등록하고, 피카츄의 남은 방사형 무늬와 루기아의 넓은 금색 테두리를 보완했습니다. 일반 ex의 별무늬를 복원하고, 균열형 12종에 원본 경계에 고정된 반사를 추가했습니다. Ascended 리버스 무늬 8종의 누락도 채웠습니다. 실물 자료 기반 근사이며 전 카드 제조 원판의 일치를 보증하지 않습니다.",
