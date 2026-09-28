@@ -8,6 +8,7 @@ let package = Package(
         .executableTarget(
             name: "PokePackBar",
             path: "Sources/PokePackBar",
+            exclude: ["Resources/packs"],
             resources: [
                 .process("Resources/card-index.json"),
                 .process("Resources/dex.json"),
@@ -23,9 +24,6 @@ let package = Package(
                 .process("Resources/reviewed-foil.json"),
                 .process("Resources/cracked-ice-facets.json"),
                 .process("Resources/catalogue-sources.json"),
-                // 판매 중인 세트의 팩 아트는 번들에 넣는다 — 상점과 개봉 대기 화면에서
-                // 로딩을 기다리지 않게 한다. 나머지 세트는 필요할 때 받아서 캐시한다.
-                .copy("Resources/packs"),
             ],
             linkerSettings: [.linkedLibrary("sqlite3")]
         ),

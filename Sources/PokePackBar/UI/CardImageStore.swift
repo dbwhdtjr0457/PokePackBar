@@ -1,7 +1,8 @@
 import AppKit
 import SwiftUI
-/// Installed original scans take precedence over the legacy download cache.
-/// Network requests are only recovery paths for an absent local original.
+/// Development audits may provide original scans through PPB_CARD_ART_DIR.
+/// Distributed builds fetch low/high WebP variants from the managed CDN and
+/// retain them in the application-support cache; originals are not bundled.
 actor CardImageStore {
     static let shared = CardImageStore()
 
@@ -19,7 +20,9 @@ actor CardImageStore {
 
     static let cacheDir: URL = {
         let d = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("PokePackBar/cards")
+            // v2 separates the managed-CDN variants from legacy Supabase files.
+            // Otherwise an old accepted cache entry can bypass the new origin.
+            .appendingPathComponent("PokePackBar/cards-v2")
         try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true)
         return d
     }()

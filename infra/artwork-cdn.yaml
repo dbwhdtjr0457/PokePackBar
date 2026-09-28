@@ -1,0 +1,100 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Private S3 artwork origin and CloudFront delivery for PokePackBar
+
+Resources:
+  ImageBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: PokePackBar
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  ImageOriginAccessControl:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Description: Signed access from PokePackBar CloudFront to its private S3 bucket
+        Name: !Sub PokePackBar-images-${AWS::AccountId}
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  ImageDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Comment: PokePackBar artwork CDN
+        Enabled: true
+        HttpVersion: http2and3
+        IPV6Enabled: true
+        PriceClass: PriceClass_200
+        Origins:
+          - DomainName: !GetAtt ImageBucket.RegionalDomainName
+            Id: private-s3-artwork
+            OriginAccessControlId: !GetAtt ImageOriginAccessControl.Id
+            S3OriginConfig: {}
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+          CachedMethods:
+            - GET
+            - HEAD
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+          Compress: true
+          TargetOriginId: private-s3-artwork
+          ViewerProtocolPolicy: redirect-to-https
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: true
+      Tags:
+        - Key: Project
+          Value: PokePackBar
+        - Key: ManagedBy
+          Value: CloudFormation
+
+  ImageBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ImageBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowCloudFrontReadOnly
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub ${ImageBucket.Arn}/*
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${ImageDistribution}
+
+Outputs:
+  BucketName:
+    Description: Private S3 bucket that receives generated WebP artwork
+    Value: !Ref ImageBucket
+  DistributionId:
+    Description: CloudFront distribution ID
+    Value: !Ref ImageDistribution
+  DistributionDomainName:
+    Description: Public CloudFront domain used by the app
+    Value: !GetAtt ImageDistribution.DomainName
+  BaseURL:
+    Description: Value for CardImageSource.defaultBaseURL
+    Value: !Sub https://${ImageDistribution.DomainName}

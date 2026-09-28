@@ -87,11 +87,11 @@ enum AppResources {
         guard ReviewedFoilProfiles.entries.count == 85, RegisteredCrackedIce.entries.count == 12 else {
             return "카드별 실물 참고 홀로 목록 누락 또는 원본 이미지 불일치"
         }
-        // Full asset presence is a packaging gate. A SwiftPM unit-test runner
-        // legitimately has only the small resource manifest alongside it.
-        if Bundle.main.bundleURL.pathExtension == "app", let index = CardIndex.loadBundled() {
-            do { _ = try CardArtLibrary.verify(index: index) }
-            catch { return "오프라인 이미지 누락: \(error)" }
+        // Artwork is delivered by the private-S3-backed CloudFront distribution.
+        // The manifest stays bundled for source hashes and foil registrations,
+        // but multi-gigabyte originals must not be required in the app bundle.
+        guard CardImageSource.defaultBaseURL.hasPrefix("https://") else {
+            return "카드 이미지 CDN 주소가 설정되지 않았다"
         }
         return nil
     }

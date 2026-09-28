@@ -2,8 +2,9 @@ import AppKit
 import CryptoKit
 import ImageIO
 
-/// Original scans installed with the local build. The manifest records the
-/// actual decoded dimensions/source/hash, not the requested CDN URL size.
+/// Optional original scans used by explicit local audits. Distributed builds
+/// keep only the manifest and fetch rendered variants from the managed CDN.
+/// The manifest records actual source dimensions and hashes for foil metadata.
 enum CardArtLibrary {
     // Some original scans crop to 595px, despite the nominal 600px format.
     static let minimumWidth = 580

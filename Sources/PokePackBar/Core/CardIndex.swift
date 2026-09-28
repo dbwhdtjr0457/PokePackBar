@@ -439,17 +439,17 @@ struct CardIndex: Sendable {
 /// 원본 CDN 은 같은 카드의 파일명이 카드 번호와도 ID 와도 어긋나는 경우가 있어
 /// 경로를 추론할 수 없었다. 업로드 때 이름을 통일해 그 문제를 없앴다.
 enum CardImageSource {
-    /// 이미지 버킷의 공개 기본 주소. 설정으로 바꿀 수 있게 두어,
-    /// 공개 배포판에서 다른 출처로 전환할 여지를 남긴다.
+    /// 이미지 CDN의 공개 기본 주소. 설정으로 바꿀 수 있게 두어,
+    /// 배포 전환이나 개발 검증에서 다른 출처를 사용할 수 있게 한다.
     static var baseURL: String {
         UserDefaults.standard.string(forKey: "cardImageBaseURL")?
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .nonEmpty ?? defaultBaseURL
     }
 
-    /// 카드 이미지 버킷의 공개 기본 주소. 오브젝트 이름을 카드 ID 로 통일해 두었으므로
+    /// CloudFront 기본 주소. 오브젝트 이름을 카드 ID 로 통일해 두었으므로
     /// 여기에 `/cards/<세트ID>/<카드ID>.webp` 를 붙이면 주소가 완성된다.
-    static let defaultBaseURL = "https://zaoosaaiyamnnuhhnnxt.supabase.co/storage/v1/object/public"
+    static let defaultBaseURL = "https://d1qnmfx8dypu7.cloudfront.net"
 
     /// 세트의 부스터 팩 아트. 카드와 같은 버킷의 packs/ 아래에 세트 ID 로 둔다.
     static func packURL(setID: String) -> URL? {
@@ -486,12 +486,12 @@ enum CardImageSource {
             .appendingPathComponent(setID).appendingPathComponent("\(imageNumber)\(suffix).png")
     }
 
-    /// Original source first for detail views. A small successful mirror
-    /// response must not prevent fetching an available high-resolution scan.
+    /// The managed mirror serves both thumbnail and full-resolution variants.
+    /// Provider URLs remain recovery paths if a mirrored object is unavailable.
     static func urls(cardID: String, hires: Bool) -> [URL] {
         let original = CardArtLibrary.entries[cardID].flatMap { URL(string: $0.sourceURL) }
         let candidates = hires
-            ? [original, upstreamURL(cardID: cardID, hires: true), url(cardID: cardID, hires: true)]
+            ? [url(cardID: cardID, hires: true), original, upstreamURL(cardID: cardID, hires: true)]
             : [url(cardID: cardID, hires: false), original, upstreamURL(cardID: cardID, hires: false)]
         return candidates
             .compactMap { $0 }

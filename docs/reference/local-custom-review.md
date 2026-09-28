@@ -64,11 +64,11 @@ The reviewed-foil tests also read original card images. With the image library
 absent, the pricing/name/visibility tests can be run individually; the complete
 Python suite must not be reported as passing until its image inputs are present.
 
-## Exact offline artwork and app packaging
+## Exact artwork snapshot and CDN publishing
 
 Raw card scans, the Python environment, caches, personal saves, local research
-captures and `.app` bundles are excluded from Git. **The original images are
-distributed separately**, not omitted from the contribution:
+captures and `.app` bundles are excluded from Git. The original images were
+published separately as a one-time, verified input for the managed CDN:
 [artwork snapshot release](https://github.com/dbwhdtjr0457/PokePackBar/releases/tag/artwork-2026-09-28).
 Its five ZIP archives contain all 18,949 card images and 127 pack images from the
 checked-in manifest, approximately 4.5 GiB in total. Only manifest-listed image
@@ -79,17 +79,16 @@ python3 scripts/offline_art_snapshot.py restore
 local-assets/.venv/bin/python scripts/build_card_art_library.py --verify
 PPB_CARD_ART_DIR="$PWD/local-assets/CardArt" PPB_OFFLINE=1 \
   .build/release/PokePackBar --audit-image-library
-PPB_SKIP_INSTALL=1 ./scripts/build-app.sh
+local-assets/.venv/bin/python scripts/build_s3_artwork.py
 ```
 
 The snapshot restorer needs only Python's standard library. It verifies each
 archive and individual image against SHA-256 and size, rejects unexpected archive
 paths, reuses verified files on rerun, and never rewrites the manifest. Downloads
 stay in `local-assets/artwork-distribution/`; restored originals go into
-`local-assets/CardArt/`. Allow approximately 15 GiB for archives, originals and
-the assembled application. `build-app.sh` runs the restorer before artwork checks
-so a missing library is downloaded before packaging. A failed download or hash
-mismatch stops the build instead of creating an image-less bundle.
+`local-assets/CardArt/`. They are not copied into the app and `build-app.sh` does
+not download or require them. `build_s3_artwork.py` generates the low-resolution
+and full-resolution WebP object tree used by CloudFront.
 
 The older `build_card_art_library.py` without `--verify` or `--copy-to` is an
 **update/research tool**, not snapshot restoration. It resolves current provider
@@ -97,10 +96,9 @@ images and rewrites the art manifest. If a provider replaces a scan, inspect the
 diff and regenerate/review affected geometry and foil registrations. Do not use
 that update path merely to reproduce this version.
 
-`build-app.sh` requires the verified local image library and Python environment.
 `PPB_SKIP_INSTALL=1` builds and signs a local bundle without replacing the installed
 app. Omitting that flag stops and replaces `/Applications/PokePackBar.app`.
-Do not run the installation path merely to review this contribution.
+The built application contains the artwork manifest but no original scans.
 
 Image and card-design rights remain with their respective owners. Source URLs,
 hashes and generated registrations are included for review; the project's MIT

@@ -16,16 +16,8 @@ python3 -m unittest discover -s scripts -p 'test_update_printing_prices.py'
 python3 -m unittest discover -s scripts -p 'test_update_korean_card_names.py'
 python3 -m unittest discover -s scripts -p 'test_offline_art_snapshot.py'
 python3 scripts/update_korean_card_names.py --verify
-python3 scripts/offline_art_snapshot.py restore
-local-assets/.venv/bin/python scripts/build_card_art_library.py --verify
-local-assets/.venv/bin/python scripts/build_foil_geometry.py --verify
-local-assets/.venv/bin/python scripts/build_expansion_foil.py --verify
-local-assets/.venv/bin/python scripts/audit_subject_masks.py
-local-assets/.venv/bin/python scripts/build_physical_foil_marks.py --verify
-local-assets/.venv/bin/python scripts/build_reviewed_foil.py --verify
-local-assets/.venv/bin/python scripts/build_cracked_facets.py --verify
-local-assets/.venv/bin/python -m unittest discover -s scripts -p 'test_reviewed_foil.py'
-local-assets/.venv/bin/python -m unittest discover -s scripts -p 'test_audit_foil_visibility.py'
+# Multi-gigabyte original scans are an explicit research/audit input, not an
+# application packaging dependency. Runtime artwork is served by CloudFront.
 swift build -c release
 
 echo "==> $APP 조립"
@@ -40,8 +32,6 @@ cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # 빼먹으면 빌드도 테스트도 통과하는데(테스트는 .build 에서 직접 읽는다) 설치된 앱만
 # "카드 목록을 불러올 수 없어요" 가 된다. 그래서 아래에서 존재를 확인한다.
 cp -R ".build/release/${APP_NAME}_${APP_NAME}.bundle" "$APP/Contents/Resources/"
-mkdir -p "$APP/Contents/Resources/CardArt"
-local-assets/.venv/bin/python scripts/build_card_art_library.py --copy-to "$APP/Contents/Resources/CardArt"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -122,16 +112,6 @@ echo "   card-names-ko.json $(wc -c < "$KO_NAMES" | tr -d ' ') bytes"
 echo "   card-prices.json $(wc -c < "$PRICES" | tr -d ' ') bytes"
 [[ -s "$PACK_PRICES" ]] || { echo "✗ pack-prices.json 이 번들에 없다" >&2; exit 1; }
 echo "   pack-prices.json $(wc -c < "$PACK_PRICES" | tr -d ' ') bytes"
-
-# 팩 아트 — 판매 세트 수만큼 있어야 한다. 빠지면 상점이 빈 상자로 뜬다.
-PACK_DIR="$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/packs"
-PACK_COUNT=$(ls "$PACK_DIR"/*.webp 2>/dev/null | wc -l | tr -d ' ')
-EXPECTED_PACKS=$(ls Sources/PokePackBar/Resources/packs/*.webp | wc -l | tr -d ' ')
-if [ "$PACK_COUNT" != "$EXPECTED_PACKS" ]; then
-    echo "   ✗ 팩 아트가 $PACK_COUNT/$EXPECTED_PACKS 개만 들어갔다: $PACK_DIR" >&2
-    exit 1
-fi
-echo "   팩 아트 ${PACK_COUNT}종"
 
 # 조립된 앱에게 직접 물어본다. 위 검사는 "파일이 거기 있나" 이고, 이건 "앱이 그걸 여나" 다.
 # 앱이 보는 위치와 스크립트가 검사하는 위치가 어긋나 배포된 적이 있어 둘 다 둔다.

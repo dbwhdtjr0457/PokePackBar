@@ -771,6 +771,23 @@ final class CardImageSourceTests: XCTestCase {
         XCTAssertEqual(hires.absoluteString, "https://example.test/public/cards/sv8pt5/sv8pt5-1_hires.webp")
     }
 
+    /// Both display sizes must prefer the managed mirror. Otherwise detail
+    /// views bypass S3 even when a verified high-resolution object exists.
+    func testManagedMirrorIsFirstForBothSizes() throws {
+        UserDefaults.standard.set("https://example.test/public", forKey: "cardImageBaseURL")
+        let small = try XCTUnwrap(CardImageSource.urls(cardID: "sv8pt5-1", hires: false).first)
+        let hires = try XCTUnwrap(CardImageSource.urls(cardID: "sv8pt5-1", hires: true).first)
+        XCTAssertEqual(small.absoluteString, "https://example.test/public/cards/sv8pt5/sv8pt5-1.webp")
+        XCTAssertEqual(hires.absoluteString, "https://example.test/public/cards/sv8pt5/sv8pt5-1_hires.webp")
+    }
+
+    /// A literal question mark is an object-key character, not a URL query.
+    func testEscapesReservedCharactersInCardID() throws {
+        UserDefaults.standard.set("https://example.test/public", forKey: "cardImageBaseURL")
+        let url = try XCTUnwrap(CardImageSource.url(cardID: "ex10-?", hires: true))
+        XCTAssertEqual(url.absoluteString, "https://example.test/public/cards/ex10/ex10-%3F_hires.webp")
+    }
+
     /// 하이픈이 여러 개인 카드 ID 에서도 세트는 첫 하이픈 앞까지다.
     func testSetIDIsPrefixBeforeFirstDash() throws {
         UserDefaults.standard.set("https://example.test/public", forKey: "cardImageBaseURL")
