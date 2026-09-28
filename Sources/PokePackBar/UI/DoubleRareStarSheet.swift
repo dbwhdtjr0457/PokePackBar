@@ -34,40 +34,46 @@ struct DoubleRareStarSheet: View {
 
     var body: some View {
         Canvas { context, size in
-            let full = Path(CGRect(origin: .zero, size: size))
-            let hue = (0.55 + tilt.nx * 0.31 + tilt.ny * 0.19 + 1)
-                .truncatingRemainder(dividingBy: 1)
-            // A restrained substrate, not the previous full-face white veil.
-            context.blendMode = .screen
-            context.fill(full, with: .radialGradient(
-                Gradient(colors: [Color(hue: hue, saturation: 0.65, brightness: 1).opacity(0.22), .clear]),
-                center: CGPoint(x: size.width * (0.5 - tilt.nx * 0.3),
-                                y: size.height * (0.36 - tilt.ny * 0.24)),
-                startRadius: 0, endRadius: size.width * 0.7))
-            for motif in Self.motifs {
-                let energy = Self.response(phase: motif.phase, tilt: tilt)
-                let center = CGPoint(x: motif.x * size.width, y: motif.y * size.height)
-                let radius = motif.radius * size.width
-                let color = Color(hue: (hue + motif.phase / (2 * .pi)).truncatingRemainder(dividingBy: 1),
-                                  saturation: 0.28 + (1 - energy) * 0.4, brightness: 1)
-                var shape = Path()
-                if motif.kind == 0 {
-                    shape.addEllipse(in: CGRect(x: center.x - radius * 0.42,
-                        y: center.y - radius * 0.42, width: radius * 0.84, height: radius * 0.84))
-                } else {
-                    let rays = motif.kind == 1 ? 4 : 8
-                    for point in 0..<(rays * 2) {
-                        let angle = Double(point) * .pi / Double(rays) + .pi / 8
-                        let outer = point % 2 == 0
-                        let rayLength = outer ? (point % 4 == 0 ? 1.0 : 0.72) : 0.21
-                        let location = CGPoint(x: center.x + cos(angle) * radius * rayLength,
-                                               y: center.y + sin(angle) * radius * rayLength)
-                        if point == 0 { shape.move(to: location) } else { shape.addLine(to: location) }
-                    }
-                    shape.closeSubpath()
+            Self.draw(context: &context, size: size, tilt: tilt)
+        }
+    }
+
+    private static func draw(context: inout GraphicsContext, size: CGSize, tilt: TiltVector) {
+        let full = Path(CGRect(origin: .zero, size: size))
+        let hue = (0.55 + tilt.nx * 0.31 + tilt.ny * 0.19 + 1)
+            .truncatingRemainder(dividingBy: 1)
+        // A restrained substrate, not the previous full-face white veil.
+        context.blendMode = .screen
+        let substrate = Color(hue: hue, saturation: 0.65, brightness: 1).opacity(0.22)
+        let center = CGPoint(x: size.width * (0.5 - tilt.nx * 0.3),
+                             y: size.height * (0.36 - tilt.ny * 0.24))
+        context.fill(full, with: .radialGradient(
+            Gradient(colors: [substrate, .clear]), center: center,
+            startRadius: 0, endRadius: size.width * 0.7))
+        for motif in motifs {
+            let energy = response(phase: motif.phase, tilt: tilt)
+            let motifCenter = CGPoint(x: motif.x * size.width, y: motif.y * size.height)
+            let radius = motif.radius * size.width
+            let motifHue = (hue + motif.phase / (2 * .pi)).truncatingRemainder(dividingBy: 1)
+            let color = Color(hue: motifHue,
+                              saturation: 0.28 + (1 - energy) * 0.4, brightness: 1)
+            var shape = Path()
+            if motif.kind == 0 {
+                shape.addEllipse(in: CGRect(x: motifCenter.x - radius * 0.42,
+                    y: motifCenter.y - radius * 0.42, width: radius * 0.84, height: radius * 0.84))
+            } else {
+                let rays = motif.kind == 1 ? 4 : 8
+                for point in 0..<(rays * 2) {
+                    let angle = Double(point) * .pi / Double(rays) + .pi / 8
+                    let outer = point % 2 == 0
+                    let rayLength = outer ? (point % 4 == 0 ? 1.0 : 0.72) : 0.21
+                    let location = CGPoint(x: motifCenter.x + cos(angle) * radius * rayLength,
+                                           y: motifCenter.y + sin(angle) * radius * rayLength)
+                    if point == 0 { shape.move(to: location) } else { shape.addLine(to: location) }
                 }
-                context.fill(shape, with: .color(color.opacity(0.10 + energy * 0.82)))
+                shape.closeSubpath()
             }
+            context.fill(shape, with: .color(color.opacity(0.10 + energy * 0.82)))
         }
     }
 }

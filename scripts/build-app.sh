@@ -32,6 +32,10 @@ cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # 빼먹으면 빌드도 테스트도 통과하는데(테스트는 .build 에서 직접 읽는다) 설치된 앱만
 # "카드 목록을 불러올 수 없어요" 가 된다. 그래서 아래에서 존재를 확인한다.
 cp -R ".build/release/${APP_NAME}_${APP_NAME}.bundle" "$APP/Contents/Resources/"
+# SwiftPM의 증분 리소스 번들은 Package.swift에서 제외된 디렉터리를 지우지 않을 수 있다.
+# 네트워크 배포로 전환한 카드/팩 원본이 이전 빌드에서 남아 앱에 다시 섞이지 않게 한다.
+rm -rf "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/packs"
+rm -rf "$APP/Contents/Resources/CardArt"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>

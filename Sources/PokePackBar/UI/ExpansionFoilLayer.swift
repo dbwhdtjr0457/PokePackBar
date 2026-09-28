@@ -91,41 +91,54 @@ private struct AnniversaryFlakes: View {
 
     var body: some View {
         Canvas { context, size in
-            var random = PackSeedGenerator(seed: seed)
-            func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
-            let colors = goldOnly
-                ? [Color(red: 1, green: 0.88, blue: 0.44), Color(red: 1, green: 0.98, blue: 0.80)]
-                : [Color(red: 1, green: 0.88, blue: 0.59), Color(red: 0.67, green: 0.92, blue: 1),
-                   Color(red: 1, green: 0.76, blue: 0.88), Color(white: 0.97)]
-            let count = fireworks ? 260 : 1800
-            for n in 0..<count {
-                let x = next(), y = next(), normal = next() * .pi * 2
-                let radius = size.width * (fireworks ? 0.007 + next() * 0.022 : 0.0009 + next() * 0.0021)
-                let response = sin(normal + tilt.nx * 3.8 + tilt.ny * 2.7)
-                let light = exp(-pow((x - 0.48 + tilt.nx * 0.18) / 0.65, 2)
-                               - pow((y - 0.44 + tilt.ny * 0.16) / 0.82, 2))
-                let opacity = (0.13 + pow(abs(response), 3) * 0.77) * (0.35 + light * 0.65)
-                let center = CGPoint(x: x * size.width, y: y * size.height)
-                var path = Path()
-                if fireworks {
-                    for ray in 0..<10 {
-                        let angle = Double(ray) * .pi / 5 + normal
-                        path.move(to: CGPoint(x: center.x + cos(angle) * radius * 0.26,
-                                             y: center.y + sin(angle) * radius * 0.26))
-                        path.addLine(to: CGPoint(x: center.x + cos(angle) * radius,
-                                                y: center.y + sin(angle) * radius))
-                    }
-                    context.stroke(path, with: .color(response > 0 ? colors[n % colors.count].opacity(opacity)
-                        : Color(white: 0.10).opacity(opacity * 0.25)), lineWidth: size.width / 760)
-                } else {
-                    path.move(to: CGPoint(x: center.x - radius, y: center.y))
-                    path.addLine(to: CGPoint(x: center.x, y: center.y - radius * 0.65))
-                    path.addLine(to: CGPoint(x: center.x + radius, y: center.y))
-                    path.addLine(to: CGPoint(x: center.x, y: center.y + radius * 0.65))
-                    path.closeSubpath()
-                    context.fill(path, with: .color(response > 0 ? colors[n % colors.count].opacity(opacity)
-                        : Color(red: 0.18, green: 0.12, blue: 0.04).opacity(opacity * 0.38)))
+            draw(context: &context, size: size)
+        }
+    }
+
+    private func draw(context: inout GraphicsContext, size: CGSize) {
+        var random = PackSeedGenerator(seed: seed)
+        func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
+        let colors: [Color]
+        if goldOnly {
+            colors = [Color(red: 1, green: 0.88, blue: 0.44),
+                      Color(red: 1, green: 0.98, blue: 0.80)]
+        } else {
+            colors = [Color(red: 1, green: 0.88, blue: 0.59),
+                      Color(red: 0.67, green: 0.92, blue: 1),
+                      Color(red: 1, green: 0.76, blue: 0.88), Color(white: 0.97)]
+        }
+        let count = fireworks ? 260 : 1800
+        for n in 0..<count {
+            let x = next(), y = next(), normal = next() * .pi * 2
+            let radiusScale = fireworks ? 0.007 + next() * 0.022 : 0.0009 + next() * 0.0021
+            let radius = size.width * radiusScale
+            let response = sin(normal + tilt.nx * 3.8 + tilt.ny * 2.7)
+            let lightX = pow((x - 0.48 + tilt.nx * 0.18) / 0.65, 2)
+            let lightY = pow((y - 0.44 + tilt.ny * 0.16) / 0.82, 2)
+            let light = exp(-lightX - lightY)
+            let opacity = (0.13 + pow(abs(response), 3) * 0.77) * (0.35 + light * 0.65)
+            let center = CGPoint(x: x * size.width, y: y * size.height)
+            var path = Path()
+            if fireworks {
+                for ray in 0..<10 {
+                    let angle = Double(ray) * .pi / 5 + normal
+                    path.move(to: CGPoint(x: center.x + cos(angle) * radius * 0.26,
+                                         y: center.y + sin(angle) * radius * 0.26))
+                    path.addLine(to: CGPoint(x: center.x + cos(angle) * radius,
+                                            y: center.y + sin(angle) * radius))
                 }
+                let color = response > 0 ? colors[n % colors.count].opacity(opacity)
+                    : Color(white: 0.10).opacity(opacity * 0.25)
+                context.stroke(path, with: .color(color), lineWidth: size.width / 760)
+            } else {
+                path.move(to: CGPoint(x: center.x - radius, y: center.y))
+                path.addLine(to: CGPoint(x: center.x, y: center.y - radius * 0.65))
+                path.addLine(to: CGPoint(x: center.x + radius, y: center.y))
+                path.addLine(to: CGPoint(x: center.x, y: center.y + radius * 0.65))
+                path.closeSubpath()
+                let color = response > 0 ? colors[n % colors.count].opacity(opacity)
+                    : Color(red: 0.18, green: 0.12, blue: 0.04).opacity(opacity * 0.38)
+                context.fill(path, with: .color(color))
             }
         }
     }

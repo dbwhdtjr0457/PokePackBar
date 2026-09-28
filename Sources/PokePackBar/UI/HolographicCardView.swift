@@ -3106,13 +3106,15 @@ private struct FinishPatternCanvas: View {
             if onSubject && random.next() < 0.55 { continue }
             if y > size.height * 0.62 && random.next() < 0.26 { continue }
 
-            let angle = -0.40
-                + sin(x / size.width * .pi * 3.0
-                    + y / size.height * .pi * 2.0) * 0.18
-                + (random.next() - 0.5) * 0.42
+            let normalizedX = Double(x / size.width)
+            let normalizedY = Double(y / size.height)
+            let wavePhase = normalizedX * Double.pi * 3.0 + normalizedY * Double.pi * 2.0
+            let waveAngle = sin(wavePhase) * 0.18
+            let jitter = (random.next() - 0.5) * 0.42
+            let angle: Double = -0.40 + waveAngle + jitter
             let length = 2.4 + random.next() * 7.6
-            let dx = cos(angle) * length * 0.5
-            let dy = sin(angle) * length * 0.5
+            let dx = CGFloat(cos(angle) * length * 0.5)
+            let dy = CGFloat(sin(angle) * length * 0.5)
             brassGrain.move(to: CGPoint(x: x - dx, y: y - dy + 0.55))
             brassGrain.addLine(to: CGPoint(x: x + dx, y: y + dy + 0.55))
             champagneGrain.move(to: CGPoint(x: x - dx, y: y - dy))
