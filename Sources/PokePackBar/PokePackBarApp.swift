@@ -26,11 +26,52 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if let position = CommandLine.arguments.firstIndex(of: "--audit-popover-layout") {
+            guard CommandLine.arguments.indices.contains(position+1) else {
+                FileHandle.standardError.write(Data("Missing layout audit output directory\n".utf8))
+                exit(1)
+            }
+            NSApp.setActivationPolicy(.prohibited)
+            let output = URL(fileURLWithPath: CommandLine.arguments[position+1], isDirectory: true)
+            Task { @MainActor in
+                do {
+                    try await PopoverLayoutAudit.run(output: output)
+                    exit(0)
+                } catch {
+                    FileHandle.standardError.write(Data("Popover layout failed: \(error)\n".utf8))
+                    exit(1)
+                }
+            }
+            return
+        }
+        // 실제 카드 렌더러를 고정된 여러 기울기로 PNG 출력하는 내부 시각 진단 모드.
+        // 메뉴바 팝오버를 띄우지 않으므로 자동 비교와 밝기 분석에서 같은 프레임을 재현할 수 있다.
+        if let preview = HoloVisualDiagnostics.request(from: CommandLine.arguments) {
+            NSApp.setActivationPolicy(.prohibited)
+            Task { @MainActor in
+                do {
+                    let files = try await HoloVisualDiagnostics.render(preview)
+                    for file in files { print(file.path) }
+                    exit(0)
+                } catch {
+                    FileHandle.standardError.write(Data("홀로그램 시각 진단 실패: \(error)\n".utf8))
+                    exit(1)
+                }
+            }
+            return
+        }
+
         // 조립된 .app 이 리소스를 실제로 여는지 확인하고 끝내는 모드. build-app.sh 가 쓴다.
         //
         // 파일이 있는지 스크립트가 확인하는 것만으로는 부족하다. 앱이 보는 위치와
         // 스크립트가 검사하는 위치가 어긋나면 둘 다 통과하고 배포된 뒤에만 죽는다 —
         // 실제로 그렇게 나갔다. 앱에게 직접 물어보는 것만이 그 어긋남을 잡는다.
+        do {
+            if try LocalAudit.run(CommandLine.arguments) { exit(0) }
+        } catch {
+            FileHandle.standardError.write(Data("Local check failed: \(error)\n".utf8))
+            exit(1)
+        }
         if CommandLine.arguments.contains("--verify-resources") {
             if let problem = AppResources.verify() {
                 FileHandle.standardError.write(Data("리소스 확인 실패: \(problem)\n".utf8))

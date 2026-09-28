@@ -1,0 +1,194 @@
+{
+  "g1-RC29": {
+    "sha256": "0db2eaaf5c3c6fa065adbbd7ccdb9441313683daef207eb122209d4f22074c09",
+    "artPixels": [30, 30, 703, 995],
+    "profile": "full-art-paper-frame",
+    "reason": "Reviewed RC29 source at 734x1024 against physical card: smooth full illustration, ordinary yellow paper rim. This rectangle is not a per-subject ink mask."
+  },
+  "cel25-5": {
+    "sha256": "1dcb7e4e15bf2cbe878181529e6ae51e8eef156a93ebb466febe74a8b100c9b1",
+    "artPixels": [29, 28, 689, 971],
+    "profile": "full-art-paper-frame",
+    "reason": "Reviewed full-art Pikachu scan: complete printed artwork within the yellow paper frame, not the standard upper illustration window"
+  },
+  "cel30c-2": {
+    "sha256": "e51ebef6f7e82ec96e9ef71487e5ac23b6b14b9be40bb6f67b86911fe49a721a",
+    "artPixels": [
+      60,
+      96,
+      604,
+      429
+    ],
+    "reason": "Reviewed 30th classic scan: inner illustration edge, not the metallic rail"
+  },
+  "cel30c-3": {
+    "sha256": "1be59215c931f73d8beb5cfed7467b03b065515742ac066159f1e12696016d52",
+    "artPixels": [
+      60,
+      96,
+      604,
+      429
+    ],
+    "reason": "Reviewed 30th classic scan: inner illustration edge, not the metallic rail"
+  },
+  "cel30c-6": {
+    "sha256": "960319374c44e9be89641d1c91add246a79d610cbddd190e0a380b9ad3f8da1a",
+    "artPixels": [
+      60,
+      96,
+      604,
+      429
+    ],
+    "reason": "Reviewed 30th classic scan: inner illustration edge, not the metallic rail"
+  },
+  "cel30c-10": {
+    "sha256": "5889de8a44f1b768442e7788e3d0f86c80614db1260f4854524761cb7dd6de8c",
+    "artPixels": [
+      56,
+      94,
+      607,
+      461
+    ],
+    "reason": "Reviewed 30th classic scan: inner illustration edge, not the metallic rail"
+  },
+  "cel30c-18": {
+    "sha256": "5316f7541d186c958df088dac4727eda9a9a03138c4d6f9cb776c758bd927ab3",
+    "artPixels": [
+      49,
+      94,
+      612,
+      481
+    ],
+    "reason": "Reviewed 30th classic scan: inner illustration edge, not the metallic rail"
+  },
+  "cel30c-22": {
+    "sha256": "516b3e6bb93d91ac33e3de0a8d8d431e1b2b9a5fa77d30b13b28ad893b838f78",
+    "artPixels": [
+      56,
+      94,
+      607,
+      461
+    ],
+    "reason": "Reviewed 30th classic scan: inner illustration edge, not the metallic rail"
+  },
+  "cel30c-24": {
+    "sha256": "a907de0dbe37e824d199a3426a1b734efee5d7cd2a06065b7c0a5f6c44523d37",
+    "artPixels": [
+      80,
+      121,
+      579,
+      473
+    ],
+    "reason": "Reviewed 30th classic scan: inner illustration edge, not the metallic rail"
+  },
+  "cel30c-25": {
+    "sha256": "5aee1fc89193bf299d4ba1fee01791495b60f49d5b64eebde041ba46c87a3860",
+    "artPixels": [
+      60,
+      96,
+      604,
+      429
+    ],
+    "reason": "Reviewed 30th classic scan: inner illustration edge, not the metallic rail"
+  },
+  "cel30c-5": {
+    "sha256": "8c595e7ad17b76523419f8bd86357b3c3db884c90bb34c6592839fe6a049f0cc",
+    "artPixels": [
+      72,
+      222,
+      600,
+      512
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "cel30c-11": {
+    "sha256": "22f51717e898866a86ef40c53346b693e8b3e7c5b4fbc0f22efe4943b9387fd2",
+    "artPixels": [
+      56,
+      94,
+      603,
+      461
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "gym1-16": {
+    "sha256": "d7a22049c14decce1a0fae8fe186b9820f931f9185190424a5405bb893969115",
+    "artPixels": [
+      55,
+      189,
+      553,
+      463
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "gym1-19": {
+    "sha256": "59f3cba76fedda12972cadd1de4bd5df0d701710d36c5d07e6a73e88560a1e65",
+    "artPixels": [
+      57,
+      190,
+      551,
+      459
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "gym2-20": {
+    "sha256": "63fdfb3280713128f7b89cdd0b17a6d8cc347c63eeb3c27921b1d3cdc23fcbd1",
+    "artPixels": [
+      58,
+      195,
+      552,
+      463
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "pl1-33": {
+    "sha256": "fdc5e4e186d89733cad7cf5d6bde6a865fecbf60e18914e59023be9a21e1b620",
+    "artPixels": [
+      41,
+      74,
+      559,
+      412
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "xy10-94": {
+    "sha256": "04b00c345cc8325ce58ad9e69b673d30c9ff4843fd48fb6fdc19190313178cb8",
+    "artPixels": [
+      33,
+      162,
+      685,
+      855
+    ],
+    "reason": "Two-sided Stadium: tall continuous illustration"
+  },
+  "xy12-77": {
+    "sha256": "868696a2c1f53859aa0f01104b350a6cdc052a38a3fd88d56eda39e2a3ebc2f3",
+    "artPixels": [
+      70,
+      236,
+      647,
+      555
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "xy12-82": {
+    "sha256": "73ad021b5d2039845b66590882d3adc3456dd87efe8f243b692044de2fee36cb",
+    "artPixels": [
+      70,
+      237,
+      647,
+      557
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "xy4-5": {
+    "sha256": "44a7ff702e521a2650e903e67af7db9873a466076110f35eebaf996592e0bad2",
+    "artPixels": [
+      46,
+      92,
+      652,
+      489
+    ],
+    "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  }
+}

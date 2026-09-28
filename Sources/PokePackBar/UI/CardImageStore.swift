@@ -1,9 +1,7 @@
 import AppKit
 import SwiftUI
-/// 카드 이미지를 받아 로컬(Application Support)에 캐시한다. 번들에 포함하지 않는다.
-///
-/// 전체 카드 이미지는 세트 10종만 해도 229MB 라 배포에 넣을 수 없다.
-/// 사용자가 실제로 뽑은 카드만 받으므로 실사용 캐시는 수십 MB 수준에 머문다.
+/// Installed original scans take precedence over the legacy download cache.
+/// Network requests are only recovery paths for an absent local original.
 actor CardImageStore {
     static let shared = CardImageStore()
 
@@ -38,13 +36,16 @@ actor CardImageStore {
     }
 
     func data(cardID: String, hires: Bool) async -> Data? {
-        await data(key: Self.cacheKey(cardID: cardID, hires: hires),
-                   url: CardImageSource.url(cardID: cardID, hires: hires))
+        if let local = CardArtLibrary.data(cardID), CardArtLibrary.accepts(local, hires: hires) { return local }
+        return await data(key: Self.cacheKey(cardID: cardID, hires: hires),
+                   urls: CardImageSource.urls(cardID: cardID, hires: hires))
     }
 
     /// 세트의 부스터 팩 아트.
     func packData(setID: String) async -> Data? {
-        await data(key: Self.packCacheKey(setID: setID), url: CardImageSource.packURL(setID: setID))
+        if let local = CardArtLibrary.data(Self.packCacheKey(setID: setID)) { return local }
+        return await data(key: Self.packCacheKey(setID: setID),
+                   urls: [CardImageSource.packURL(setID: setID)].compactMap { $0 })
     }
 
     /// 디스크에 이미 받아 둔 팩 아트. 없으면 nil — 네트워크를 타지 않는다.
@@ -53,20 +54,27 @@ actor CardImageStore {
     }
 
     /// 카드와 팩이 같은 캐시·중복요청 억제를 쓴다. 키와 주소만 다르다.
-    private func data(key: String, url source: URL?) async -> Data? {
-
+    private func data(key: String, urls sources: [URL]) async -> Data? {
+        let hires = key.hasSuffix("_hires")
         if let d = mem[key] { touch(key); return d }
 
         let file = Self.file(for: key)
-        if let d = try? Data(contentsOf: file), !d.isEmpty { remember(key, d); return d }
+        if let d = try? Data(contentsOf: file), CardArtLibrary.accepts(d, hires: hires) { remember(key, d); return d }
+
+        // Deterministic offline diagnostics; never changes system networking.
+        if ProcessInfo.processInfo.environment["PPB_OFFLINE"] == "1" { return nil }
 
         if let existing = inFlight[key] { return await existing.value }
 
         let task = Task<Data?, Never> {
-            guard let url = source else { return nil }
-            guard let (d, resp) = try? await URLSession.shared.data(from: url),
-                  (resp as? HTTPURLResponse)?.statusCode == 200, !d.isEmpty else { return nil }
-            return d
+            for url in sources {
+                guard !Task.isCancelled else { return nil }
+                guard let (data, response) = try? await URLSession.shared.data(from: url),
+                      (response as? HTTPURLResponse)?.statusCode == 200,
+                      CardArtLibrary.accepts(data, hires: hires) else { continue }
+                return data
+            }
+            return nil
         }
         inFlight[key] = task
         let data = await task.value
@@ -116,6 +124,7 @@ enum CardImageLoader {
     /// 디스크 캐시에 이미 있으면 네트워크 없이 즉시 반환한다.
     /// 격자를 다시 그릴 때 매번 비동기로 가면 화면이 한 번 빈 뒤 채워져 깜빡인다.
     static func cachedImage(cardID: String, hires: Bool) -> NSImage? {
+        if let data = CardArtLibrary.data(cardID), let image = CardArtLibrary.image(data, hires: hires) { return image }
         if let image = readCache(cardID: cardID, hires: hires) { return image }
         // 큰 그림이 없으면 작은 그림으로라도 그린다 — 아래 `image(cardID:hires:)` 와 같은 이유다.
         return hires ? readCache(cardID: cardID, hires: false) : nil
@@ -124,24 +133,20 @@ enum CardImageLoader {
     private static func readCache(cardID: String, hires: Bool) -> NSImage? {
         let key = CardImageStore.cacheKey(cardID: cardID, hires: hires)
         let f = CardImageStore.cacheDir.appendingPathComponent("\(key).webp")
-        guard let d = try? Data(contentsOf: f), let img = NSImage(data: d) else { return nil }
-        return img
+        guard let d = try? Data(contentsOf: f), CardArtLibrary.accepts(d, hires: hires) else { return nil }
+        return CardArtLibrary.image(d, hires: hires)
     }
 
-    /// **큰 그림이 없으면 작은 그림으로 물러난다.**
-    ///
-    /// 큰 그림은 장당 160KB 라 17,666장을 다 올리면 2.8GB 다(작은 그림은 전부 합쳐 480MB).
-    /// 스토리지 한도가 1GB 이므로 새로 넣은 세트는 작은 그림만 올린다. 물러나지 않으면
-    /// 개봉 연출과 카드 상세가 그 세트에서 **빈 자리**가 된다 — 조금 흐린 그림이 훨씬 낫다.
+    /// A low-resolution emergency fallback is temporary, never an HD cache hit.
     static func image(cardID: String, hires: Bool) async -> NSImage? {
         if let d = await CardImageStore.shared.data(cardID: cardID, hires: hires) {
-            return NSImage(data: d)
+            return CardArtLibrary.image(d, hires: hires)
         }
         guard hires,
               let d = await CardImageStore.shared.data(cardID: cardID, hires: false) else {
             return nil
         }
-        return NSImage(data: d)
+        return CardArtLibrary.image(d, hires: false)
     }
 
     /// 곧바로 내놓을 수 있는 팩 아트. 메모리에 있거나 번들에 있으면 기다릴 것이 없다.
@@ -152,6 +157,10 @@ enum CardImageLoader {
     /// 읽어 다시 디코딩하면 그만큼 버벅인다.
     static func readyPackImage(setID: String) -> NSImage? {
         if let cached = packCache[setID] { return cached }
+        if let data = CardArtLibrary.data(CardImageStore.packCacheKey(setID: setID)), let image = NSImage(data: data) {
+            packCache[setID] = image
+            return image
+        }
         // 예전 배포에서 번들에 넣어 둔 것이 남아 있으면 그대로 쓴다.
         if let url = AppResources.bundle?.url(forResource: setID, withExtension: "webp",
                                               subdirectory: "packs"),
@@ -240,6 +249,10 @@ struct CardImageView: View {
     /// 미리 받아 둔 이미지. 있으면 디스크도 네트워크도 건너뛴다.
     var preloaded: NSImage?
 
+    /// Attached to the fitted Image, not its fixed-ratio outer holder. The
+    /// overlay receives the EXACT displayed scan, including an HD replacement.
+    var imageOverlay: ((NSImage) -> AnyView)? = nil
+
     @State private var image: NSImage?
     /// `image` 가 어느 카드 것인지. 뷰가 재사용되면서 `cardID` 만 바뀌는 경로가 있어,
     /// 꼬리표가 없으면 새 카드 자리에 이전 카드 그림이 한 프레임 그려진다.
@@ -259,6 +272,7 @@ struct CardImageView: View {
                     .aspectRatio(contentMode: .fit)
                     .saturation(dimmed ? 0 : 1)
                     .opacity(dimmed ? 0.35 : 1)
+                    .overlay { if let imageOverlay { imageOverlay(image) } }
             } else {
                 RoundedRectangle(cornerRadius: width * 0.05)
                     .fill(Color.secondary.opacity(0.12))
@@ -275,15 +289,15 @@ struct CardImageView: View {
             let wanted = key
             if let preloaded {
                 image = preloaded; imageKey = wanted
-                return
+                if !hires || CardArtLibrary.isHighResolution(preloaded) { return }
             }
             if let cached = CardImageLoader.cachedImage(cardID: cardID, hires: hires) {
                 image = cached; imageKey = wanted
-                return
+                if !hires || CardArtLibrary.isHighResolution(cached) { return }
             }
             let fetched = await CardImageLoader.image(cardID: cardID, hires: hires)
-            guard wanted == key else { return }   // 받는 동안 다른 카드로 넘어갔다
-            image = fetched; imageKey = wanted
+            guard !Task.isCancelled, wanted == key else { return }
+            if let fetched { image = fetched; imageKey = wanted }
         }
     }
 }

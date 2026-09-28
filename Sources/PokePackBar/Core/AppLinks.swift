@@ -9,6 +9,10 @@ import Foundation
 /// 값이 정해지지 않은 항목은 nil 로 둔다. 화면은 그 링크를 감추고, 업데이트 확인은 쉰다 —
 /// 잘못된 곳을 가리키는 것보다 없는 편이 낫다.
 enum AppLinks {
+    /// Local customization has no remote release channel. Never offer upstream
+    /// installs as if they were compatible updates to this build.
+    static let isCustomBuild = true
+    static let updateChannel = "local-custom"
 
     /// GitHub 저장소 `소유자/이름`. 릴리스 확인과 설정의 저장소 링크가 이 값을 쓴다.
     static let githubRepo: String? = "wonyangs/PokePackBar"
@@ -36,5 +40,5 @@ enum AppLinks {
     }
 
     /// 업데이트 확인이 가능한 상태인가. 저장소가 정해져야 켜진다.
-    static var updatesConfigured: Bool { githubRepo != nil }
+    static var updatesConfigured: Bool { !isCustomBuild && githubRepo != nil }
 }

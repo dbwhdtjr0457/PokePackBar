@@ -156,6 +156,23 @@ final class WalletStoreTests: XCTestCase {
         XCTAssertEqual(s.distinctCardCount, cards.count)
     }
 
+    func testHeldPrintingUsesItsExactPrice() throws {
+        let prices = try XCTUnwrap(CardPrices.decode(Data("""
+            {"version":3,"asOf":"2026-09-22","currency":"USD","krwPerUsd":1300,
+             "prices":{"sample-1":100.0},
+             "printingPrices":{"sample-1#reverseHolo":2.0}}
+            """.utf8)))
+        let s = makeStore()
+        let reverse = CardPrintingKey(cardID: "sample-1", finish: .reverseHolo)
+        s.collect([reverse])
+        XCTAssertEqual(s.collectionValueUSD(prices: prices), 2.0, accuracy: 1e-9)
+
+        s.holdForReveal([reverse])
+        XCTAssertEqual(s.collectionValueUSD(prices: prices), 0, accuracy: 1e-9)
+        s.markRevealed(reverse)
+        XCTAssertEqual(s.collectionValueUSD(prices: prices), 2.0, accuracy: 1e-9)
+    }
+
     func testSpendDeductsFromBalanceButNotFromLifetime() {
         let s = makeStore()
         s.update(todayTokensByProvider: ["a": 0], todayDate: "2026-08-26", hasUsageData: true)
@@ -194,6 +211,60 @@ final class WalletStoreTests: XCTestCase {
         XCTAssertEqual(s.cardCount("sv10-1"), 2)
         XCTAssertEqual(s.distinctCardCount, 2)
         XCTAssertEqual(s.totalCardCount, 3)
+    }
+
+    func testPrintingInventoryKeepsAggregateAndSurvivesReload() {
+        let s = makeStore()
+        let reverse = CardPrintingKey(cardID: "sv10-1", finish: .reverseHolo)
+        let gold = CardPrintingKey(cardID: "sv10-1", finish: .gold)
+        s.addCard(reverse, count: 2)
+        s.addCard(gold)
+
+        XCTAssertEqual(s.cardCount("sv10-1"), 3, "기존 합계 API도 함께 올라야 한다")
+        XCTAssertEqual(s.printingCount(reverse), 2)
+        XCTAssertEqual(s.printingCount(gold), 1)
+
+        let reloaded = makeStore()
+        XCTAssertEqual(reloaded.cardCount("sv10-1"), 3)
+        XCTAssertEqual(reloaded.printingCount(reverse), 2)
+        XCTAssertEqual(reloaded.printingCount(gold), 1)
+    }
+
+    /// 옛 세이브에는 `printingCards`가 없다. 합계를 normal로 읽되 새 판형을 더해도
+    /// 기존 두 장이 사라지거나 중복 계산되면 안 된다.
+    func testLegacyAggregateFallsBackWithoutLosingCards() throws {
+        let file = dir.appendingPathComponent("game-state.json")
+        try Data("""
+            {"cards":{"legacy-1":2}}
+            """.utf8).write(to: file)
+
+        let s = makeStore()
+        XCTAssertEqual(s.cardCount("legacy-1"), 2)
+        XCTAssertEqual(s.cardCount("legacy-1", finish: .normal), 2)
+        XCTAssertEqual(s.cardCount("legacy-1", finish: .reverseHolo), 0)
+
+        s.addCard(CardPrintingKey(cardID: "legacy-1", finish: .reverseHolo))
+        XCTAssertEqual(s.cardCount("legacy-1"), 3)
+        XCTAssertEqual(s.cardCount("legacy-1", finish: .normal), 2)
+        XCTAssertEqual(s.cardCount("legacy-1", finish: .reverseHolo), 1)
+
+        let reloaded = makeStore()
+        XCTAssertEqual(reloaded.cardCount("legacy-1"), 3)
+        XCTAssertEqual(reloaded.cardCount("legacy-1", finish: .normal), 2)
+        XCTAssertEqual(reloaded.cardCount("legacy-1", finish: .reverseHolo), 1)
+    }
+
+    func testLegacyAggregateRecoversAnIntrinsicSpecialFinishFromBundledMetadata() throws {
+        let file = dir.appendingPathComponent("game-state.json")
+        try Data("""
+            {"cards":{"sv8pt5-144":1}}
+            """.utf8).write(to: file)
+
+        let s = makeStore()
+        XCTAssertEqual(s.cardCount("sv8pt5-144"), 1)
+        XCTAssertEqual(s.cardCount("sv8pt5-144", finish: .etched), 1)
+        XCTAssertEqual(s.cardCount("sv8pt5-144", finish: .normal), 0)
+        XCTAssertEqual(s.bestOwnedFinish(cardID: "sv8pt5-144"), .etched)
     }
 
     // MARK: 영속
@@ -534,6 +605,53 @@ final class DisenchantTests: XCTestCase {
         XCTAssertEqual(reloaded.cardCount("sv10-3"), 1)
         XCTAssertEqual(reloaded.availableTokens, refund)
         XCTAssertEqual(reloaded.state.cardsDisenchanted, 1)
+    }
+
+    /// 판형이 여러 개면 싼 중복부터 팔고, 가장 비싼 마지막 한 장은 남긴다.
+    func testSellsLowestValuePrintingsAndKeepsOneCard() throws {
+        let prices = try XCTUnwrap(CardPrices.decode(Data("""
+            {"version":3,"asOf":"2026-09-22","currency":"USD","krwPerUsd":1300,
+             "prices":{"variant-1":100.0},
+             "printingPrices":{"variant-1#normal":10.0,
+                               "variant-1#reverseHolo":2.0,
+                               "variant-1#gold":100.0}}
+            """.utf8)))
+        let s = makeStore()
+        let normal = CardPrintingKey(cardID: "variant-1", finish: .normal)
+        let reverse = CardPrintingKey(cardID: "variant-1", finish: .reverseHolo)
+        let gold = CardPrintingKey(cardID: "variant-1", finish: .gold)
+        s.collect([normal, reverse, reverse, gold])
+
+        XCTAssertEqual(s.bestOwnedFinish(cardID: "variant-1", prices: prices), .gold)
+        let preview = s.spareSaleValue(cardID: "variant-1", prices: prices)
+        let refund = s.sellLowestValueSpares(cardID: "variant-1", tier: .ultraRare,
+                                             count: 99, prices: prices)
+        let expected = CardSale.price(cardID: "variant-1", finish: .reverseHolo,
+                                      prices: prices) * 2
+            + CardSale.price(cardID: "variant-1", finish: .normal, prices: prices)
+        XCTAssertEqual(refund, expected)
+        XCTAssertEqual(refund, preview, "표시한 판매 예상액과 실제 환급액이 같아야 한다")
+        XCTAssertEqual(s.cardCount("variant-1"), 1)
+        XCTAssertEqual(s.printingCount(reverse), 0)
+        XCTAssertEqual(s.printingCount(normal), 0)
+        XCTAssertEqual(s.printingCount(gold), 1, "가장 가치 높은 마지막 한 장이 남아야 한다")
+    }
+
+    func testEqualFallbackPricesSellNormalBeforeHolo() throws {
+        let prices = try XCTUnwrap(CardPrices.decode(Data("""
+            {"version":2,"asOf":"2026-09-22","currency":"USD","krwPerUsd":1300,
+             "prices":{"variant-1":2.0}}
+            """.utf8)))
+        let s = makeStore()
+        let normal = CardPrintingKey(cardID: "variant-1", finish: .normal)
+        let holo = CardPrintingKey(cardID: "variant-1", finish: .holo)
+        s.collect([normal, holo])
+
+        _ = s.sellLowestValueSpares(cardID: "variant-1", tier: .rare,
+                                    count: 1, prices: prices)
+        XCTAssertEqual(s.printingCount(normal), 0)
+        XCTAssertEqual(s.printingCount(holo), 1,
+                       "판형 시세가 없을 때도 특별한 판형을 우선 보존해야 한다")
     }
 }
 

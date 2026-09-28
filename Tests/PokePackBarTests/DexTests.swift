@@ -543,13 +543,13 @@ final class DexPerkEffectTests: XCTestCase {
     /// **쿠폰까지 쓴 값에서도 되팔기가 남는 장사가 되면 안 된다.**
     ///
     /// 팩을 사서 전부 팔았을 때의 회수율이 1 을 넘으면 팩을 돌리는 것 자체가 재화 순환이 되어
-    /// 게임이 성립하지 않는다. 쿠폰이 반값이므로 영구 할인 위에 그것까지 얹어 잰다.
+    /// 게임이 성립하지 않는다. 쿠폰과 영구 할인은 겹치지 않고 더 강한 하나만 쓴다.
     func testResaleNeverPaysEvenWithACoupon() {
         let coupon = 0.5
-        let effective = 1 - (1 - DexPerks.caps.packDiscount) * (1 - coupon)
+        let effective = max(DexPerks.caps.packDiscount, coupon)
         let ratio = (1 / MarketEconomy.packMargin) * (1 + DexPerks.caps.dustBonus)
             / (1 - effective)
-        XCTAssertLessThan(ratio, 1.0,
+        XCTAssertLessThan(ratio, 0.9,
                           "쿠폰까지 쓰면 회수율이 \(ratio) 다 — 사서 갈기를 반복하면 잔액이 늘어난다")
     }
 
@@ -1317,6 +1317,7 @@ final class KoreanCardNameTests: XCTestCase {
             "오박사의 연구",         // Prof. / Professor — 같은 카드
             "학습장치",            // EXP.ALL 과 Exp. Share 는 한국판에서 같은 도구다
             "마리",              // Marnie 도 Mary 도 한국 이름이 마리다
+            "가이",              // Urbain's official Korean name; legacy Harlequin translation also uses 가이.
             "박사의 연구(매그놀리아박사)",  // 카드 한 장을 콕 집어 고친 것
             "캐스퐁 빗방울의 모습", "캐스퐁 설운의 모습",  // 같은 폼을 세트마다 다르게 적었다
             "캐스퐁 태양의 모습",
@@ -1440,6 +1441,31 @@ final class DexRewardChannelTests: XCTestCase {
         XCTAssertEqual(s.perks.packDiscount, 0, accuracy: 0.0001)
     }
 
+    /// 쿠폰은 정가 기준 할인이고 영구 할인과 곱해지지 않는다. 둘을 겹치면 반값 쿠폰이
+    /// 실제로는 57.5% 할인이 되어 일부 팩의 되팔이 기대값이 구매가를 넘어간다.
+    func testCouponUsesTheStrongerDiscountWithoutStacking() throws {
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        let setID = try XCTUnwrap(index.sets.first?.id)
+        let cards = index.cards(inSet: setID)
+        let reward = DexReward(
+            packs: 0,
+            perks: [DexPerk(kind: .packDiscount, value: 0.15)],
+            coupons: [DexCouponGrant(value: 0.5, count: 1)]
+        )
+        let dex = setDex("set-nonstack", homeSet: setID, needs: [1], rewards: [reward])
+        let s = store([dex])
+        _ = s.collect([cards[0]])
+        XCTAssertNotNil(s.claim("set-nonstack", step: 0, index: index))
+
+        let base = s.listPrice(setID: setID, index: index)
+        let couponPrice = s.packPrice(setID: setID, index: index)
+        let step = MarketEconomy.stepTokens()
+        XCTAssertEqual(Double(couponPrice), Double(base) * 0.5, accuracy: Double(step))
+        XCTAssertNotEqual(couponPrice,
+                          MarketEconomy.quantized(Int((Double(base) * 0.85 * 0.5).rounded())),
+                          "영구 할인과 쿠폰이 겹쳐 적용됐다")
+    }
+
     /// 쿠폰은 **팩을 살 때 한 장씩** 쓰인다. 안 깎으면 영구 할인이 된다.
     func testCouponIsSpentPerPack() throws {
         let index = try XCTUnwrap(CardIndex.loadBundled())
@@ -1498,6 +1524,35 @@ final class DexRewardChannelTests: XCTestCase {
         XCTAssertEqual(s.packTotal(setID: setID, count: 1, index: index), cut)
         XCTAssertEqual(s.packTotal(setID: setID, count: 3, index: index), cut + list * 2,
                        "쿠폰 한 장인데 세 개가 다 할인됐다")
+    }
+
+    /// 할인율이 다른 쿠폰은 각자 가격으로 계산한다. 가장 센 쿠폰 하나의 비율을 모든 쿠폰에
+    /// 복사하면 표시 총액보다 실제 혜택이 커져 가격 안전 하한을 우회한다.
+    func testTotalUsesEachCouponRate() throws {
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        let setID = try XCTUnwrap(index.sets.first?.id)
+        let cards = index.cards(inSet: setID)
+        let dex = setDex(
+            "set-mixed-coupons",
+            homeSet: setID,
+            needs: [1, 2],
+            rewards: [
+                DexReward(packs: 0, perks: [],
+                          coupons: [DexCouponGrant(value: 0.5, count: 1)]),
+                DexReward(packs: 0, perks: [],
+                          coupons: [DexCouponGrant(value: 0.25, count: 2)]),
+            ]
+        )
+        let s = store([dex])
+        _ = s.collect(Array(cards.prefix(2)))
+        _ = s.claim("set-mixed-coupons", step: 0, index: index)
+        _ = s.claim("set-mixed-coupons", step: 1, index: index)
+
+        let base = s.listPrice(setID: setID, index: index)
+        let half = MarketEconomy.quantized(Int((Double(base) * 0.5).rounded()))
+        let quarter = MarketEconomy.quantized(Int((Double(base) * 0.75).rounded()))
+        XCTAssertEqual(s.packTotal(setID: setID, count: 3, index: index),
+                       half + quarter * 2)
     }
 
     /// 확정 카드는 **아직 없는 카드**에서 나온다. 완성 보상이 팔 물건이면 축하가 아니라 정산이다.

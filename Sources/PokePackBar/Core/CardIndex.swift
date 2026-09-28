@@ -70,11 +70,81 @@ enum CardTier: String, Codable, Sendable, CaseIterable {
     }
 }
 
+/// 카드 표면 모티프를 고를 때 필요한 원본 카드 분류.
+///
+/// 리버스 홀로의 에너지 심볼은 카드의 실제 타입을 따라야 한다. 카드 이름이나 색을 보고
+/// 추측하지 않고, 생성 시점에 고정한 PokemonTCG 데이터의 `supertype`·`types`·`subtypes`
+/// 를 compact code 로 번들에 넣어 복원한다.
+struct CardVisualKind: Sendable, Equatable {
+    enum Supertype: Sendable, Equatable {
+        case pokemon
+        case trainer
+        case energy
+    }
+
+    enum Element: Character, Sendable, Equatable, CaseIterable {
+        case grass = "G"
+        case fire = "R"
+        case water = "W"
+        case lightning = "L"
+        case psychic = "P"
+        case fighting = "F"
+        case darkness = "D"
+        case metal = "M"
+        case dragon = "N"
+        case fairy = "Y"
+        case colorless = "C"
+    }
+
+    let supertype: Supertype
+    let primaryType: Element?
+    let secondaryType: Element?
+    let isTera: Bool
+
+    /// 타입 무늬가 필요한 순간에만 배열을 만든다. 18,097개 `CardEntry` 각각에 작은 배열을
+    /// 보관하지 않아 메뉴바 앱의 상시 메모리를 늘리지 않는다.
+    var types: [Element] { [primaryType, secondaryType].compactMap { $0 } }
+
+    /// `pW`, `pGD`, `pD!`, `t`, `eP` 형식의 다섯 번째 카드 행 값을 읽는다.
+    /// 옛 인덱스에는 이 값이 없으므로 호출부는 실패를 `nil` 로 다룬다.
+    init?(compactCode: String) {
+        guard let prefix = compactCode.first else { return nil }
+        let isTera = compactCode.last == "!"
+        let end = isTera ? compactCode.index(before: compactCode.endIndex) : compactCode.endIndex
+        let typeStart = compactCode.index(after: compactCode.startIndex)
+        guard typeStart <= end else { return nil }
+        let typeCodes = compactCode[typeStart..<end]
+        let decodedTypes = typeCodes.compactMap(Element.init(rawValue:))
+        guard decodedTypes.count == typeCodes.count else { return nil }
+
+        switch prefix {
+        case "p":
+            guard (1...2).contains(decodedTypes.count) else { return nil }
+            self.supertype = .pokemon
+        case "t":
+            guard decodedTypes.isEmpty, !isTera else { return nil }
+            self.supertype = .trainer
+        case "e":
+            guard decodedTypes.count <= 2, !isTera else { return nil }
+            self.supertype = .energy
+        default:
+            return nil
+        }
+        self.primaryType = decodedTypes.first
+        self.secondaryType = decodedTypes.count > 1 ? decodedTypes[1] : nil
+        self.isTera = isTera
+    }
+}
+
 struct CardEntry: Sendable, Identifiable {
     let id: String        // 예: "sv8pt5-1"
     let name: String
     let tier: CardTier
-    let setID: String     // 카드 ID 의 첫 '-' 앞부분
+    /// 상점·팩 풀에서 쓰는 본팩 세트 ID.
+    ///
+    /// 일반 카드는 ID 접두사와 같고, Shiny Vault·Trainer Gallery 같은
+    /// 별도 번호 서브셋은 `subsetParents` 에 적힌 부모 세트다.
+    let setID: String
     /// 원본 등급 이름("Rare Holo V", "Special Illustration Rare"…). 없는 카드는 nil 이다.
     ///
     /// `tier` 는 게임 규칙용으로 접은 10칸이라 「이 카드가 무슨 등급인가」에 답하지 못한다 —
@@ -87,6 +157,9 @@ struct CardEntry: Sendable, Identifiable {
     /// 없으면 영문을 그대로 쓴다. 절반만 한국어인 이름("Team Rocket's 뮤츠 ex")은
     /// 영문보다 읽기 나쁘므로, 조립이 안 되면 아예 넣지 않는다.
     var nameKo: String?
+
+    /// 실물 카드의 supertype·타입과 명시적인 Tera 여부. 구 인덱스에서는 nil 이다.
+    var visualKind: CardVisualKind?
 
     /// 화면에 쓸 이름. 한국어 표기가 있고 언어가 한국어일 때만 그것을 쓴다.
     func displayName(_ language: AppLanguage) -> String {
@@ -216,10 +289,17 @@ struct CardIndex: Sendable {
         }
         let version: Int
         let sets: [SetDTO]
-        /// [카드ID, 이름, 계층, 등급번호]. 등급번호는 `rarities` 의 색인이다.
+        /// [카드ID, 이름, 계층, 등급번호, 시각분류]. 등급번호는 `rarities` 의 색인이다.
+        /// 시각분류는 `pW`(Water Pokémon), `pGD`(dual type), `pD!`(Tera), `t`, `eP`
+        /// 같은 compact code 다. 구 인덱스에는 다섯 번째 칸이 없다.
         /// 판번호마다 칸이 늘 수 있어 문자열 배열로 받고 마지막 칸은 있으면 쓴다.
         let cards: [[JSONValue]]
         let rarities: [String]?
+        /// A separately numbered subset that is physically inserted in its parent booster.
+        ///
+        /// The card ID keeps the source-set prefix so images and prices remain addressable,
+        /// while `CardEntry.setID` and `pools` use the parent expansion shown in the shop.
+        let subsetParents: [String: String]?
     }
 
     /// 카드 행이 문자열과 숫자를 섞어 담는다. 한 칸만 숫자라 전용 타입을 두지 않는다.
@@ -305,17 +385,33 @@ struct CardIndex: Sendable {
             // [ID, 이름, 계층] 세 칸이어야 한다. 계층 문자열이 알 수 없는 값이면 건너뛴다 —
             // 생성 스크립트와 앱의 계층 정의가 어긋난 것이므로 조용히 섞어 넣지 않는다.
             guard row.count >= 3, let id = row[0].text, let name = row[1].text,
-                  let tier = row[2].text.flatMap(CardTier.init(rawValue:)) else {
+                  let decodedTier = row[2].text.flatMap(CardTier.init(rawValue:)) else {
                 skipped += 1; continue
             }
             guard let dash = id.firstIndex(of: "-") else { skipped += 1; continue }
+            let sourceSetID = String(id[id.startIndex..<dash])
+            let packSetID = payload.subsetParents?[sourceSetID] ?? sourceSetID
             // 네 번째 칸은 등급 표의 번호다. 옛 인덱스에는 없다.
-            let rarity = row.count >= 4 ? row[3].number.flatMap { rarities.indices.contains($0)
-                                                                 ? rarities[$0] : nil } : nil
+            var tier = decodedTier
+            var rarity = row.count >= 4 ? row[3].number.flatMap { rarities.indices.contains($0)
+                                                                     ? rarities[$0] : nil } : nil
+            let visualKind = row.count >= 5 ? row[4].text.flatMap(CardVisualKind.init(compactCode:)) : nil
+            // Black Bolt / White Flare의 초기 upstream 행 세 개가 실물 체크리스트와 다른
+            // 등급으로 내려왔다. 그대로 두면 Victini BWR가 일반 Rare로 과다 출현하고,
+            // White Flare God Pack에서는 Archen IR 한 장이 후보에서 완전히 빠진다.
+            // 원본이 바로잡힐 때까지 공식 카드 번호를 좁게 교정한다.
+            if id == "rsv10pt5-172" || id == "zsv10pt5-171" {
+                tier = .blackWhiteRare
+                rarity = "Black White Rare"
+            } else if id == "rsv10pt5-131" {
+                tier = .artRare
+                rarity = "Illustration Rare"
+            }
             entries.append(CardEntry(id: id, name: name, tier: tier,
-                                     setID: String(id[id.startIndex..<dash]),
+                                     setID: packSetID,
                                      rarity: rarity?.nonEmpty,
-                                     nameKo: korean[id]))
+                                     nameKo: korean[id],
+                                     visualKind: visualKind))
         }
         if skipped > 0 { AppLog.write("card index: skipped \(skipped) malformed rows") }
 
@@ -371,7 +467,37 @@ enum CardImageSource {
         guard let base = trimmedBase, let dash = cardID.firstIndex(of: "-") else { return nil }
         let setID = String(cardID[cardID.startIndex..<dash])
         let suffix = hires ? "_hires" : ""
-        return URL(string: "\(base)/cards/\(setID)/\(cardID)\(suffix).webp")
+        return URL(string: base)?.appendingPathComponent("cards")
+            .appendingPathComponent(setID).appendingPathComponent("\(cardID)\(suffix).webp")
+    }
+
+    /// Upstream fallback for cards not yet mirrored to the app's WebP bucket.
+    ///
+    /// Separately numbered subsets such as `sma-SV1` and `cel25c-2_A` retain
+    /// their source IDs, so the official image CDN path is deterministic.
+    static func upstreamURL(cardID: String, hires: Bool) -> URL? {
+        guard let dash = cardID.firstIndex(of: "-") else { return nil }
+        let setID = String(cardID[..<dash])
+        let number = String(cardID[cardID.index(after: dash)...])
+        guard !setID.isEmpty, !number.isEmpty else { return nil }
+        let suffix = hires ? "_hires" : ""
+        let imageNumber = cardID == "ex10-?" ? "question" : number
+        return URL(string: "https://images.pokemontcg.io")?
+            .appendingPathComponent(setID).appendingPathComponent("\(imageNumber)\(suffix).png")
+    }
+
+    /// Original source first for detail views. A small successful mirror
+    /// response must not prevent fetching an available high-resolution scan.
+    static func urls(cardID: String, hires: Bool) -> [URL] {
+        let original = CardArtLibrary.entries[cardID].flatMap { URL(string: $0.sourceURL) }
+        let candidates = hires
+            ? [original, upstreamURL(cardID: cardID, hires: true), url(cardID: cardID, hires: true)]
+            : [url(cardID: cardID, hires: false), original, upstreamURL(cardID: cardID, hires: false)]
+        return candidates
+            .compactMap { $0 }
+            .reduce(into: []) { urls, candidate in
+                if !urls.contains(candidate) { urls.append(candidate) }
+            }
     }
 }
 

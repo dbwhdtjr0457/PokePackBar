@@ -56,12 +56,16 @@ enum PackConfig {
 
     // MARK: 칸 표 — 커먼·언커먼
 
-    /// 커먼 칸. **기본 에너지가 여기 섞인다.**
-    ///
-    /// 옛 팩은 에너지를 따로 보장하지 않았고 커먼 자리에 한 장쯤 들어 있었다(11장 팩의
-    /// 커먼 7칸에 한 장이면 14%). 최신 세트는 기본 에너지가 재판이라 세트 목록에 없으므로,
-    /// 그런 세트에서는 이 몫이 커먼으로 돌아간다.
-    static let commonWeights: [(tier: CardTier, weight: Int)] = [
+    /// 현대 팩의 커먼 칸. 기본 에너지는 별도 고정 카드이므로 이 풀에 섞지 않는다.
+    static let commonWeights: [(tier: CardTier, weight: Int)] = [(.common, 10000)]
+
+    /// 확정 기본 에너지 칸. Base·Base Set 2는 두 장, Gym과 Neo Genesis는
+    /// 한 장을 이 표에서 뽑는다.
+    static let energyWeights: [(tier: CardTier, weight: Int)] = [(.energy, 10000)]
+
+    /// 기본 에너지가 커먼 자리를 차지하던 WotC·초기 e-Card/EX 팩의 커먼 칸.
+    /// 에너지 카드가 없는 세트에서는 `weightedTier` 가 후보에서 에너지를 빼고 재정규화한다.
+    static let legacyCommonWeights: [(tier: CardTier, weight: Int)] = [
         (.common, 8600), (.energy, 1400),
     ]
 
@@ -70,10 +74,39 @@ enum PackConfig {
 
     // MARK: 칸 표 — 역홀로
 
-    /// 역홀로 칸은 e-Card(2002) 부터 생겼다. 대부분은 커먼·언커먼의 반짝이 판이다.
-    static let exReverse: [(tier: CardTier, weight: Int)] = [
+    /// e-Card와 EX1–EX4의 역홀로 칸. 이 구간은 Holo Rare를 역홀로 평행판으로
+    /// 싣지 않았으므로 RR을 절대 후보로 만들지 않는다.
+    static let legacyEXReverse: [(tier: CardTier, weight: Int)] = [
         (.common, 5500), (.uncommon, 3500), (.rare, 1000),
     ]
+
+    /// EX5–EX16 전체 체크리스트의 합산 fallback. 실제 세트 경로는 아래의
+    /// `exReverseWeights(setID:)` 로 각 세트의 카드 장수를 사용한다.
+    static let exReverse: [(tier: CardTier, weight: Int)] = [
+        // 378 C / 387 U / 214 R / 196 Rare Holo across all twelve sets.
+        (.common, 3217), (.uncommon, 3294), (.rare, 1821), (.doubleRare, 1668),
+    ]
+
+    /// EX5–EX16 reverse checklists include ordinary Rare Holo printings but
+    /// never Pokemon-ex. With no surviving official sheet ratios, every listed
+    /// reverse printing is modelled as equally likely inside its own set.
+    static func exReverseWeights(setID: String) -> [(tier: CardTier, weight: Int)] {
+        switch setID {
+        case "ex5":  [(.common, 32), (.uncommon, 33), (.rare, 12), (.doubleRare, 15)]
+        case "ex6":  [(.common, 36), (.uncommon, 36), (.rare, 14), (.doubleRare, 17)]
+        case "ex7":  [(.common, 32), (.uncommon, 35), (.rare, 14), (.doubleRare, 14)]
+        case "ex8":  [(.common, 32), (.uncommon, 34), (.rare, 14), (.doubleRare, 15)]
+        case "ex9":  [(.common, 32), (.uncommon, 32), (.rare, 14), (.doubleRare, 17)]
+        case "ex10": [(.common, 31), (.uncommon, 34), (.rare, 44), (.doubleRare, 19)]
+        case "ex11": [(.common, 34), (.uncommon, 35), (.rare, 20), (.doubleRare, 18)]
+        case "ex12": [(.common, 27), (.uncommon, 26), (.rare, 15), (.doubleRare, 14)]
+        case "ex13": [(.common, 31), (.uncommon, 30), (.rare, 20), (.doubleRare, 23)]
+        case "ex14": [(.common, 29), (.uncommon, 30), (.rare, 16), (.doubleRare, 13)]
+        case "ex15": [(.common, 30), (.uncommon, 31), (.rare, 16), (.doubleRare, 12)]
+        case "ex16": [(.common, 32), (.uncommon, 31), (.rare, 15), (.doubleRare, 19)]
+        default: exReverse
+        }
+    }
 
     static let diamondPearlReverse: [(tier: CardTier, weight: Int)] = [
         (.common, 5500), (.uncommon, 3400), (.rare, 1100),
@@ -81,6 +114,12 @@ enum PackConfig {
 
     static let blackWhiteReverse: [(tier: CardTier, weight: Int)] = [
         (.common, 5400), (.uncommon, 3400), (.rare, 1200),
+    ]
+
+    /// Double Crisis의 역홀로 체크리스트는 14 C + 12 U + 6 Holo Rare다.
+    /// 카드별 동일 비중의 최소 모델이며 두 full art는 이 칸에 들어오지 않는다.
+    static let doubleCrisisReverse: [(tier: CardTier, weight: Int)] = [
+        (.common, 4_375), (.uncommon, 3_750), (.doubleRare, 1_875),
     ]
 
     static let sunMoonReverse: [(tier: CardTier, weight: Int)] = [
@@ -94,6 +133,96 @@ enum PackConfig {
         (.tripleRare, 10), (.amazing, 30), (.radiant, 60),
     ]
 
+    // MARK: Special-subset replacement positions
+
+    /// Hidden Fates Shiny Vault, measured from a large community sample.
+    /// Shiny Rare (21.2%), Shiny GX (10.19%), full-art Trainer (3.42%), and gold
+    /// (1.01%) all replace the reverse-holo card; the latter three share SSR in
+    /// the simulator while their original rarity still controls their finish.
+    static let hiddenFatesReverse: [(tier: CardTier, weight: Int)] = [
+        (.common, 3402), (.uncommon, 2182), (.rare, 834),
+        (.shiny, 2120), (.shinyUltra, 1462),
+    ]
+
+    /// Shining Fates, measured from 1,087 packs. Baby shiny is 1/4, Shiny V is
+    /// 1/14, Shiny VMAX is 1/39, gold is 0.65%, and Amazing Rare is 1/19.
+    static let shiningFatesReverse: [(tier: CardTier, weight: Int)] = [
+        (.common, 3119), (.uncommon, 1980), (.rare, 840),
+        (.amazing, 526), (.shiny, 2500), (.shinyUltra, 1035),
+    ]
+
+    /// TCGplayer mass-opening estimates. Trainer Gallery replaces the reverse
+    /// holo independently of the pack's rare position.
+    static let brilliantStarsReverse: [(tier: CardTier, weight: Int)] = [
+        (.common, 4304), (.uncommon, 2731), (.rare, 1159), (.characterRare, 1806),
+    ]
+    static let astralRadianceReverse: [(tier: CardTier, weight: Int)] = [
+        (.common, 4328), (.uncommon, 2747), (.rare, 1166),
+        (.radiant, 501), (.characterRare, 1258),
+    ]
+    static let lostOriginReverse: [(tier: CardTier, weight: Int)] = [
+        (.common, 4342), (.uncommon, 2756), (.rare, 1170),
+        (.radiant, 501), (.characterRare, 1231),
+    ]
+    static let silverTempestReverse: [(tier: CardTier, weight: Int)] = [
+        (.common, 4369), (.uncommon, 2774), (.rare, 1179),
+        (.radiant, 455), (.characterRare, 1223),
+    ]
+
+    /// Crown Zenith's Galarian Gallery also replaces the reverse-holo card.
+    /// TCGplayer's sample measured about 22.2% yellow-border art, 12.1% silver
+    /// art, and 0.6% gold; the latter two share SAR while rarity retains gold foil.
+    static let crownZenithReverse: [(tier: CardTier, weight: Int)] = [
+        (.common, 3180), (.uncommon, 2018), (.rare, 857),
+        (.radiant, 455), (.artRare, 2220), (.specialArtRare, 1270),
+    ]
+
+    /// Celebrations has four foil cards. The first two are ordinary main-set
+    /// holos, Classic Collection can replace position three (about 40% in a
+    /// 5,000-pack sample), and the main-set hit is position four.
+    static let celebrationsHolo: [(tier: CardTier, weight: Int)] = [
+        (.rare, 10_000),
+    ]
+    static let celebrationsRare: [(tier: CardTier, weight: Int)] = [
+        (.rare, 4800), (.doubleRare, 4000), (.tripleRare, 800), (.superRare, 400),
+    ]
+    static let celebrationsClassicPosition: [(tier: CardTier, weight: Int)] = [
+        (.rare, 6000), (.characterRare, 4000),
+    ]
+
+    /// Generations' second Radiant Collection sheet is reconstructed from the
+    /// surviving 10x10 uncut sheet: 12 Uncommons six times each, plus seven
+    /// Ultra Rares four times each (72:28). The compact index retains the source
+    /// rarity, so the seven Ultra Rares span RR and SR here.
+    static let generationsRadiantHigh: [(tier: CardTier, weight: Int)] = [
+        (.uncommon, 7200), (.doubleRare, 800), (.superRare, 2000),
+    ]
+
+    /// Legendary Treasures' high RC sheet is modelled as 70% Uncommon and 30%
+    /// Ultra Rare. RC11 is the regular Meloetta-EX rather than a full art, so
+    /// its upstream tier remains R while the other five are SR.
+    static let legendaryTreasuresRadiantHigh: [(tier: CardTier, weight: Int)] = [
+        (.uncommon, 7000), (.rare, 500), (.superRare, 2500),
+    ]
+
+    /// Legendary Treasures puts a base-set Holo Rare in the reverse position
+    /// half the time. The other half remains a C/U/R reverse parallel.
+    static let legendaryTreasuresReverseOrHolo: [(tier: CardTier, weight: Int)] = [
+        (.common, 2700), (.uncommon, 1700), (.rare, 600), (.doubleRare, 5000),
+    ]
+
+    /// Six Pokémon-EX per 36-pack box and one secret rare per three boxes;
+    /// every remaining rare position is a non-holo Rare.
+    static let legendaryTreasuresRare: [(tier: CardTier, weight: Int)] = [
+        (.rare, 8241), (.doubleRare, 1667), (.ultraRare, 92),
+    ]
+
+    /// Generations sample model: 3.8 holos + 7.4 Pokémon-EX + 0.8 full arts
+    /// per 36 packs, with the remaining 24 positions non-holo Rare.
+    static let generationsRare: [(tier: CardTier, weight: Int)] = [
+        (.rare, 6667), (.doubleRare, 3111), (.superRare, 222),
+    ]
+
     /// Scarlet & Violet — **실측값**이다.
     ///
     /// 일러스트레어 7.69%, 스페셜아트레어 3.11%, 하이퍼레어 1.92% 가 이 칸에서 나온다.
@@ -102,6 +231,13 @@ enum PackConfig {
     /// 역홀로이며 세트의 장수 비율(대략 56:32:12)로 나눴다.
     /// 샤이니(S)도 이 칸이다 — 「팔데아의 운명」처럼 이로치가 주력인 세트에서 역홀로
     /// 자리를 대신 차지한다. 실측한 세 값(AR·SAR·UR)은 건드리지 않고 유도값인 커먼 몫에서 뗐다.
+    /// 첫 번째 역홀로 칸. 이 칸은 평행 인쇄 C/U/R 만 담는다.
+    static let scarletVioletReverseBase: [(tier: CardTier, weight: Int)] = [
+        (.common, 5600), (.uncommon, 3200), (.rare, 1200),
+    ]
+
+    /// 두 번째 역홀로 칸. 상위 히트가 이 자리만 대체한다.
+    /// 이름은 기존 확률·가격 호출부 호환을 위해 유지한다.
     static let scarletVioletReverse: [(tier: CardTier, weight: Int)] = [
         (.common, 4805), (.uncommon, 2790), (.rare, 1048), (.shiny, 46), (.shinyUltra, 5),
         (.artRare, 769), (.specialArtRare, 311), (.ultraRare, 192),
@@ -173,34 +309,107 @@ enum PackConfig {
 
     // MARK: 시대별 구성
 
-    /// 시대별 칸 구성. 위에서 아래 순서로 뽑고 **레어 칸이 언제나 마지막**이다 —
-    /// 개봉 연출이 마지막 장을 가장 좋은 장으로 놓고 움직인다.
-    ///
-    /// Sun & Moon 부터 실물 팩에는 기본 에너지가 한 장 고정으로 들어가지만, 그 시대 세트는
-    /// 기본 에너지가 세트 목록에 없어 칸을 만들 수가 없다. 장수를 맞추려고 커먼 칸으로 센다.
+    /// 시대별 표준 칸 구성. 물리 팩 메타데이터와 칸 수는 `PackRecipe` 가 단일 출처다.
     static func slotTables(_ era: PackEra)
         -> [(weights: [(tier: CardTier, weight: Int)], count: Int)] {
-        switch era {
-        case .wotc:
-            return [(commonWeights, 7), (uncommonWeights, 3), (wotcRare, 1)]
-        case .ex:
-            return [(commonWeights, 4), (uncommonWeights, 3), (exReverse, 1), (exRare, 1)]
-        case .diamondPearl:
-            return [(commonWeights, 5), (uncommonWeights, 3),
-                    (diamondPearlReverse, 1), (diamondPearlRare, 1)]
-        case .blackWhite:
-            return [(commonWeights, 5), (uncommonWeights, 3),
-                    (blackWhiteReverse, 1), (blackWhiteRare, 1)]
-        case .sunMoon:
-            return [(commonWeights, 5), (uncommonWeights, 3),
-                    (sunMoonReverse, 1), (sunMoonRare, 1)]
-        case .swordShield:
-            return [(commonWeights, 5), (uncommonWeights, 3),
-                    (swordShieldReverse, 1), (swordShieldRare, 1)]
-        case .scarletViolet:
-            return [(commonWeights, 5), (uncommonWeights, 3),
-                    (scarletVioletReverse, 1), (scarletVioletRare, 1)]
+        slotTables(recipe: PackRecipe.standard(for: era), setID: nil, era: era)
+    }
+
+    /// 세트 전용 레시피를 반영한 칸 구성. Celebrations처럼 시대 표준과 다른 팩도 여기로 온다.
+    static func slotTables(setID: String, era: PackEra)
+        -> [(weights: [(tier: CardTier, weight: Int)], count: Int)] {
+        slotTables(recipe: PackRecipe.forSet(setID, era: era), setID: setID, era: era)
+    }
+
+    private static func slotTables(recipe: PackRecipe, setID: String?, era: PackEra)
+        -> [(weights: [(tier: CardTier, weight: Int)], count: Int)] {
+        recipe.slots.map { slot in
+            let weights: [(tier: CardTier, weight: Int)]
+            switch slot.kind {
+            case .energy:
+                weights = energyWeights
+            case .common:
+                // Wizards Energy cards occupy explicit fixed slots above. The
+                // legacy mixture remains only for early e-Card/EX collation.
+                weights = era == .ex ? legacyCommonWeights : commonWeights
+            case .uncommon:
+                weights = uncommonWeights
+            case .reverseHolo:
+                switch setID {
+                case "dc1": weights = doubleCrisisReverse
+                case "sm115": weights = hiddenFatesReverse
+                case "swsh45": weights = shiningFatesReverse
+                case "swsh9": weights = brilliantStarsReverse
+                case "swsh10": weights = astralRadianceReverse
+                case "swsh11": weights = lostOriginReverse
+                case "swsh12": weights = silverTempestReverse
+                case "swsh12pt5": weights = crownZenithReverse
+                default:
+                    switch era {
+                    case .wotc: weights = commonWeights
+                    case .ex:
+                        if let setID,
+                           usesEX5To16ReverseChecklist(setID: setID) {
+                            weights = exReverseWeights(setID: setID)
+                        } else {
+                            weights = legacyEXReverse
+                        }
+                    case .diamondPearl: weights = diamondPearlReverse
+                    case .blackWhite: weights = blackWhiteReverse
+                    case .sunMoon: weights = sunMoonReverse
+                    case .swordShield: weights = swordShieldReverse
+                    case .scarletViolet: weights = scarletVioletReverseBase
+                    }
+                }
+            case .reverseHoloHit:
+                // New Mega Attack printings must remain reachable. This is a
+                // simulator estimate, not a published Ascended Heroes pull rate.
+                weights = setID == "me2pt5"
+                    ? scarletVioletReverse.map { ($0.tier, $0.tier == .common ? $0.weight - 167 : $0.weight) }
+                        + [(.megaAttack, 167)]
+                    : scarletVioletReverse
+            case .legendaryTreasuresReverse:
+                weights = legendaryTreasuresReverseOrHolo
+            case .rare:
+                switch setID {
+                case "bw11": weights = legendaryTreasuresRare
+                case "g1": weights = generationsRare
+                default:
+                    switch era {
+                    case .wotc: weights = wotcRare
+                    case .ex: weights = exRare
+                    case .diamondPearl: weights = diamondPearlRare
+                    case .blackWhite: weights = blackWhiteRare
+                    case .sunMoon: weights = sunMoonRare
+                    case .swordShield: weights = swordShieldRare
+                    case .scarletViolet: weights = scarletVioletRare
+                    }
+                }
+            case .allFoil:
+                weights = setID == "cel30" ? anniversaryFoilWeights : specialWeights
+            case .anniversaryPikachu:
+                weights = [(.artRare, 10_000)]
+            case .celebrationsHolo:
+                weights = celebrationsHolo
+            case .classicCollection:
+                weights = celebrationsClassicPosition
+            case .celebrationsRare:
+                weights = celebrationsRare
+            case .radiantCollectionCommon:
+                weights = commonWeights
+            case .radiantCollectionHigh:
+                weights = setID == "g1"
+                    ? generationsRadiantHigh
+                    : legendaryTreasuresRadiantHigh
+            }
+            return (weights: weights, count: slot.count)
         }
+    }
+
+    private static func usesEX5To16ReverseChecklist(setID: String) -> Bool {
+        guard setID.hasPrefix("ex"),
+              let number = Int(setID.dropFirst(2)) else { return false }
+        return (5...16).contains(number)
     }
 
     /// 그 시대 레어 칸의 표. 마지막 칸이 곧 레어 칸이다.
@@ -210,7 +419,11 @@ enum PackConfig {
 
     /// 팩 장수. 칸 구성에서 나온다 — 따로 적으면 둘이 갈라진다.
     static func cardsPerPack(_ era: PackEra) -> Int {
-        slotTables(era).reduce(0) { $0 + $1.count }
+        PackRecipe.standard(for: era).contents.gameCardCount
+    }
+
+    static func contents(setID: String, era: PackEra) -> PackContents {
+        PackRecipe.forSet(setID, era: era).contents
     }
 
     /// 가장 긴 팩(11장, 1999년). 개봉 결과 격자가 몇 줄까지 감당해야 하는지가 여기서 나온다.
@@ -234,13 +447,10 @@ enum PackConfig {
     /// (제일 싼 세트가 7팩). 시세를 못 읽어 팩값이 헐값으로 잡히는 경우에만 걸린다.
     static let bonusPackCap = 10
 
-    /// 특별 세트의 팩 장수. common 계층이 없는 세트를 말한다.
-    ///
-    /// 25장짜리 기념 세트처럼 전부 rare 이상으로 구성된 세트가 있다. 실제 카드 게임에서도
-    /// 이런 세트의 팩은 4장이다.
+    /// Celebrations의 4-card all-foil 팩 장수. common 유무로 특별 세트를 추측하지 않는다.
     static let specialPackSize = 4
 
-    /// 특별 세트의 계층 가중치. 전 슬롯을 이 가중치로 뽑아 팩 안에 등급 차이를 만든다.
+    /// Celebrations의 전 슬롯 가중치. 네 장 모두 foil이지만 카드 등급은 서로 다르다.
     static let specialWeights: [(tier: CardTier, weight: Int)] = [
         (.rare, 4160), (.doubleRare, 3100), (.tripleRare, 500), (.prismStar, 80),
         (.amazing, 60), (.radiant, 80), (.characterRare, 20), (.artRare, 650),
@@ -249,29 +459,19 @@ enum PackConfig {
         (.blackWhiteRare, 10), (.megaAttack, 10), (.megaUltraRare, 10), (.futureUltra, 10),
     ]
 
+    /// Official composition: five foil cards, including exactly one Pikachu
+    /// Rare, plus a foil Energy. The remaining sheet ratios are unpublished;
+    /// these conservative simulator weights are not empirical pull-rate claims.
+    static let anniversaryFoilWeights: [(tier: CardTier, weight: Int)] = [
+        (.common, 4500), (.rare, 3000), (.doubleRare, 1400),
+        (.characterRare, 600), (.artRare, 300), (.specialArtRare, 190), (.futureUltra, 10),
+    ]
+
     /// 레어 이상 칸 수. 도감 혜택으로 늘어나지 않는다 — 팩 장수를 바꾸는 혜택은 없앴다.
     static func hitSlotCount(_ perks: DexPerks) -> Int { hitSlots }
 
-    /// 특별 팩의 장수. 전 슬롯이 가중 추첨이라 혜택은 장수를 늘리는 것으로 나타난다.
+    /// 기존 호출부 호환용 Celebrations 팩 장수.
     static func specialPackSize(_ perks: DexPerks) -> Int { specialPackSize }
-
-    /// 갓팩 — 이 확률로 팩 전체가 레어 이상이 된다. `1/godPackOneIn`.
-    ///
-    /// **실물에는 없는 것이다.** 실물 팩 구조를 그대로 쓰되 이것만 얹어 둔다 — 포켓몬 TCG
-    /// 포켓이 0.05%(1/2000)로 넣고 있고, 이 앱은 하루 스무 팩 남짓이라 1/2000 이면 백 일에
-    /// 한 번이라 있는 줄도 모르는 기능이 된다. 상점에 확률을 함께 적는다.
-    static let godPackOneIn = 300
-
-    /// 갓팩의 등급 가중치. 하한만 올리는 것이 아니라 **상한 쪽도 함께 올린다** —
-    /// 포켓몬 TCG 포켓도 갓팩에서 최상위 등급 확률을 0.05% 에서 5% 로 끌어올린다.
-    /// 전 칸이 레어 이상이면서 위쪽이 두꺼워야 "터졌다" 는 느낌이 난다.
-    static let godWeights: [(tier: CardTier, weight: Int)] = [
-        (.rare, 1840), (.doubleRare, 2970), (.tripleRare, 700), (.prismStar, 150),
-        (.amazing, 120), (.radiant, 250), (.characterRare, 30), (.artRare, 1100),
-        (.aceSpec, 250), (.superRare, 950), (.shiny, 180), (.shinyUltra, 70),
-        (.specialArtRare, 400), (.shining, 150), (.hyperRare, 350), (.ultraRare, 300),
-        (.blackWhiteRare, 80), (.megaAttack, 15), (.megaUltraRare, 80), (.futureUltra, 15),
-    ]
 
     /// 천장 — 레어 이상 칸에서 이 횟수만큼 연속으로 레어만 나오면 다음은 RR 이상을 보장한다.
     ///
@@ -325,7 +525,7 @@ struct PackSlot: Equatable, Sendable, Identifiable {
     let odds: [PackOpening.TierOdds]
 }
 
-/// 팩 가격. 세트마다 표를 두지 않고 구성에서 유도한다 — 세트를 추가할 때 가격을 잊지 않게.
+/// 팩 가격. 실제 밀봉 부스터 시장가가 있으면 그것을 쓰고, 없는 세트만 구성 기대값에서 유도한다.
 enum PackPricing {
 
     /// 팩 하나의 값. **세트마다 다르다.**
@@ -337,8 +537,10 @@ enum PackPricing {
     /// 시세를 못 읽으면 예전 고정값으로 물러난다 — 값이 0 인 상점이 되는 것보다 낫다.
     static func price(setID: String, index: CardIndex,
                       prices: CardPrices? = CardPrices.shared,
+                      marketPrices: PackMarketPrices? = PackMarketPrices.shared,
                       perks: DexPerks = .none) -> Int {
-        let base = basePrice(setID: setID, index: index, prices: prices)
+        let base = basePrice(setID: setID, index: index, prices: prices,
+                             marketPrices: marketPrices)
         guard perks.packDiscount > 0 else { return base }
         // 할인을 곱하면 100원 칸에서 벗어난다. 곱한 뒤에 다시 끊는다.
         return MarketEconomy.quantized(Int((Double(base) * (1 - perks.packDiscount)).rounded()),
@@ -346,10 +548,9 @@ enum PackPricing {
     }
 
     /// 혜택을 빼고 본 팩값.
-    static func basePrice(setID: String, index: CardIndex, prices: CardPrices?) -> Int {
-        let value = MarketEconomy.packValueUSD(setID: setID, index: index, prices: prices)
-        guard value > 0 else { return fallbackPrice(setID: setID, index: index) }
-        return MarketEconomy.tokens(usd: value * MarketEconomy.packMargin)
+    static func basePrice(setID: String, index: CardIndex, prices: CardPrices?,
+                          marketPrices: PackMarketPrices? = PackMarketPrices.shared) -> Int {
+        quote(setID: setID, index: index, prices: prices, marketPrices: marketPrices).baseTokens
     }
 
     /// 시세가 없을 때의 예전 고정값.
@@ -358,10 +559,7 @@ enum PackPricing {
     }
 
     static func cardCount(setID: String, index: CardIndex, perks: DexPerks = .none) -> Int {
-        let pool = index.pools[setID] ?? [:]
-        return (pool[.common] ?? []).isEmpty
-            ? PackConfig.specialPackSize(perks)
-            : PackConfig.cardsPerPack(index.era(setID))
+        PackRecipe.forSet(setID, era: index.era(setID)).contents.gameCardCount
     }
 }
 
@@ -389,13 +587,37 @@ enum CardSale {
     }
 }
 
-/// 팩 개봉 결과. 카드와 함께 이 팩이 갓팩이었는지 알려 준다.
-struct OpenedCards: Equatable, Sendable {
-    let cards: [PulledCard]
-    /// 전 칸이 레어 이상으로 나온 팩. 개봉 연출이 이걸 보고 다르게 움직인다.
-    let isGodPack: Bool
+/// A drawn card together with the physical finish implied by its pack position.
+/// `PulledCard` stays source-compatible while the printing-level collection
+/// model is introduced; callers can map this hint to `CardFinish` without
+/// guessing from rarity.
+struct PackSlotResult: Equatable, Sendable {
+    let card: PulledCard
+    let finishHint: PackFinishHint
+}
 
-    static let empty = OpenedCards(cards: [], isGodPack: false)
+/// 팩 개봉 결과. 카드와 함께 어떤 세트 전용 변형 팩이었는지 알려 준다.
+struct OpenedCards: Equatable, Sendable {
+    let slotResults: [PackSlotResult]
+    let variant: PackVariant
+
+    var cards: [PulledCard] { slotResults.map(\.card) }
+    /// 기존 개봉 연출용 호환 프로퍼티. 151은 demigod이므로 God Pack으로 표시하지 않는다.
+    var isGodPack: Bool { variant.isGodPack }
+    var isSpecialVariant: Bool { variant.isSpecialHit }
+
+    init(slotResults: [PackSlotResult], variant: PackVariant) {
+        self.slotResults = slotResults
+        self.variant = variant
+    }
+
+    /// 기존 테스트·호출부를 위한 호환 초기화. 새 코드는 variant를 직접 넘긴다.
+    init(cards: [PulledCard], isGodPack: Bool) {
+        self.slotResults = cards.map { PackSlotResult(card: $0, finishHint: .defaultForCard) }
+        self.variant = isGodPack ? .prismaticEvolutionsGod : .standard
+    }
+
+    static let empty = OpenedCards(slotResults: [], variant: .standard)
 }
 
 /// 팩 개봉 결과 카드 1장.
@@ -404,6 +626,15 @@ struct PulledCard: Equatable, Sendable, Identifiable {
     let tier: CardTier
     /// 이 개봉으로 처음 얻은 카드인가. 연출에서 신규 표시에 쓴다.
     let isNew: Bool
+    /// 같은 카드 번호라도 서로 다른 실물 판형을 구분한다.
+    let finish: CardFinish
+
+    init(id: String, tier: CardTier, isNew: Bool, finish: CardFinish = .normal) {
+        self.id = id
+        self.tier = tier
+        self.isNew = isNew
+        self.finish = finish
+    }
 }
 
 /// 팩 개봉 — 순수 로직.
@@ -439,66 +670,392 @@ enum PackOpening {
         alreadyOwned: Set<String>,
         perks: DexPerks = .none,
         pity: inout Int,
+        mode: OpeningMode = .game,
         using generator: inout some RandomNumberGenerator
     ) -> OpenedCards {
+        let perks = mode == .realistic ? DexPerks.none : perks
+        if mode == .realistic { pity = 0 }
         guard let pool = index.pools[setID], !pool.isEmpty else { return .empty }
-
-        // common 이 없는 세트는 일반 팩 구성을 쓸 수 없다. 전 슬롯을 가중 추첨한다.
-        if (pool[.common] ?? []).isEmpty {
-            var picked: [PulledCard] = []
-            var used: Set<String> = []
-            for _ in 0..<PackConfig.specialPackSize(perks) {
-                let tier = weightedTier(PackConfig.weights(PackConfig.specialWeights, perks: perks),
-                                        available: pool, using: &generator)
-                guard let id = pick(tier: tier, from: pool, avoiding: used, using: &generator) else { continue }
-                used.insert(id)
-                picked.append(PulledCard(id: id, tier: index.card(id)?.tier ?? tier,
-                                         isNew: !alreadyOwned.contains(id)))
-            }
-            // 특별 세트는 원래 전 칸이 레어 이상이라 갓팩 개념이 없다.
-            return OpenedCards(cards: picked, isGodPack: false)
-        }
-
-        // 갓팩 판정을 먼저 한다. 걸리면 전 칸이 갓팩 표에서 나온다.
         let era = index.era(setID)
-        let isGod = generator.next(upperBound: UInt64(PackConfig.godPackOneIn)) == 0
-        var requests: [CardTier] = []
-
-        if isGod {
-            let weights = PackConfig.weights(PackConfig.godWeights, perks: perks)
-            for _ in 0..<PackPricing.cardCount(setID: setID, index: index, perks: perks) {
-                requests.append(weightedTier(weights, available: pool, using: &generator))
-            }
-            // 갓팩은 레어 이상만 나오므로 천장을 다시 채울 이유가 없다.
-            pity = 0
+        let recipe = PackRecipe.forSet(setID, era: era)
+        let rolledVariant: PackVariant
+        if let rule = recipe.specialVariant {
+            let roll = Int(generator.next(upperBound: UInt64(rule.estimatedSimulatorOneIn)))
+            rolledVariant = roll < recipe.specialRules.count
+                ? recipe.specialRules[roll].variant : recipe.baseVariant
         } else {
-            // 그 시대의 칸 구성을 그대로 따라간다. 레어 칸만 따로 다루므로 마지막을 뺀다.
-            for (weights, count) in Self.standardSlotTables(era: era, perks: perks).dropLast() {
-                for _ in 0..<count {
-                    requests.append(weightedTier(weights, available: pool, using: &generator))
-                }
-            }
-
-            // 마지막 칸은 레어 이상만 뽑는다. 천장이 걸려 있으면 RR 이상으로 올린다.
-            for _ in 0..<PackConfig.hitSlotCount(perks) {
-                requests.append(hitTier(available: pool, era: era, perks: perks,
-                                        pity: pity, using: &generator))
-            }
-            pity = Self.nextPity(after: requests.suffix(PackConfig.hitSlotCount(perks)), from: pity)
+            rolledVariant = recipe.baseVariant
         }
 
-        var picked: [PulledCard] = []
+        var requests: [PackCardRequest] = []
+        switch rolledVariant {
+        case .scarletViolet151Demigod:
+            // The evolution line atomically replaces reverse 1, reverse 2, and rare.
+            requests = standardRequests(
+                setID: setID,
+                recipe: recipe,
+                era: era,
+                pool: pool,
+                index: index,
+                perks: perks,
+                pity: &pity,
+                excluding: [.reverseHolo, .reverseHoloHit, .rare],
+                using: &generator
+            )
+            let lines = PackRecipe.scarletViolet151Lines
+            let line = lines[Int(generator.next(upperBound: UInt64(lines.count)))]
+            requests.append(contentsOf: line)
+            pity = 0
+        case .prismaticEvolutionsGod:
+            requests = PackRecipe.prismaticEvolutionsGodPack
+            pity = 0
+        case .prismaticEvolutionsDemigod:
+            requests = standardRequests(setID: setID, recipe: recipe, era: era, pool: pool,
+                index: index, perks: perks, pity: &pity,
+                excluding: [.reverseHolo, .reverseHoloHit, .rare], using: &generator)
+            requests += Array(repeating: PackCardRequest(tier: .specialArtRare), count: 3)
+            pity = 0
+        case .blackBoltWhiteFlareGod:
+            requests = PackRecipe.blackBoltWhiteFlareGodPack
+            pity = 0
+        case .standard, .celebrations:
+            requests = standardRequests(
+                setID: setID,
+                recipe: recipe,
+                era: era,
+                pool: pool,
+                index: index,
+                perks: perks,
+                pity: &pity,
+                excluding: [],
+                using: &generator
+            )
+        }
+
+        // A broken catalogue must not turn a named God Pack into fallback rarities.
+        if rolledVariant.isSpecialHit {
+            for request in requests {
+                if let id = request.exactCardID, index.card(id)?.setID != setID { return .empty }
+                if request.exactCardID == nil && (pool[request.tier] ?? []).isEmpty { return .empty }
+            }
+        }
+        var picked: [PackSlotResult] = []
         var usedInThisPack: Set<String> = []
         // 중복이 나와도 다시 뽑지 않는다. 값비싼 카드가 떴는데 「이미 가진 것」이라는 이유로
         // 더 싼 카드로 바뀌면, 도와주려던 장치가 오히려 뽑기를 망친 것으로 남는다.
-        for tier in requests {
-            guard let id = pick(tier: tier, from: pool, avoiding: usedInThisPack,
-                                using: &generator) else { continue }
+        for request in requests {
+            let exactID = request.exactCardID.flatMap { id in
+                index.card(id)?.setID == setID ? id : nil
+            }
+            let id: String?
+            if let exactID {
+                id = exactID
+            } else if let candidates = request.candidateCardIDs {
+                id = pick(from: candidates, avoiding: usedInThisPack, using: &generator)
+            } else {
+                id = pick(tier: request.tier, from: pool,
+                          avoiding: usedInThisPack, using: &generator)
+            }
+            guard let id else { continue }
             usedInThisPack.insert(id)
-            let actualTier = index.card(id)?.tier ?? tier
-            picked.append(PulledCard(id: id, tier: actualTier, isNew: !alreadyOwned.contains(id)))
+            let actualTier = index.card(id)?.tier ?? request.tier
+            let baseCard = PulledCard(id: id, tier: actualTier,
+                                      isNew: !alreadyOwned.contains(id))
+            let unresolved = PackSlotResult(card: baseCard, finishHint: request.finishHint)
+            let finish = unresolved.printing(setID: setID, index: index).finish
+            let card = PulledCard(id: id, tier: actualTier,
+                                  isNew: !alreadyOwned.contains(id), finish: finish)
+            picked.append(PackSlotResult(card: card, finishHint: request.finishHint))
         }
-        return OpenedCards(cards: picked, isGodPack: isGod)
+        if mode == .realistic { pity = 0 }
+        return OpenedCards(slotResults: picked, variant: rolledVariant)
+    }
+
+    private static func standardRequests(
+        setID: String,
+        recipe: PackRecipe,
+        era: PackEra,
+        pool: [CardTier: [String]],
+        index: CardIndex,
+        perks: DexPerks,
+        pity: inout Int,
+        excluding excludedKinds: Set<PackSlotKind>,
+        using generator: inout some RandomNumberGenerator
+    ) -> [PackCardRequest] {
+        let tables = PackConfig.slotTables(setID: setID, era: era)
+        var requests: [PackCardRequest] = []
+        var hitTiers: [CardTier] = []
+
+        for (slot, table) in zip(recipe.slots, tables) {
+            guard !excludedKinds.contains(slot.kind) else { continue }
+            let availablePool = slotPool(
+                setID: setID, slot: slot.kind, pool: pool, index: index)
+            // Radiant Collection sheets are guaranteed physical positions; the
+            // game-wide hit perk must not turn their fixed sheet ratio into a
+            // different product.
+            let weights = slot.kind == .radiantCollectionHigh
+                ? table.weights
+                : PackConfig.weights(table.weights, perks: perks)
+            for _ in 0..<slot.count {
+                if let parallel = prismaticParallelRequest(
+                    setID: setID,
+                    slot: slot.kind,
+                    pool: pool,
+                    using: &generator
+                ) {
+                    requests.append(parallel)
+                    continue
+                }
+                let tier: CardTier
+                if slot.kind == .rare && recipe.baseVariant != .celebrations {
+                    tier = hitTier(available: availablePool, era: era,
+                                   baseWeights: table.weights, perks: perks,
+                                   pity: pity, using: &generator)
+                    hitTiers.append(tier)
+                } else {
+                    tier = weightedTier(weights, available: availablePool, using: &generator)
+                }
+                let candidates = usesRestrictedCandidatePool(
+                    setID: setID, slot: slot.kind)
+                    ? availablePool[tier]
+                    : nil
+                requests.append(PackCardRequest(
+                    tier: tier,
+                    candidateCardIDs: candidates,
+                    finishHint: finishHint(setID: setID, slot: slot.kind,
+                                           tier: tier, era: era)
+                ))
+            }
+        }
+
+        if !hitTiers.isEmpty {
+            pity = nextPity(after: hitTiers, from: pity)
+        }
+        return requests
+    }
+
+    /// Separates the two RC sheets from the eight core-set positions. Without
+    /// this filter, sharing a parent set ID lets an RC-numbered Common leak into
+    /// any generic Common position even when the two guaranteed RC positions
+    /// are already filled.
+    static func slotPool(
+        setID: String,
+        slot: PackSlotKind,
+        pool: [CardTier: [String]],
+        index: CardIndex? = nil
+    ) -> [CardTier: [String]] {
+        if setID == "cel30", let index {
+            return pool.mapValues { ids in
+                ids.filter { id in
+                    let isPikachuRare = index.card(id)?.rarity == "Pikachu Rare"
+                    return slot == .anniversaryPikachu ? isPikachuRare : !isPikachuRare
+                }
+            }
+        }
+        if usesEXReverseRareHoloPool(setID: setID, slot: slot), let index {
+            var reversePool = pool
+            reversePool[.doubleRare] = (pool[.doubleRare] ?? []).filter {
+                index.card($0)?.rarity == "Rare Holo"
+            }
+            return reversePool
+        }
+
+        if PackRecipe.isRadiantCollectionSet(setID),
+           slot == .radiantCollectionCommon || slot == .radiantCollectionHigh {
+            var restricted: [CardTier: [String]] = [:]
+            for tier in CardTier.allCases {
+                let allowed = Set(PackRecipe.radiantCollectionIDs(
+                    setID: setID, slot: slot, tier: tier
+                ))
+                guard !allowed.isEmpty else { continue }
+                restricted[tier] = (pool[tier] ?? []).filter(allowed.contains)
+            }
+            return restricted
+        }
+
+        if PackRecipe.isRadiantCollectionSet(setID) {
+            let corePool = pool.mapValues { ids in
+                ids.filter { !$0.hasPrefix("\(setID)-RC") }
+            }
+            guard setID == "bw11" else { return corePool }
+
+            let holoIDs = Set(PackRecipe.legendaryTreasuresHoloIDs)
+            if slot == .legendaryTreasuresReverse {
+                var reversePool = corePool
+                reversePool[.doubleRare] = (corePool[.doubleRare] ?? []).filter(holoIDs.contains)
+                return reversePool
+            }
+            if slot == .rare {
+                var rarePool = corePool
+                rarePool[.doubleRare] = (corePool[.doubleRare] ?? []).filter {
+                    !holoIDs.contains($0)
+                }
+                return rarePool
+            }
+            return corePool
+        }
+
+        guard let subsetPrefix = separatelyNumberedSubsetPrefix(parentSetID: setID) else {
+            return pool
+        }
+        let prefix = subsetPrefix + "-"
+
+        if slot == .classicCollection {
+            return pool.mapValues { ids in
+                let subsetCards = ids.filter { $0.hasPrefix(prefix) }
+                if !subsetCards.isEmpty { return subsetCards }
+                return ids.filter { !$0.hasPrefix(prefix) }
+            }
+        }
+
+        if slot == .reverseHolo {
+            return pool.mapValues { ids in
+                let subsetCards = ids.filter { $0.hasPrefix(prefix) }
+                // Imported subset tiers (S/SSR/CHR/AR/SAR) are distinct from
+                // the parent C/U/R tiers. If a tier exists on the replacement
+                // sheet, that physical slot must draw from that sheet only.
+                if !subsetCards.isEmpty { return subsetCards }
+                return ids.filter { !$0.hasPrefix(prefix) }
+            }
+        }
+
+        return pool.mapValues { ids in
+            ids.filter { !$0.hasPrefix(prefix) }
+        }
+    }
+
+    private static func separatelyNumberedSubsetPrefix(parentSetID: String) -> String? {
+        [
+            "sm115": "sma",
+            "swsh45": "swsh45sv",
+            "cel25": "cel25c",
+            "swsh9": "swsh9tg",
+            "swsh10": "swsh10tg",
+            "swsh11": "swsh11tg",
+            "swsh12": "swsh12tg",
+            "swsh12pt5": "swsh12pt5gg",
+        ][parentSetID]
+    }
+
+    static func usesConstrainedSlotPool(setID: String) -> Bool {
+        setID == "cel30" || PackRecipe.isRadiantCollectionSet(setID)
+            || separatelyNumberedSubsetPrefix(parentSetID: setID) != nil
+    }
+
+    /// Whether a physical slot draws from a card-ID subset rather than every
+    /// card in its rarity tier. Pricing uses the same predicate as opening so
+    /// the expected value cannot drift from the cards that are actually drawn.
+    static func usesRestrictedCandidatePool(
+        setID: String,
+        slot: PackSlotKind
+    ) -> Bool {
+        usesConstrainedSlotPool(setID: setID)
+            || usesEXReverseRareHoloPool(setID: setID, slot: slot)
+    }
+
+    private static func usesEXReverseRareHoloPool(
+        setID: String,
+        slot: PackSlotKind
+    ) -> Bool {
+        guard slot == .reverseHolo, setID.hasPrefix("ex"),
+              let number = Int(setID.dropFirst(2)) else { return false }
+        return (5...16).contains(number)
+    }
+
+    /// Prismatic Evolutions·Black Bolt·White Flare의 역홀로 두 칸은 일반
+    /// 역홀로뿐 아니라 별도 체크리스트의 Poké Ball·Master Ball 미러를 낸다.
+    /// rarity는 그대로 C/U/R이므로 카드 번호와 finish를 함께 고정한다.
+    private static func prismaticParallelRequest(
+        setID: String,
+        slot: PackSlotKind,
+        pool: [CardTier: [String]],
+        using generator: inout some RandomNumberGenerator
+    ) -> PackCardRequest? {
+        guard let hits = PackRecipe.observedParallelHits(setID: setID, slot: slot),
+              generator.next(upperBound: UInt64(PackRecipe.prismaticParallelRolls))
+                < UInt64(hits) else { return nil }
+
+        let finishHint: PackFinishHint
+        let eligible: [(tier: CardTier, id: String)]
+        switch slot {
+        case .reverseHolo:
+            finishHint = .pokeBallParallel
+            eligible = prismaticParallelCandidates(
+                setID: setID, pool: pool, masterBallOnly: false
+            )
+        case .reverseHoloHit:
+            finishHint = .masterBallParallel
+            eligible = prismaticParallelCandidates(
+                setID: setID, pool: pool, masterBallOnly: true
+            )
+        default:
+            return nil
+        }
+        guard !eligible.isEmpty else { return nil }
+        let picked = eligible[Int(generator.next(upperBound: UInt64(eligible.count)))]
+        return PackCardRequest(tier: picked.tier, exactCardID: picked.id,
+                               finishHint: finishHint)
+    }
+
+    /// Prismatic Evolutions의 Poké Ball은 C/U/R 전체, Master Ball은 001~090이다.
+    /// Black Bolt·White Flare는 Poké Ball 001~086, Master Ball 001~078이며,
+    /// 둘 다 C/U/R 인쇄본만 존재한다. compact index에서는 카드 ID의 마지막
+    /// 번호가 실물 체크리스트 번호와 같다.
+    static func prismaticParallelCandidates(
+        setID: String,
+        pool: [CardTier: [String]],
+        masterBallOnly: Bool
+    ) -> [(tier: CardTier, id: String)] {
+        let eligibleNumbers: ClosedRange<Int>?
+        switch setID {
+        case "sv8pt5":
+            eligibleNumbers = masterBallOnly ? 1...90 : nil
+        case "rsv10pt5", "zsv10pt5":
+            eligibleNumbers = masterBallOnly ? 1...78 : 1...86
+        default:
+            return []
+        }
+
+        return [CardTier.common, .uncommon, .rare].flatMap { tier in
+            (pool[tier] ?? []).compactMap { id in
+                if let eligibleNumbers {
+                    guard let number = Int(id.split(separator: "-").last ?? ""),
+                          eligibleNumbers.contains(number) else { return nil }
+                }
+                return (tier: tier, id: id)
+            }
+        }
+    }
+
+    static func finishHint(setID: String, slot: PackSlotKind, tier: CardTier,
+                           era: PackEra) -> PackFinishHint {
+        switch slot {
+        case .energy, .common, .uncommon:
+            return .normal
+        case .reverseHolo, .reverseHoloHit:
+            if setID == "me2pt5" && slot == .reverseHoloHit && tier.rank <= CardTier.rare.rank {
+                return .ascendedParallel
+            }
+            if setID == "dc1" { return .reverseHolo }
+            if usesEXReverseRareHoloPool(setID: setID, slot: slot),
+               tier == .doubleRare {
+                return .reverseHolo
+            }
+            return tier.rank <= CardTier.rare.rank ? .reverseHolo : .defaultForCard
+        case .legendaryTreasuresReverse:
+            return tier == .doubleRare ? .defaultForCard : .reverseHolo
+        case .rare:
+            if era == .scarletViolet && tier == .rare { return .holoRare }
+            return .defaultForCard
+        case .allFoil, .anniversaryPikachu, .celebrationsHolo, .classicCollection, .celebrationsRare:
+            return .allFoil
+        case .radiantCollectionCommon:
+            // Generations RC Commons are non-foil; every Legendary Treasures
+            // RC card has the subset coating/foil treatment.
+            return setID == "bw11" ? .allFoil : .normal
+        case .radiantCollectionHigh:
+            return .allFoil
+        }
     }
 
     /// 카드 한 장이 각 등급일 확률. 모든 등급을 더하면 1 이다.
@@ -518,11 +1075,14 @@ enum PackOpening {
     static func packOdds(setID: String, index: CardIndex, perks: DexPerks = .none) -> [TierOdds] {
         let pool = index.pools[setID] ?? [:]
         guard !pool.isEmpty else { return [] }
+        let era = index.era(setID)
+        let recipe = PackRecipe.forSet(setID, era: era)
 
         var expected: [CardTier: Double] = [:]
 
-        func addWeighted(_ weights: [(tier: CardTier, weight: Int)], slots: Double) {
-            let available = weights.filter { !(pool[$0.tier] ?? []).isEmpty }
+        func addWeighted(_ weights: [(tier: CardTier, weight: Int)], slots: Double,
+                         availablePool: [CardTier: [String]]) {
+            let available = weights.filter { !(availablePool[$0.tier] ?? []).isEmpty }
             let total = available.reduce(0) { $0 + $1.weight }
             guard total > 0, slots > 0 else { return }
             for entry in available {
@@ -531,20 +1091,74 @@ enum PackOpening {
             }
         }
 
-        if (pool[.common] ?? []).isEmpty {
-            // 특별 세트 — 전 슬롯이 가중 추첨이다.
-            addWeighted(PackConfig.weights(PackConfig.specialWeights, perks: perks),
-                        slots: Double(PackConfig.specialPackSize(perks)))
-        } else {
-            // 갓팩을 섞는다. 표시된 확률이 실제 결과와 갈라지지 않으려면 여기에도 들어가야 한다.
-            // 도감 난이도도 이 값에서 나오므로 빼먹으면 난이도가 조용히 어긋난다.
-            let godChance = 1.0 / Double(PackConfig.godPackOneIn)
-            let cards = PackPricing.cardCount(setID: setID, index: index, perks: perks)
-            for (weights, count) in Self.standardSlotTables(era: index.era(setID), perks: perks) {
-                addWeighted(weights, slots: Double(count) * (1 - godChance))
+        let specialChance = recipe.specialVariant.map {
+            1.0 / Double($0.estimatedSimulatorOneIn)
+        } ?? 0
+        let tables = PackConfig.slotTables(setID: setID, era: era)
+        for (slot, table) in zip(recipe.slots, tables) {
+            let standardShare = recipe.standardShare(for: slot.kind)
+            let availablePool = slotPool(setID: setID, slot: slot.kind, pool: pool, index: index)
+            let effectiveWeights = slot.kind == .radiantCollectionHigh
+                ? table.weights
+                : PackConfig.weights(table.weights, perks: perks)
+
+            if let hits = PackRecipe.observedParallelHits(setID: setID, slot: slot.kind) {
+                let parallelChance = Double(hits) / Double(PackRecipe.prismaticParallelRolls)
+                addWeighted(effectiveWeights,
+                            slots: Double(slot.count) * standardShare * (1 - parallelChance), availablePool: availablePool)
+
+                let candidates = prismaticParallelCandidates(
+                    setID: setID,
+                    pool: pool,
+                    masterBallOnly: slot.kind == .reverseHoloHit
+                )
+                let candidateCount = Double(candidates.count)
+                guard candidateCount > 0 else {
+                    addWeighted(effectiveWeights,
+                                slots: Double(slot.count) * standardShare * parallelChance, availablePool: availablePool)
+                    continue
+                }
+                for tier in [CardTier.common, .uncommon, .rare] {
+                    let count = Double(candidates.lazy.filter { $0.tier == tier }.count)
+                    expected[tier, default: 0] += Double(slot.count) * standardShare
+                        * parallelChance * count / candidateCount
+                }
+                continue
             }
-            addWeighted(PackConfig.weights(PackConfig.godWeights, perks: perks),
-                        slots: Double(cards) * godChance)
+            addWeighted(effectiveWeights,
+                        slots: Double(slot.count) * standardShare, availablePool: availablePool)
+        }
+
+        func addRequest(_ request: PackCardRequest, share: Double) {
+            if let id = request.exactCardID,
+               let card = index.card(id), card.setID == setID {
+                expected[card.tier, default: 0] += share
+                return
+            }
+            if let fallback = request.tier.fallbackChain.first(where: {
+                !(pool[$0] ?? []).isEmpty
+            }) {
+                expected[fallback, default: 0] += share
+            }
+        }
+
+        switch recipe.specialVariant?.variant {
+        case .scarletViolet151Demigod:
+            // Every line has the same 2 IR + 1 SIR tier shape.
+            for request in PackRecipe.scarletViolet151Lines[0] {
+                addRequest(request, share: specialChance)
+            }
+        case .prismaticEvolutionsGod:
+            for request in PackRecipe.prismaticEvolutionsGodPack {
+                addRequest(request, share: specialChance)
+            }
+            addRequest(PackCardRequest(tier: .specialArtRare), share: specialChance * 3)
+        case .blackBoltWhiteFlareGod:
+            for request in PackRecipe.blackBoltWhiteFlareGodPack {
+                addRequest(request, share: specialChance)
+            }
+        case .standard, .celebrations, .prismaticEvolutionsDemigod, nil:
+            break
         }
 
         let cardsPerPack = expected.values.reduce(0, +)
@@ -563,6 +1177,17 @@ enum PackOpening {
         }
     }
 
+    static func slotTables(setID: String, era: PackEra, perks: DexPerks)
+        -> [(weights: [(tier: CardTier, weight: Int)], count: Int)] {
+        let recipe = PackRecipe.forSet(setID, era: era)
+        return zip(recipe.slots, PackConfig.slotTables(setID: setID, era: era)).map {
+            let weights = $0.0.kind == .radiantCollectionHigh
+                ? $0.1.weights
+                : PackConfig.weights($0.1.weights, perks: perks)
+            return (weights: weights, count: $0.1.count)
+        }
+    }
+
     /// 칸별 공시. 상점이 이 값을 그대로 표로 그린다.
     static func packSlots(setID: String, index: CardIndex, perks: DexPerks = .none) -> [PackSlot] {
         let pool = index.pools[setID] ?? [:]
@@ -577,12 +1202,7 @@ enum PackOpening {
                 .sorted { $0.tier.rank > $1.tier.rank }
         }
 
-        if (pool[.common] ?? []).isEmpty {
-            let weights = PackConfig.weights(PackConfig.specialWeights, perks: perks)
-            return [PackSlot(id: 0, count: PackConfig.specialPackSize(perks),
-                             guaranteed: nil, odds: odds(weights))]
-        }
-        return Self.standardSlotTables(era: index.era(setID), perks: perks)
+        return Self.slotTables(setID: setID, era: index.era(setID), perks: perks)
             .enumerated().map { offset, table in
             PackSlot(id: offset, count: table.count, guaranteed: nil, odds: odds(table.weights))
         }
@@ -591,7 +1211,8 @@ enum PackOpening {
     /// 히트 슬롯만의 등급 분포. 뽑기 내부와 상세 표시가 같은 값을 쓰도록 남겨 둔다.
     static func hitOdds(setID: String, index: CardIndex) -> [(tier: CardTier, probability: Double)] {
         let pool = index.pools[setID] ?? [:]
-        let weights = (pool[.common] ?? []).isEmpty
+        let recipe = PackRecipe.forSet(setID, era: index.era(setID))
+        let weights = recipe.baseVariant == .celebrations
             ? PackConfig.specialWeights
             : PackConfig.rareWeights(index.era(setID))
         let available = weights.filter { !(pool[$0.tier] ?? []).isEmpty }
@@ -615,11 +1236,12 @@ enum PackOpening {
     static func hitTier(
         available pool: [CardTier: [String]],
         era: PackEra = .scarletViolet,
+        baseWeights: [(tier: CardTier, weight: Int)]? = nil,
         perks: DexPerks = .none,
         pity: Int = 0,
         using generator: inout some RandomNumberGenerator
     ) -> CardTier {
-        var weights = PackConfig.weights(PackConfig.rareWeights(era), perks: perks)
+        var weights = PackConfig.weights(baseWeights ?? PackConfig.rareWeights(era), perks: perks)
         // 천장 — 레어를 후보에서 빼 RR 이상만 남긴다. 세트에 RR 이상이 없으면
         // (1999년 세트 중 일부) 빼지 않는다. 뺐다가 후보가 비면 슬롯이 사라진다.
         if pity >= PackConfig.pityThreshold {
@@ -674,5 +1296,18 @@ enum PackOpening {
             return source[Int(generator.next(upperBound: UInt64(source.count)))]
         }
         return nil
+    }
+
+    /// Picks from one physical sheet while preserving the pack-wide duplicate
+    /// avoidance used by ordinary tier pools.
+    private static func pick(
+        from ids: [String],
+        avoiding used: Set<String>,
+        using generator: inout some RandomNumberGenerator
+    ) -> String? {
+        guard !ids.isEmpty else { return nil }
+        let fresh = ids.filter { !used.contains($0) }
+        let source = fresh.isEmpty ? ids : fresh
+        return source[Int(generator.next(upperBound: UInt64(source.count)))]
     }
 }

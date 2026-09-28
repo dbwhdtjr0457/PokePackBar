@@ -16,6 +16,56 @@ read_when:
 
 ## 판정·데이터
 
+- **렌더 성공과 홀로 가시성을 다른 상태로 관리한다.** 0.11.7의 재질 검사와 큰 기울기 비교는
+  통과했지만, 240pt에서 Amazing·Mega Attack·SAR 등의 효과가 약했다. Mega Attack의 중복
+  opacity/softLight, SAR의 각도 증폭 누락, 흰 바탕 위 additive-only 무늬가 원인이었다.
+  `audit_foil_visibility.py`는 정면·±0.28·기존 큰 기울기 10각도에서 `renderStatus`,
+  `signalStatus`, `visualStatus`를 분리한다. 실제 PNG를 정지/1% 반응으로 변이시켜 같은
+  측정 경로가 거부하는지 검사한다. 델타종은 그림 전체가 아니라 등록된 대상 윤곽으로 측정한다.
+  작은 도장의 낮은 면적 점수는 육안 검토 대상으로 남기며, 점수를 위해 마스크를 넓히지 않는다.
+  강도 증가로 나타난 MUR 격자·BREAK 검은 격자는 별도 렌더에서 재검토하고 낮췄다.
+  통과 수나 변화량을 실물 정밀도·전 카드 육안 검증의 근거로 표현하지 않는다.
+
+- **홀로 분류가 맞아도 거시적인 가짜 무늬를 회귀로 검사한다.** 2026-09-28에는 240pt 네이티브
+  비교에서 엠보싱의 긴 선분·주기적인 법선이 먼지/전선처럼 보이고, Cosmos의 흰 원이 스캔에
+  이미 있는 무늬와 중첩되는 결함을 발견했다. 분류 테스트만으로는 이런 결과를 잡지 못했다.
+  일반 회절 시트와 실제 요철 계열을 분리하고, 미세 요철은 1pt 미만으로 제한한다. Cosmos는
+  원본의 작은 특징만 세 그룹으로 재조명하며, 위치를 움직이거나 평면/긴 잉크 경계에 무늬를
+  추가하지 않는다. `FoilOpticsAudit`에 그룹 합집합/중복 방지·각도 반응·재질 격리·법선 분산을
+  검사하고 이전 디스패치/거친 요철/주기 법선/가짜 Cosmos 폴백 다섯 변이를 거부하는 가드를
+  추가했다. `audit_optical_response.py`의 전체 재질 조합 실제 크기 렌더와 36각도 검사는 별도다.
+  렌더 성공·픽셀 변화량을 실물 정확성 판정으로 부르지 않는다. 출처·근사 범위는
+  `foil-optics-2026-09-28.md`에 기록한다.
+
+- **홀로 마스크는 팩 이름이나 등급이 아니라 실제 표시한 원본의 좌표를 소유한다.** 2026-09-23
+  30주년 그림 시작점은 약 9.9%인데 기존 기본값은 15.5%였다. 같은 복각 팩에 EX·DP·e-Reader
+  프레임이 섞이고, 구형 시크릿은 UR이어도 전면 그림이 아니었다. 18,949개 원본에 해시와
+  개별 그림 영역을 기록하고, 곡선 프레임·실제 인쇄 글자 윤곽을 함께 보관한다. 좌표가 없는
+  에너지에 가짜 그림 구멍을 만들지 않는다. 원본이 바뀌면 해시 불일치로 패키징을 중단한다.
+  `aspectFit` 이미지와 고정 비율 홀더는 다르다. 600×825 이미지는 240×335 홀더에서 높이가
+  330이고 위아래 2.5pt가 남으므로, 효과를 홀더가 아닌 **Image의 overlay**에 붙인다.
+  그림 분할·엠보싱 캐시도 카드 ID만으로 재사용하지 않고 표시한 이미지 객체와 crop을 키에
+  포함한다. 회귀 가드는 `FoilGeometryTests`, 실행 바이너리의 `--audit-foil-geometry`,
+  전체 실제 판형을 검사하는 `scripts/audit_foil_alignment.py`다. CLI는 세이브를 열지 않는다.
+  자동 경계 측정과 원본 기반 부조는 **실물 공장 마스크를 확보했다는 뜻이 아니다**. 특히 일반
+  스캔에 없는 리버스 전용 도장과 실제 엠보싱 미세 구조는 근사라고 구분해서 보고한다.
+
+- **업무 한 건에 저장 경계를 하나만 둔다.** 2026-09-23 로컬 개선에서 구매의 차감과 지급,
+  개봉의 팩 소모와 카드 지급, 오리파와 도감 보상의 중첩 저장을 함께 점검했다. 성공 후 상태만
+  보던 테스트는 중간 종료·디스크 오류를 놓쳤다. 외부 트랜잭션에서 한 번만 atomic replace 하고,
+  실패하면 마지막 확정 상태로 되돌리며 UI 성공 결과도 취소한다. 정상 이전 상태 8개를 보관한다.
+  `--audit-local`은 실제 파일시스템 오류, 주입 오류, 손상 복구, 복구 불가 원본 보호와 미래 버전
+  세이브의 자동 다운그레이드 거부를 실행한다. 읽기 실패를 빈 세이브로 덮어쓰지 않는다.
+
+- **가격 데이터 교체도 입력 경계에서 완전성을 검증한다.** 대표 카드 가격이 있어도 판형별
+  사전이 비어 있으면 수만 개 판형이 조용히 대표값으로 돌아간다. 별도 스냅샷 가져오기는 숫자·통화·
+  판형 키와 기존 카드/판형/팩 가격의 포함 여부를 함께 검증한 뒤 파일과 메모리 쌍을 교체한다.
+  실패한 가져오기 및 초기화의 이전 파일 보존을 `--audit-local`에서 실제로 실행한다.
+
+- **재질 매핑과 실 렌더러를 함께 검사한다.** 세대/판형 분류만 올바르게 연결해도 화면이 동일한
+  반사판으로 보일 수 있다. 240pt에서 재질 조합 106개를 두 각도로 렌더링해 금색·무채색 팔레트와
+  국소 반응을 확인했다. 이미지 기반 요철 및 Vision 윤곽은 추정이므로 실물 측정 마스크라고 부르지 않는다.
+
 - **옵셔널 tautology.** 옵셔널 필드라도 *생산자가 항상 채우면* `x != nil` 은 항상 참이다. "값이 있나"는
   의미값으로 검사한다(예: `totalTokens > 0`, 또는 진짜 nil 가능한 필드 `activeBlock`). — weekTotal 회귀(#56).
 - **JSON `null` 은 "값 있음"이 아니다.** `obj["x"] != nil` 은 `NSNull` 에도 참이라 `intValue` 가 0 을 돌려주고,
@@ -456,6 +506,18 @@ read_when:
 
 ## 렌더 기하 (스프라이트·이미지)
 
+- **성공한 HTTP 응답·`_hires` 파일명은 고해상도 보장이 아니다.** HD 파일이 없을 때 작은 그림으로
+  폴백한 뒤 `CardImageView.task`가 캐시/미리받기 그림을 보고 즉시 종료해 확대 화면도 계속 흐렸다.
+  과거 테스트는 응답·표시 유무만 보고 실제 픽셀 수와 낮은 해상도→원본 전환을 검사하지 않았다.
+  2026-09-23 로컬판은 원본 라이브러리를 우선하고, 상세 캐시/응답의 실제 치수·디코딩을 검사한다.
+  그리드만 360px로 축소하고 상세는 원본을 읽는다. 썸네일은 임시 표시일 뿐 업그레이드를 막지 않는다.
+  같은 부류로 팩 아트·미리받기·메뉴바·홀로 마스크 경로도 점검했다. Classic Collection의 중복 번호
+  네 장과 Unown `?`의 특수 파일명은 명시적인 원본/상품 매핑으로 복구했다. BREAK/LEGEND의 가로 원본은
+  디스크에서 변형하지 않고 표시할 때만 90도 회전해 잘림·늘어짐을 막는다.
+  회귀 가드: `OfflineArtTests`, `--audit-image-library`, 원본 SHA-256/치수/전수 파일 검사,
+  설치 스크립트의 완전한 카탈로그 커버리지 검사. 픽셀 수 검사는 오래된 스캔의 광학적 선명도까지
+  보장하지 않는다. 흐린 원본의 디테일을 인위적으로 생성하거나 단순 확대해서 해결한 것으로 취급하지 않는다.
+
 - **`.resizable()` + `.frame(w:h:)` 는 "맞춤"이 아니라 "늘여 채움"이다.** 대조 없이 정사각 프레임에 넣으면
   비정사각 원본은 그대로 왜곡된다. 이 부류가 오래 안 잡힌 이유가 핵심이다 — **정적 자산이 전부 정사각이라
   증상이 안 났다**(종 PNG 96×96, 아이템 30×30). 왜곡은 캔버스가 종마다 크롭된 **Gen-V 움직이는 GIF**
@@ -550,3 +612,110 @@ read_when:
   사라진다), 확정 카드에는 실제로는 나올 수 없는 $72,949 가 적혔다. 통로마다 **담을 수 있는
   최대**를 알고, 물질 보상 전체에도 천장을 둔다(여기서는 예전 계산의 천장인 홈 세트 팩 10개).
   천장에 부딪혀 남는 것은 **버린다** — 잔돈을 다른 통로로 흘리면 그 통로의 뜻이 사라진다.
+
+## 복각/신규 희귀도를 기존 재질 이름으로만 접으면 물리적 차이를 잃는다
+
+- 30주년 Classic이 25주년 `celebrationsClassic` 소장 키를 재사용하면서 은색 테두리까지
+  상속했다. Pikachu Rare는 AR, RGB는 FUR로 접혀 다른 홀로가 같은 표면이 됐다.
+  **소장 키는 유지하고 광학 처리를 별도로 분리**한다. 복각의 실제 금색 경계는 원본
+  해시·크기에 결합하고, 그림/번개/로고가 테두리를 가린 부분까지 사각 띠로 덮지 않는다.
+- Ascended Heroes는 일반 reverse만 구현되어 카드별 Energy/Ball/R 280판형 구분이 없었다.
+  exact collector number + 상품 ID로 문양과 가격을 연결한다. 트레이너나 미등재 카드에
+  임의 문양을 주지 않는다. 표현만 추가하고 실제 개봉에서 얻을 수 없는 죽은 판형이 되지
+  않도록 5,000팩 재현 추첨으로 140쌍 도달성을 검사한다. 소장 키가 바뀌는 추첨 규칙은 버전을 올린다.
+- 가드: `ExpansionFoil.verify`, `ExpansionFoilTests`, `build_expansion_foil.py --verify`,
+  `audit_expansion_foil.py`. 25주년 비회귀, 30개 금색 마스크, 852개 원본 연결,
+  6종 볼/R 문양, 280건 판형 가격, 17개 재질 설정을 따로 확인한다.
+- 눈에 보이는 반사는 빌드/픽셀 변화량만으로 합격 처리하지 않는다. 240pt 네이티브 출력에서
+  긁힌 선처럼 보이던 FUR를 더 작은 원본 윤곽 기반 입자로 조정했다. 실물 엠보싱의 완전
+  복제 여부는 별도이며, 원판/각도별 실물 자료가 없는 부분은 근사라고 기록한다.
+
+## 재질 이름·렌더 성공은 영역과 실물 형태의 검증이 아니다 (0.11.3)
+
+- 금색 뮤 `cel25-25`가 일반 홀로 키에 묶여 금색 재질까지 잃었다. **소장 키와 광학 재질을
+  분리**해 기존 `#holo` 소장·시세를 유지하면서 금색 재질을 선택한다. 같은 세트의 일반 뮤와
+  명시적인 종이 판형은 바꾸지 않는다. 풀아트 피카츄 `cel25-5`는 일반 그림 창이 아니라
+  원본 안쪽 그림 전체·둥근 모서리에 맞추고 노란 종이 프레임은 제외한다.
+- Neo Shining 8종·δ 일반 홀로 30종은 그림 창 전체를 반사했다. 원본 해시·크기에 결합된
+  카드별 실루엣과 별도 금속 경계를 사용한다. 자동 전경 추출은 날개 누락/배경 탑 포함이
+  실제로 발생해 38개를 직접 검토·보정했다. **마스크 없음/구버전은 전체 창 반사의 근거가
+  아니다.** 등록 필수 카드에는 그 폴백을 금지한다. 동일 ID의 리버스에는 원본 홀로 규칙을
+  전파하지 않는다. 생산용 포일 원판과 동일하다는 보장은 별개다.
+- VSTAR·샤이니 106종은 패턴 이름이 있어도 미세 요철 렌더러에서는 빠졌다. 6계열을
+  `FoilMicroRelief`로 직접 연결하고 낡은 굵은 곡선/별 렌더를 우회한다. 240pt 실제 크기에서
+  정면의 거친 먼지 같은 음영을 재조정하고, 기울 때 국소 밝은 능선이 살아나도록 한다.
+- Ascended 문양은 임의 선 도형 대신 확인 가능한 판형 이미지의 다중 참조 윤곽으로 교체한다.
+  272개 등록과 8개 자료 누락을 구별하고, 누락은 발명한 문양으로 숨기지 않는다. EX 로고는
+  가짜 시스템 글꼴을 실제 10개 확장 로고로 교체한다. **인쇄 로고를 반사의 알파 마스크에
+  넣으면 검은 덩어리가 되고 이동 광원에 넣으면 사라진다.** 인쇄 레이어를 소재와 분리한다.
+  EX 980개의 개별 실물 위치는 아직 측정하지 않았으므로 프레임 상대 위치임을 명시한다.
+- 진단 목록도 제품 추첨과 별도 복사한 조건 때문에 리버스 71개 누락/볼 49개 과포함이 있었다.
+  `FoilAuditPrintings`와 실제 볼 후보 함수를 사용한다. 전체 목록 20,318행과 유효 볼 471개를
+  검사한다. 렌더 성공은 실물 일치 승인으로 집계하지 않는다.
+- 가드: `ConfirmedFoilAudit.verify`, `FoilSubjectMasks.verify`, `PhysicalFoilMarks.verify`,
+  `audit_subject_masks.py`, `build_physical_foil_marks.py --verify`, 해당 XCTest 파일들.
+  조립된 앱에서도 두 네이티브 진단을 실행해 번들 누락을 잡는다. 현재 CLI 툴체인은 XCTest가
+  없어 테스트 스위트를 실행하지 못하므로 네이티브 진단·렌더 결과와 명확히 구분한다.
+
+### 2026-09-23 — Lettered collector numbers and missing market quotes
+
+- RGB Mew had no TCGplayer `marketPrice`; the numeric-only importer also mapped unsupported
+  collector numbers to a shared `None` key. The catalogue could include cards whose prices
+  never reached either the representative or exact-printing lookup. XCTest's all-card test
+  was unavailable on this CLI-only Mac, and the native catalogue/foil gates did not inspect prices.
+- Normalize `R/RGB`, `G/RGB`, `B/RGB` separately; never join missing/unsupported numbers.
+  Use curated same-expansion product IDs for reprints and Ascended energy/patterned parallels.
+  Skip ambiguous joins and null/invalid prices; never substitute seller asks or graded prices.
+- Reviewed English raw/ungraded completed-sales references fill only explicitly curated gaps.
+  Date, URL and reference kind travel with both representative and exact prices. Current or
+  retained market prices take precedence. UI labels estimates rather than claiming TCGplayer.
+- Refresh from live endpoints without the catalogue asset cache, update representative prices
+  only from their canonical finish, and retain unavailable quotes with their original dates.
+  The full importable card/pack pair stays separate from user save state.
+- Guards: `scripts/test_update_printing_prices.py` covers reachable letter/null/duplicate/reprint/
+  parallel/reference branches. `--audit-price-snapshot` checks packaged RGB prices, provenance,
+  sale lookup and real snapshot validation before every local build is installed.
+
+### 2026-09-23 — New expansions silently fell back to English names
+
+- Catalogue importers added 1,283 cards without extending `card-names-ko.json`. All card-label
+  callers already used `displayName(language)`, so a missing entry silently selected English.
+  The existing XCTest coverage assertion was unavailable with this CLI-only toolchain; the
+  packaging check verified the JSON file existed, not that it covered the current catalogue.
+- Swept all 18,949 card IDs, including supplemental Trainer Galleries, Shiny Vault and
+  anniversary reprints. Preserve all 17,666 previous names. Reuse only unambiguous same-name
+  translations, compose Pokemon names from known species, and require reviewed mappings for
+  new Trainers/Items/Energy. Preserve ex/EX, gender, star marks and blank owner fields.
+- `korean-name-overrides.json` records primary Korean card/product URLs separately from
+  secondary references and reviewed species composition. `korean-name-additions.json` records
+  the exact source for each addition. No fuzzy illustrator join or machine translation is used.
+- Build guards now run importer regression tests, full-catalogue name validation and the
+  packaged executable's `--audit-korean-names`. The native audit follows the actual decode and
+  display-name path before WalletStore starts and rejects one-missing and empty-name-table
+  mutations. Python also removes all 1,283 additions to reproduce the original coverage failure.
+- Korean labels change only with the Korean language setting. Original image lettering,
+  foil geometry, prices and saved collections are not changed by this repair.
+
+### 2026-09-23 — Successful foil renders still contained invented optical geometry (0.11.6)
+
+- Actual 240pt native renders exposed coarse colored scratches in SAR/gold and large diagonal
+  rainbow bars on Neo Destiny Shining. Existing tests checked rarity, masks and successful
+  rendering, not the shape of the moving reflection. Print luminance was also being treated as
+  measured relief height, amplifying ink edges rather than proving an emboss plate.
+- Five evaluate/fix/render cycles: finer SAR ridges revealed two generic swirl centres;
+  removing those exposed continuous scanline-like rows; jittered, locally correlated subpixel
+  ridges removed the rows. Gold now uses shorter warm facets, with denser granular MUR rather
+  than long strokes. Neither SAR nor gold replaces relief normals with printed brightness.
+- Neo Shining's eight registered subjects use their own achromatic grain material. The same
+  `refractor` pattern elsewhere must NOT inherit that treatment. Every production dispatch,
+  texture suppression and flash branch now passes card identity. Coverage masks are unchanged.
+- `--audit-foil-optics` sweeps actual catalogue printings, checks paper exclusions, palettes,
+  subpixel facet scale and axial direction blending. It rejects omitted-cardID, global-refractor
+  and old-coarse-facet mutations. The packaged binary runs this gate before installation.
+- `audit_optical_response.py` renders the real SwiftUI card at 240pt over six angles or a
+  36-frame sweep and groups by actual optical material as well as foil spec. Render success and
+  pixel deltas are explicitly NOT physical approval. XCTest wrappers remain for full Xcode.
+- Unresolved: weak ordinary Celebrations response, coarse legacy engraved full arts, oversized
+  Cosmos circles/legacy diffraction bars, exact factory emboss plates and reference-limited
+  new treatments. The five-iteration visual budget stops without claiming
+  those issues were resolved. No masks, artwork, prices, pack logic or save schema changed.

@@ -1,0 +1,11 @@
+{
+  "cel30-26": {"reference":"https://www.30th.pokemon-card.com/images/m6a/cards/m6a_020_mgb734dr.png","artGrainStrength":0.46,"observation":"Large fans cross upside-down Pikachu and lower stock; blue sky carries finer fragments."},
+  "cel30-29": {"reference":"https://billsarchive.com/assets/30th-pikachu/p023.webp","artGrainStrength":0.60,"cyanBackgroundOnly":true,"observation":"Cyan background has dense confetti, yellow body/flowers are not a solid confetti plate; lower fans are visible in the additional JP scan."},
+  "cel30-35": {"reference":"https://billsarchive.com/assets/30th-pikachu/p029.webp","artGrainStrength":0.50,"observation":"Leaf background has dense fragments, flat yellow body is quieter; two lower fans and foil frame/logo are visible."},
+  "cel30-36": {"reference":"https://www.30th.pokemon-card.com/images/m6a/cards/m6a_030_mt8ktxb9.png","artGrainStrength":0.46,"observation":"Fans cross tail/body/rail, fine blue background fragments; lower-right fan is clear in official render."},
+  "cel30-40": {"reference":"https://www.30th.pokemon-card.com/images/m6a/cards/m6a_034_yuxf6flm.png","artGrainStrength":0.24,"observation":"Dense printed illustration must not be mistaken for emboss geometry; lower-right radial fans are explicit in official render."},
+  "cel30-43": {"reference":"https://billsarchive.com/assets/30th-pikachu/p037.webp","artGrainStrength":0.45,"observation":"Beach/sea background fragments and mild body lines; lower-right fans present despite flat earlier photo."},
+  "cel30-49": {"reference":"https://www.30th.pokemon-card.com/images/m6a/cards/m6a_043_u68bbz2j.png","artGrainStrength":0.45,"observation":"Fans cross head/tail/body and the lower panel; the earlier front photograph hid the lower foil."},
+  "cel30-50": {"reference":"https://www.30th.pokemon-card.com/images/m6a/cards/m6a_044_x4um6kfj.png","artGrainStrength":0.46,"observation":"Sky/grass fragments differ from yellow body; lower panel fans visible in official render."},
+  "cel30-51": {"reference":"https://billsarchive.com/assets/30th-pikachu/p045.webp","artGrainStrength":0.44,"observation":"Green/blue background fragments, quieter yellow lightning/body, explicit lower fans and fragmented rim/logo."}
+}

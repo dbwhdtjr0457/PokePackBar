@@ -1,6 +1,12 @@
 import XCTest
 @testable import PokePackBar
 
+/// `next(upperBound:)` maps the raw value 1 to the lowest bucket without
+/// entering its rejection loop (a raw zero would be rejected forever).
+private struct AlwaysLowestBucketGenerator: RandomNumberGenerator {
+    mutating func next() -> UInt64 { 1 }
+}
+
 final class PackOpeningTests: XCTestCase {
 
     /// 계층별 장수를 지정해 인덱스를 만든다.
@@ -34,12 +40,33 @@ final class PackOpeningTests: XCTestCase {
 
     func testBundledIndexLoadsWithExpectedSets() throws {
         let index = try bundledIndex()
-        XCTAssertEqual(index.sets.count, 122)
-        XCTAssertEqual(index.cards.count, 17_666)
+        XCTAssertEqual(index.sets.count, 127)
+        XCTAssertEqual(index.cards.count, 18_949)
         // 세트 ID 가 카드 ID 접두사와 맞아야 풀이 구성된다.
         for s in index.sets {
             XCTAssertFalse((index.pools[s.id] ?? [:]).isEmpty, "\(s.id) 풀이 비었다")
         }
+    }
+
+    func testOfficialBlackWhiteRareVictiniCardsAreNotLeftInTheRarePool() throws {
+        let index = try bundledIndex()
+        for id in ["rsv10pt5-172", "zsv10pt5-171"] {
+            let card = try XCTUnwrap(index.card(id))
+            XCTAssertEqual(card.tier, .blackWhiteRare, id)
+            XCTAssertEqual(card.rarity, "Black White Rare", id)
+            XCTAssertFalse(index.pools[card.setID]?[.rare]?.contains(id) == true, id)
+            XCTAssertTrue(index.pools[card.setID]?[.blackWhiteRare]?.contains(id) == true, id)
+        }
+    }
+
+    func testWhiteFlareArchenIsRestoredToTheIllustrationRarePool() throws {
+        let index = try bundledIndex()
+        let card = try XCTUnwrap(index.card("rsv10pt5-131"))
+        XCTAssertEqual(card.tier, .artRare)
+        XCTAssertEqual(card.rarity, "Illustration Rare")
+        XCTAssertTrue(index.pools["rsv10pt5"]?[.artRare]?.contains(card.id) == true)
+        XCTAssertEqual(index.pools["rsv10pt5"]?[.artRare]?.count, 70)
+        XCTAssertEqual(index.pools["zsv10pt5"]?[.artRare]?.count, 69)
     }
 
     /// 계층 문자열이 알 수 없는 값이면 조용히 섞지 않고 건너뛴다.
@@ -114,18 +141,21 @@ final class PackOpeningTests: XCTestCase {
         XCTAssertEqual(PackEra.of(released: ""), .scarletViolet)
     }
 
-    /// common 이 없는 특별 세트는 작은 팩으로 뽑는다.
-    ///
-    /// 일반 구성을 적용하면 폴백이 아홉 슬롯을 전부 rare 로 채워, 25장짜리 세트에서
-    /// 한 팩이 세트의 40% 를 쏟아내고 팩 안의 등급 차이도 사라진다.
-    func testSpecialSetYieldsSmallPackWithTierVariety() {
-        let index = makeIndex("cel", [.rare: 12, .doubleRare: 12, .superRare: 1])
+    /// Celebrations만 4장 all-foil 전용 레시피를 쓴다. common 유무로 특별팩을 추측하지 않는다.
+    func testCelebrationsYieldsFourCardAllFoilPack() {
+        let index = makeIndex("cel25", [.rare: 12, .doubleRare: 12, .superRare: 1],
+                              released: "2021/10/08")
         var tiers: Set<CardTier> = []
         for seed in 1...200 {
             var g = SeededGenerator(seed: UInt64(seed))
-            let pack = PackOpening.draw(setID: "cel", index: index, alreadyOwned: [], using: &g)
+            var pity = 0
+            let opened = PackOpening.draw(setID: "cel25", index: index, alreadyOwned: [],
+                                          pity: &pity, using: &g)
+            let pack = opened.cards
             XCTAssertEqual(pack.count, PackConfig.specialPackSize)
             XCTAssertLessThanOrEqual(pack.count, 4, "특별 세트 팩이 세트를 쏟아내면 안 된다")
+            XCTAssertEqual(opened.variant, .celebrations)
+            XCTAssertTrue(opened.slotResults.allSatisfy { $0.finishHint == .allFoil })
             tiers.formUnion(pack.map(\.tier))
         }
         XCTAssertGreaterThan(tiers.count, 1, "팩 안에 등급 차이가 있어야 한다")
@@ -252,95 +282,413 @@ final class PackOpeningTests: XCTestCase {
                        "한 팩에 확정 칸이 둘이면 마지막 결과가 카운터를 정한다")
     }
 
-    // MARK: 갓팩
+    // MARK: 세트 전용 변형 팩
 
-    /// 갓팩은 전 칸이 레어 이상이다. 한 장이라도 커먼이 섞이면 갓팩이 아니다.
-    func testGodPackHoldsOnlyRareOrBetter() {
-        let index = makeIndex("s", [.common: 30, .uncommon: 20, .rare: 10,
-                                    .doubleRare: 6, .ultraRare: 3])
-        var found = 0
-        for seed in UInt64(1)...3000 {
-            var g = SeededGenerator(seed: seed)
-            var pity = 0
-            let pack = PackOpening.draw(setID: "s", index: index, alreadyOwned: [],
-                                        pity: &pity, using: &g)
-            guard pack.isGodPack else { continue }
-            found += 1
-            XCTAssertEqual(pack.cards.count, PackConfig.cardsPerPack(.scarletViolet))
-            XCTAssertTrue(pack.cards.allSatisfy { $0.tier.rank >= CardTier.rare.rank },
-                          "seed \(seed): 갓팩에 레어 미만이 섞였다")
-            XCTAssertEqual(pity, 0, "갓팩은 천장을 초기화한다")
+    func testOnlyConfirmedEnglishSpecialPackSetsCanRollSpecialVariants() {
+        XCTAssertEqual(PackRecipe.forSet("sv3pt5", era: .scarletViolet)
+            .specialVariant?.variant, .scarletViolet151Demigod)
+        XCTAssertEqual(PackRecipe.forSet("sv8pt5", era: .scarletViolet)
+            .specialVariant?.variant, .prismaticEvolutionsGod)
+        for id in ["zsv10pt5", "rsv10pt5"] {
+            XCTAssertEqual(PackRecipe.forSet(id, era: .scarletViolet)
+                .specialVariant?.variant, .blackBoltWhiteFlareGod, id)
         }
-        XCTAssertGreaterThan(found, 0, "3000번 뽑는 동안 갓팩이 한 번도 안 나왔다")
+        for id in ["sv1", "sv10", "swsh12pt5", "base1", "cel25"] {
+            XCTAssertNil(PackRecipe.forSet(id, era: .scarletViolet).specialVariant, id)
+        }
     }
 
-    /// 공시한 확률과 실제 등장 빈도가 맞아야 한다. 표시만 하고 다르게 굴리면 그게 조작이다.
-    func testGodPackRateMatchesTheDisclosedNumber() {
-        let index = makeIndex("s", [.common: 30, .uncommon: 20, .rare: 10, .doubleRare: 6])
-        let trials = 30_000
-        var gods = 0
-        var g = SeededGenerator(seed: 20260828)
+    func testSpecialVariantRatesAreExplicitSimulatorEstimates() {
+        XCTAssertEqual(PackRecipe.estimated151DemigodOneIn, 1_300)
+        XCTAssertEqual(PackRecipe.estimatedPrismaticGodOneIn, 2_500)
+        XCTAssertEqual(PackRecipe.estimatedBlackBoltWhiteFlareGodOneIn, 2_500)
+        XCTAssertNotEqual(PackRecipe.estimated151DemigodOneIn,
+                          PackRecipe.estimatedPrismaticGodOneIn)
+    }
+
+    func testPrismaticParallelRatesUseThePublishedObservedSample() {
+        XCTAssertEqual(PackRecipe.prismaticParallelRolls, 10_000)
+        XCTAssertEqual(PackRecipe.observedPrismaticPokeBallHits, 3_310)
+        XCTAssertEqual(PackRecipe.observedPrismaticMasterBallHits, 492)
+        XCTAssertEqual(PackRecipe.observedParallelHits(
+            setID: "sv8pt5", slot: .reverseHolo
+        ), 3_310)
+        XCTAssertEqual(PackRecipe.observedParallelHits(
+            setID: "sv8pt5", slot: .reverseHoloHit
+        ), 492)
+        XCTAssertNil(PackRecipe.observedParallelHits(setID: "sv3pt5", slot: .reverseHolo))
+    }
+
+    func testBlackBoltWhiteFlareParallelRatesUseThePublishedObservedSample() {
+        XCTAssertEqual(PackRecipe.observedBlackWhitePokeBallHits, 3_056)
+        XCTAssertEqual(PackRecipe.observedBlackWhiteMasterBallHits, 514)
+        for setID in ["rsv10pt5", "zsv10pt5"] {
+            XCTAssertEqual(PackRecipe.observedParallelHits(
+                setID: setID, slot: .reverseHolo
+            ), 3_056, setID)
+            XCTAssertEqual(PackRecipe.observedParallelHits(
+                setID: setID, slot: .reverseHoloHit
+            ), 514, setID)
+            XCTAssertNil(PackRecipe.observedParallelHits(
+                setID: setID, slot: .rare
+            ), setID)
+        }
+    }
+
+    func testPrismaticParallelCandidateListsMatchThePhysicalChecklists() throws {
+        let index = try bundledIndex()
+        let pool = try XCTUnwrap(index.pools["sv8pt5"])
+        let pokeBall = PackOpening.prismaticParallelCandidates(
+            setID: "sv8pt5",
+            pool: pool,
+            masterBallOnly: false
+        )
+        let masterBall = PackOpening.prismaticParallelCandidates(
+            setID: "sv8pt5",
+            pool: pool,
+            masterBallOnly: true
+        )
+        XCTAssertEqual(pokeBall.count, 100)
+        XCTAssertEqual(masterBall.count, 67)
+        XCTAssertTrue(masterBall.allSatisfy {
+            guard let number = Int($0.id.split(separator: "-").last ?? "") else { return false }
+            return (1...90).contains(number)
+        })
+    }
+
+    func testBlackBoltWhiteFlareParallelCandidatesMatchThePhysicalChecklists() throws {
+        let index = try bundledIndex()
+        for setID in ["rsv10pt5", "zsv10pt5"] {
+            let pool = try XCTUnwrap(index.pools[setID])
+            let pokeBall = PackOpening.prismaticParallelCandidates(
+                setID: setID,
+                pool: pool,
+                masterBallOnly: false
+            )
+            let masterBall = PackOpening.prismaticParallelCandidates(
+                setID: setID,
+                pool: pool,
+                masterBallOnly: true
+            )
+
+            XCTAssertEqual(pokeBall.count, 80, setID)
+            XCTAssertEqual(masterBall.count, 72, setID)
+            XCTAssertTrue(pokeBall.allSatisfy {
+                guard let number = Int($0.id.split(separator: "-").last ?? "") else {
+                    return false
+                }
+                return (1...86).contains(number)
+                    && [CardTier.common, .uncommon, .rare].contains($0.tier)
+            }, setID)
+            XCTAssertTrue(masterBall.allSatisfy {
+                guard let number = Int($0.id.split(separator: "-").last ?? "") else {
+                    return false
+                }
+                return (1...78).contains(number)
+                    && [CardTier.common, .uncommon, .rare].contains($0.tier)
+            }, setID)
+        }
+    }
+
+    func testPrismaticStandardPacksYieldObservedParallelFinishes() throws {
+        let index = try bundledIndex()
+        var generator = SeededGenerator(seed: 0x8_5_5)
+        var standardPacks = 0
+        var pokeBallHits = 0
+        var masterBallHits = 0
         var pity = 0
-        for _ in 0..<trials {
-            if PackOpening.draw(setID: "s", index: index, alreadyOwned: [],
-                                pity: &pity, using: &g).isGodPack { gods += 1 }
+
+        for _ in 0..<25_000 {
+            let opened = PackOpening.draw(setID: "sv8pt5", index: index,
+                                          alreadyOwned: [], pity: &pity,
+                                          using: &generator)
+            guard opened.variant == .standard else { continue }
+            standardPacks += 1
+            pokeBallHits += opened.cards.filter { $0.finish == .pokeBall }.count
+            let masterBalls = opened.cards.filter { $0.finish == .masterBall }
+            masterBallHits += masterBalls.count
+            for card in masterBalls {
+                let number = Int(card.id.split(separator: "-").last ?? "")
+                XCTAssertNotNil(number)
+                XCTAssertTrue((1...90).contains(number ?? 0), card.id)
+                XCTAssertTrue([CardTier.common, .uncommon, .rare].contains(card.tier), card.id)
+            }
         }
-        let expected = Double(trials) / Double(PackConfig.godPackOneIn)
-        // 30,000번이면 표준편차가 10 남짓이라 ±40% 밖으로 벗어나면 확률이 어긋난 것이다.
-        XCTAssertGreaterThan(Double(gods), expected * 0.6, "갓팩이 공시보다 드물다 (\(gods)회)")
-        XCTAssertLessThan(Double(gods), expected * 1.4, "갓팩이 공시보다 잦다 (\(gods)회)")
+
+        XCTAssertGreaterThan(standardPacks, 24_900)
+        XCTAssertEqual(Double(pokeBallHits) / Double(standardPacks), 0.331,
+                       accuracy: 0.02)
+        XCTAssertEqual(Double(masterBallHits) / Double(standardPacks), 0.0492,
+                       accuracy: 0.01)
     }
 
-    /// 확률표에도 갓팩이 섞여 있어야 한다. 뽑기에만 넣으면 표가 실제보다 짜게 나온다.
-    func testOddsAccountForGodPacks() {
+    func test151DemigodLinesAreExactAtomicThreeCardReplacements() {
+        let expected = [
+            ["sv3pt5-166", "sv3pt5-167", "sv3pt5-198"],
+            ["sv3pt5-168", "sv3pt5-169", "sv3pt5-199"],
+            ["sv3pt5-170", "sv3pt5-171", "sv3pt5-200"],
+        ]
+        XCTAssertEqual(PackRecipe.scarletViolet151Lines.map { $0.compactMap(\.exactCardID) },
+                       expected)
+        for line in PackRecipe.scarletViolet151Lines {
+            XCTAssertEqual(line.map(\.tier), [.artRare, .artRare, .specialArtRare])
+        }
+    }
+
+    func testPrismaticGodPackHasMasterBallEeveeAndNineSIRs() {
+        let requests = PackRecipe.prismaticEvolutionsGodPack
+        XCTAssertEqual(requests.count, 10)
+        XCTAssertEqual(requests.first?.exactCardID, "sv8pt5-74")
+        XCTAssertEqual(requests.first?.finishHint, .masterBallParallel)
+        XCTAssertEqual(requests.filter { $0.tier == .specialArtRare }.count, 9)
+        XCTAssertEqual(Set(requests.compactMap(\.exactCardID)).count, 10)
+    }
+
+    func testBlackBoltWhiteFlareGodPackHasNineIRsAndOneSIR() {
+        let requests = PackRecipe.blackBoltWhiteFlareGodPack
+        XCTAssertEqual(requests.count, 10)
+        XCTAssertEqual(requests.prefix(9).map(\.tier),
+                       Array(repeating: .artRare, count: 9))
+        XCTAssertEqual(requests.last?.tier, .specialArtRare)
+        XCTAssertTrue(requests.allSatisfy { $0.exactCardID == nil })
+    }
+
+    func testForced151DemigodDrawReplacesTheLastThreeSlotsAtomically() throws {
+        let index = try bundledIndex()
+        var generator = AlwaysLowestBucketGenerator()
+        var pity = PackConfig.pityThreshold
+        let opened = PackOpening.draw(setID: "sv3pt5", index: index, alreadyOwned: [],
+                                      pity: &pity, using: &generator)
+        XCTAssertEqual(opened.variant, .scarletViolet151Demigod)
+        XCTAssertEqual(opened.cards.count, 10)
+        XCTAssertEqual(opened.cards.suffix(3).map(\.id),
+                       ["sv3pt5-166", "sv3pt5-167", "sv3pt5-198"])
+        XCTAssertEqual(pity, 0)
+        XCTAssertFalse(opened.isGodPack, "151은 demigod이지 완전 God Pack이 아니다")
+    }
+
+    func testForcedPrismaticGodDrawUsesTheExactTenPrintings() throws {
+        let index = try bundledIndex()
+        var generator = AlwaysLowestBucketGenerator()
+        var pity = PackConfig.pityThreshold
+        let opened = PackOpening.draw(setID: "sv8pt5", index: index, alreadyOwned: [],
+                                      pity: &pity, using: &generator)
+        XCTAssertEqual(opened.variant, .prismaticEvolutionsGod)
+        XCTAssertEqual(opened.cards.map(\.id),
+                       PackRecipe.prismaticEvolutionsGodPack.compactMap(\.exactCardID))
+        XCTAssertEqual(opened.slotResults.first?.finishHint, .masterBallParallel)
+        XCTAssertTrue(opened.isGodPack)
+        XCTAssertEqual(pity, 0)
+    }
+
+    func testForcedBlackBoltWhiteFlareGodDrawUsesNineUniqueIRsAndOneSIR() throws {
+        let index = try bundledIndex()
+        for setID in ["zsv10pt5", "rsv10pt5"] {
+            var generator = AlwaysLowestBucketGenerator()
+            var pity = PackConfig.pityThreshold
+            let opened = PackOpening.draw(setID: setID, index: index, alreadyOwned: [],
+                                          pity: &pity, using: &generator)
+
+            XCTAssertEqual(opened.variant, .blackBoltWhiteFlareGod, setID)
+            XCTAssertEqual(opened.cards.count, 10, setID)
+            XCTAssertEqual(opened.cards.prefix(9).map(\.tier),
+                           Array(repeating: .artRare, count: 9), setID)
+            XCTAssertEqual(opened.cards.last?.tier, .specialArtRare, setID)
+            XCTAssertEqual(Set(opened.cards.map(\.id)).count, 10, setID)
+            XCTAssertTrue(opened.cards.allSatisfy { $0.id.hasPrefix("\(setID)-") }, setID)
+            XCTAssertTrue(opened.isGodPack, setID)
+            XCTAssertEqual(pity, 0, setID)
+        }
+    }
+
+    func testGenericSetNeverRollsGlobalGodPackEvenWhenRandomRollIsZero() {
         let index = makeIndex("s", [.common: 30, .uncommon: 20, .rare: 10,
                                     .doubleRare: 6, .ultraRare: 3])
-        let odds = PackOpening.packOdds(setID: "s", index: index)
-        let ultra = odds.first { $0.tier == .ultraRare }?.probability ?? 0
-
-        // 갓팩을 뺀 값 — 레어 칸과 역홀로 칸의 UR 몫만 남는다.
-        let withoutGod = PackOpening.standardSlotTables(era: .scarletViolet, perks: .none)
-            .reduce(0.0) { sum, table in
-                let total = Double(table.weights.reduce(0) { $0 + $1.weight })
-                let ur = Double(table.weights.first { $0.tier == .ultraRare }?.weight ?? 0)
-                return sum + ur / total * Double(table.count)
-            } / Double(PackConfig.cardsPerPack(.scarletViolet))
-        XCTAssertGreaterThan(ultra, withoutGod, "확률표가 갓팩을 세지 않았다")
+        var generator = AlwaysLowestBucketGenerator()
+        var pity = 0
+        let opened = PackOpening.draw(setID: "s", index: index, alreadyOwned: [],
+                                      pity: &pity, using: &generator)
+        XCTAssertEqual(opened.variant, .standard)
+        XCTAssertFalse(opened.isSpecialVariant)
+        XCTAssertFalse(opened.isGodPack)
     }
 
-    /// 특별 세트에는 갓팩이 없다. 원래 전 칸이 레어 이상이라 구분이 성립하지 않는다.
-    func testSpecialSetsHaveNoGodPack() {
-        let index = makeIndex("c", [.rare: 8, .doubleRare: 6, .superRare: 3])
-        for seed in UInt64(1)...200 {
-            var g = SeededGenerator(seed: seed)
-            var pity = 0
-            XCTAssertFalse(PackOpening.draw(setID: "c", index: index, alreadyOwned: [],
-                                            pity: &pity, using: &g).isGodPack)
+    // MARK: 물리 팩 구성
+
+    func testPhysicalCountsSeparateGameCardsEnergyAndCodeCard() {
+        let ex = PackRecipe.standard(for: .ex).contents
+        XCTAssertEqual(ex, PackContents(gameCardCount: 9, energyCardCount: 0, codeCardCount: 0))
+        XCTAssertEqual(ex.physicalCardCount, 9)
+
+        for era in [PackEra.sunMoon, .swordShield, .scarletViolet] {
+            let contents = PackRecipe.standard(for: era).contents
+            XCTAssertEqual(contents.gameCardCount, 10, "\(era)")
+            XCTAssertEqual(contents.energyCardCount, 1, "\(era)")
+            XCTAssertEqual(contents.codeCardCount, 1, "\(era)")
+            XCTAssertEqual(contents.physicalCardCount, 12, "\(era)")
         }
     }
 
-    /// 에너지는 그 계층이 있는 세트에서만 나온다. 없는 세트에 억지로 끼워 넣지 않는다.
-    ///
-    /// 확정 슬롯이 아니라 일반 칸의 추첨 결과이므로 장수는 팩마다 다르다.
-    /// 여기서 잠그는 것은 "없는 세트에서 나오지 않는다" 와 "장수가 줄지 않는다" 두 가지다.
-    func testEnergyOnlyAppearsWhenSetHasEnergy() {
-        let withEnergy = makeIndex("e", [.common: 20, .uncommon: 20, .rare: 10, .doubleRare: 5, .energy: 6])
-        let without = makeIndex("n", [.common: 20, .uncommon: 20, .rare: 10, .doubleRare: 5])
+    func testEraRecipesMatchPhysicalSlotComposition() {
+        XCTAssertEqual(PackRecipe.standard(for: .ex).slots, [
+            PackRecipeSlot(kind: .common, count: 5),
+            PackRecipeSlot(kind: .uncommon, count: 2),
+            PackRecipeSlot(kind: .reverseHolo, count: 1),
+            PackRecipeSlot(kind: .rare, count: 1),
+        ])
+        XCTAssertEqual(PackRecipe.standard(for: .swordShield).slots.map(\.count), [5, 3, 1, 1])
+        XCTAssertEqual(PackRecipe.standard(for: .scarletViolet).slots, [
+            PackRecipeSlot(kind: .common, count: 4),
+            PackRecipeSlot(kind: .uncommon, count: 3),
+            PackRecipeSlot(kind: .reverseHolo, count: 1),
+            PackRecipeSlot(kind: .reverseHoloHit, count: 1),
+            PackRecipeSlot(kind: .rare, count: 1),
+        ])
+    }
 
-        var sawEnergy = false
-        for seed in UInt64(1)...30 {
-            var g = SeededGenerator(seed: seed)
-            let pack = PackOpening.draw(setID: "e", index: withEnergy, alreadyOwned: [], using: &g)
-            if pack.contains(where: { $0.tier == .energy }) { sawEnergy = true }
-        }
-        XCTAssertTrue(sawEnergy, "에너지가 있는 세트에서는 나와야 한다")
+    func testEXReversePoolIncludesRareHoloButExcludesPokemonEx() throws {
+        let index = try bundledIndex()
+        var rareHoloReverseCount = 0
 
-        for seed in UInt64(1)...30 {
-            var g = SeededGenerator(seed: seed)
-            let pack = PackOpening.draw(setID: "n", index: without, alreadyOwned: [], using: &g)
-            XCTAssertEqual(pack.filter { $0.tier == .energy }.count, 0)
-            XCTAssertEqual(pack.count, PackConfig.cardsPerPack(.scarletViolet))
+        for number in 5...16 {
+            let setID = "ex\(number)"
+            let pool = try XCTUnwrap(index.pools[setID])
+            let reversePool = PackOpening.slotPool(
+                setID: setID, slot: .reverseHolo, pool: pool, index: index)
+            let rareHoloIDs = reversePool[.doubleRare] ?? []
+
+            XCTAssertFalse(rareHoloIDs.isEmpty, setID)
+            XCTAssertTrue(rareHoloIDs.allSatisfy {
+                index.card($0)?.rarity == "Rare Holo"
+            }, "\(setID): Pokemon-ex가 reverse 후보에 섞였다")
+            XCTAssertFalse(rareHoloIDs.contains {
+                index.card($0)?.rarity == "Rare Holo EX"
+            }, setID)
+            XCTAssertEqual(PackOpening.finishHint(
+                setID: setID, slot: .reverseHolo,
+                tier: .doubleRare, era: .ex), .reverseHolo, setID)
+
+            let recipe = PackRecipe.forSet(setID, era: .ex)
+            let tables = PackConfig.slotTables(setID: setID, era: .ex)
+            let reverseWeights = try XCTUnwrap(zip(recipe.slots, tables).first {
+                $0.0.kind == .reverseHolo
+            }?.1.weights)
+            let actualCounts = Dictionary(uniqueKeysWithValues:
+                reverseWeights.map { ($0.tier, $0.weight) })
+            let checklistCounts: [CardTier: Int] = [
+                .common: reversePool[.common]?.count ?? 0,
+                .uncommon: reversePool[.uncommon]?.count ?? 0,
+                .rare: reversePool[.rare]?.count ?? 0,
+                .doubleRare: rareHoloIDs.count,
+            ]
+            XCTAssertEqual(actualCounts, checklistCounts, setID)
+            rareHoloReverseCount += rareHoloIDs.count
         }
+
+        XCTAssertEqual(rareHoloReverseCount, 196)
+        XCTAssertTrue(PackConfig.exReverse.contains { $0.tier == .doubleRare })
+        XCTAssertFalse(PackConfig.legacyEXReverse.contains { $0.tier == .doubleRare })
+        XCTAssertTrue(PackOpening.usesRestrictedCandidatePool(
+            setID: "ex5", slot: .reverseHolo))
+        XCTAssertFalse(PackOpening.usesRestrictedCandidatePool(
+            setID: "ex5", slot: .rare))
+
+        for setID in ["ecard1", "ecard2", "ecard3", "ex1", "ex2", "ex3", "ex4"] {
+            let recipe = PackRecipe.forSet(setID, era: .ex)
+            let tables = PackConfig.slotTables(setID: setID, era: .ex)
+            let reverseWeights = try XCTUnwrap(zip(recipe.slots, tables).first {
+                $0.0.kind == .reverseHolo
+            }?.1.weights)
+            XCTAssertFalse(reverseWeights.contains { $0.tier == .doubleRare }, setID)
+            XCTAssertFalse(PackOpening.usesRestrictedCandidatePool(
+                setID: setID, slot: .reverseHolo), setID)
+        }
+    }
+
+    func testWotCEnergyPositionsAreFixedPerSet() {
+        XCTAssertEqual(PackRecipe.forSet("base1", era: .wotc).slots, [
+            PackRecipeSlot(kind: .common, count: 5),
+            PackRecipeSlot(kind: .energy, count: 2),
+            PackRecipeSlot(kind: .uncommon, count: 3),
+            PackRecipeSlot(kind: .rare, count: 1),
+        ])
+        XCTAssertEqual(PackRecipe.forSet("base4", era: .wotc).slots,
+                       PackRecipe.forSet("base1", era: .wotc).slots)
+
+        for setID in ["gym1", "gym2", "neo1"] {
+            XCTAssertEqual(PackRecipe.forSet(setID, era: .wotc).slots, [
+                PackRecipeSlot(kind: .common, count: 6),
+                PackRecipeSlot(kind: .energy, count: 1),
+                PackRecipeSlot(kind: .uncommon, count: 3),
+                PackRecipeSlot(kind: .rare, count: 1),
+            ], setID)
+        }
+
+        XCTAssertEqual(PackRecipe.forSet("base2", era: .wotc).slots,
+                       PackRecipe.standard(for: .wotc).slots,
+                       "Jungle처럼 에너지 카드가 없는 세트는 7 Common이어야 한다")
+    }
+
+    func testBundledWotCPacksDrawTheirFixedEnergyCounts() throws {
+        let index = try bundledIndex()
+        var generator = SeededGenerator(seed: 0xB453)
+
+        for (setID, energyCount) in PackRecipe.wotcEnergyCardsPerPack {
+            let cards = PackOpening.draw(setID: setID, index: index,
+                                         alreadyOwned: [], using: &generator)
+            XCTAssertEqual(cards.count, 11, setID)
+            XCTAssertEqual(cards.filter { $0.tier == .energy }.count, energyCount, setID)
+            XCTAssertEqual(cards.filter { $0.tier == .common }.count, 7 - energyCount, setID)
+        }
+    }
+
+    func testDoubleCrisisUsesItsSevenCardMiniPackRecipe() throws {
+        let recipe = PackRecipe.forSet("dc1", era: .blackWhite)
+        XCTAssertEqual(recipe.slots, [
+            PackRecipeSlot(kind: .common, count: 3),
+            PackRecipeSlot(kind: .uncommon, count: 2),
+            PackRecipeSlot(kind: .reverseHolo, count: 1),
+            PackRecipeSlot(kind: .rare, count: 1),
+        ])
+        XCTAssertEqual(recipe.contents,
+                       PackContents(gameCardCount: 7, energyCardCount: 0, codeCardCount: 1))
+
+        let index = try bundledIndex()
+        var generator = SeededGenerator(seed: 0xDC1)
+        var pity = 0
+        for _ in 0..<100 {
+            let opened = PackOpening.draw(setID: "dc1", index: index,
+                                          alreadyOwned: [], pity: &pity,
+                                          using: &generator)
+            XCTAssertEqual(opened.cards.count, 7)
+            XCTAssertEqual(opened.cards.filter { $0.finish == .reverseHolo }.count, 1)
+            XCTAssertTrue(opened.cards.last.map { $0.tier.rank >= CardTier.doubleRare.rank } ?? false)
+        }
+    }
+
+    /// 기본 에너지 혼합은 초기 e-Card/EX 커먼 칸에만 남는다. WotC는 세트별 고정 칸이다.
+    func testEnergyMixIsLimitedToLegacyCommonSlots() {
+        let exCommon = PackOpening.standardSlotTables(era: .ex, perks: .none).first?.weights ?? []
+        XCTAssertTrue(exCommon.contains { $0.tier == .energy })
+
+        for era in [PackEra.wotc, .diamondPearl, .blackWhite, .sunMoon,
+                    .swordShield, .scarletViolet] {
+            let common = PackOpening.standardSlotTables(era: era, perks: .none).first?.weights ?? []
+            XCTAssertFalse(common.contains { $0.tier == .energy }, "\(era)")
+        }
+    }
+
+    func testScarletVioletSlotFinishHintsPreserveTwoReversesAndGuaranteedHolo() {
+        let index = makeIndex("s", [.common: 20, .uncommon: 20, .rare: 10])
+        var generator = AlwaysLowestBucketGenerator()
+        var pity = 0
+        let opened = PackOpening.draw(setID: "s", index: index, alreadyOwned: [],
+                                      pity: &pity, using: &generator)
+        XCTAssertEqual(opened.slotResults.map(\.finishHint), [
+            .normal, .normal, .normal, .normal,
+            .normal, .normal, .normal,
+            .reverseHolo, .reverseHolo, .holoRare,
+        ])
     }
 
     // MARK: 신규 판정
@@ -880,6 +1228,111 @@ private extension Dictionary where Key == String, Value == Int {
 
 final class PackOddsTests: XCTestCase {
 
+    func testEXReverseExpectedValueUsesOnlyRareHoloChecklistCards() throws {
+        let index = try XCTUnwrap(CardIndex.decode(Data("""
+            {
+              "version": 3,
+              "sets": [{
+                "id": "ex5", "name": "EX Hidden Legends", "series": "EX",
+                "released": "2004/06/14", "cardCount": 5
+              }],
+              "rarities": ["Common", "Uncommon", "Rare", "Rare Holo", "Rare Holo EX"],
+              "cards": [
+                ["ex5-1", "Common", "C", 0],
+                ["ex5-2", "Uncommon", "U", 1],
+                ["ex5-3", "Rare", "R", 2],
+                ["ex5-4", "Holo", "RR", 3],
+                ["ex5-5", "Pokemon-ex", "RR", 4]
+              ]
+            }
+            """.utf8)))
+        let prices = try XCTUnwrap(CardPrices.decode(Data("""
+            {
+              "version": 3, "asOf": "2026-09-22", "currency": "USD",
+              "krwPerUsd": 1300,
+              "prices": {
+                "ex5-1": 1, "ex5-2": 1, "ex5-3": 1,
+                "ex5-4": 10, "ex5-5": 1000
+              },
+              "printingPrices": {
+                "ex5-1#reverseHolo": 2,
+                "ex5-2#reverseHolo": 3,
+                "ex5-3#reverseHolo": 4,
+                "ex5-4#reverseHolo": 20,
+                "ex5-5#reverseHolo": 2000
+              }
+            }
+            """.utf8)))
+
+        let cardCount = Double(PackPricing.cardCount(setID: "ex5", index: index))
+        let genericTierValue = PackOpening.packOdds(setID: "ex5", index: index)
+            .reduce(0.0) { total, odds in
+                total + odds.probability * cardCount
+                    * MarketEconomy.meanUSD(setID: "ex5", tier: odds.tier,
+                                            index: index, prices: prices)
+            }
+        let reverseChecklistTotal = Double(32 + 33 + 12 + 15)
+        let doubleRareTierMean = (10.0 + 1000.0) / 2.0
+        let reverseAdjustment = (
+            32.0 * (2.0 - 1.0)
+                + 33.0 * (3.0 - 1.0)
+                + 12.0 * (4.0 - 1.0)
+                + 15.0 * (20.0 - doubleRareTierMean)
+        ) / reverseChecklistTotal
+
+        XCTAssertEqual(
+            MarketEconomy.packValueUSD(setID: "ex5", index: index, prices: prices),
+            genericTierValue + reverseAdjustment,
+            accuracy: 0.000_001,
+            "Pokemon-ex reverse price must not leak into the Rare Holo reverse sheet"
+        )
+    }
+
+    func testBlackBoltWhiteFlareOddsAndExpectedValueIncludeTheGodPack() throws {
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        let prices = try XCTUnwrap(CardPrices.loadBundled())
+        let chance = 1.0 / Double(PackRecipe.estimatedBlackBoltWhiteFlareGodOneIn)
+
+        for setID in ["zsv10pt5", "rsv10pt5"] {
+            let pool = try XCTUnwrap(index.pools[setID])
+            let recipe = PackRecipe.forSet(setID, era: index.era(setID))
+            let tables = PackConfig.slotTables(setID: setID, era: index.era(setID))
+            var standardCounts: [CardTier: Double] = [:]
+
+            for (slot, table) in zip(recipe.slots, tables) {
+                let available = table.weights.filter { !(pool[$0.tier] ?? []).isEmpty }
+                let total = available.reduce(0) { $0 + $1.weight }
+                XCTAssertGreaterThan(total, 0, "\(setID) \(slot.kind)")
+                for entry in available {
+                    standardCounts[entry.tier, default: 0] += Double(slot.count)
+                        * Double(entry.weight) / Double(total)
+                }
+            }
+
+            var blended = standardCounts.mapValues { $0 * (1 - chance) }
+            blended[.artRare, default: 0] += 9 * chance
+            blended[.specialArtRare, default: 0] += chance
+            let odds = Dictionary(uniqueKeysWithValues:
+                PackOpening.packOdds(setID: setID, index: index).map {
+                    ($0.tier, $0.probability)
+                })
+
+            for (tier, count) in blended {
+                XCTAssertEqual(odds[tier] ?? 0, count / 10, accuracy: 0.000_000_1,
+                               "\(setID) \(tier)")
+            }
+
+            let valueFromDisclosedOdds = odds.reduce(0.0) { total, entry in
+                total + entry.value * 10
+                    * MarketEconomy.meanUSD(setID: setID, tier: entry.key,
+                                            index: index, prices: prices)
+            }
+            XCTAssertEqual(MarketEconomy.packValueUSD(setID: setID, index: index,
+                                                       prices: prices),
+                           valueFromDisclosedOdds, accuracy: 0.000_001, setID)
+        }
+    }
+
     /// 세트에 있는 등급은 하나도 빠짐없이 확률을 받는다.
     func testEveryTierInTheSetGetsOdds() throws {
         let index = try XCTUnwrap(CardIndex.loadBundled())
@@ -924,9 +1377,12 @@ final class PackOddsTests: XCTestCase {
             XCTAssertGreaterThan(common, uncommon, "\(set.id): 커먼이 언커먼보다 드물다")
             XCTAssertGreaterThan(uncommon, rareOrBetter, "\(set.id): 언커먼이 레어 이상보다 드물다")
 
-            // 레어보다 위 등급은 어느 것도 팩의 10% 를 넘지 않는다.
+            // 일반 9~10장 팩에서는 레어보다 위 등급이 어느 것도 10%를 넘지 않는다.
+            // Double Crisis는 7장 중 한 장이 Holo 이상으로 고정된 미니팩이라 예외다.
             for (tier, p) in odds where tier.rank > CardTier.rare.rank {
-                XCTAssertLessThan(p, 0.10, "\(set.id): \(tier.rawValue) 가 \(p) 로 너무 흔하다")
+                let ceiling = set.id == "dc1" ? 0.20 : 0.10
+                XCTAssertLessThan(p, ceiling,
+                                  "\(set.id): \(tier.rawValue) 가 \(p) 로 너무 흔하다")
             }
         }
     }
@@ -1002,21 +1458,22 @@ final class CardSaleTests: XCTestCase {
         }
     }
 
-    /// 설계상 회수율은 `1/packMargin` 이어야 한다. 크게 벗어나면 팩값과 환급이
-    /// 서로 다른 근거로 계산되고 있다는 뜻이다.
+    /// 밀봉 시세가 없는 폴백 경로의 회수율은 `1/packMargin` 이어야 한다.
     func testGrindRatioMatchesTheMargin() throws {
         let index = try XCTUnwrap(CardIndex.loadBundled())
         let prices = try XCTUnwrap(CardPrices.loadBundled())
         let want = 1 / MarketEconomy.packMargin
         for set in index.sets {
-            let ratio = Self.sellBackRatio(set.id, index: index, prices: prices, perks: .none)
+            let ratio = Self.sellBackRatio(set.id, index: index, prices: prices,
+                                           perks: .none, marketPrices: nil)
             XCTAssertEqual(ratio, want, accuracy: 0.02, "\(set.id) 회수율이 설계와 다르다")
         }
     }
 
     /// 팩 하나를 사서 전부 갈았을 때 돌아오는 비율.
     static func sellBackRatio(_ setID: String, index: CardIndex, prices: CardPrices,
-                           perks: DexPerks) -> Double {
+                              perks: DexPerks,
+                              marketPrices: PackMarketPrices? = PackMarketPrices.shared) -> Double {
         let cards = Double(PackPricing.cardCount(setID: setID, index: index, perks: perks))
         let dust = PackOpening.packOdds(setID: setID, index: index, perks: perks)
             .reduce(0.0) { running, odds in
@@ -1028,6 +1485,7 @@ final class CardSaleTests: XCTestCase {
                 return running + odds.probability * cards * mean
             }
         return dust / Double(PackPricing.price(setID: setID, index: index,
-                                               prices: prices, perks: perks))
+                                               prices: prices, marketPrices: marketPrices,
+                                               perks: perks))
     }
 }
