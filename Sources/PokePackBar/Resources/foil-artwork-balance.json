@@ -1,0 +1,2286 @@
+{
+  "version": 1,
+  "baseline": "2026-09-30-unlit-artwork-audit",
+  "cards": {
+    "base4-1": {
+      "sha256": "762894bf5058a9a6b540bdcead13baa057068125d648f09a92ff74bbf8dce174",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-11": {
+      "sha256": "ca9f9184889887ee3c8ad5ba39a527e6508cca15bdf4e47b2be33f2d2cf329b2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-12": {
+      "sha256": "dffaf058fb0a9223f991eede59b5128308b28e953c03949fd558eac3cc336d1f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-13": {
+      "sha256": "602f7329e1c572d03b07186e7fa693dc62b82ddd096b830c6019bdd578357bc0",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-14": {
+      "sha256": "23a0bd75b26c82d2e634cf9f5a5fd0de650d30ec78cec666a903678653273184",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-16": {
+      "sha256": "2baedfc3d9e8df5d24cdd5ac8d6134a9695af57f3b52d1e907ee399506175c47",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-17": {
+      "sha256": "025beb69ee4f7838b8ad1a35e11e46b961eb2078a3d74f842d16710fc9486427",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-19": {
+      "sha256": "9c0ce8cd807e29a85516f2c9a9fa2c53d8c08e31c7e532fdc4145dbe43d26934",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-20": {
+      "sha256": "8fc3790a809beb14c4f12692732ec5ea6b6ae79c0a8310b402cca32d3750ba8c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-3": {
+      "sha256": "73e48c4c947c0c76671902c84421d501c75f8068b4b7d53499515082ce28149c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-4": {
+      "sha256": "cc3f1afd1b9d708dbc157a2940dc20f9ff696eb29c8a7de85b488a2f4b38456a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-5": {
+      "sha256": "034d1772779f9e855b2ff6b11b5e19f9e2d38aa8d5f604802668272e7ffac7bd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-6": {
+      "sha256": "b0147333aff928f0dccbd174b38b6b4f4c99c522ba58c53af7a880de4700f7a5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-7": {
+      "sha256": "4377092688b04f30a9913c206c37c4e9c5d48f7580289a3ad70ac5f89a8f6221",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-8": {
+      "sha256": "f70facb19ef23b39e094a8644169839c798ec832c69cfeb0746ceff48978a379",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base4-9": {
+      "sha256": "a68def40b0da7c57aceccefe09a1162850ff6d0c04e941e2ab7d3b6e28270f7d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-1": {
+      "sha256": "97c4548af1ebf5918ee71c9bc156f8b5fb2ab459ab7410c38670594f0814dc3d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-10": {
+      "sha256": "e30e016376c5e05ffe972cd4e00fd4eb0347dd7479e433b8f8d514d056054bf2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-11": {
+      "sha256": "b64382f7dc0eaba2dec9982cc885ace5b4d19feee58815edbc4a2cc45c02d570",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-13": {
+      "sha256": "128e6a5e30b060b544eb87ca0f79594984af2e049e130bc675f16a010bed2856",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-14": {
+      "sha256": "ff5011926e818b3bbc191e8979a871bae7d283e4ff608acb3964301289efbbc6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-2": {
+      "sha256": "24b2b3de4f47fede64cc4430a40b5b903d24487fe2d5771438392eb08dc20a1f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-3": {
+      "sha256": "7f72636bc85f267784bae79da5316cd36c7f863713a65f6160a4a3bfff77b45e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-4": {
+      "sha256": "cd41159dc86a78be3102b6ef43b8ffd31fd03e053459aa336aec861601b39673",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-5": {
+      "sha256": "0b37ee861562a37bae1faa73058439405a5f92b1312d9173daa032d881b8adb1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-6": {
+      "sha256": "e6b8e3b8c5e7b6c07becb1016db0631bc1a719c9512e921e3a1112819c84d6be",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-7": {
+      "sha256": "63f78e319d6b5e7337799ed3a99e0b7648c7e8b56d7d4d0b0c096314c935e4cf",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-8": {
+      "sha256": "a2dd98612d727a5d4479364086b63e942f75048968e444947d110f3606ce5abb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-83": {
+      "sha256": "1ae595e7f4e48e13c93ca1d54e67e593df6fc94f3b985f575a4b6dd5136745e7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base5-9": {
+      "sha256": "f59237746e4cd0360b95ce662123a33fa593eeabac3821ffbc75771d9fd262ab",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-1": {
+      "sha256": "4ff3bb794790957c86d552dfdc639eed94dbf779e78ae6dad35c471b6b312237",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-11": {
+      "sha256": "3156eaf5b4653efdb8ad2817576c6ac4aab8b817107a8fa2b73a07e2b443a73c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-12": {
+      "sha256": "564df4e70af8e5affd5b6645c027fb06f77078d3c25efe19f36d685398fcf3e9",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-13": {
+      "sha256": "aa0cafdd029933117628a4c7360891dc4a3b168b5ff4a2281286510bb2f64e8d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-14": {
+      "sha256": "b44eb28649239376c1486abc148e36adce107669b859e8d3a03d18d115f03b7d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-15": {
+      "sha256": "f8a4cc73d5c32182192c21fbbd6dac8fcde6ad71d95ffe7faad8159366992c79",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-16": {
+      "sha256": "337ae8b44edc750232ba5061d0f808338f8b486dbb8b54313775fb186e76ded6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-19": {
+      "sha256": "4d5f105658bd95950557e5f65dec3790fed8752edb8d106736f562e6f1be7087",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-2": {
+      "sha256": "dc7a092a68f4ea6e09ca5434d45328af893df734455f96c00674e3e05427a064",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-3": {
+      "sha256": "241bb475f5d11738c102725f409ef014c11550609631dc4f04a1b153b58b4557",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-4": {
+      "sha256": "5bbb3d70dea4c198491de041a9f7908c74cfe9d2e277bdb54777868748c66ceb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-5": {
+      "sha256": "fda8f8ac8e5e1d47f5ed762acc69c9e0684aaa15835112948859d83602b68f02",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-6": {
+      "sha256": "0699c671101c2e7626ba9b26e5e002201a9e05011bfb4289942066897f8f0b94",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-7": {
+      "sha256": "c3f8083e65a4f494b24b79ea80bdfec462a742fd884ac598334039707847c654",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-8": {
+      "sha256": "a65888c5c575621714cf5fa7cd268f7fb5c07f93ccf5079114d3180784c4a51b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "base6-9": {
+      "sha256": "f50fa2b1a64e0887a2f37a485826e7871b2a3c80420422459a21e76f440c4268",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "col1-18": {
+      "sha256": "e14ae6cccfe2bfbc45241659c91e3b32b28fb0b3a91b28dfd2133db1be596804",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "col1-7": {
+      "sha256": "0e63fc086816238e6f087d5b723ba627a2b552c09ca39cb905c7bde1d6b159b4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "col1-9": {
+      "sha256": "8b481a1e40cc7b7e7c4e5ea2eb2cd5f2e8b8f89b14ed6e12a4b222a918197ef8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-10": {
+      "sha256": "3eba2a5647a38829e903764c6a828a0d9aa034af8e6fd70b0c42c474b1cccdd4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-13": {
+      "sha256": "d47a9e66be15add370f2dd91e13ad5aea3b8e1937037f4d62a568e4604ba49f4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-14": {
+      "sha256": "3c40fc998408a39cd4818b1c8c509816c3fcb36d3f27c2e9f4bbf792afc06b70",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-17": {
+      "sha256": "93e1d6dae16a2950d583e00c7f4122e2ac37a85d7b1465250f296286d2d7156c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-2": {
+      "sha256": "4c7847ce8987a2ec423247857c569d466a9f04d916e2c7da4b45b9a252dcd4fd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-4": {
+      "sha256": "0b89b620f285c6aea4361500d7c1528d526d7dd133c34a19aa43b851ae381ecd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-5": {
+      "sha256": "97dfe6cf862006b6ac2d5e779a25ee8224b36c3ad89ff4fb24a96eff2486e23c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-6": {
+      "sha256": "fd3c70e746ba70e78ad6e610e474db2756bcc720e0187d4bf6772e2c1648e175",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-7": {
+      "sha256": "d668ae970b6b34cf896daf3a881895978d19a01129d2eca3d1ef6d1d9836be39",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp1-9": {
+      "sha256": "12c076e23012a67ab59a8c52d3df6b3d21f24b51ef102bf63f60507b3fbb5394",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-10": {
+      "sha256": "de4dbfa5095a7d054bca7b3cb33ab179b40f5344c9a116656e3eb5fbbcb6e5c2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-11": {
+      "sha256": "3b471c8c3704bfadffa8540798e494c83b9bd0eff7e4ac687ad84c98e6a1fefa",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-12": {
+      "sha256": "a40ea21a4ce2c352839b15b0a730b6d169923fffed59e4e90469f23dbb0f5f14",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-124": {
+      "sha256": "5e833c637d2c69dbf2ce00d6d87db6a8335981d1d86a26a18b116d549ac38f5e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-15": {
+      "sha256": "10b16ecaa47a37cf784fad4252d94505b63a7f9d48fc1d3837d6d8cf10df6481",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-17": {
+      "sha256": "9af60bd7a1cc0d787af5e051dd62adbe8d0cb40bbcf85830d9241cac394032e8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-6": {
+      "sha256": "8d5114365e160bd08a9f7509c5127b18f4715166e914420f6750f3ecc0eb56b0",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-7": {
+      "sha256": "ea1d7d806929614cd6164e9538cc3a5b4ad2e2a78023a0d2b59411e62d8e30bd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp2-9": {
+      "sha256": "b6ca67833b1a7e8f23999e085ae70e25540cb2a32e291f195e79e7f474175c52",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp3-1": {
+      "sha256": "9b10d9e6d08bd5afb62b1e74cd5ebaeb89f522675e9754174a1cc1aae01e44c1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp3-17": {
+      "sha256": "e6e3df6fe92a81be6d358b0ddf1716d8e19c83c881e94823633d28bfc79be4cb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp3-18": {
+      "sha256": "06ae0d6c6ea62d8c0f734beadf8f0c3a7736f03cf58e365e9e38bc752c0061e0",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp3-19": {
+      "sha256": "5d53fe410c5e0ec6a851a383089634252b01cbca6f9a4796dc2f116bee36021e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp3-3": {
+      "sha256": "62330931ee9980719ad11dd13b7084aebcf25072e2089696a357f1c3264c41e0",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp3-4": {
+      "sha256": "62cceead4f73de559ee2ea3ef1a81f63421de905cf4a21a51f857194aeae478e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp3-8": {
+      "sha256": "d95f78f8a735d8338d3daeee30cdbfddc6b00fb5671d86166bcaf85f6d0b3eac",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp3-9": {
+      "sha256": "4c5ae77341c3a99327d29c742d74f01dd2228b211afc4a7588581e502e3d784b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp4-10": {
+      "sha256": "8d34cd17242e453abe19c0636f0ba10e29df30d36853c3f3a43fba537e7f8a5a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp4-11": {
+      "sha256": "fcd6f11c5772993bef8bf0274a805116ac642f34f2207749e6e85da1a8dd0ce2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp4-2": {
+      "sha256": "763531543afeb01c7cfe144890b817650fae4c55e94275eaae651d0a09044a43",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp4-4": {
+      "sha256": "42bd6f9a1b8e83a9f9f1649a3be8a1d3f9c634ccec3dedd784900968f3bc075e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp4-6": {
+      "sha256": "53dad1ed75a82ed995782824952b7c010a5098b1019a53be1b087699435d6b42",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp4-7": {
+      "sha256": "be96f39d3547ef881fa9d4a83d204f1ad5561ce3b2870ca5526c0c5301b1c197",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp4-8": {
+      "sha256": "72e59e4aeee612fcdba449ead03bee2b9ba11f539fd3dc37ba4c2eaa22ba7d03",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp5-12": {
+      "sha256": "0031200289d42b8ff12b0ca33bee5939ca3f883059ee12a99b8ca03204b16293",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp5-13": {
+      "sha256": "af8486d86521949c07704e14d94a0ad56c266dc1e8bd6711c6284598337853da",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp5-2": {
+      "sha256": "61eeaac315f7ff430db0c772f9fe07cf9fbb4b35db8735f0333df3b882052ca4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp5-6": {
+      "sha256": "043473cf90f3591eb5e516992c4f532ba1fa2e29be6915402f67826aa762f81b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp5-7": {
+      "sha256": "435c21526caed89617deddb3da6a816c3cb2762465c8710c92d6110f9f00e6ef",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp5-9": {
+      "sha256": "c948627b6e2bbba68862b0d5e9779234993af8c99947008b823ae77038e50e4f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-1": {
+      "sha256": "0e5085374954d2c5020d472375ecb50173084940c228bc5ce96a879a9f2131e6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-11": {
+      "sha256": "45d49c96e704f949bd92a2815b87da1f491c3aa1cac84e2ac4a3647da72e654a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-12": {
+      "sha256": "78800ae54589b47f31c2fbcbdd7f6970b3701dbdc803c22877c93a9108661646",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-13": {
+      "sha256": "5072501b4ea25076cc990ad2b144b27bffac12d76e204f66d9dcd5c19fa506f8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-14": {
+      "sha256": "79c9eb84f0a7ae2be9b1eaf1b18e5af3fb309da183ea4ca6720e0563c51ad3be",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-16": {
+      "sha256": "ec6c46a3807c5e0962e3623e82c4bc2f8add7e295abf4d5125ee30cf16e5eac2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-17": {
+      "sha256": "79d6324301bafb9729bfa4100096e8688dab65e535fc5ee53db852bd3097e344",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-2": {
+      "sha256": "47b303e2b2e725c2a51dbab81ddba40e28a4357ec69a4edd7105443774aa8e0a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-4": {
+      "sha256": "4693cc3e35d3adb36ce1304788a980de2b5a9c8decd5f991092c63d437af5d05",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-5": {
+      "sha256": "cbf7951241509f3611f647f2d24df63760c8f5b5525c155dd93c969f86caa778",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-6": {
+      "sha256": "afef73058c0295fe6dbc3c691d38905da7824e329542578b3552e348345c3623",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-7": {
+      "sha256": "952186a568c71245ae76690d7b1d946e122c1a54008d046cfdc111380e47b0ba",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp6-8": {
+      "sha256": "b2dae6d2eb803233dab3cb6cb44b5e0fafa316c877074ee7c5e1c0fe9711b8e2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp7-10": {
+      "sha256": "4b96ed2a0f27bb579936b2db2df8f6e8df0d715b9d1b11222d5881e45b318159",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp7-101": {
+      "sha256": "79bc044f67f8228c1ba3a4d52236acb15619e28c5a0cc6d2b2f9471b80df3377",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp7-102": {
+      "sha256": "2de45a98047b6360f0d2449cf56f835384ef528e182fdb4afc8c015f1c850997",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp7-103": {
+      "sha256": "ed87eb7ef116dc4bebc5a090783d2bb4ebb9b84b0804356fcd891a5e452ef000",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp7-11": {
+      "sha256": "36a12190295a5919ef9f5989edd09183305a369deafcd435d6946ef335f4e80c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp7-5": {
+      "sha256": "94a07056db5c49ca12c261b2a0e094684dde45520b7dc9ede13a9e65207197b3",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp7-7": {
+      "sha256": "b83168366a9caac68e522869f77aac3459ddb60124d3d64ef6f0ff6c48491b41",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "dp7-8": {
+      "sha256": "97ebf5e72fc0ba8f68a6eca608b276575db50af29abe7481510088efcd34fc2b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-1": {
+      "sha256": "6da3600d9b7f724fd76bb83b52c37abbcde3f19be0c7d698b25b523a2d7b3949",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-10": {
+      "sha256": "909b034a6881b76382497395181879b7a97d9b22024262177732620adffaf742",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-12": {
+      "sha256": "260c19b2f8d7b561c8b944d372246dd4236bf382afc8c7676ea30a6e0e454190",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-13": {
+      "sha256": "1ad3dffc40201ab214ecb53cb1641f8736646cf4580474801b8c0d7aaed33a67",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-15": {
+      "sha256": "7f9d0e3f63bb65fc42f444b2553cc514e473224627da4d7c0ff3b3d20133eaac",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-17": {
+      "sha256": "9da4429dc5bf633f64231acaf2b76bdbc8140593d2f64bd731533c31d3abfcc1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-18": {
+      "sha256": "0216099e9f09e29a52f940150965e089c3c3fe8ff2484d7a353fe6292739b694",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-19": {
+      "sha256": "f391fdb65ac6deb82a91aa34f42f2b2f4b8206edf1219e7e0437e514c7b63525",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-2": {
+      "sha256": "b2c933b1d878af446f2c53b016eb21d4b4509b9808740228746beda810c9aeee",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-20": {
+      "sha256": "1806b45e7a71312ae35830dabfb7cb9be2e068229041826f6a65e977acf91f4f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-22": {
+      "sha256": "415a3605a217a2e866d4cb4cf6126e5a42b521ec5fa9d33cda1d1271ed31b718",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-23": {
+      "sha256": "ff5e743387abd97d99f786b4eac37d1f5d421702454f33ff88cb2ef05b2e03c8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-24": {
+      "sha256": "f93dfb4e00da40aa4ab24d4e78c5d08ddfe034fdff9818f428d0a38b98cdb7aa",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-27": {
+      "sha256": "7cd50673edfb907dfd79f0e2fadce65a777af308ac6ccecc38338b9d60239d70",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-29": {
+      "sha256": "e00c768d34ba0e95b761250feb74489b07d14469ad2a08dfe809c20655a37bec",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-3": {
+      "sha256": "5a10e8a332591e1974856ab54b5dbd5dbf5f217b37c15ad8efaa43c68c4ce529",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-30": {
+      "sha256": "1c696ed7bdd1b628cb86cbd2cd7f75a4db8046ba27cdf9afd0f69a0ac05160d3",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-31": {
+      "sha256": "fc51212518762197b344e4da04f4c3147f923c311685b9e6ac15ef12e8bc58ac",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-32": {
+      "sha256": "5305cf6c472f1db2074509e104473e859d7b5bb494fe3914376281e28089792a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-5": {
+      "sha256": "6658cf5eb828353ab8b0588569f2656d3f83b58f2b2919a4b043ed26bd92880b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-6": {
+      "sha256": "e0d196993614e2bb12c3e8909533128951bbf2fba4205ce78621e882a91450bc",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard1-8": {
+      "sha256": "a867b37d759fa35bb812522df7474767ecc0969222896ab6f294ab1a2e00903b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-148": {
+      "sha256": "cf81efd639325f28a0092b4031ec9dd22cbc39674e2ddf8ac6a06d5684a1e067",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-149": {
+      "sha256": "6dbeb78be536355f5dd3fc86fd419ac44fbd931bc139fef31b52a5bdc7e326c6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-150": {
+      "sha256": "23982f683b26caa6eb732e7eee8a559737394ef2d75d5fa999859c00e844664c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H1": {
+      "sha256": "22349de5ba70fc25e446ce9c5e0951171a5d0e72f7e08d3fc84452eddab0df72",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H10": {
+      "sha256": "df66d1539ef46b3c639eeeef17e2a3cdc701b63a8792178f6ddeb83ace9c80ea",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H11": {
+      "sha256": "2abdd6a22e728782859cf014d85f2b6e560aac9311176b220a834de2e178238f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H12": {
+      "sha256": "d6934498cd1c75974986eca745f655d84eb8fb2e20f0021bc5ebcadd4158ac2f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H14": {
+      "sha256": "edc84bbbddb372b243ce89d73d52cf4b7a6e58ebb95226eb01e01e55cebcf812",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H17": {
+      "sha256": "354d8b151bc62179c07d5eda0afe8aec21e62b06fd293ba46d466f10816b0d1f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H22": {
+      "sha256": "7959ec54ef30cd9e4c06634e14d0625eab85f940b0ab2ebb103261830f8e37df",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H23": {
+      "sha256": "84e4b24cea069017ae79a1c804801177200896f288bb8ca5ca7046dfdae2fc35",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H24": {
+      "sha256": "53e7ab21ae23fa9fd43cbf42ac606fb1d37099dbb895a366598483ba885c67e7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H26": {
+      "sha256": "ffb4784259832c511a280b8d92978e49c53a2abf80b58850527e6614fa07a7f4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H27": {
+      "sha256": "53c9a0e7595eb1df50c12ece528ceb968d10fef57faeaa935b7234f8c7e66ee6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H28": {
+      "sha256": "07aa9ea5cacb0609a93e82b33101ba2ee07badd9515ef045529797ac74ff66e8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H29": {
+      "sha256": "8cfdd317efa9ef54c34e922eb8cee3e2b810f9c5ce8328fb6ecafbdae68252a8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H3": {
+      "sha256": "28d883ff106ac7a382780964ed6ee8d1feafe6176c78dddd3d49dde04b53f0c9",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H30": {
+      "sha256": "dcc2c046b3fc498492c391894f2190e5b881e878eb47d7f774c133f734b1a987",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H31": {
+      "sha256": "357d15bba8230c2d3d330cb506177cf4611f10892619a6fa8c590390743232d2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H4": {
+      "sha256": "c1bc2b7c5e396302114161f9370ac50c447ac7f0b697b0179a6a446440d00ce7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H5": {
+      "sha256": "09c0b1a0da80611e8c593ce8291ba5b1f3b058bf797328b4027ea590267d03a6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H6": {
+      "sha256": "2a5bf8ab4016ed9e476bd0fe003c1d846dcd32d5318de597a9c85132d1c36dc7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H7": {
+      "sha256": "7a39c541b1375b07d5835b55b794a3ed55d9f5cfd8a8ce2156fbba74ad54d959",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard2-H8": {
+      "sha256": "bfe3bce0c70438c7e1150b5ffb445b2f064b6f05b2b02e34e41a0405ac2a527e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-145": {
+      "sha256": "a6098ab463193ecb22509fad6871e900ef026287cbea90951363873ab8e02d06",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-147": {
+      "sha256": "ec900a1ea883d1bdffd88b598b0dfabaf95745a37651277de52334f2b7dd4bdd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-148": {
+      "sha256": "bd1df9528884b1300227b75909d41fcfd43927f83e37fe29af79735241192cd2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H1": {
+      "sha256": "e054a94d659fb60de37529024f0b0f991e554b325bddec3312381a65d4c162a2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H10": {
+      "sha256": "c2905b44c180cc02b728a912ef982020213c36e5cb1882fa2b080915cee403c2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H11": {
+      "sha256": "6a8157c1d1ee7b00b58211849ba91add4325b5c1dbc58889db6e04637ffdb343",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H12": {
+      "sha256": "307e3b2d9064de638f93a01c2d20d4a456d786924db5ec5c998a96ebba40edd4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H14": {
+      "sha256": "46efb665ac45e7fa313043a6dbd3f0bb6582584f9cba54a7841c34b0a1c9224e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H16": {
+      "sha256": "0ba5b5bd8dfacf06425c37cc67fbd82aa700978f1237031ec1bef67471ebac72",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H17": {
+      "sha256": "30366201ddeae7f4f755207a255be065cbeafa1935bd36e04c48d464c819d342",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H18": {
+      "sha256": "280e53c4c8a113d3abda6faf7069ca9b5298d64ba61830f1b9e20796ae3a562f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H20": {
+      "sha256": "1d54667a57911fcbbda85f1d15dbbc252869582e19eac56d01fec4536896db1b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H21": {
+      "sha256": "bd187f4717352be0d89e3a6dd16c2fb275ca34673d4708e3f66db3df8fcd62b3",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H23": {
+      "sha256": "d1c6c650b5fbc0634f3fecac58f753bed914a51bd4eccfc1a4219567a67e504f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H24": {
+      "sha256": "9207e37afe17b6ed601472b9849ff23d082b88dcd465410426ea6f1adc50a8c5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H25": {
+      "sha256": "45a365ae037bf4040ec460055bdf2f9ed5ba536cb5c7513cdaa0086480acb01e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H26": {
+      "sha256": "f80dd12311c7b725e7eafa572815dda913ee1561ff6e1a28929dbee91112ed88",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H27": {
+      "sha256": "7a90407d27d358fe0399b6e8d1df84381b281301503523ea7086c0110920babb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H28": {
+      "sha256": "a83d251a3f15566b8b94711e9993d3e0d2822ab564b1ea9e6d6b7209a18c85da",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H29": {
+      "sha256": "2dba7197f4f51f0c8c18090db969dac9b866f075affaba6d04eacb52bb35a90d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H30": {
+      "sha256": "f4a34cb7aa3149d9b757a5070f4cb60493e7787c627950e5d1c375597b0eb718",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H31": {
+      "sha256": "fb896191cdac9dc0d43cf7acc03a7cdf83fbad6bdaa43916e8ed6d64ffd7318a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H4": {
+      "sha256": "419e621737eb51d949f91ac75f3da73c1d54904356450187c38b22881760bf8b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H7": {
+      "sha256": "fd9b8386d350283fb201f3126feb028eb1f180b43db94d0ca77c72b7e8b5d289",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H8": {
+      "sha256": "ccb3116d56752eb8887b537b2ca5f62d9ac8ed4a63cd4033926c25ae2d8b7fe4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ecard3-H9": {
+      "sha256": "c6d43320a249f37d1d9f55654a7e8b9ef2eef9fdf05c1a86d1543eb105337328",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-10": {
+      "sha256": "b944c071cb1dd77dc0c54ba5f65dc7a7254b3d94ed075ead91233c6dde1476d9",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-102": {
+      "sha256": "a80ed9ff1ff19b6e3aff6d322dd63d6bee4a9103de96a7d916a413640e6594aa",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-103": {
+      "sha256": "5518b698f0041e82975f9fd6f63ca010908d17669198b6208366ae54ae7d1635",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-11": {
+      "sha256": "73f1d8ac571148f0b3194ac2716c3a31f7361e95117a76fee6353434bee6a363",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-12": {
+      "sha256": "b1e4083af92f11c992a23f8710b7ae570530879cb199a5f954f441d28666c21f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-13": {
+      "sha256": "d3f235d0adca3742a0e997470cd8076cede7fd387f6f2e9a4d22afbcdbbc2e3c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-2": {
+      "sha256": "ef2bda21eca186b041e7b2e6bdb2e81a53347006a84ec85a7593d376be641250",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-4": {
+      "sha256": "1bdae649759366c768d9f0a255106eeb5a1bc312f21c2a0c19e56a75993fe811",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-6": {
+      "sha256": "bfaeb8195790a6ce2466b10d3cde9c5ea734bd8c9ebe8c25940b04a6c937956b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-7": {
+      "sha256": "85229619e01761a12b9bb4f7aafde28cd3803bd5494bd8be911f0956322d5687",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-8": {
+      "sha256": "0575a19a0309abbc77bf70037a93fb8c0b0bf159fb4461454e9fa8c3a63f0cdd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-9": {
+      "sha256": "1a3894c16b5a4076d535f1dfcc4ee0d1b491a6460d7c3108b6c12c62ad32f27e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-97": {
+      "sha256": "19bc81b3db9349c99f881cac1afa1a179eaad200564928ae8588e9c75b58c7c0",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-98": {
+      "sha256": "bf3379a9ade9507139ce530f06c9f13e862c542ff12c141802ed9c11134d803e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex1-99": {
+      "sha256": "7f63debfe842ea8a895c3c4af7d7257412b31699bd96155f4d14939956338b5e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-1": {
+      "sha256": "8c3ff32fa29cfc4a1660c1a4de7fe184d54567b45aea54a59aeeac87ab11ebbe",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-10": {
+      "sha256": "d61a57acab792184d2a5ed2c1ec27c2895724ec809da600d3a46f71281e42ccc",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-102": {
+      "sha256": "b8a298a29e7319cb96de1128d760d3d404792d4cb9504c0d0fb3771ac91fc525",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-117": {
+      "sha256": "205bfd4ce5d4256187a6456042355f421e3b703ffefbb3d9eabc7ac0a46a0cac",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-12": {
+      "sha256": "6e1a87b1d6cdb824834a6df170ec2dbf9cc1bf7686a7f76c19ae443fe944b235",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-15": {
+      "sha256": "713e874062bd7ee20e980a6146bfe03f7e6f5ed71b1ee0ed86429773945fa22e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-2": {
+      "sha256": "c25b2fea8bf62631157c04df46e78788c0750d3efb4ab916caeacf9eadb7ee56",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-5": {
+      "sha256": "ccf1ca73bb860ff6f8f57bd6f31a1e27e7714e93ddc25f5974c24f94ead94e01",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-6": {
+      "sha256": "9d4341af6f6a80722204c992dde9c748b69d1018218b2120b010954f583b0e81",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-7": {
+      "sha256": "282431ddc6408ee5598ee268d0ae9ee1ea35da6bb37f69e585b3ab2679735ef2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex10-8": {
+      "sha256": "4f0a971b519ba881b37dc19b6cd1677956562a25407d242a835fdfa5e6f993a7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex11-114": {
+      "sha256": "604d379c3967d3132d7f3a47723b70a46c6709a338267d9fd46fdc3ae75f0b47",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-1": {
+      "sha256": "d0b600afd2cbf214da6db4863b69c05d03be8adc09b99e5ff17291b3c99df265",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-13": {
+      "sha256": "b348312cada6f615e150e181261f2d12c27b6252744d0ef85fc531728d565a94",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-16": {
+      "sha256": "50f737149a8b70f253442e4b4ee109456edee1b60f95d809385027236132dc39",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-2": {
+      "sha256": "15aa45c48c6d8c099e99614b0eec37f13f808ea99ceeb6191d10480306e75c3c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-30": {
+      "sha256": "efe84eece5fc9fe30a5f2093696c9067a79e97d022946e4172f44b9c7cf34ded",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-34": {
+      "sha256": "2ccd331d498cd5f0475f530917951b30d8603757adfffa33c209422815c55f6b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-35": {
+      "sha256": "f64f623fab68ab64cfc20068b369ab9d6cf16d805ed257d3834c8c0f7be08197",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-4": {
+      "sha256": "101235a0f74f5996ab15233baf6e3f92f123705f106a566107428d3d08c62f91",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-40": {
+      "sha256": "eb6dd1f74187898de7dadeea888c7875d256eaa44980642b68f25d6b36c8c2cb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-5": {
+      "sha256": "9bb2a5fa24873bccbc25ad4fbce67f2cc83ba26856cee3a02260c7d255d73e74",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-70": {
+      "sha256": "4e1502265f7752ae5f5d8036b8d976121bd2bb5ed75c68e5af547a4cc6dcfdc8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-74": {
+      "sha256": "2295b903ac3b709f40901d518fd6ae7efddea5fb3479562f4e73c00222b95323",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-77": {
+      "sha256": "d305c9932ebda1af0088fac5de63a35ba7bedcf3c0d1ac9ce8fbb3260bda05fd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-78": {
+      "sha256": "6f0c28683d61271022b91c63358a518180a91e0604f097f78d11752dd25cfe29",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-80": {
+      "sha256": "7c8f7bbfa4a8776e024ed1879fb1fdcb58959fb312f0aaa6ac6d4a231c8fd12c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-81": {
+      "sha256": "b3a5f455b678660b85bdd1b2afda692364f18ac04d3ad7ffbc765c6e7cb84ee4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-82": {
+      "sha256": "b465c0662d270c52043a1872e5066829c94734f49d295b6106116ae8eb9c449d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-86": {
+      "sha256": "d501ee7386bffb4c77b548fed48565b93ce0322f059d36594d998a15a221926e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex12-93": {
+      "sha256": "6469a0499fa665fcae33ed9dd4162d69f3e6d9845521cd4b48175c52a6f1cec9",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex13-101": {
+      "sha256": "fa78277524400d5ffe5bcc44b5eca92347ced162bb0d151f78793783ab682baf",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex13-110": {
+      "sha256": "003848512804b0c70a91ff2f8d674090c941c6f3642cd5ca1f8d0f64af847274",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex13-8": {
+      "sha256": "404bc67f4752b9d4809cc2d16b3523dea76bf0d27e4d4ce82cef8af6f718bbd5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex14-1": {
+      "sha256": "28e1a20b0de56ba1f503f42dad1aee784532b3495e0954734e1bd725c5d99079",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex14-10": {
+      "sha256": "3b6d44a8a55686b0f4eba90637162467fcbdee2f610a6a3bb98af854f3a099a7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex14-12": {
+      "sha256": "7243c3ad960aeb00499c5694bf88b6b991f172323b3c72795abe9d605a85a2ca",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex14-7": {
+      "sha256": "26dc5322783025dc7fd83a39fab7e768fff5770bf568ad476d140f6574597480",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-10": {
+      "sha256": "869515a6c1df8ff4468798d1e5dae58e3197cd8637befa60a20418df27b71512",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-104": {
+      "sha256": "5925261abe978c876612d14aa32ba787d12e7c4fbc9c9e5fc082adbad8970c7a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-107": {
+      "sha256": "2ed92f6beaa497367d7bf192359fee5ae170b885dc6ad7a0c683b715df7f41e5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-12": {
+      "sha256": "782da53e782b195cbc13948dcff319b497c740e212166a33d1fadefd05d4c8f3",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-2": {
+      "sha256": "23db828888020f43c297896308d362b7f9b8fa942ea264996e2c123f4f84f095",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-3": {
+      "sha256": "57c4f2bbf7684d18f6cf13aa0aaf47e963612ae478474ab72d5df29ca31f5dc1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-6": {
+      "sha256": "2179028f52fd93a6449678d5a954ca27200d2773958f9742957461a81b5d3a90",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-8": {
+      "sha256": "046c515c2010cbc1a18e315b27925d7b5758f233f096079d3edda0fffacf6589",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-9": {
+      "sha256": "84b515f6aabe6c6a147678944a85cac6272722068a4d75f667364209911bed87",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-96": {
+      "sha256": "3a12fce8f58c4cb13321af958360460702b605e052b4ee7358c17635fb0989cc",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex16-98": {
+      "sha256": "63c4e44a8125caaba35b93e11a21cb2fc05d6b857f46127a712e28f2a4ec5a57",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex2-10": {
+      "sha256": "0a0f82485fed8f9551c8b3acf0941df255c5bc5bb5f7dace40cde7ef36105914",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex2-13": {
+      "sha256": "b670c01c76264f53a0e5c6feed6db863acbf6fff79c351c497545fdb9faef73d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex2-4": {
+      "sha256": "36f3427515321a71690d011358bb7825f2298c3b15e3d8c913178e82975e9769",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex2-8": {
+      "sha256": "1ca5ccfa7c935e5f6ac0019b4e9596b65a9ddb07fade06ec516912da2893b8c3",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex2-94": {
+      "sha256": "22197a320dee2567af81a1ed25fb3660f85d8de11a34b86501d4957fc81f7d71",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex2-95": {
+      "sha256": "89306b2cb8f19edf9f7037303dc1ba3b6c37b8ee9421e4eeef6d71d411e75deb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex2-97": {
+      "sha256": "8e2b8dfbf1c5db1893aa1bddf19f0c4e68f471fe440a07e1a0d43ab024f97563",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex2-98": {
+      "sha256": "16f09941cd834619f7e85dccdd3cfe36a7d13077e71365c45f1771ece4ae5f2e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-1": {
+      "sha256": "73bb0b405cfa58995b1bcd1c101eb40f7bb26780bef6b6c5a65b8f81d5627816",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-100": {
+      "sha256": "33a20b246ee4b1108d95d2b004b0caa23a9b7370a9f8c34abc8182ed2291bd7c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-11": {
+      "sha256": "545a9fe64dd6e31eecc8fd96f4431332ce50ee2f877d8b44e590618251f5a9f8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-7": {
+      "sha256": "174ed29854703701cb03255cab3d3de67d4ed4b2dcd12be1e5b58cacf99aec40",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-8": {
+      "sha256": "71c645976d4b0fbe81e1430d8506aa3fb9094cee6661bb4feddd52931e8c1db5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-91": {
+      "sha256": "cc74286645517048f1fef6bffca197a088513b9ca8fc3d8d316440c8b7c2baaa",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-92": {
+      "sha256": "f2aa7de850eea35298d0789074487e04ea44cd7959551440b7cc3228729f2dd4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-93": {
+      "sha256": "4ea44ea3534a9072fb256b5172836b1fab0e62e8039d74935294b09d96f114cc",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-94": {
+      "sha256": "c0efcf98860b4e97e227c8367229f8209db7d743aa5174b196d6ecf91e717edf",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-95": {
+      "sha256": "8a630f8d3ff0793201f261eaf214f3145e14d45a07a1027c5c8ab8b4ac50f7a9",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-98": {
+      "sha256": "ef1ca93970a8cb14cff7f597aa8c99f0f8d7ab395d4e3e2836e5bed3926cae13",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex3-99": {
+      "sha256": "3ac51c53990fd6b48edfc7a2763fbfd1335f0c2f8526c85a447d1f87ff4e77d5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-1": {
+      "sha256": "06765b361430f27adfe6d3cb430486a51344db27bc545f76da6e27c4e25d7c30",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-10": {
+      "sha256": "7b1b27ac9455d8cbcff0116ad594b7c198efedf71d9e6a9417699693f6f5996c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-12": {
+      "sha256": "88855118c88e07e054c1257fa69bd7c3c5d9dbdcd9b5cd0dce3ba5a089cc1c74",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-4": {
+      "sha256": "4e8cad245cf6026ad1693787a764b13adb042e0c03da70332dd3a9d52899c551",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-5": {
+      "sha256": "fc9946f07606ea5b72371101c17b64a6140fbcd88f86ee92fe55878eb5da41ea",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-6": {
+      "sha256": "22fcb0a698285e55831e21d6406501b82839995e53d0e5afc2e6e5e366477608",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-7": {
+      "sha256": "2ccc61144714d8f7d434c59cfa2afb53bb5da37cca6c5c8cdc4c3d48c90cc587",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-8": {
+      "sha256": "eb9683d5f53352cceb69e9fa35168124dc170be32beeb7a2f20417e7008348cd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-93": {
+      "sha256": "f1ff66cb4c81d197f6c656ef6efe9f5f1a0aa08da0f99f59425dec2a153b8abd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-94": {
+      "sha256": "18472c3ff06f84e579fbfd0ab4e9cd723dcb8bd58be2de315661a8a3002710e3",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex4-97": {
+      "sha256": "1dae7f19aaa4514a7e930a36e337e6545a5ce7ce6c75f0e3bfb4d55d6532ddcc",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-1": {
+      "sha256": "04d34bcf8167f0ad7f57966fc8312eb7ef9a682147498e964c3d8fa319eda887",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-10": {
+      "sha256": "3a11441ed87a6f2d25b7738523234803b534e54bc180070c818f6ab17f6f9c75",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-12": {
+      "sha256": "205a8139dace790907ca85ef98def3b7f5a942ef3a91fd0c4c61cc373ed0a1d6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-13": {
+      "sha256": "51dbc8ff4d66529836f02c70b04c8f52e9d357f7c6925cab44b040ef436547e5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-2": {
+      "sha256": "05f9c06be6908968121048774edba6267e72878ae6b86564c0ac3f6e17796be7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-3": {
+      "sha256": "0ef6c94b279e9c96bff4d10c771e33c4886ee244a94902b057a947845874b775",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-4": {
+      "sha256": "941d9dce5b79afee3f669075bcc6c5fc43da90a7db601f8a2b71cab0e9213d01",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-5": {
+      "sha256": "7d0a78353047a65993eb52b150417922fda8ae5bc36db74be54714ff3efe2e00",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-7": {
+      "sha256": "a60177d077c143c573d3d93bbe1180cd51ae5a5acfef7f54dd41932778911d22",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-9": {
+      "sha256": "d2a8a0302b5ba17d4b43a077ccdf1885b44992099980a95617caa147c6fc19af",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex5-96": {
+      "sha256": "bc660c37b378de4410b12852a77e878fbd5e76ad6776caf160771151e484849c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-1": {
+      "sha256": "906b838ed9d04695054220cb8167fdaa8455fae2e9d560c8be4831d686dec882",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-10": {
+      "sha256": "4f22110f3cfff3914d8d024098141f33c6c56c5b9facf4d1d7680d97783373a3",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-108": {
+      "sha256": "e63976fe12c563cddb634da7a295b0ae8721eb14b3f8a7e477f263b0b03cd04f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-113": {
+      "sha256": "cd4cf07bde73d4c5e3f80a1b9a230b8270da5ff52171118d1d87301b0196f543",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-13": {
+      "sha256": "8e26730eef28de19539c72f51eecab7ce68982daaad62ce2c9305accafbb4214",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-14": {
+      "sha256": "51d69f525dd99ab7294a2e073cfd3fd1873489491092c1ba9c565d94945a295b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-16": {
+      "sha256": "cbc573b48593ebdf44543e9f29c387909e90e5c0682600f4c8bf2c5650ccd450",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-17": {
+      "sha256": "de9460f428e72a310080502d1b65d1c34d1946c9e3f3e4783d6fc7c5a5dee390",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-2": {
+      "sha256": "c13df66aa3a82cd29d6c44682a6c35f29e360f16b5deee64a902ed0d4200c5ec",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-3": {
+      "sha256": "624fbd18ba4c4b6a6122dd138f4b1f23f900cc4d895dda55b79574e4bea49de2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-4": {
+      "sha256": "0627e03e90225b40ae814a861bb137c9790d5cf676458b534cb7a3f0afa23129",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-7": {
+      "sha256": "bb9a6e279568405b27c69017130e00363c37f8071d04381bb376d52f8aabd5cc",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex6-9": {
+      "sha256": "154fbfdf57baed374fdc14d2bd306b6286355536b85e2f8b0f5ea23a7d4a230f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-11": {
+      "sha256": "bd05ac2f29ca923cdaad016e4a76a47c861c0b4860a51c6f5b44556562054eed",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-110": {
+      "sha256": "4e4084f0667f62f884fec335801ec1e29ee1887cd7f847d5fb76cf4e2744dd2b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-111": {
+      "sha256": "36959b7da5eeef8d27ce9ce3b5ed4f67311c47523f7fd254d2a81f9488281a05",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-12": {
+      "sha256": "c13459308db8f334a6ad168d5e498b1aae5129313e666fe67b996e6023707cd8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-13": {
+      "sha256": "783f14725d97cea8e412d129859c11190e7e29f6719c20a5a7983f3439131a89",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-14": {
+      "sha256": "11536f4090792fb67cb0565a8526fecde4fd097ce57d314c3f0a7c9a283034fb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-2": {
+      "sha256": "a7ab3257838512312866846c53b31dd0cfbf1bea0c27f6e94c56953eb2dc6e1a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-3": {
+      "sha256": "848d67d1763bbd275832d4c1354551e2cb8a81a890ca902c50605198ed8b4b16",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-5": {
+      "sha256": "e2bd1415a37553bcea3beb3284c53fd0ee145b36de441ae9e42ada9f0bb2e239",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-7": {
+      "sha256": "293935c9c70f7b807b2cb7dd33b5fdd28a3cc78daaa5e89d72e9d817438cb624",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex7-98": {
+      "sha256": "6c00b77587f4630928c918d3d63daf5163070807e0fe2b0a9c0b9992504bd982",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-1": {
+      "sha256": "f2636d82793199b7f2fc68473ab35e7cd1c2e15a04fc93d58ece074870414853",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-103": {
+      "sha256": "63ee7b1bae974561cf3824897da7f3e5a244b2bc07755225b7814728e8d2db58",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-108": {
+      "sha256": "87d07f0a8ba632579513504e540be65b9c65debfdb173992e3ed4c294d53d1ec",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-12": {
+      "sha256": "3cadf7829e6af485c2247a4d19d3983875c025f778636ef91ad4d5bca3ae59b7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-13": {
+      "sha256": "0fe4df52e75521fecd5a86f09a0134fa352b06ca509ff1ee4c7fce06186e4ebb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-14": {
+      "sha256": "32f5f99bdd0d16ccf69facf4e6a6f9a6269862aae60ed7e49c19557b3844d46d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-3": {
+      "sha256": "1aa4af714af49915bb1cabd3e60923383e32d9f1162beac0705c3a811601f040",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-5": {
+      "sha256": "756b17421acbc6967dd250c9d8f1b649b4054cd657587a123783f47030b193b1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-6": {
+      "sha256": "8ba505b5b6b191d66e8dbfdfb6885fc9c6470a3323c8178260d98695045b8273",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex8-8": {
+      "sha256": "8952fc259d258a3f119888168fb725d5a694ef8ad063f0b03cddaa312eeb39df",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex9-1": {
+      "sha256": "bfab3ee0ce8f1833418aeb3e144521a5960270bae33e0ca8a4fc6e55788a9e25",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex9-102": {
+      "sha256": "d757815cc619f0a08c6b7933314ff0aaa6bba7a11c8946404d89d3ef14cf350d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex9-104": {
+      "sha256": "8d88b1b2598b0985be11ad1263564a38a9c3e184a884d407d0d857b0e631aaf6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex9-105": {
+      "sha256": "6086e23dac8ee109131e20cfd64a6761a1a8bda73fb5065ff9f135115c978bfd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex9-106": {
+      "sha256": "5ef7c7124235bb591f6eb005074a3c847f6dcb9aa5ca9282146c569826016714",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex9-107": {
+      "sha256": "5cbd9fa4190791fa10e6a8b528e5005cbc5739443ae8e61a3bad68e886c25bb7",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "ex9-7": {
+      "sha256": "4484b3d7b9768edf2fa92eadbd59e8423048ceabf5b387fd1996f0a16aacbe18",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-1": {
+      "sha256": "06d7c4d2b9bfe60ed2322af8a5fef1f87151920e2e78daf19b787fc24a2cb921",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-10": {
+      "sha256": "b7ff7de211072b46776ae0ab1ba2dbaabda5464c3bfd8a3336ca2c5163672416",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-11": {
+      "sha256": "39388c4e17cd542fb7a112a1eb8fe0730646acf55f5f146ab888067a49efbb8c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-12": {
+      "sha256": "06f9bfe86e7788ba4be12f049051f127e460fa5f38a429b94d1fa5120092ab92",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-13": {
+      "sha256": "f81405c316d50946e05c1e035f46f8b0c60cd791ad671b4f942d65fa53a25e5d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-14": {
+      "sha256": "b01b85851b1ddd91d6cc20392635b1c70f395568ace37c51ebb94f869d13bace",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-15": {
+      "sha256": "8b8f39fc5852c1445f161fa00b35c2b488c4714d044933c55d6c90b7c0b8bd91",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-16": {
+      "sha256": "d7a22049c14decce1a0fae8fe186b9820f931f9185190424a5405bb893969115",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-17": {
+      "sha256": "a94a802a3518efcba5bfef4b3f5e41f92fa9bd22f1e41bb2514fff9560d81b24",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-18": {
+      "sha256": "c044b013e551064979c7ddbaf689c6632345b58bceba49d4f16be804f06e1482",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-19": {
+      "sha256": "59f3cba76fedda12972cadd1de4bd5df0d701710d36c5d07e6a73e88560a1e65",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-2": {
+      "sha256": "332ac67de2b4d8fc3a73a1434de63e8d4a08d74dcc1fa40be7d799fae903cb5e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-3": {
+      "sha256": "bc845b31a45a36d77de83ccc45ca7dcaa18ac3abb39eeb681524e2884166487e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-4": {
+      "sha256": "4ef5e66447a27ae13020b1b96b5f5e6f85808bb4c222c69e743cfb9b69ed6a64",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-5": {
+      "sha256": "2374552fa9fd85e59253fef99525f862ee7dd08fb9eb149ef7b47102939eb236",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-6": {
+      "sha256": "67212d3b8f7c0d59e3ec2d01bf0485112e46722c58ca6db9e1331daa8be84a80",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-7": {
+      "sha256": "ac771a5f4bc70a4b7d82b75b9d9b7f617aefe26292abcaa9313080c8986da45a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-8": {
+      "sha256": "a8f1219b8d3a9c3448bf3dbed33830580ff7e4156384af6dd6bc9dfd9d2af20f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym1-9": {
+      "sha256": "e11177cac750b13bfb4774382211268afb0473efb3d77e9f1bf74f524cad7616",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym2-12": {
+      "sha256": "74ccd06423d166fe37b64cb8aae8595edbfe0469bf0082e7dde981f8fce13502",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym2-14": {
+      "sha256": "44d8fd902086c3fa376cae5ffd4224112a3d2837dc5cbc4b62441337dcfd71cb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym2-15": {
+      "sha256": "a87dd8f110a725b44ec4f198016b6545bcca676ae36e2e66f5873ae20aaf9705",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym2-4": {
+      "sha256": "7f68871543f87a9398dd68540f2d44cf7aa43b196ecce5f1713666dc9790af2e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym2-5": {
+      "sha256": "b19d8ad6b6e777417b92d681eeeb779cca84cc97fc030fa236258c94f9e0dec4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "gym2-8": {
+      "sha256": "f10416c2646ac11ed54bcf9dff8512c974c30b3550e9e78d68736996385bdb51",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "hgss1-8": {
+      "sha256": "63061efc2ce67db97be48799d257828f6bbbef37b7ae2e84e128aad6e82399fc",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "hgss2-6": {
+      "sha256": "7315631c786ddb43a9d62c2661a9287f4548d7f3c5c925aed7def940501f7715",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "hgss2-8": {
+      "sha256": "53a9ef68a9a24d34f3a429d0073f83c172465b2cf71c7c8902093caa13c99d79",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "hgss2-9": {
+      "sha256": "7f6f83fe36f437a56c4341f9682b32088a80369bec6f5ccab3c9a08e618ae2ee",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "hgss4-10": {
+      "sha256": "4bd91e883a671d976f058b3f5950b8cd3f19ce8882c961bd66cbd97711b3494a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-1": {
+      "sha256": "e15ca616645efd1328bccc26e03d44646ffc5bf230d523226f0afca3a3a4ffcc",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-10": {
+      "sha256": "65df24a706cb693a9afb36a2ca601decc52720735f14e146d5fcabc852e164da",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-11": {
+      "sha256": "9625604b578161f666591b72e3ec31da2d72933009b12c3bf03b82d45dc2eb72",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-12": {
+      "sha256": "95c2d9c099be4de9a9e2faea868e8da1552c02b84867ac23cf917e4f1f2e97c4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-13": {
+      "sha256": "4af125f083c535f234dab5af93587f1232e9655eac765501c6b1b5ee42476130",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-14": {
+      "sha256": "c108d1ed1bfccff84b1b549ecd804c291f4217808a36cc10c9567260cd35a3f5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-15": {
+      "sha256": "5bf1f83e0e64ba0c6305c7be44af78e5b04be294b04d6ca46a64b448f2299d73",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-16": {
+      "sha256": "316526a0cd7ff204a17b2bd51f98fc873782870003fe514883bfd36a4c7fd65c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-17": {
+      "sha256": "20d2e77109984a6b82a98a5f7bba14203097fc91ebe1bab9ff3252c78268ff83",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-18": {
+      "sha256": "41ba0c16e67d309fc4b9fdafc417c35fa159a9df897c67d53454454dbbfefd53",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-2": {
+      "sha256": "3525ae281a53cbf5706843bfd96de955ae86eba31d919df1de8cb80bf25bd4c5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-3": {
+      "sha256": "5b48dd9d3891ef89a2cac07b1f170ff750606fe1fe8fa392db66b62402e5f58b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-4": {
+      "sha256": "f0d052cdd07f4956b2d45e64388a53b5dfb7e585e2bd9eb0feb0cdf1a2b45803",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-5": {
+      "sha256": "10939c9369870d9daea1e5d58ccccab5183808f281460a1a3a68f9258921890d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-6": {
+      "sha256": "119112f5bcc0218f33628d294cbbd61dddef60a1676582bbf9403824e6114119",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-7": {
+      "sha256": "5b83c85bf7cb47702038a40a2a0c4059d1a9d60b0fdf096ca1f501d9bb3f040e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-8": {
+      "sha256": "61d42380c2947cc91ce188e150c5d67625a07dd3079073294100922eca515101",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo1-9": {
+      "sha256": "ffb45753dd62c0b4e4d3db18b1da863bfbb7753efabc23f9f61d7e9f25a4281f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-10": {
+      "sha256": "fa1c6efbc04f8207de000e41f9eefa0721de9f6a1636317ce12be221f9a6b437",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-11": {
+      "sha256": "bcff92109cc2ea154d2f467c7a27771fa90e89baa00578e33056ce0aa02eacc0",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-14": {
+      "sha256": "7ec04b4cf8a2df923fbbfc453477cf9b180c96f1fd347c30976d078b20016f49",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-15": {
+      "sha256": "6810cd2e4b09d02bb121f4718810b4df63f748f40d1ad039d18b2b39e41c8d52",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-17": {
+      "sha256": "5e505acfe56276cfa8a8cfbd720f65b07a47aae1e3368cfdd100cd7fd8983886",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-3": {
+      "sha256": "347e3edf6ee1bbdde2a34932798782d26238678bc2643e311c2c6718ff093ef1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-4": {
+      "sha256": "cfa6f140fc0f5e3758bf04005e7c9229ed3fd8b60841f429aab81c216aa73220",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-5": {
+      "sha256": "cdae1ef61525d6d8b39d229d35ebd73ebfa4be1add7fff8e37fa8507046a2aaa",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-6": {
+      "sha256": "5db6d08ebdee7fb164d076a9aec6f27b4981853e210d619cfcf46ea3db8f48ed",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-7": {
+      "sha256": "c79148d7243354ea37ec2fa53ee3a0c0d24218e28533a9d28aa511468ecc0eba",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-8": {
+      "sha256": "605782392a95c23687b9639b368dea5e03a993cecd9279df776aaa5bd6c16286",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo2-9": {
+      "sha256": "202f7ee703a253fdafe7e951bd2e8e5dd79dca099647c4c1ce43cd4aa3f97355",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-1": {
+      "sha256": "222b96b52db78899ebcf8f633ff523fbbf0414db8778aec64ce30849325b5e57",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-10": {
+      "sha256": "a3b48b80f5c3304482b2e529a4040559c34dceb6f2efd08d1a2bad420b93ec15",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-11": {
+      "sha256": "dd055071de4097f214d110f024336836a4d8d804437eb9f47262ff23f922f500",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-12": {
+      "sha256": "65fb4965650e4bb2955d726ebe0ad55968f400fc2bbab82cbfabebc643d7377b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-13": {
+      "sha256": "bba065a9154a28bb2f20902ede2704e008e54734188305b8a3af0816e3d18e0b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-14": {
+      "sha256": "9b33dcdc7622ab412de95c525a3c972724a8308ff55dc31482005532ae36b2ef",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-2": {
+      "sha256": "4e37c2dcb85f6931910b1c7403b3d5f96d1538b26264f8f775583cf183a5daf1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-3": {
+      "sha256": "1fb98d8b7a4a1fc866864f6add6e08d6d6c6b65702f7bcef73a0d57296e8c21e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-4": {
+      "sha256": "2a08149804f5b3e94132ebfd196383b6ff31d559bbd2f0cd081c8f32ab899e88",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-6": {
+      "sha256": "d11e97f526297b23588b1be70a9b2ffeef9852d2272675c5df350a75d6ef9a06",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-65": {
+      "sha256": "96001dae33e48b9a188514864c2e96287521ea6297d73be7bbeeac0617f4b967",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-66": {
+      "sha256": "932192b1769feac1d22c1ae370d248a1b49e9a1c062637d18c70cf495877b1a1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo3-8": {
+      "sha256": "5443decbe222662ac028016f77a570f57741b77b1a52c236e94c2a8a2ee5c701",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-1": {
+      "sha256": "aa21852da49649323efcd3d526226b0ec61456afa0565a47b2e16ed43a530766",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-10": {
+      "sha256": "304e7051d81312ad4817f8f0b12d2c8725744209e1e8b091151acbaea22ba4c6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-11": {
+      "sha256": "d350c6054a2a8ff3ff23f75393ce6968dbb62295e24eeafd77cd31568ee303cf",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-12": {
+      "sha256": "10abd473df2cb8691c5ba8ed14d08f98e08cddfe40ed4db1dead85e30d0ae08e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-13": {
+      "sha256": "e6d74c5e77f84b51149958ec293ae3e9412f87e8942d9dcf6355a366f81bf164",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-15": {
+      "sha256": "b761e67852abc276e6f505d6cdb21ef0e6e410f442c2c1afb0b9aa4c4613b043",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-16": {
+      "sha256": "c560aff5557a7e2cc6282d68dce58c16805926da5d59dc631152798609341283",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-2": {
+      "sha256": "c018de2cc4b685d49b49d28413f97deec3b501135f9d602777a4b1733aa818ad",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-4": {
+      "sha256": "3f2a64ebedc6df37e6ea6c0d36def8d3a0521b9d7540c9390d094e3a2530b833",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-7": {
+      "sha256": "fe548af42c659780d16504bff6715b9a5fab54e1514be9edd8c916f883859a53",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-8": {
+      "sha256": "cc99cc731824d8f5b3a2d7a2cffb2d61c221ec00b57741520ff500dbeef516fe",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "neo4-9": {
+      "sha256": "a2d8132fb14bea978dcac21edd6c049f73df018cfb6c8e12585c11c8f79e4996",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-1": {
+      "sha256": "f0d21d995c6366cd8b617077e2f3cdd164476f2c9eb032f26888219c0d1a5549",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-10": {
+      "sha256": "af97bdf475e0c0e9f321b2294473716ab925d35d608ae75fa637d1dbba62d7ce",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-11": {
+      "sha256": "1e71bdd76d29ff4f969def1059414152a3636f567902e701e810885e1a21b4a6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-13": {
+      "sha256": "33ae61c012eaa7e168d1a102a2031b1c4292e76f63a099d90c51af3b3cee35de",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-130": {
+      "sha256": "a35502513de376bd6084ac5854cd54ea5501716711665950504170f0d545d4c5",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-14": {
+      "sha256": "23d0bb45e23e18449c34d059c63376c4210b3d7d3105d03d0f2017210da34ec4",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-16": {
+      "sha256": "6b81ffae9046b244ab70374ede35728af4a83c7ff6aa32915228b318ee0772dd",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-17": {
+      "sha256": "a04639d8ae5adadc1982f6c7c460bfa8259f0c67a5181d5a3ee6f95d0eedb581",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-4": {
+      "sha256": "aa2d701f6a008c75708548b3f2482785e86701e0860f8b4a26825299d4202425",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-6": {
+      "sha256": "92a9bfdef1f277f0f5bed08cb9f774cb35024e56cb246f4bf3d6be582d34c3ff",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-7": {
+      "sha256": "3610bb0a0d627acb7fe11b01fc4c002b6dfb7d904b414971ad5751622e497eca",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl1-8": {
+      "sha256": "bee72d0566aecc55b0a3abe83a972432832be9dd8673fb91360a1f5ac6062b86",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-1": {
+      "sha256": "0f961b7903f44a2d387af12009f3f786fdc92a772934a90ca387261b14ae9230",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-10": {
+      "sha256": "57a4980fc807cc73d489281b8b1a6a00c2a5acf4d67264209ab3361a2404198d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-103": {
+      "sha256": "203a16902af5630b31201e0ea2758d94a5b00b845b95082aa60b8c7670916e92",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-11": {
+      "sha256": "6f5e4c23b1602b7fa0a566c0156452cef39a307d0dbca948480d838c582f58f6",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-112": {
+      "sha256": "fa8a4e1863000b13c1becec60cec4f41a1f7559a371add05893d2a0f87f7330a",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-13": {
+      "sha256": "c78cb950d60cf48744897d830d4428c3e21d9b4965cc4c1178bbb4f22e2da844",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-2": {
+      "sha256": "649a498817f896487f519a4f77aaab89bf318914fb307cf3589d0e5fc6fba765",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-3": {
+      "sha256": "abce24b9870abb509a1fae133f685898d297aaeddec47b2a40e8827a85badaeb",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl2-7": {
+      "sha256": "67d5816785f2c4419059108d5b3e75df1c8c545822fcef1d570c6a60b156df02",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl3-1": {
+      "sha256": "907afa24608a7e57c62bf3aea0ff9318d74426075cf597dd6c6f7d29391884c1",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl3-11": {
+      "sha256": "00b2762e249ccb919ddfcfec5d56561bc94ec84a217ea239b9b97f84cc3900ed",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl3-13": {
+      "sha256": "6089eb2c1a6e030e6455e5091ba3d27ed5679151f6169c9e592f0710334f933b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl3-14": {
+      "sha256": "92a5639ab3944431394fe1b30c1961dbc9e0b48a3cf0780d44a6b664d6ce3341",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl3-148": {
+      "sha256": "751218d4010673d1008e45d747fdc07649210ea62a71fce0cccc6b58bf070e0c",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl3-149": {
+      "sha256": "17895bc87abf3de8a18021f7dee7ac4d3dc5ce1b8a2824b75d10cfa2a47850a0",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl3-150": {
+      "sha256": "7e684943e3b2d70ec2e250b14ee1e6559c5bfd9997fa5bfe6e739f878b75ce6f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl3-6": {
+      "sha256": "d60b9a7630329066bae8c398ac2ae33428435d76d14bbcf8ab823c4e448b6f62",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-10": {
+      "sha256": "476847e8b2987c949e9a439b089d23946970cd688e8fd7b6ed5b8eb1b6e12c1f",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-11": {
+      "sha256": "92fa709697be16afffca13f9fe029c96bc9dfb29bcecab6b6f8ee96a0e90ab7b",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-12": {
+      "sha256": "9328fc2f5b87cb7830dc17b210aac0a4c11d1f3527c9d05d53c33841f2b95426",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-2": {
+      "sha256": "5ffeb033e8f14a2b9200ef95fe6325947b1900dbe39bf9cc66eca96980e80cbe",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-3": {
+      "sha256": "5d9c2e601a47882a9236bfd5454baa20312f74a6af1678b2622a2ccc6b4f72f2",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-4": {
+      "sha256": "3f45d123b5212c2c5ba9499d5a2e3d83cc7c81f9bf787111ef6665e1d48e9d6e",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-9": {
+      "sha256": "b863e15280819d609a345543d720d33fba38138331876527175910206724e123",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-AR3": {
+      "sha256": "a557ab2bdadf660c00b07e82b1c7f6575506ef11dc64a6997392e42ae559ec80",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-AR5": {
+      "sha256": "cd8df98060151b4c27d6d6a28aa56160bff9f02aa12137b36b9da74997a2d021",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-AR6": {
+      "sha256": "9031d62b0c45cdc881c8648b98e9c0dd071d8338aa8964bc0beae9fa999a3137",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-AR7": {
+      "sha256": "c86a50ce9b8dd62543e4cdc609853039283a3a44ee278d55ea3b40cbe205a199",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-AR8": {
+      "sha256": "d80ea057216086ea27b0a955f4db614ea86f0aff5839d6e1d9dcb9146c1219c8",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    },
+    "pl4-AR9": {
+      "sha256": "f1182522b25e1906ce86001a28c5f01cc933c5dc9947865c6a5befaef9bea07d",
+      "coatingGain": 0.32,
+      "dormantFleckOpacity": 0.22
+    }
+  }
+}

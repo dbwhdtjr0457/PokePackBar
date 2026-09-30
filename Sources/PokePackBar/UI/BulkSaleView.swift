@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 한번에 판매 — 값이 낮은 카드의 중복분을 한 번에 판다.
+/// 한번에 판매 — 고른 가격 범위의 중복분을 한 번에 판다.
 ///
 /// sv10 100팩을 열면 중복이 164종 807장이 된다. 카드 상세로 들어가 한 종씩 팔면 164번을
 /// 눌러야 하고, 그래서 아무도 정리하지 않는다.
@@ -28,12 +28,13 @@ struct BulkSaleView: View {
 
     /// 마지막에 고른 임계값을 기억한다.
     @AppStorage("bulkSaleThreshold") private var threshold = 1_000
+    @AppStorage("bulkSaleAllPrices") private var allPrices = false
     @State private var confirming = false
     /// 방금 판 결과. 뜨면 격자 대신 이것만 보여주고 닫기를 기다린다.
     @State private var sold: WalletStore.BulkSale?
 
     private var targets: [String] {
-        WalletStore.bulkSaleTargets(pool, maxWon: threshold,
+        WalletStore.bulkSaleTargets(pool, maxWon: allPrices ? nil : threshold,
                                     spares: { wallet.spareCount($0) })
     }
 
@@ -70,29 +71,41 @@ struct BulkSaleView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(l.bulkSellPrompt)
                 .font(Typography.label).foregroundStyle(.secondary)
-            HStack(spacing: 4) {
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 3), spacing: 4) {
                 ForEach(Self.thresholds, id: \.self) { won in
-                    let picked = won == threshold
-                    Button {
+                    priceOption(WonFormatter.money(won, language: wallet.language),
+                                picked: !allPrices && won == threshold,
+                                help: l.bulkSellUpTo(WonFormatter.money(won, language: wallet.language))) {
                         threshold = won
+                        allPrices = false
                         confirming = false
-                    } label: {
-                        Text(WonFormatter.money(won, language: wallet.language))
-                            .font(Typography.labelSemibold)
-                            .monospacedDigit()
-                            .foregroundStyle(picked ? Color.white : Color.primary)
-                            .padding(.horizontal, 7).padding(.vertical, 4)
-                            .background(picked ? AnyShapeStyle(Color.accentColor)
-                                               : AnyShapeStyle(Color.secondary.opacity(0.12)),
-                                        in: Capsule())
                     }
-                    .buttonStyle(.plain)
-                    .help(l.bulkSellUpTo(WonFormatter.money(won, language: wallet.language)))
                 }
-                Spacer(minLength: 0)
+                priceOption(l.bulkSellAllPrices, picked: allPrices, help: l.bulkSellAllPricesHint) {
+                    allPrices = true
+                    confirming = false
+                }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func priceOption(_ title: String, picked: Bool, help: String,
+                             action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(Typography.labelSemibold).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.8)
+                .foregroundStyle(picked ? Color.white : Color.primary)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 7).padding(.vertical, 4)
+                .background(picked ? AnyShapeStyle(Color.accentColor)
+                                   : AnyShapeStyle(Color.secondary.opacity(0.12)), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .accessibilityLabel(help)
+        .accessibilityAddTraits(picked ? .isSelected : [])
     }
 
     private func summary(_ l: L, _ sale: WalletStore.BulkSale) -> some View {
@@ -146,11 +159,14 @@ struct BulkSaleView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
                     Button(l.bulkSell) {
-                        let got = wallet.sellSpares(ids)
-                        confirming = false
-                        sold = got.isEmpty ? nil : got
+                        Task {
+                            let got = await wallet.sellBulkOnlineAware(ids)
+                            confirming = false
+                            sold = got.isEmpty ? nil : got
+                        }
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(wallet.resourceActionsDisabled)
                     Button(l.cancel) { confirming = false }
                         .buttonStyle(.borderless)
                 }

@@ -139,7 +139,7 @@ enum DexKind: String, Codable, Sendable {
 }
 
 /// 카드 몇 장을 묶은 조합.
-struct Dex: Sendable, Identifiable, Equatable {
+struct Dex: Codable, Sendable, Identifiable, Equatable {
     let id: String
     var kind: DexKind = .theme
     let name: DexText

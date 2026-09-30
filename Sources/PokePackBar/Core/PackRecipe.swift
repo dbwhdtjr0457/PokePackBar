@@ -60,11 +60,12 @@ enum PackVariant: String, Codable, Equatable, Sendable {
     case prismaticEvolutionsGod
     case prismaticEvolutionsDemigod
     case blackBoltWhiteFlareGod
+    case ascendedHeroesGod
 
     var isSpecialHit: Bool {
         switch self {
         case .scarletViolet151Demigod, .prismaticEvolutionsGod, .prismaticEvolutionsDemigod,
-             .blackBoltWhiteFlareGod:
+             .blackBoltWhiteFlareGod, .ascendedHeroesGod:
             return true
         case .standard, .celebrations:
             return false
@@ -73,6 +74,7 @@ enum PackVariant: String, Codable, Equatable, Sendable {
 
     var isGodPack: Bool {
         self == .prismaticEvolutionsGod || self == .blackBoltWhiteFlareGod
+            || self == .ascendedHeroesGod
     }
 }
 
@@ -82,7 +84,7 @@ enum PackVariant: String, Codable, Equatable, Sendable {
 /// In particular, the first card in a Prismatic Evolutions God Pack is the
 /// Master Ball parallel of Eevee. Its rarity is still Common, so rarity alone
 /// can never recover that finish.
-enum PackFinishHint: String, Equatable, Sendable {
+enum PackFinishHint: String, Codable, Equatable, Sendable {
     case normal
     case reverseHolo
     case ascendedParallel
@@ -165,6 +167,12 @@ struct PackRecipe: Equatable, Sendable {
     /// simulator deliberately reuses the conservative 1/2500 setting instead
     /// of presenting false precision as observed data.
     static let estimatedBlackBoltWhiteFlareGodOneIn = 2_500
+
+    /// Ascended Heroes God Packs are confirmed as 3 Mega Attack Rares + 7 SIRs.
+    /// TPCi has not published an insertion rate. Large community openings cluster
+    /// around one per thousand packs, so this remains an explicitly labelled
+    /// simulator setting rather than an official or guaranteed rate.
+    static let estimatedAscendedHeroesGodOneIn = 1_000
 
     /// TCGplayer가 대량 개봉으로 관측한 영문판 병렬판형 출현율.
     /// 제조사가 공시한 확률이 아니므로 UI에서도 "관측치"로 구분한다.
@@ -306,6 +314,17 @@ struct PackRecipe: Equatable, Sendable {
                     replacedSlots: Set(PackSlotKind.allCasesUsedByStandardRecipes)
                 )
             )
+        case "me2pt5":
+            recipe = PackRecipe(
+                slots: recipe.slots,
+                contents: recipe.contents,
+                baseVariant: recipe.baseVariant,
+                specialVariant: PackSpecialVariantRule(
+                    variant: .ascendedHeroesGod,
+                    estimatedSimulatorOneIn: estimatedAscendedHeroesGodOneIn,
+                    replacedSlots: Set(PackSlotKind.allCasesUsedByStandardRecipes)
+                )
+            )
         default:
             break
         }
@@ -320,6 +339,22 @@ struct PackRecipe: Equatable, Sendable {
         "gym2": 1,
         "neo1": 1,
     ]
+
+    /// 번호 없는 기본 에너지가 일반 에너지 한 장과 별개로 reverse 슬롯에도 들어갈 수 있는
+    /// 영문 스페셜 세트. 제조사 봉입률은 공개되지 않아 추첨은 1/9 시뮬레이터 값이다.
+    static let reverseSlotEnergyFinish: [String: CardFinish] = [
+        "sm35": .reverseHolo,
+        "sm75": .reverseHolo,
+        "sm115": .reverseHolo,
+        "swsh35": .reverseHolo,
+        "swsh12pt5": .reverseHolo,
+        "sv3pt5": .holo,          // 151 Cosmos Holo
+        "sv6pt5": .reverseHolo,   // Shrouded Fable patterned reverse
+    ]
+
+    static func estimatedReverseSlotEnergyOneIn(setID: String) -> Int {
+        setID == "sv3pt5" ? 3 : 9
+    }
 
     // MARK: English Radiant Collection sheets
 
@@ -514,4 +549,10 @@ struct PackRecipe: Equatable, Sendable {
     static let blackBoltWhiteFlareGodPack: [PackCardRequest] =
         Array(repeating: PackCardRequest(tier: .artRare), count: 9)
         + [PackCardRequest(tier: .specialArtRare)]
+
+    /// Confirmed English Ascended Heroes God Pack shape. Cards are selected
+    /// without replacement from this expansion's own pools.
+    static let ascendedHeroesGodPack: [PackCardRequest] =
+        Array(repeating: PackCardRequest(tier: .megaAttack), count: 3)
+        + Array(repeating: PackCardRequest(tier: .specialArtRare), count: 7)
 }

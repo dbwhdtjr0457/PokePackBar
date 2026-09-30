@@ -68,6 +68,23 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
+            if wallet.isOnline {
+                Button("온라인 · 통계와 거래") { OnlineWindow.shared.show(wallet: wallet) }
+                    .buttonStyle(.borderless).font(.caption)
+            }
+            if let remote = wallet.remote, !remote.ready || remote.error != nil {
+                Button { nav.showSettings = true } label: {
+                    Label(remote.error ?? "서버 연결 중…", systemImage: "network")
+                        .font(Typography.caption).lineLimit(2)
+                }.buttonStyle(.plain).foregroundStyle(.orange)
+            }
+            if let remote = wallet.remote, let recovered = remote.recoveredResult {
+                HStack {
+                    Text("미확인 요청 복구 완료\(recovered.packs.map { " · \($0.packs.count)팩 개봉" } ?? ""). 도감과 개봉 이력에 반영됐습니다.")
+                        .font(Typography.caption)
+                    Button("확인") { remote.dismissRecoveredResult() }
+                }
+            }
             if let error = wallet.persistenceError {
                 VStack(alignment: .leading, spacing: 3) {
                     Label(l.saveFailed, systemImage: "exclamationmark.triangle")

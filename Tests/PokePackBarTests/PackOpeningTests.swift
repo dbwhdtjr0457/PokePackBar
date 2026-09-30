@@ -293,6 +293,8 @@ final class PackOpeningTests: XCTestCase {
             XCTAssertEqual(PackRecipe.forSet(id, era: .scarletViolet)
                 .specialVariant?.variant, .blackBoltWhiteFlareGod, id)
         }
+        XCTAssertEqual(PackRecipe.forSet("me2pt5", era: .scarletViolet)
+            .specialVariant?.variant, .ascendedHeroesGod)
         for id in ["sv1", "sv10", "swsh12pt5", "base1", "cel25"] {
             XCTAssertNil(PackRecipe.forSet(id, era: .scarletViolet).specialVariant, id)
         }
@@ -302,6 +304,7 @@ final class PackOpeningTests: XCTestCase {
         XCTAssertEqual(PackRecipe.estimated151DemigodOneIn, 1_300)
         XCTAssertEqual(PackRecipe.estimatedPrismaticGodOneIn, 2_500)
         XCTAssertEqual(PackRecipe.estimatedBlackBoltWhiteFlareGodOneIn, 2_500)
+        XCTAssertEqual(PackRecipe.estimatedAscendedHeroesGodOneIn, 1_000)
         XCTAssertNotEqual(PackRecipe.estimated151DemigodOneIn,
                           PackRecipe.estimatedPrismaticGodOneIn)
     }
@@ -453,6 +456,16 @@ final class PackOpeningTests: XCTestCase {
         XCTAssertTrue(requests.allSatisfy { $0.exactCardID == nil })
     }
 
+    func testAscendedHeroesGodPackHasThreeMegaAttackAndSevenSIRs() {
+        let requests = PackRecipe.ascendedHeroesGodPack
+        XCTAssertEqual(requests.count, 10)
+        XCTAssertEqual(requests.prefix(3).map(\.tier),
+                       Array(repeating: .megaAttack, count: 3))
+        XCTAssertEqual(requests.suffix(7).map(\.tier),
+                       Array(repeating: .specialArtRare, count: 7))
+        XCTAssertTrue(requests.allSatisfy { $0.exactCardID == nil })
+    }
+
     func testForced151DemigodDrawReplacesTheLastThreeSlotsAtomically() throws {
         let index = try bundledIndex()
         var generator = AlwaysLowestBucketGenerator()
@@ -499,6 +512,44 @@ final class PackOpeningTests: XCTestCase {
             XCTAssertTrue(opened.isGodPack, setID)
             XCTAssertEqual(pity, 0, setID)
         }
+    }
+
+    func testForcedAscendedHeroesGodDrawUsesThreeUniqueMAAndSevenUniqueSIRs() throws {
+        let index = try bundledIndex()
+        var generator = AlwaysLowestBucketGenerator()
+        var pity = PackConfig.pityThreshold
+        let opened = PackOpening.draw(setID: "me2pt5", index: index, alreadyOwned: [],
+                                      pity: &pity, using: &generator)
+
+        XCTAssertEqual(opened.variant, .ascendedHeroesGod)
+        XCTAssertEqual(opened.cards.count, 10)
+        XCTAssertEqual(opened.cards.prefix(3).map(\.tier),
+                       Array(repeating: .megaAttack, count: 3))
+        XCTAssertEqual(opened.cards.suffix(7).map(\.tier),
+                       Array(repeating: .specialArtRare, count: 7))
+        XCTAssertEqual(Set(opened.cards.map(\.id)).count, 10)
+        XCTAssertTrue(opened.cards.allSatisfy { $0.id.hasPrefix("me2pt5-") })
+        XCTAssertTrue(opened.isGodPack)
+        XCTAssertEqual(pity, 0)
+    }
+
+    func testGodPackPreviewUsesOnlyRegisteredGodPackRecipes() throws {
+        let index = try bundledIndex()
+        for setID in ["sv8pt5", "zsv10pt5", "rsv10pt5", "me2pt5"] {
+            var generator = SeededGenerator(seed: 42)
+            let preview = try XCTUnwrap(PackOpening.godPackPreview(
+                setID: setID, index: index, alreadyOwned: [], using: &generator
+            ))
+            XCTAssertTrue(preview.variant.isGodPack, setID)
+            XCTAssertEqual(preview.cards.count,
+                           PackRecipe.forSet(setID, era: index.era(setID)).contents.gameCardCount,
+                           setID)
+        }
+
+        var generator = SeededGenerator(seed: 42)
+        XCTAssertNil(PackOpening.godPackPreview(
+            setID: "sv3pt5", index: index, alreadyOwned: [], using: &generator
+        ), "151 demigod 팩을 갓팩 테스트로 표시하면 안 된다")
     }
 
     func testGenericSetNeverRollsGlobalGodPackEvenWhenRandomRollIsZero() {
@@ -851,30 +902,44 @@ final class CardTierOrderingTests: XCTestCase {
         XCTAssertEqual(CardTier.energy.fallbackChain, [.energy])
     }
 
-    /// 개봉은 등급 오름차순 — 가장 희귀한 카드가 마지막에 나온다.
-    func testRevealOrderPutsRarestLast() {
+    /// 공개 순서는 희귀도와 무관하게 세트 레시피의 슬롯 순서를 보존한다.
+    /// SV의 두 번째 리버스 슬롯에서 SIR가 나오면 뒤의 홀로 슬롯보다 먼저 보여야 한다.
+    func testRevealOrderPreservesPhysicalSlotOrder() {
         let cards = [
-            PulledCard(id: "a-1", tier: .ultraRare, isNew: true),
-            PulledCard(id: "a-2", tier: .common, isNew: true),
-            PulledCard(id: "a-3", tier: .doubleRare, isNew: true),
-            PulledCard(id: "a-4", tier: .common, isNew: false),
+            PulledCard(id: "common", tier: .common, isNew: true),
+            PulledCard(id: "uncommon", tier: .uncommon, isNew: true),
+            PulledCard(id: "reverse", tier: .rare, isNew: true, finish: .reverseHolo),
+            PulledCard(id: "sir", tier: .specialArtRare, isNew: true),
+            PulledCard(id: "holo", tier: .doubleRare, isNew: false),
         ]
         let ordered = PackOpening.revealOrder(cards)
-        XCTAssertEqual(ordered.map(\.tier), [.common, .common, .doubleRare, .ultraRare])
-        // 같은 등급 안에서는 뽑힌 순서 유지
-        XCTAssertEqual(ordered.prefix(2).map(\.id), ["a-2", "a-4"])
+        XCTAssertEqual(ordered.map(\.id), cards.map(\.id))
     }
 
-    /// 실제 팩에서도 마지막 카드가 그 팩의 최고 등급이어야 한다.
-    func testDrawnPackRevealsItsBestCardLast() throws {
+    /// 실제 추첨 결과도 레시피가 만든 슬롯 순서에서 바뀌지 않는다.
+    func testDrawnPackRevealPreservesRecipeOrder() throws {
         let index = try XCTUnwrap(CardIndex.loadBundled())
         for seed in 1...50 {
             var g = SeededGenerator(seed: UInt64(seed))
             let pack = PackOpening.draw(setID: "sv10", index: index, alreadyOwned: [], using: &g)
             let ordered = PackOpening.revealOrder(pack)
-            let best = try XCTUnwrap(pack.map(\.tier.rank).max())
-            XCTAssertEqual(ordered.last?.tier.rank, best)
+            XCTAssertEqual(ordered.map(\.id), pack.map(\.id))
         }
+    }
+
+    /// Ascended Heroes 갓팩은 등급 순위상 SAR가 MA보다 낮아도
+    /// 실물 구성인 MA 3장 다음 SAR 7장 순서를 유지한다.
+    func testAscendedHeroesGodPackRevealPreservesConfiguredOrder() {
+        let cards = PackRecipe.ascendedHeroesGodPack.enumerated().map { offset, request in
+            PulledCard(id: "card-\(offset)", tier: request.tier, isNew: true)
+        }
+
+        let ordered = PackOpening.revealOrder(cards)
+
+        XCTAssertEqual(ordered.prefix(3).map(\.tier),
+                       Array(repeating: .megaAttack, count: 3))
+        XCTAssertEqual(ordered.suffix(7).map(\.tier),
+                       Array(repeating: .specialArtRare, count: 7))
     }
 }
 
@@ -1153,6 +1218,26 @@ final class RevealPeekTests: XCTestCase {
         XCTAssertEqual(TierGlow.strength(for: .common), 0)
         XCTAssertEqual(TierGlow.strength(for: .energy), 0)
         XCTAssertGreaterThan(TierGlow.strength(for: .ultraRare), 0.9)
+    }
+}
+
+final class GodPackRevealTimingTests: XCTestCase {
+    /// 카드 이미지가 뜨기 전 준비 화면은 갓팩 여부를 절대 읽지 않는다.
+    func testPreparingViewDoesNotSpoilSpecialPack() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(contentsOf: root.appendingPathComponent(
+            "Sources/PokePackBar/UI/PacksView.swift"), encoding: .utf8)
+        let start = try XCTUnwrap(source.range(of: "private struct PreparingView"))
+        let end = try XCTUnwrap(source.range(of: "private struct OwnedPackRow"))
+        let preparing = source[start.lowerBound..<end.lowerBound]
+
+        XCTAssertFalse(preparing.contains("pending.specialVariants"),
+                       "카드를 보기 전에 갓팩 여부를 읽어 스포일러하고 있다")
+        XCTAssertFalse(preparing.contains("specialPackTitle"),
+                       "준비 화면이 갓팩 제목을 먼저 표시하고 있다")
+        XCTAssertFalse(preparing.contains("Color.orange"),
+                       "준비 화면의 색으로 갓팩을 먼저 알려 주고 있다")
     }
 }
 

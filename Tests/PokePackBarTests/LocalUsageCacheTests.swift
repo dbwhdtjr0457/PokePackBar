@@ -33,7 +33,7 @@ private final class FlakyProbe: @unchecked Sendable {
     }
 }
 
-/// 저장 throttle(60초)·prune(40일)을 결정적으로 넘기기 위한 조작 가능한 시계.
+/// 저장 throttle(10분)·prune(40일)을 결정적으로 넘기기 위한 조작 가능한 시계.
 private final class Clock: @unchecked Sendable {
     private let lock = NSLock()
     private var value: Date
@@ -43,7 +43,7 @@ private final class Clock: @unchecked Sendable {
 }
 
 /// LocalUsageCache — 파일별 증분 캐시의 핵심 계약을 픽스처 디렉토리로 검증.
-/// (재사용/재파싱 판정, 디스크 영속·라운드트립, 40일 prune, 60초 저장 throttle)
+/// (재사용/재파싱 판정, 디스크 영속·라운드트립, 40일 prune, 10분 저장 throttle)
 final class LocalUsageCacheTests: XCTestCase {
     private var root: URL!
     private var archivedRoot: URL!
@@ -265,6 +265,61 @@ final class LocalUsageCacheTests: XCTestCase {
         let entries = await makeCache().codexEntries(modifiedSince: since)
 
         XCTAssertEqual(entries.map(\.total), [110])
+    }
+
+    func testCodexCacheExtendsGrowingRolloutWithoutChangingExistingEntries() async throws {
+        let file = try writeFile("rollout-session.jsonl", lines: [
+            sessionMeta(id: "session-a", ts: "2026-07-29T01:00:00.000Z"),
+            codexStateLine(
+                ts: "2026-07-29T01:00:01.000Z",
+                cumulativeInput: 100, cumulativeOutput: 10,
+                lastInput: 100, lastOutput: 10),
+        ])
+        let cache = makeCache()
+        let first = await cache.codexEntries(modifiedSince: since)
+        XCTAssertEqual(first.map(\.total), [110])
+
+        let appended = codexStateLine(
+            ts: "2026-07-29T01:00:02.000Z",
+            cumulativeInput: 220, cumulativeOutput: 22,
+            lastInput: 120, lastOutput: 12)
+        let handle = try FileHandle(forWritingTo: file)
+        try handle.seekToEnd()
+        try handle.write(contentsOf: Data("\n\(appended)".utf8))
+        try handle.close()
+
+        let second = await cache.codexEntries(modifiedSince: since)
+        XCTAssertEqual(second.map(\.total), [110, 132])
+        XCTAssertEqual(Set(second.map(\.id)).count, 2)
+    }
+
+    func testCodexCacheColdParsesGrowingAtomicRewriteWhenTailChanged() async throws {
+        try writeFile("rollout-session.jsonl", lines: [
+            sessionMeta(id: "old-session", ts: "2026-07-29T01:00:00.000Z"),
+            codexStateLine(
+                ts: "2026-07-29T01:00:01.000Z",
+                cumulativeInput: 100, cumulativeOutput: 10,
+                lastInput: 100, lastOutput: 10),
+        ])
+        let cache = makeCache()
+        let initial = await cache.codexEntries(modifiedSince: since)
+        XCTAssertEqual(initial.map(\.total), [110])
+
+        try writeFile("rollout-session.jsonl", lines: [
+            sessionMeta(id: "new-session", ts: "2026-07-29T02:00:00.000Z"),
+            codexStateLine(
+                ts: "2026-07-29T02:00:01.000Z",
+                cumulativeInput: 200, cumulativeOutput: 20,
+                lastInput: 200, lastOutput: 20),
+            codexStateLine(
+                ts: "2026-07-29T02:00:02.000Z",
+                cumulativeInput: 500, cumulativeOutput: 50,
+                lastInput: 300, lastOutput: 30),
+        ], mtime: Date().addingTimeInterval(10))
+
+        let rewritten = await cache.codexEntries(modifiedSince: since)
+        XCTAssertEqual(rewritten.map(\.total), [220, 330])
+        XCTAssertTrue(rewritten.allSatisfy { $0.id.hasPrefix("codex|new-session|") })
     }
 
     /// 활성 세션과 보관 세션에 같은 rollout이 동시에 보이는 이동 중 상태에서도
@@ -583,7 +638,7 @@ final class LocalUsageCacheTests: XCTestCase {
         XCTAssertEqual(indexed, 3)
 
         try FileManager.default.removeItem(at: root.appendingPathComponent("rollout-alpha.jsonl"))
-        clock.advance(120)   // 저장 throttle(60초) 통과
+        clock.advance(LocalUsageCache.persistenceInterval + 1)
         _ = await cache.codexEntries(modifiedSince: orphanWindow)
 
         let afterDelete = await cache.codexSessionIndexCount()
@@ -705,8 +760,8 @@ final class LocalUsageCacheTests: XCTestCase {
         XCTAssertTrue(snap.contains("new.jsonl"))
     }
 
-    /// 저장 throttle: 60초 내 재저장은 생략, 60초 경과 후 저장된다 (주입 clock 으로 결정적).
-    func testSaveThrottle60s() async throws {
+    /// 저장 throttle: 10분 내 재저장은 생략, 10분 경과 후 저장된다 (주입 clock 으로 결정적).
+    func testSaveThrottle10Minutes() async throws {
         nonisolated(unsafe) var fakeNow = Date(timeIntervalSince1970: 1_700_000_000)
         let cache = makeCache(now: { fakeNow })
 
@@ -718,10 +773,10 @@ final class LocalUsageCacheTests: XCTestCase {
         fakeNow = fakeNow.addingTimeInterval(30)
         try writeFile("a.jsonl", lines: [claudeLine(id: "1", output: 2)], mtime: fakeNow)
         _ = await cache.claudeEntries(modifiedSince: since)
-        XCTAssertEqual(try Data(contentsOf: cacheFile), firstSnap, "60초 내 재저장은 생략")
+        XCTAssertEqual(try Data(contentsOf: cacheFile), firstSnap, "10분 내 재저장은 생략")
 
-        // 61초 경과 → 저장됨
-        fakeNow = fakeNow.addingTimeInterval(61)
+        // 10분 경과 → 저장됨
+        fakeNow = fakeNow.addingTimeInterval(LocalUsageCache.persistenceInterval + 1)
         _ = await cache.claudeEntries(modifiedSince: since)
         XCTAssertNotEqual(try Data(contentsOf: cacheFile), firstSnap, "throttle 해제 후 저장")
     }

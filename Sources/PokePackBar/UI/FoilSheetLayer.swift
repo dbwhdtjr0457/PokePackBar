@@ -65,7 +65,8 @@ struct FoilSheetLayer: View {
                         // Fine foil substrate remains visible between the scan's
                         // registered flecks. This adds no fabricated large orbs.
                         FoilReliefLayer(material: .engraved(.cosmos, .none),
-                            seed: 0x434F_534D_4F53, tilt: tilt)
+                            seed: 0x434F_534D_4F53, tilt: tilt,
+                            coatingScale: FoilArtworkBalance.entries[cardID]?.coatingGain ?? 1)
                             .opacity(material == .goldStar ? 0.62 : 0.78)
                             .mask {
                                 ArtworkFoilMask(cardID: cardID, preloaded: source, coverage: .artBackground,
@@ -76,7 +77,10 @@ struct FoilSheetLayer: View {
                             let energy = FoilScanGlintCache.reflectionEnergy(group: group, x: tilt.nx, y: tilt.ny)
                             let color = (hue + Double(group) * 0.17).truncatingRemainder(dividingBy: 1)
                             ZStack {
-                                Color.black.opacity((1 - energy) * 0.88)
+                                // An unlit fleck must not turn into a black
+                                // hole over a source-visible star or art edge.
+                                Color.black.opacity((1 - energy)
+                                    * (FoilArtworkBalance.entries[cardID]?.dormantFleckOpacity ?? 0.88))
                                 RadialGradient(colors: [
                                     Color(hue: color, saturation: 0.15, brightness: 1),
                                     Color(hue: color, saturation: 0.78, brightness: 1).opacity(0.82),

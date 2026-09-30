@@ -208,6 +208,8 @@ struct HolographicCardView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pointerTilt = TiltVector.zero
+    @State private var pendingPointerTilt: TiltVector?
+    @State private var hoverUpdateScheduled = false
 
     private var height: CGFloat { (width / 0.717).rounded() }
 
@@ -261,15 +263,39 @@ struct HolographicCardView: View {
                 case .active(let point):
                     let next = TiltVector(point: point,
                                           in: CGSize(width: width, height: height))
-                    withAnimation(.easeOut(duration: 0.12)) { pointerTilt = next }
+                    schedulePointerTilt(next)
                 case .ended:
+                    pendingPointerTilt = nil
                     withAnimation(.easeOut(duration: 0.12)) { pointerTilt = .zero }
                 }
             }
-            .onChange(of: cardID) { pointerTilt = .zero }
-            .onChange(of: reduceMotion) {
-                if reduceMotion { pointerTilt = .zero }
+            .onChange(of: cardID) {
+                pendingPointerTilt = nil
+                pointerTilt = .zero
             }
+            .onChange(of: reduceMotion) {
+                if reduceMotion {
+                    pendingPointerTilt = nil
+                    pointerTilt = .zero
+                }
+            }
+    }
+
+    /// 연속 hover 이벤트마다 0.12초 애니메이션을 새로 쌓으면 수십 개의 Canvas·mask가 같은 프레임에
+    /// 반복 평가된다. 마지막 포인터 위치만 보관해 디스플레이 한 프레임당 최대 한 번 반영하고,
+    /// 카드가 원위치로 돌아갈 때만 애니메이션을 쓴다.
+    private func schedulePointerTilt(_ next: TiltVector) {
+        pendingPointerTilt = next
+        guard !hoverUpdateScheduled else { return }
+        hoverUpdateScheduled = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(16))
+            if let pendingPointerTilt {
+                pointerTilt = pendingPointerTilt
+                self.pendingPointerTilt = nil
+            }
+            hoverUpdateScheduled = false
+        }
     }
 
     private var resolvedFinish: ResolvedCardFinish {
@@ -459,7 +485,7 @@ enum HoloVisualDiagnostics {
 }
 
 @MainActor
-private struct HoloCardBody: View, @MainActor Animatable {
+struct HoloCardBody: View, @MainActor Animatable {
     let cardID: String
     let tier: CardTier
     let finish: CardFinish
@@ -513,6 +539,8 @@ private struct HoloCardBody: View, @MainActor Animatable {
     private func finishLayers(profile: HoloProfile, highlight: CGPoint,
                               band: Double, source: NSImage) -> some View {
         let center = UnitPoint(x: highlight.x, y: highlight.y)
+        let sourcePosition = FoilAreaLighting.source(nx: tilt.nx, ny: tilt.ny)
+        let surfaceSource = UnitPoint(x: sourcePosition.x, y: sourcePosition.y)
         let whiteLight = 0.60 + 0.14 * tilt.magnitude
         let patternLight = 0.68 + 0.32 * tilt.magnitude
         let glareLight = 0.54 + 0.14 * tilt.magnitude
@@ -524,7 +552,7 @@ private struct HoloCardBody: View, @MainActor Animatable {
                 .init(color: .white.opacity(0.34), location: 0),
                 .init(color: .white.opacity(0.08), location: 0.42),
                 .init(color: .clear, location: 1),
-            ], center: center, startRadius: 0, endRadius: width * 0.95)
+            ], center: surfaceSource, startRadius: 0, endRadius: width * 2.5)
             .blendMode(.screen)
             .opacity(ReviewedFoilProfiles.entry(cardID: cardID, finish: finish) == nil
                 && !(spec.pattern == .crackedIce && RegisteredCrackedIce.entries[cardID] != nil)
@@ -619,9 +647,21 @@ private struct HoloCardBody: View, @MainActor Animatable {
                                                * patternLight * textureResponseBoost),
                                            flashGain: spec.pattern == .specialIllustration
                                                ? 1.0 : (finish == .gold ? 1.60 : 1.95))
+                        if spec.pattern == .mirror || spec.pattern == .stampedMirror {
+                            // A white scan has no headroom for additive glare.
+                            // A narrow neutral return supplies contrast without
+                            // inventing etching or brightening the entire face.
+                            let returnCenter = min(0.8, max(0.2, 0.5 + tilt.nx * 0.34 - tilt.ny * 0.24))
+                            LinearGradient(stops: [
+                                .init(color: .clear, location: returnCenter - 0.18),
+                                .init(color: Color(white: 0.10).opacity(0.48), location: returnCenter),
+                                .init(color: .clear, location: returnCenter + 0.18),
+                            ], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                .mask { Image(decorative: FoilScanGlintCache.sheetGrain, scale: 1).resizable() }
+                        }
                         materialGlare(center: band, highlight: center)
                             .blendMode(.screen)
-                            .opacity(spec.pattern == .doubleRareSheen ? 0 : spec.pattern == .mirror || spec.pattern == .magenta
+                            .opacity(spec.pattern == .doubleRareSheen ? 0 : spec.pattern == .mirror || spec.pattern == .stampedMirror || spec.pattern == .magenta
                                 ? 0.32 : profile.glare * profile.foil * glareLight)
 
                         if profile.sparkle > 0 && FoilSheetMaterial(pattern: spec.pattern, cardID: cardID) == nil {
@@ -697,6 +737,16 @@ private struct HoloCardBody: View, @MainActor Animatable {
             1.42
         case .crosshatch:
             1.62
+        case .energySetStamp:
+            // Team Rocket Returns uses a sparse energy/set-name carrier.
+            // Raise only that fixed motif, not the art-window reflection.
+            1.18
+        case .typeSymbols, .swordShieldTiles, .splitTypeSymbols, .energySymbols, .pokeBallStars:
+            1.35
+        case .sunMoonSymbols:
+            // Sun & Moon reverse symbols are sparse at compact card sizes.
+            // The boost remains clipped to the registered outside-art mask.
+            1.30
         case .teraGold, .shinyVMAX, .teraShinyEx:
             1.32
         case .monochrome, .blackEtched, .whiteEtched:
@@ -722,17 +772,23 @@ private struct HoloCardBody: View, @MainActor Animatable {
             0.88
         case .satin, .line:
             0.76
-        case .refractor, .prime, .legend, .breakGrid:
+        case .breakGrid, .prism, .teraSheen:
+            0.98
+        case .refractor, .prime, .legend:
             0.78
         case .stone:
             0.96
         case .energySymbols, .energyTypeStamp, .energyPokeBallStamp,
-             .energySetStamp, .pokeBallStamp, .rocketStamp, .pinwheel,
+             .pokeBallStamp, .rocketStamp, .pinwheel,
              .pokeBallStars, .pokeBall3D, .stampedMirror, .subjectStamp:
             0.92
-        case .typeSymbols, .sunMoonSymbols, .swordShieldTiles,
+        case .energySetStamp:
+            0.98
+        case .typeSymbols, .swordShieldTiles,
              .scarletVioletTiles, .splitTypeSymbols:
             0.96
+        case .sunMoonSymbols:
+            1.0
         case .bwGold, .xyGold, .sunMoonGold, .swordShieldGold,
              .scarletVioletGold, .teraGold:
             0.83
@@ -779,6 +835,8 @@ private struct HoloCardBody: View, @MainActor Animatable {
 
     @ViewBuilder
     private func materialGlare(center: Double, highlight: UnitPoint) -> some View {
+        let source = FoilAreaLighting.source(nx: tilt.nx, ny: tilt.ny)
+        let surfaceSource = UnitPoint(x: source.x, y: source.y)
         switch spec.pattern {
         case _ where FoilSheetMaterial(pattern: spec.pattern, cardID: cardID) != nil:
             Color.clear
@@ -792,7 +850,7 @@ private struct HoloCardBody: View, @MainActor Animatable {
             RadialGradient(colors: [
                 .white.opacity(0.54), Color.cyan.opacity(0.13),
                 .white.opacity(0.12), .clear,
-            ], center: highlight, startRadius: 0, endRadius: width * 0.60)
+            ], center: surfaceSource, startRadius: 0, endRadius: width * 2.0)
         case .tinsel, .mirage:
             silverBand(center: highlight.y, width: 0.15,
                        start: .top, end: .bottom)
@@ -806,7 +864,7 @@ private struct HoloCardBody: View, @MainActor Animatable {
             RadialGradient(colors: [
                 .white.opacity(0.46), Color.cyan.opacity(0.18),
                 Color.purple.opacity(0.10), .clear,
-            ], center: highlight, startRadius: 0, endRadius: width * 0.72)
+            ], center: surfaceSource, startRadius: 0, endRadius: width * 2.0)
         case .mirror, .stampedMirror, .subjectStamp, .reverse, .energySymbols,
              .energyTypeStamp, .energyPokeBallStamp, .energySetStamp,
              .pokeBallStamp, .rocketStamp, .pokeBallStars, .pokeBall3D,
@@ -826,12 +884,12 @@ private struct HoloCardBody: View, @MainActor Animatable {
             AngularGradient(colors: [
                 .clear, .white.opacity(0.34), Color.cyan.opacity(0.15),
                 .clear, Color.pink.opacity(0.12), .white.opacity(0.28), .clear,
-            ], center: highlight)
+            ], center: surfaceSource)
         case .stone:
             RadialGradient(colors: [
                 Color(red: 0.94, green: 0.90, blue: 0.80).opacity(0.30),
                 Color(white: 0.62).opacity(0.12), .clear,
-            ], center: highlight, startRadius: 0, endRadius: width * 0.78)
+            ], center: surfaceSource, startRadius: 0, endRadius: width * 2.0)
         case .legend, .satin:
             silverBand(center: center, width: 0.13,
                        start: .topTrailing, end: .bottomLeading)
@@ -1006,7 +1064,7 @@ private struct EXReverseRareAccentLayer: View {
 // MARK: - Coverage
 
 @MainActor
-private struct FoilCoverageMask: View {
+struct FoilCoverageMask: View {
     let coverage: FoilCoverage
     let cardID: String
     var preloaded: NSImage? = nil
@@ -1117,17 +1175,27 @@ private struct LocalizedPatternFlash: View {
     var body: some View {
         let motif = FinishPatternCanvas(pattern: pattern, seed: seed,
                                         cardID: cardID, visualKind: visualKind,
-                                        alphaGain: 5.0)
+                                        alphaGain: motifAlphaGain)
         let goldBandCenter = CGFloat(min(0.85, max(0.15,
             (highlight.x + highlight.y) * 0.5)))
         ZStack {
-            if pattern == .sunMoonSymbols || pattern == .breakGrid {
+            if [.sunMoonSymbols, .energySetStamp, .breakGrid, .typeSymbols,
+                .swordShieldTiles, .splitTypeSymbols, .energySymbols, .pokeBallStars,
+                .pokeBall, .prism, .teraSheen, .starlight].contains(pattern) {
                 // Sparse impressions need their own angular contrast. Screen
                 // blending alone cannot reveal a silver motif over white ink.
                 // This never extends the motif or its outer coverage mask.
                 let phase = (highlight.x - 0.37) * 12 + (highlight.y - 0.32) * 9
                 let energy = 0.5 + 0.5 * sin(phase)
-                let contrast = pattern == .breakGrid ? 0.28 : 0.86
+                let contrast: Double = switch pattern {
+                case .breakGrid: 0.38
+                case .starlight: 0.50
+                case .energySetStamp: 0.78
+                case .teraSheen, .prism: 0.65
+                case .pokeBall, .pokeBallStars: 0.70
+                case .typeSymbols, .swordShieldTiles, .splitTypeSymbols, .energySymbols: 0.86
+                default: 1.0
+                }
                 LinearGradient(colors: [
                     Color(white: 0.10).opacity((1 - energy) * contrast),
                     Color(white: 0.12).opacity(energy * contrast * 0.86),
@@ -1204,6 +1272,16 @@ private struct LocalizedPatternFlash: View {
                    startRadius: 0, endRadius: width * 0.55)
                     .mask { motif }
             }
+        }
+    }
+
+    private var motifAlphaGain: Float {
+        switch pattern {
+        case .sunMoonSymbols: 7.0
+        case .typeSymbols, .swordShieldTiles, .splitTypeSymbols, .energySymbols,
+             .pokeBallStars, .pokeBall, .teraSheen, .prism: 6.5
+        case .energySetStamp: 6.4
+        default: 5.0
         }
     }
 
@@ -1370,7 +1448,8 @@ private struct FinishPatternLayer: View {
         } else if pattern == .whiteEtched || pattern == .blackEtched || pattern == .monochrome {
             ScannedFoilReliefLayer(cardID: cardID, preloaded: preloaded,
                                   isWhite: pattern == .whiteEtched,
-                                  highlight: highlight, width: width)
+                                  isMonochrome: pattern == .monochrome,
+                                  tilt: tilt)
         } else if let material = FoilReliefMaterial(pattern: pattern, texture: texture, cardID: cardID) {
             ImageGuidedFoilRelief(cardID: cardID, preloaded: preloaded,
                                  material: material, seed: seed, tilt: tilt)
@@ -1992,7 +2071,7 @@ private struct MegaAttackMaterialLayer: View {
 }
 
 @MainActor
-private struct FinishPatternCanvas: View {
+struct FinishPatternCanvas: View {
     let pattern: FoilPattern
     let seed: UInt64
     let cardID: String

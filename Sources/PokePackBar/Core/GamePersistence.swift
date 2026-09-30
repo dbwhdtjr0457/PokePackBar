@@ -31,7 +31,7 @@ struct GamePersistence {
               object["cards"] != nil || object["usedSinceInstall"] != nil else { throw Failure.invalidSave }
         if let version = object["schemaVersion"] as? Int, version > 2 { throw Failure.newerVersion }
         let counters = ["usedSinceInstall", "spentTokens", "refundedTokens", "perkTokens",
-                        "cardsDisenchanted", "packsOpened"]
+                        "cardsDisenchanted", "packsOpened", "marketEarnedTokens", "marketSpentTokens"]
         let maps = ["cards", "printingCards", "packs", "cardFirstAt", "packPity",
                     "claimedTodayTokensByProvider", "packGrantTier"]
         func valid(_ value: Any) -> Bool {

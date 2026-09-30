@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import Observation
 
@@ -46,7 +47,7 @@ struct PackGrant: Equatable, Sendable {
 }
 
 /// 수령 결과. 화면이 「무엇을 받았는지」를 알릴 때 쓴다.
-struct DexClaim: Sendable, Equatable {
+struct DexClaim: Codable, Sendable, Equatable {
     let dex: Dex
     let step: Int
     let reward: DexReward
@@ -56,12 +57,20 @@ struct DexClaim: Sendable, Equatable {
 
 /// 이번 개봉으로 다 모인 도감 1건. 개봉 결과 화면이 이걸 받아 알린다.
 /// 보상은 여기서 주지 않는다 — 수령은 도감 화면에서 사용자가 직접 누른다.
-struct DexCompletion: Equatable, Sendable, Identifiable {
+struct DexCompletion: Codable, Equatable, Sendable, Identifiable {
     let dexID: String
     let name: DexText
     let tier: Int
 
     var id: String { dexID }
+}
+
+/// 여러 팩을 한 번에 연 결과. 저장은 한 번만 하지만 확률·천장·개봉 이력은 팩별로 계산한다.
+struct OpenedPackBatch: Codable, Sendable {
+    let packs: [OpenedCards]
+    let completions: [DexCompletion]
+
+    var cards: [PulledCard] { packs.flatMap(\.cards) }
 }
 
 extension CardSale {
@@ -94,6 +103,11 @@ final class WalletStore {
     @ObservationIgnored private var commitState: ((GameState) throws -> Void)?
     private(set) var persistenceError: String?
     private(set) var recoveredSave = false
+    private(set) var isOpeningPacks = false
+    /// Server supplied reservation floors, never trusted from game commands.
+    var protectedPrintings: [String: Int] = [:]
+    private(set) var remote: RemoteGameSession?
+    var isOnline: Bool { remote != nil }
     var saveBackupDirectory: URL { GamePersistence(url: fileURL).backupDirectory }
 
     /// 개봉 결과 등 UI 가 한 번만 소비해야 하는 알림. nil 이면 표시할 것이 없다.
@@ -113,13 +127,32 @@ final class WalletStore {
 
     init(fileURL: URL? = nil, dexes: [Dex]? = nil, ladder: [DexLadderStep]? = nil,
          commitState: ((GameState) throws -> Void)? = nil) {
-        self.fileURL = fileURL ?? Self.defaultURL()
+        let localURL = fileURL ?? Self.defaultURL()
+        let config = fileURL == nil ? RemoteGameConfiguration.load() : nil
+        let session = config.map { RemoteGameSession(configuration: $0, localRoot: localURL.deletingLastPathComponent()) }
+        let invalidConnection = fileURL == nil && RemoteGameConfiguration.requested && config == nil
+        self.fileURL = session?.cacheURL ?? (invalidConnection
+            ? localURL.deletingLastPathComponent().appendingPathComponent("invalid-online-config.json") : localURL)
+        self.remote = session
         self.commitState = commitState
         let bundled = (dexes == nil || ladder == nil) ? DexIndex.loadBundled() : nil
         self.dexes = dexes ?? bundled?.dexes ?? []
         self.ladder = ladder ?? bundled?.ladder ?? []
-        load()
+        if invalidConnection {
+            savingBlocked = true
+            persistenceError = "온라인 연결 설정이 잘못되었습니다. 설정을 수정하고 재시작하세요. 로컬 세이브는 변경하지 않았습니다."
+        } else { load() }
         refreshPerks()
+        session?.onSnapshot = { [weak self] state in
+            guard let self else { return }
+            self.state = state
+            self.protectedPrintings = self.remote?.reservedPrintings.mapValues { $0 + 1 } ?? [:]
+            self.durableState = state
+            self.refreshPerks()
+            self.persistenceError = nil
+            self.savingBlocked = false
+        }
+        session?.start()
     }
 
     /// 영구 혜택을 다시 모은다 — 도감 + 계단.
@@ -147,24 +180,39 @@ final class WalletStore {
         return dir.appendingPathComponent("game-state.json")
     }
 
-    var l: L { L(state.language) }
-    var language: AppLanguage { state.language }
+    var l: L { L(language) }
+    var language: AppLanguage {
+        if isOnline, let value = UserDefaults.standard.string(forKey: "ppb.online.language"),
+           let language = AppLanguage(rawValue: value) { return language }
+        return state.language
+    }
     var openingPerks: DexPerks { state.openingMode == .realistic ? .none : perks }
-    func setOpeningMode(_ mode: OpeningMode) { state.openingMode = mode; save() }
-    func setLanguage(_ lang: AppLanguage) { state.language = lang; save() }
+    func setOpeningMode(_ mode: OpeningMode) {
+        if isOnline { updateRemotePreferences(mode: mode); return }
+        state.openingMode = mode; save()
+    }
+    func setLanguage(_ lang: AppLanguage) {
+        if isOnline {
+            UserDefaults.standard.set(lang.rawValue, forKey: "ppb.online.language")
+            state.language = lang; durableState.language = lang
+            return
+        }
+        state.language = lang; save()
+    }
 
     // MARK: 재화
 
     /// 상점에서 쓸 수 있는 토큰 = 누적 사용량 − 지출 + 갈아 돌려받은 것 + 도감 혜택 적립분.
     var availableTokens: Int {
-        max(0, state.usedSinceInstall - state.spentTokens + state.refundedTokens + state.perkTokens)
+        max(0, state.usedSinceInstall - state.spentTokens + state.refundedTokens + state.perkTokens
+            + state.marketEarnedTokens - state.marketSpentTokens)
     }
 
     var usedSinceInstall: Int { state.usedSinceInstall }
 
     /// 설치 기준선이 아직 안 잡혔는가 — 사용량 데이터가 한 번도 도착하지 않은 상태.
     /// UI 가 "아직 0" 과 "측정 시작 전" 을 구분해 안내할 수 있게 노출한다.
-    var awaitingFirstUsage: Bool { !state.installBaselineSet }
+    var awaitingFirstUsage: Bool { remote?.awaitingFirstUsage ?? !state.installBaselineSet }
 
     /// 재화를 차감한다. 잔액이 부족하면 아무것도 하지 않고 false.
     @discardableResult
@@ -182,6 +230,10 @@ final class WalletStore {
     /// 프로바이더 데이터만 담는다. 오래된 스냅샷이나 오늘 값이 없는 갱신은
     /// 장부 기준점을 움직일 관측으로 취급하지 않는다.
     func update(todayTokensByProvider: [String: Int], todayDate: String, hasUsageData: Bool) {
+        if let remote {
+            remote.recordUsage(todayTokensByProvider, date: todayDate, hasData: hasUsageData)
+            return
+        }
         let hasCurrentProviderData = hasUsageData && !todayTokensByProvider.isEmpty
 
         if !state.installBaselineSet {
@@ -295,7 +347,14 @@ final class WalletStore {
     // MARK: 카드 갈기
 
     /// 갈 수 있는 장수 — 보유분에서 한 장은 남긴다. 컬렉션에서 사라지면 안 된다.
-    func spareCount(_ cardID: String) -> Int { max(0, cardCount(cardID) - 1) }
+    func spareCount(_ cardID: String) -> Int {
+        let spares = max(0, cardCount(cardID) - 1)
+        guard !protectedPrintings.isEmpty else { return spares }
+        let unreserved = ownedPrintings(cardID: cardID).reduce(0) {
+            $0 + max(0, $1.count - (protectedPrintings[$1.printing.storageKey] ?? 0))
+        }
+        return min(spares, unreserved)
+    }
 
     private struct PrintingSaleLine {
         let printing: CardPrintingKey
@@ -325,7 +384,8 @@ final class WalletStore {
 
         var result: [PrintingSaleLine] = []
         for owned in ordered where remaining > 0 {
-            let amount = min(owned.count, remaining)
+            let floor = protectedPrintings[owned.printing.storageKey] ?? 0
+            let amount = min(max(0, owned.count - floor), remaining)
             guard amount > 0 else { continue }
             result.append(PrintingSaleLine(
                 printing: owned.printing,
@@ -341,6 +401,38 @@ final class WalletStore {
     func spareSaleValue(cardID: String, prices: CardPrices? = CardPrices.shared) -> Int {
         lowestValueSalePlan(cardID: cardID, count: .max, prices: prices)
             .reduce(0) { $0 + $1.unitTokens * $1.count }
+    }
+
+    func serverSaleQuote(cardID: String, count: Int) -> Int {
+        lowestValueSalePlan(cardID: cardID, count: count, prices: CardPrices.shared)
+            .reduce(0) { $0 + $1.unitTokens * $1.count }
+    }
+
+    func normalizeServerPrintings() {
+        for id in Array(state.cards.keys) { materializePrintings(cardID: id) }
+    }
+
+    /// Only the stdin server evaluator calls this after an atomic domain check.
+    func serverTransfer(remove: [String: Int], add: [String: Int], credit: Int, debit: Int) throws {
+        let maximum = 1_000_000_000_000_000
+        guard credit >= 0, debit >= 0, credit <= maximum, debit <= availableTokens,
+              state.marketEarnedTokens <= maximum - credit, state.marketSpentTokens <= maximum - debit else {
+            throw LocalAudit.Failure(description: "Invalid market balance")
+        }
+        for (key, quantity) in remove {
+            let printing = CardPrintingKey(storageKey: key)
+            guard quantity > 0, (state.printingCards[key] ?? 0) - quantity >= max(1, protectedPrintings[key] ?? 0) else {
+                throw LocalAudit.Failure(description: "Reserved or final printing")
+            }
+            state.printingCards[key, default: 0] -= quantity
+            state.cards[printing.cardID, default: 0] -= quantity
+        }
+        for (key, quantity) in add {
+            guard quantity > 0, quantity <= 1000 else { throw LocalAudit.Failure(description: "Invalid card transfer") }
+            _ = addCard(CardPrintingKey(storageKey: key), count: quantity)
+        }
+        state.marketEarnedTokens += credit
+        state.marketSpentTokens += debit
     }
 
     /// 옛 aggregate 수량을 normal 인쇄본으로 구체화해, 이후 감소를 정확히 기록할 수 있게 한다.
@@ -404,7 +496,7 @@ final class WalletStore {
 
     /// 한번에 판매의 결과. 미리보기와 실제 판매가 같은 값을 쓴다 —
     /// 미리 본 것과 실제로 팔린 것이 다르면 되돌릴 수 없는 동작에서 신뢰가 무너진다.
-    struct BulkSale: Equatable, Sendable {
+    struct BulkSale: Codable, Equatable, Sendable {
         var kinds = 0        // 종류 수
         var copies = 0       // 장수
         var tokens = 0       // 받는 값
@@ -421,11 +513,13 @@ final class WalletStore {
     /// 임계값은 **카드 한 장 값**을 본다. 합계로 두면 많이 가진 카드가 비싼 카드가 된다.
     /// 시세를 모르는 카드는 `MarketEconomy.unknownUSD`(69원)로 잡혀 늘 대상에 든다 —
     /// 값을 모르는 카드는 잡카드로 보는 것이 맞다.
-    static func bulkSaleTargets(_ entries: [CardEntry], maxWon: Int,
+    /// `nil` is an explicit unlimited price range; collection filters still apply.
+    static func bulkSaleTargets(_ entries: [CardEntry], maxWon: Int?,
                                 spares: (String) -> Int,
                                 prices: CardPrices? = CardPrices.shared) -> [String] {
         entries.compactMap { entry in
             guard spares(entry.id) > 0 else { return nil }
+            guard let maxWon else { return entry.id }
             let usd = MarketEconomy.usd(cardID: entry.id, prices: prices)
             guard let prices, prices.krw(usd) <= maxWon else { return nil }
             return entry.id
@@ -555,6 +649,7 @@ final class WalletStore {
     /// 최애 카드를 지정한다. 갖고 있지 않은 카드는 받지 않는다 —
     /// 메뉴바에 못 그리는 카드를 가리킨 채로 두면 아이콘이 조용히 사라진다.
     func setFavorite(_ cardID: String?) {
+        if isOnline { updateRemotePreferences(favorite: .some(cardID)); return }
         if let cardID, cardCount(cardID) == 0 { return }
         guard state.favoriteCardID != cardID else { return }
         state.favoriteCardID = cardID
@@ -570,6 +665,9 @@ final class WalletStore {
     // MARK: 카드 보유량
 
     func cardCount(_ cardID: String) -> Int { state.cards[cardID] ?? 0 }
+
+    /// 연출 미리보기의 NEW 판정용 읽기 전용 스냅샷. 반환값을 바꿔도 지갑은 변하지 않는다.
+    var ownedCardIDs: Set<String> { Set(state.cards.keys) }
 
     /// 판형별 기록에 없는 aggregate 잔량은 옛 세이브에서 온 것이다.
     ///
@@ -643,12 +741,33 @@ final class WalletStore {
     /// "몇 장 모았나" 만으로는 컬렉션이 자라는 감각이 약하다. 1999년 커먼 한 장이 최신
     /// SR 보다 비싸기도 해서, 장수와 값이 서로 다른 이야기를 한다.
     func collectionValueUSD(prices: CardPrices? = CardPrices.shared) -> Double {
-        let owned = state.cards.keys.reduce(0.0) { running, cardID in
-            running + ownedPrintings(cardID: cardID).reduce(0.0) { printingTotal, owned in
-                printingTotal + MarketEconomy.usd(owned.printing, prices: prices)
-                    * Double(owned.count)
-            }
+        // `ownedPrintings(cardID:)` 를 카드마다 호출하면 그 안에서 `printingCards` 전체를
+        // 다시 훑는다. 카드 2,103종·판형 812개인 실제 세이브에서는 카드를 한 장 넘길
+        // 때마다 170만 회 이상 비교해 공개 애니메이션의 첫 프레임을 막았다.
+        //
+        // 판형 장부를 한 번만 집계하고 aggregate 장부의 레거시 잔량을 한 번 더 도는
+        // O(printings + cards) 계산으로 같은 금액을 만든다. 저장 형식과 가격 규칙은 그대로다.
+        var recordedByCard: [String: Int] = [:]
+        recordedByCard.reserveCapacity(state.printingCards.count)
+        var owned = 0.0
+
+        for (storageKey, count) in state.printingCards where count > 0 {
+            let printing = CardPrintingKey(storageKey: storageKey)
+            // 기존 구현은 aggregate 장부에 있는 카드만 가치에 포함했다.
+            guard state.cards[printing.cardID] != nil else { continue }
+            recordedByCard[printing.cardID, default: 0] += count
+            owned += MarketEconomy.usd(printing, prices: prices) * Double(count)
         }
+
+        // 옛 세이브에는 판형 장부가 없거나 일부만 있다. 기록되지 않은 잔량은 기존과
+        // 동일하게 카드 고유 판형을 복원하고, 모호한 카드만 normal 로 계산한다.
+        for (cardID, totalCount) in state.cards where totalCount > 0 {
+            let legacyCount = max(0, totalCount - recordedByCard[cardID, default: 0])
+            guard legacyCount > 0 else { continue }
+            let printing = inferredPrinting(cardID: cardID, entry: CardIndex.shared?.card(cardID))
+            owned += MarketEconomy.usd(printing, prices: prices) * Double(legacyCount)
+        }
+
         let held = unrevealedPrintings.reduce(0.0) { running, entry in
             let printing = CardPrintingKey(storageKey: entry.key)
             return running + MarketEconomy.usd(printing, prices: prices) * Double(entry.value)
@@ -742,13 +861,16 @@ final class WalletStore {
         guard !printings.isEmpty else { return [] }
         let before = Set(state.cards.keys)
         let now = Int(Date().timeIntervalSince1970)
+        // Thousands of card inserts should publish one state update, not one per field/card.
+        var collected = state
         for printing in printings {
             let id = printing.cardID
-            state.cards[id, default: 0] += 1
-            state.printingCards[printing.storageKey, default: 0] += 1
+            collected.cards[id, default: 0] += 1
+            collected.printingCards[printing.storageKey, default: 0] += 1
             // 처음 얻은 때만 적는다. 두 번째부터 덮어쓰면 「최초」가 아니게 된다.
-            if state.cardFirstAt[id] == nil { state.cardFirstAt[id] = now }
+            if collected.cardFirstAt[id] == nil { collected.cardFirstAt[id] = now }
         }
+        state = collected
         guard save() else { return [] }
 
         return DexProgress.newlyFilled(dexes: dexes, owned: { (state.cards[$0] ?? 0) > 0 },
@@ -778,6 +900,7 @@ final class WalletStore {
     /// 화면을 그릴 때마다 호출되므로 이미 있으면 그대로 돌려준다. 박스를 새로 채우는 것은
     /// 처음 열 때와 다 팔렸을 때뿐이다.
     func oripaBox(index: CardIndex) -> OripaBox {
+        if isOnline { return state.oripa ?? OripaBox(cards: [], serial: 0) }
         // 봉투 수가 맞지 않는 박스는 버린다. 구성표를 바꾼 배포에서 넘어온 옛 박스라
         // 그대로 두면 격자가 넘치거나 값이 구성표와 어긋난다.
         if let box = state.oripa, !box.isEmpty, box.cards.count == OripaConfig.slotsPerBox {
@@ -809,6 +932,7 @@ final class WalletStore {
     /// 값이 남은 것을 따라가므로 **올라가는 경우도 생긴다** — 싼 봉투만 빠지면 남은 평균이
     /// 오른다. 그때 버릴 수 있어야 실제 값이 새 박스 값을 넘지 않는다.
     func replaceOripaBox(index: CardIndex) {
+        if let remote { Task { _ = await remote.execute(.init(kind: "refresh_oripa"), expectedTokens: 0) }; return }
         let box = freshOripaBox(index: index)
         state.oripa = box
         save()
@@ -893,7 +1017,10 @@ final class WalletStore {
     /// 고른 칭호의 계단 번호. 안 골랐으면 nil — 화면의 선택기가 이 값을 쓴다.
     var stateTitleChoice: Int? { state.title }
 
-    func setTitle(_ completed: Int?) { state.title = completed; save() }
+    func setTitle(_ completed: Int?) {
+        if isOnline { updateRemotePreferences(title: .some(completed)); return }
+        state.title = completed; save()
+    }
 
     /// 갖고 있는 쿠폰 — 남은 장수가 있는 것만, **세트와 할인율이 같으면 한 줄로 묶는다.**
     ///
@@ -956,6 +1083,33 @@ final class WalletStore {
             remaining -= used
         }
         return total + permanent * remaining
+    }
+
+    /// 현재 잔액으로 살 수 있는 최대 수량. UI 편의용 20개 상한은 두지 않는다.
+    /// 쿠폰은 실제 소비 순서대로 계산하고, 그 뒤의 수량은 영구 할인가로 센다.
+    func maximumAffordablePackCount(setID: String, index: CardIndex) -> Int {
+        var budget = max(0, availableTokens)
+        guard budget > 0 else { return 0 }
+
+        let list = listPrice(setID: setID, index: index)
+        let permanent = max(1, PackPricing.price(setID: setID, index: index, perks: perks))
+        var affordable = 0
+        let coupons = state.coupons
+            .filter { $0.setID == setID && $0.left > 0 }
+            .sorted { $0.value > $1.value }
+
+        for coupon in coupons {
+            let effectiveDiscount = max(perks.packDiscount, coupon.value)
+            let couponPrice = max(1, MarketEconomy.quantized(
+                Int((Double(list) * (1 - effectiveDiscount)).rounded())
+            ))
+            let purchased = min(coupon.left, budget / couponPrice)
+            affordable += purchased
+            budget -= purchased * couponPrice
+            if purchased < coupon.left { return affordable }
+        }
+
+        return affordable + budget / permanent
     }
 
     /// 낱개 값 — 쿠폰이 있으면 쿠폰가다. 상점이 큰 글씨로 적는 값이다.
@@ -1192,6 +1346,18 @@ final class WalletStore {
     @discardableResult
     func grantBonusPacks(from windows: [BonusWindow], limitsReady: Bool,
                          availableSets: [BonusSet]) -> [PackGrant] {
+        if let remote {
+            if limitsReady && remote.ready && !remote.busy {
+                let report = windows.map { window in
+                    ServerRulesBridge.Window(key: window.key, name: window.name,
+                        kind: window.kind == .weekly ? "weekly" : "session",
+                        utilization: window.utilization,
+                        instance: window.instance.isEmpty ? "" : Self.privateInstance(window.instance))
+                }
+                Task { _ = await remote.execute(.init(kind: "report_bonus", windows: report)) }
+            }
+            return []
+        }
         guard limitsReady, !availableSets.isEmpty else { return [] }
 
         if !state.packGrantSeeded {
@@ -1233,43 +1399,227 @@ final class WalletStore {
         return grants
     }
 
+    // MARK: Server-authoritative commands
+
+    var resourceActionsDisabled: Bool { savingBlocked || isOpeningPacks || (remote.map { !$0.ready || $0.busy || $0.hasPending || $0.hasOnlinePending } ?? false) }
+
+    /// Only the isolated server evaluator calls this; the HTTP layer owns the
+    /// device high-water mark and supplies a validated, nonnegative delta.
+    func creditReportedTokens(_ delta: Int) {
+        guard !isOnline, delta >= 0 else { return }
+        state.installBaselineSet = true
+        accrue(delta)
+        save()
+    }
+
+    private static func privateInstance(_ value: String) -> String {
+        SHA256.hash(data: Data(value.utf8)).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func updateRemotePreferences(mode: OpeningMode? = nil,
+                                         favorite: String?? = nil, title: Int?? = nil) {
+        guard let remote else { return }
+        let command = ServerRulesBridge.Command(kind: "set_preferences",
+            opening_mode: (mode ?? state.openingMode).rawValue,
+            favorite_card_id: favorite ?? state.favoriteCardID,
+            title: title ?? state.title)
+        Task { _ = await remote.execute(command); persistenceError = remote.error }
+    }
+
+    func purchasePacks(setID: String, count: Int, total: Int) async -> Bool {
+        guard let remote else { return buyPacks(setID: setID, count: count, total: total) }
+        guard count > 0 else { return false }
+        guard let index = CardIndex.shared, total == packTotal(setID: setID, count: count, index: index) else {
+            persistenceError = "팩 가격이 바뀌었습니다. 구매 수량과 금액을 다시 확인하세요."
+            return false
+        }
+        var remaining = count
+        while remaining > 0 {
+            let chunk = min(remaining, 1000)
+            guard await remote.execute(.init(kind: "buy_packs", set_id: setID, count: chunk), expectedTokens: packTotal(setID: setID, count: chunk, index: index)) != nil else {
+                persistenceError = "\(count - remaining)/\(count)팩 구매 완료. \(remote.error ?? "요청 실패")"
+                return false
+            }
+            remaining -= chunk
+        }
+        return true
+    }
+
+    func sellSparesOnlineAware(cardID: String, tier: CardTier, count: Int) async -> Int {
+        guard let remote else { return sellSpares(cardID: cardID, tier: tier, count: count) }
+        var remaining = count
+        var refund = 0
+        while remaining > 0 {
+            let chunk = min(remaining, 1000)
+            guard let result = await remote.execute(.init(kind: "sell_spares", count: chunk, card_id: cardID), expectedTokens: serverSaleQuote(cardID: cardID, count: chunk)) else {
+                persistenceError = remote.error
+                break
+            }
+            refund += result.tokens ?? 0
+            remaining -= chunk
+        }
+        return refund
+    }
+
+    func sellBulkOnlineAware(_ cardIDs: [String]) async -> BulkSale {
+        guard let remote else { return sellSpares(cardIDs) }
+        let ids = Array(Set(cardIDs)).sorted()
+        var total = BulkSale.none
+        for start in stride(from: 0, to: ids.count, by: 1000) {
+            let chunk = Array(ids[start..<min(start + 1000, ids.count)])
+            guard let result = await remote.execute(.init(kind: "sell_bulk", card_ids: chunk), expectedTokens: chunk.reduce(0) { $0 + spareSaleValue(cardID: $1) }),
+                  let sale = result.bulk else { persistenceError = remote.error; break }
+            total.kinds += sale.kinds
+            total.copies += sale.copies
+            total.tokens += sale.tokens
+        }
+        return total
+    }
+
+    func claimDexOnlineAware(_ dexID: String, step: Int) async -> DexClaim? {
+        guard let remote else { return claim(dexID, step: step) }
+        let result = await remote.execute(.init(kind: "claim_dex", dex_id: dexID, step: step))
+        persistenceError = remote.error
+        return result?.dex
+    }
+
+    func pullOripaOnlineAware(index: CardIndex, envelope: Int) async -> ServerRulesBridge.OripaResult? {
+        guard let remote else {
+            return pullOripa(index: index, envelope: envelope).map {
+                ServerRulesBridge.OripaResult(card: $0.card, completions: $0.completions)
+            }
+        }
+        let result = await remote.execute(.init(kind: "pull_oripa", envelope: envelope), expectedTokens: oripaPrice(index: index))?.oripa
+        persistenceError = remote.error
+        if let result { holdForReveal([CardPrintingKey(cardID: result.card.id, finish: result.card.finish)]) }
+        return result
+    }
+
+    private func openRemotePacks(setID: String, count: Int) async -> OpenedPackBatch? {
+        guard let remote, !isOpeningPacks, count > 0, packCount(setID: setID) >= count else { return nil }
+        isOpeningPacks = true
+        defer { isOpeningPacks = false }
+        var packs: [OpenedCards] = []
+        var completions: [DexCompletion] = []
+        var openingJob: RemoteGameSession.OpeningJob?
+        if count > 1000 {
+            do { openingJob = try await remote.createOpeningJob(setID: setID, count: count) }
+            catch { persistenceError = error.localizedDescription; return nil }
+        }
+        while packs.count < count, !Task.isCancelled {
+            let chunk = min(count - packs.count, 1000)
+            let batch: OpenedPackBatch
+            if let job = openingJob {
+                do {
+                    let reply = try await remote.advanceOpeningJob(job)
+                    openingJob = reply.job
+                    guard let opened = reply.packs else { throw RemoteGameSession.Failure(message: "개봉 결과가 없습니다.") }
+                    batch = opened
+                } catch {
+                    persistenceError = "\(packs.count)/\(count)팩 확인. 온라인 창의 ‘작업’에서 이어갈 수 있습니다. \(error.localizedDescription)"
+                    break
+                }
+            } else {
+                guard let result = await remote.execute(.init(kind: "open_packs", set_id: setID, count: chunk)),
+                      let opened = result.packs else {
+                    persistenceError = "\(packs.count)/\(count)팩 개봉 확인. \(remote.error ?? "결과 확인 실패")"
+                    break
+                }
+                batch = opened
+            }
+            packs.append(contentsOf: batch.packs)
+            completions.append(contentsOf: batch.completions)
+        }
+        guard !packs.isEmpty else { return nil }
+        let batch = OpenedPackBatch(packs: packs, completions: completions)
+        holdForReveal(batch.cards.filter { CardIndex.shared?.card($0.id) != nil }
+            .map { CardPrintingKey(cardID: $0.id, finish: $0.finish) })
+        return batch
+    }
+
     // MARK: 영속
 
     /// Draw, consume, collect, pity and audit trail either all commit or none do.
     func openPack(setID: String, index: CardIndex, seed: UInt64? = nil)
         -> (opened: OpenedCards, completions: [DexCompletion])? {
-        guard packCount(setID: setID) > 0 else { return nil }
-        let seed = seed ?? UInt64.random(in: .min ... .max)
-        var generator = PackSeedGenerator(seed: seed)
-        let before = state.openingMode == .realistic ? 0 : pity(setID: setID)
-        var after = before
-        let opened = PackOpening.draw(setID: setID, index: index,
-            alreadyOwned: Set(state.cards.keys), perks: openingPerks, pity: &after,
-            mode: state.openingMode, using: &generator)
-        guard opened.cards.count == PackRecipe.forSet(setID, era: index.era(setID)).contents.gameCardCount else {
-            persistenceError = "Incomplete pack catalogue. The pack was not consumed."
+        guard let batch = openPacks(setID: setID, count: 1, index: index,
+                                    seeds: seed.map { [$0] }),
+              let opened = batch.packs.first else { return nil }
+        return (opened, batch.completions)
+    }
+
+    /// 여러 팩을 한 번에 연다. 중간 팩에서 저장이 실패해도 일부만 소비되지 않도록 전체를
+    /// 하나의 트랜잭션으로 커밋한다. 각 팩은 직전 팩이 갱신한 보유 카드와 천장을 이어받는다.
+    func openPacks(setID: String, count: Int, index: CardIndex,
+                   seeds: [UInt64]? = nil) -> OpenedPackBatch? {
+        guard !isOpeningPacks, count > 0, packCount(setID: setID) >= count else { return nil }
+        guard seeds == nil || seeds?.count == count else { return nil }
+        do {
+            let prepared = try PreparedPackBatch.draw(setID: setID, count: count, index: index,
+                owned: Set(state.cards.keys), mode: state.openingMode, perks: openingPerks,
+                pity: pity(setID: setID), seeds: seeds)
+            return commitOpening(prepared, setID: setID, count: count, mode: state.openingMode)
+        } catch {
+            persistenceError = String(describing: error)
             return nil
         }
-        let printings = opened.cards.map { CardPrintingKey(cardID: $0.id, finish: $0.finish) }
-        let record = OpeningRecord(id: UUID(), openedAt: Date(), setID: setID, seed: String(seed),
-            rulesVersion: OpeningRules.version, catalogueDigest: OpeningRules.catalogueDigest,
-            mode: state.openingMode, hitOddsBonus: openingPerks.hitOdds,
-            pityBefore: before, pityAfter: after, variant: opened.variant, printings: printings,
-            supplement: .contents(setID: setID, era: index.era(setID), variant: opened.variant),
-            cardPriceDate: CardPrices.shared?.asOf, printingPriceDate: CardPrices.shared?.printingAsOf,
-            priceSnapshotDigest: CardPrices.shared?.snapshotDigest,
-            packQuote: PackPricing.quote(setID: setID, index: index))
-        let result = transaction(failure: Optional<(opened: OpenedCards, completions: [DexCompletion])>.none) {
-            guard consumePack(setID: setID) else { return nil }
-            let completions = collect(printings)
-            if state.openingMode == .game { setPity(after, setID: setID) }
-            state.openingHistory.append(record)
+    }
+
+    /// UI entry point. Preparation never touches the live wallet; only a validated complete
+    /// result commits on the main actor. Cancellation before commit consumes nothing.
+    func openPacksAsync(setID: String, count: Int, index: CardIndex,
+                        seeds: [UInt64]? = nil) async -> OpenedPackBatch? {
+        if isOnline { return await openRemotePacks(setID: setID, count: count) }
+        guard !isOpeningPacks, !savingBlocked, count > 0, packCount(setID: setID) >= count,
+              seeds == nil || seeds?.count == count, !Task.isCancelled else { return nil }
+        isOpeningPacks = true
+        defer { isOpeningPacks = false }
+        let mode = state.openingMode
+        let perks = openingPerks
+        let cardsBefore = state.cards
+        let pityBefore = pity(setID: setID)
+        let worker = Task.detached(priority: .userInitiated) {
+            try PreparedPackBatch.draw(setID: setID, count: count, index: index,
+                owned: Set(cardsBefore.keys), mode: mode, perks: perks, pity: pityBefore, seeds: seeds)
+        }
+        do {
+            let prepared = try await withTaskCancellationHandler {
+                try await worker.value
+            } onCancel: { worker.cancel() }
+            try Task.checkCancellation()
+            // Other screens may sell cards/change mode while preparation is running. Never
+            // overwrite those edits or commit NEW/pity results derived from a stale snapshot.
+            guard state.cards == cardsBefore, state.openingMode == mode, openingPerks == perks,
+                  pity(setID: setID) == pityBefore, packCount(setID: setID) >= count else {
+                persistenceError = "Collection or opening settings changed. No packs were consumed; try again."
+                return nil
+            }
+            return commitOpening(prepared, setID: setID, count: count, mode: mode)
+        } catch is CancellationError {
+            return nil
+        } catch {
+            persistenceError = String(describing: error)
+            return nil
+        }
+    }
+
+    private func commitOpening(_ prepared: PreparedPackBatch, setID: String, count: Int,
+                               mode: OpeningMode) -> OpenedPackBatch? {
+        let result = transaction(failure: Optional<OpenedPackBatch>.none) {
+            let remaining = packCount(setID: setID) - count
+            if remaining == 0 { state.packs.removeValue(forKey: setID) }
+            else { state.packs[setID] = remaining }
+            state.packsOpened += count
+
+            let completions = collect(prepared.printings)
+            if mode == .game { setPity(prepared.pity, setID: setID) }
+            state.openingHistory.append(contentsOf: prepared.records)
             if state.openingHistory.count > OpeningRules.historyLimit {
                 state.openingHistory.removeFirst(state.openingHistory.count - OpeningRules.historyLimit)
             }
-            return (opened, completions)
+            return OpenedPackBatch(packs: prepared.packs, completions: completions)
         }
-        if result != nil { holdForReveal(printings) }
+        if result != nil { holdForReveal(prepared.printings) }
         return result
     }
 
@@ -1330,6 +1680,12 @@ final class WalletStore {
 
     @discardableResult
     private func save() -> Bool {
+        if isOnline {
+            state = durableState
+            refreshPerks()
+            persistenceError = "온라인 자원은 서버 명령으로만 변경할 수 있습니다."
+            return false
+        }
         if transactionDepth > 0 { return !savingBlocked }
         do {
             guard !savingBlocked else { throw GamePersistence.Failure.unrecoverable }

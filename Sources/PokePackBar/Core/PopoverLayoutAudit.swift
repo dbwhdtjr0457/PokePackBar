@@ -24,6 +24,7 @@ enum PopoverLayoutAudit {
         let wallet = WalletStore(fileURL: fixture.appendingPathComponent("game-state.json"))
         wallet.setLanguage(.ko)
         wallet.collect(Array(index.cards.prefix(40)).map(\.id))
+        wallet.collect(Array(index.cards.prefix(20)).map(\.id))
         wallet.addPack(setID: "cel30")
         let updater = UpdateChecker(currentVersion: "0.0.0")
         var measurements: [[String: Any]] = []
@@ -69,6 +70,18 @@ enum PopoverLayoutAudit {
             try await capture("tab-\(tab)", view: AnyView(PopoverView()
                 .environment(usage).environment(wallet).environment(updater).environment(nav)))
         }
+        defaults.set(true, forKey: "bulkSaleAllPrices")
+        try await capture("bulk-sale-all-prices", view: AnyView(
+            BulkSaleView(wallet: wallet, pool: Array(index.cards.prefix(40)), onClose: {})
+                .defaultAppStorage(defaults)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
+        try await capture("dex-search", view: AnyView(
+            DexView(wallet: wallet, index: index, initialSearchText: "피카츄")
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         for notes in [false, true] {
             let nav = PopoverNavigation(); nav.showSettings = !notes; nav.showReleaseNotes = notes
             try await capture(notes ? "release-notes" : "settings", view: AnyView(PopoverView()

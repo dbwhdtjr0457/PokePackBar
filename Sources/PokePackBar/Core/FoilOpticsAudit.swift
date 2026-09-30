@@ -73,6 +73,31 @@ enum FoilOpticsAudit {
     }
 
     static func verify(index: CardIndex) throws {
+        let mur = FoilReliefMaterial.gold(.megaGold)
+        try LocalAudit.require(FoilArtworkBalance.entries["base5-6"] != nil
+            && FoilArtworkBalance.entries["ex12-17"] == nil,
+            "Missing source-bound Cosmos tuning or weak source dimmed")
+        try LocalAudit.require(mur.coatingGain(meanLuminance: 0.7) == 0.44
+            && mur.coatingGain(meanLuminance: 0.3) == 0.30,
+            "MUR dense coating lost artwork protection")
+        for preserved in [FoilReliefMaterial.black, .white, .neoShining, .gold(.scarletVioletGold)] {
+            try LocalAudit.require(preserved.coatingGain(meanLuminance: 0.3) == 1,
+                "Artwork balance changed an unrelated material")
+        }
+        try verifyAreaLighting()
+        for white in [false, true] {
+            for level in [0.0, 0.3, 0.6, 1.0] {
+                try LocalAudit.require(ScannedEmbossCache.ridgeWeight(light: level, localMean: level, isWhite: white) == 0,
+                    "BWR flat ink acquired a full-face carrier")
+            }
+            try LocalAudit.require(ScannedEmbossCache.ridgeWeight(light: white ? 0 : 1, localMean: 0.5, isWhite: white) == 0,
+                "BWR solid lettering acquired engraving")
+        }
+        let bwrChanges = (0..<ScannedEmbossCache.groupCount).map { group in
+            abs(ScannedEmbossCache.response(group: group, tilt: .zero)
+                - ScannedEmbossCache.response(group: group, tilt: .init(nx: 0.28, ny: 0)))
+        }
+        try LocalAudit.require(bwrChanges.filter { $0 > 0.4 }.count >= 8, "BWR lost small-angle ridge response")
         try verifyRadiantCollection(index: index)
         try verifyNeoRouting(index: index)
         try verifySheets(index: index)
@@ -169,6 +194,69 @@ enum FoilOpticsAudit {
             }
         }
         try LocalAudit.require(change / 2048 > 0.5, "Normals form large continuous scanlines")
+    }
+
+    static func verifyAreaLighting() throws {
+        try verifyReliefNeighbourhoods()
+        for nx in stride(from: -1.0, through: 1.0, by: 0.1) {
+            for ny in stride(from: -1.0, through: 1.0, by: 0.1) {
+                for source in [FoilAreaLighting.source(nx: nx, ny: ny),
+                               FoilAreaLighting.directionalSource(nx: nx, ny: ny)] {
+                    try LocalAudit.require(source.x < 0 || source.x > 1 || source.y < 0 || source.y > 1,
+                                           "Visible light source moved onto the card")
+                }
+            }
+        }
+        for angle in stride(from: -4.0, through: 4.0, by: 0.4) {
+            for phase in stride(from: 0.0, through: 6.0, by: 0.3) {
+                func energy(_ x: Double, _ y: Double) -> Double {
+                    FoilAreaLighting.facetIllumination(x: x, y: y, phase: phase, angle: angle)
+                }
+                let center = energy(0.5, 0.5)
+                let corners = [energy(0, 0), energy(1, 0), energy(0, 1), energy(1, 1)]
+                try LocalAudit.require(abs(center - corners.reduce(0, +) / 4) < 0.000001,
+                                       "Foil light acquired an interior hotspot")
+                try LocalAudit.require(corners.allSatisfy { (0...1).contains($0) }, "Unbounded foil light")
+            }
+        }
+        let phases = (0..<100).map { Double($0) * .pi * 2 / 100 }
+        let changes = phases.map {
+            abs(FoilAreaLighting.facetIllumination(x: 0.5, y: 0.5, phase: $0, angle: 0)
+                - FoilAreaLighting.facetIllumination(x: 0.5, y: 0.5, phase: $0, angle: 1.4))
+        }
+        try LocalAudit.require(changes.filter { $0 > 0.2 }.count > 25,
+                               "Removing the hotspot also removed local glints")
+        print("PASS area lighting: off-card surface sources, no central illumination peak, independent moving glints")
+    }
+
+    static func verifyReliefNeighbourhoods() throws {
+        var nearby = 0.0, distant = 0.0, count = 0.0
+        for columns in [24.0, 28, 32, 38] {
+            for seed in 1...12 {
+                for row in 0..<12 {
+                    for column in 0..<12 {
+                        let x = (Double(column) + 0.3) / 12
+                        let y = (Double(row) + 0.7) / 12
+                        func phase(_ dx: Double, _ dy: Double) -> Double {
+                            FoilAreaLighting.neighbourhoodPhase(x: x + dx, y: y + dy,
+                                                               seed: UInt64(seed), columns: columns)
+                        }
+                        let a = phase(0, 0)
+                        try LocalAudit.require(a.isFinite, "Invalid neighbourhood phase")
+                        nearby += cos(a - phase(0.001, 0.001))
+                        distant += cos(a - phase(0.17, 0.13))
+                        count += 1
+                    }
+                }
+            }
+        }
+        try LocalAudit.require(nearby / count > 0.95, "Relief neighbours became independent noise")
+        try LocalAudit.require(abs(distant / count) < 0.12, "Relief acquired a card-wide coherent light field")
+        try LocalAudit.require(FoilReliefMaterial.illustration.lightNeighbourhoodColumns
+            != FoilReliefMaterial.gold(.megaGold).lightNeighbourhoodColumns, "Materials lost their grain scale")
+        try LocalAudit.require(FoilReliefMaterial.neoShining.lightNeighbourhoodColumns == nil,
+                               "Etched patches leaked into unetched metallic subjects")
+        print("PASS relief contrast: correlated neighbours, decorrelated distant regions, distinct grain scales")
     }
 
     static func verifyVisibilityMaterials() throws {

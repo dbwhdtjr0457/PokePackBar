@@ -561,6 +561,26 @@ enum LocalUsageReader {
         let events: [CodexUsageEvent]
     }
 
+    /// 활성 rollout을 다음 새로고침에서 이어 읽기 위한 파서 상태.
+    ///
+    /// `offset`은 JSONL 한 줄이 완전히 끝난 안전한 바이트 경계다. 마지막 줄을 쓰는 도중 앱이
+    /// 새로고침하더라도 그 줄은 다음 번에 다시 읽으므로 반쪽 JSON을 영구히 건너뛰지 않는다.
+    struct CodexParseCheckpoint: Codable, Sendable {
+        let offset: Int
+        let turn: Int
+        let currentSessionID: String?
+        let previousUsageSessionID: String?
+        let previousUsageState: CodexUsageState?
+        let model: String
+    }
+
+    struct CodexIncrementalParseResult: Sendable {
+        let rollout: CodexParsedRollout
+        let checkpoint: CodexParseCheckpoint
+        let startOffset: Int
+        let succeeded: Bool
+    }
+
     private struct CodexResolvedEvent {
         let entry: Entry
         let usageState: CodexUsageState?
@@ -582,8 +602,33 @@ enum LocalUsageReader {
 
     /// 파일 내부 정보만 파싱. fork replay 여부는 다른 rollout과 대조.
     static func parseCodexRollout(_ url: URL, fmt: DateFormatter) -> CodexParsedRollout {
-        func emptyRollout() -> CodexParsedRollout {
-            return CodexParsedRollout(
+        parseCodexRolloutIncrementally(url, fmt: fmt).rollout
+    }
+
+    /// 성장 중인 JSONL의 이전 결과와 체크포인트가 있으면 그 뒤만 읽는다.
+    /// 파일 교체·축소 여부는 호출자인 `LocalUsageCache`가 확인하고, 안전하지 않으면 둘 다 nil로 전달한다.
+    static func parseCodexRolloutIncrementally(
+        _ url: URL,
+        fmt: DateFormatter,
+        previous: CodexParsedRollout? = nil,
+        checkpoint: CodexParseCheckpoint? = nil
+    ) -> CodexIncrementalParseResult {
+        let canResume = previous?.path == url.path && checkpoint != nil
+        let startOffset = canResume ? max(0, checkpoint?.offset ?? 0) : 0
+        var parser = CodexRolloutParser(
+            url: url,
+            fmt: fmt,
+            previous: canResume ? previous : nil,
+            checkpoint: canResume ? checkpoint : nil
+        )
+
+        do {
+            let committedOffset = try forEachCodexLine(in: url, startingAt: startOffset) { line in
+                parser.consume(line)
+            }
+            return parser.result(offset: committedOffset, startOffset: startOffset)
+        } catch {
+            let empty = CodexParsedRollout(
                 path: url.path,
                 sessionID: nil,
                 parentSessionID: nil,
@@ -591,88 +636,146 @@ enum LocalUsageReader {
                 isSubagent: false,
                 events: []
             )
+            let reset = CodexParseCheckpoint(
+                offset: 0,
+                turn: 0,
+                currentSessionID: nil,
+                previousUsageSessionID: nil,
+                previousUsageState: nil,
+                model: "codex"
+            )
+            return CodexIncrementalParseResult(
+                rollout: previous ?? empty,
+                checkpoint: checkpoint ?? reset,
+                startOffset: startOffset,
+                succeeded: false
+            )
         }
+    }
 
-        var events: [CodexUsageEvent] = []
-        var turn = 0
+    private struct CodexRolloutParser {
+        let url: URL
+        let fmt: DateFormatter
+        var events: [CodexUsageEvent]
+        var turn: Int
         var sessionID: String?
         var parentSessionID: String?
         var forkedAt: Date?
-        var isSubagent = false
+        var isSubagent: Bool
         var currentSessionID: String?
         var previousUsageState: (sessionID: String, state: CodexUsageState)?
-        // 실모델은 아래 codexModel 이 로그에서 동적 추출(신모델 자동 대응). 이 값은 세션에 model 라인이
-        // 아예 없을 때만 쓰는 버전무관 폴백 — Codex 비용은 항상 0이라 표시 숫자엔 영향 없다(업데이트 불필요).
-        var model = "codex"
-        do {
-            try forEachCodexLine(in: url) { line in
-                autoreleasepool {   // JSONSerialization 의 autoreleased 객체를 라인마다 배출(콜드 파싱 피크 억제)
-                    // Data.range 는 바이트 탐색이라 String.contains 의 grapheme 스캔과 달리
-                    // 비대상 라인을 값싼 비용으로 건너뛸 수 있다. 대형 rollout 의 대부분은
-                    // response_item/delta 이며, 사용량 집계에 필요한 세 종류만 JSON 파싱한다.
-                    if line.range(of: codexSessionMetaMarker) != nil,
-                       let meta = codexSessionMeta(line) {
-                        if sessionID == nil {
-                            // subagent meta는 `id`가 child이고 `session_id`가 parent일 수 있으므로 id 우선.
-                            sessionID = meta.id
-                            parentSessionID = meta.parentID
-                            forkedAt = meta.date
-                            isSubagent = meta.isSubagent
-                        }
-                        if let id = meta.id, id != currentSessionID {
-                            currentSessionID = id
-                            previousUsageState = nil
-                        }
-                    }
-                    if line.range(of: codexModelMarker) != nil, let m = codexModel(line) { model = m }
-                    guard line.range(of: codexTokenCountMarker) != nil else { return }
-                    guard let parsed = parseCodexLine(
-                        line, file: url.lastPathComponent, turn: turn, model: model, fmt: fmt
-                    ) else { return }
-                    defer { turn += 1 }
+        // 실모델은 로그에서 동적 추출한다. 세션에 model 라인이 없을 때만 이 폴백을 쓴다.
+        var model: String
 
-                    // Codex는 같은 cumulative/last usage 상태를 그대로 다시 기록할 수 있음. replay trimming을
-                    // 하기 전에 파일 내부에서 정규화한다. 같은 세션의 연속 token_count 상태가 full vector까지
-                    // 같으면 새 토큰 기여가 없는 동일 snapshot이므로 한 번만 남긴다.
-                    if let state = parsed.usageState, let sessionID = currentSessionID {
-                        if let previous = previousUsageState,
-                           previous.sessionID == sessionID,
-                           previous.state == state {
-                            return
-                        }
-                        previousUsageState = (sessionID, state)
-                    } else {
+        init(url: URL, fmt: DateFormatter,
+             previous: CodexParsedRollout?, checkpoint: CodexParseCheckpoint?) {
+            self.url = url
+            self.fmt = fmt
+            events = previous?.events ?? []
+            turn = checkpoint?.turn ?? 0
+            sessionID = previous?.sessionID
+            parentSessionID = previous?.parentSessionID
+            forkedAt = previous?.forkedAt
+            isSubagent = previous?.isSubagent ?? false
+            currentSessionID = checkpoint?.currentSessionID
+            if let id = checkpoint?.previousUsageSessionID,
+               let state = checkpoint?.previousUsageState {
+                previousUsageState = (id, state)
+            } else {
+                previousUsageState = nil
+            }
+            model = checkpoint?.model ?? "codex"
+        }
+
+        mutating func consume(_ line: Data) {
+            autoreleasepool {
+                // Data.range는 값싼 바이트 검색이다. 대부분의 response_item/delta는 JSON 파싱하지 않는다.
+                if line.range(of: codexSessionMetaMarker) != nil,
+                   let meta = codexSessionMeta(line) {
+                    if sessionID == nil {
+                        // subagent meta는 `id`가 child이고 `session_id`가 parent일 수 있으므로 id 우선.
+                        sessionID = meta.id
+                        parentSessionID = meta.parentID
+                        forkedAt = meta.date
+                        isSubagent = meta.isSubagent
+                    }
+                    if let id = meta.id, id != currentSessionID {
+                        currentSessionID = id
                         previousUsageState = nil
                     }
-                    events.append(CodexUsageEvent(
-                        entry: parsed.entry,
-                        usageState: parsed.usageState,
-                        sessionID: currentSessionID
-                    ))
                 }
+                if line.range(of: codexModelMarker) != nil, let value = codexModel(line) {
+                    model = value
+                }
+                guard line.range(of: codexTokenCountMarker) != nil else { return }
+                guard let parsed = parseCodexLine(
+                    line, file: url.lastPathComponent, turn: turn, model: model, fmt: fmt
+                ) else { return }
+                defer { turn += 1 }
+
+                // 같은 세션의 동일 cumulative/last snapshot 재기록은 새 사용량이 아니다.
+                if let state = parsed.usageState, let currentSessionID {
+                    if let previousUsageState,
+                       previousUsageState.sessionID == currentSessionID,
+                       previousUsageState.state == state {
+                        return
+                    }
+                    previousUsageState = (currentSessionID, state)
+                } else {
+                    previousUsageState = nil
+                }
+                events.append(CodexUsageEvent(
+                    entry: parsed.entry,
+                    usageState: parsed.usageState,
+                    sessionID: currentSessionID
+                ))
             }
-        } catch {
-            return emptyRollout()
         }
-        return CodexParsedRollout(
-            path: url.path,
-            sessionID: sessionID,
-            parentSessionID: parentSessionID,
-            forkedAt: forkedAt,
-            isSubagent: isSubagent,
-            events: events
-        )
+
+        func result(offset: Int, startOffset: Int) -> CodexIncrementalParseResult {
+            let rollout = CodexParsedRollout(
+                path: url.path,
+                sessionID: sessionID,
+                parentSessionID: parentSessionID,
+                forkedAt: forkedAt,
+                isSubagent: isSubagent,
+                events: events
+            )
+            let checkpoint = CodexParseCheckpoint(
+                offset: offset,
+                turn: turn,
+                currentSessionID: currentSessionID,
+                previousUsageSessionID: previousUsageState?.sessionID,
+                previousUsageState: previousUsageState?.state,
+                model: model
+            )
+            return CodexIncrementalParseResult(
+                rollout: rollout,
+                checkpoint: checkpoint,
+                startOffset: startOffset,
+                succeeded: true
+            )
+        }
     }
 
     /// 대형 JSONL 을 파일 크기와 무관한 메모리로 순회한다. 완성된 한 줄만
     /// 소유하므로 피크는 파일 전체가 아니라 가장 긴 라인 + 청크 크기에 비례한다.
-    private static func forEachCodexLine(in url: URL, body: (Data) -> Void) throws {
+    /// `startingAt`부터 완성된 JSONL만 전달하고, 다음 이어 읽기에 안전한 바이트 경계를 반환한다.
+    private static func forEachCodexLine(
+        in url: URL,
+        startingAt: Int = 0,
+        body: (Data) -> Void
+    ) throws -> Int {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
+
+        let safeStart = max(0, startingAt)
+        try handle.seek(toOffset: UInt64(safeStart))
 
         let chunkSize = 1024 * 1024
         var buffer = Data()
         buffer.reserveCapacity(chunkSize)
+        var committedOffset = safeStart
 
         while true {
             let readChunk = try autoreleasepool { () throws -> Bool in
@@ -690,6 +793,7 @@ enum LocalUsageReader {
                     lineStart = buffer.index(after: newline)
                 }
                 if lineStart != buffer.startIndex {
+                    committedOffset += buffer.distance(from: buffer.startIndex, to: lineStart)
                     buffer.removeSubrange(buffer.startIndex..<lineStart)
                 }
                 // FileHandle 의 Data bridge가 만든 autoreleased backing storage도 청크마다 배출한다.
@@ -699,7 +803,14 @@ enum LocalUsageReader {
             if !readChunk { break }
         }
 
-        if !buffer.isEmpty { body(buffer) }
+        if !buffer.isEmpty,
+           (try? JSONSerialization.jsonObject(with: buffer)) != nil {
+            // 테스트 픽스처와 종료된 JSONL은 마지막 개행이 없을 수 있다. 완전한 JSON일 때만 확정한다.
+            // 쓰는 중인 반쪽 JSON은 offset을 전진시키지 않아 다음 새로고침에서 다시 읽는다.
+            body(buffer)
+            committedOffset += buffer.count
+        }
+        return committedOffset
     }
 
     private static let codexSessionMetaMarker = Data("session_meta".utf8)

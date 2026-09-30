@@ -19,7 +19,7 @@ struct PackSeedGenerator: RandomNumberGenerator {
 }
 
 enum OpeningRules {
-    static let version = "english-2026-09-23-v4-splitmix64-swift6"
+    static let version = "english-2026-09-29-v5-physical-energy-swift6"
     static let historyLimit = 1_000
     static func digest(_ data: Data) -> String {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
@@ -36,12 +36,25 @@ struct PackSupplement: Codable, Equatable, Sendable {
     let holoEnergy: Bool
     let codeCount: Int
 
-    static func contents(setID: String, era: PackEra, variant: PackVariant) -> Self {
+    static func contents(setID: String, era: PackEra, variant: PackVariant,
+                         cards: [PulledCard] = []) -> Self {
         let counts = PackRecipe.forSet(setID, era: era).contents
-        return Self(energyCount: counts.energyCardCount,
-                    holoEnergy: variant == .blackBoltWhiteFlareGod,
+        // Brilliant Stars부터 Crown Zenith까지 에너지 자리는 VSTAR 마커로 바뀔 수 있다.
+        // 마커는 플레이 카드가 아니므로 화면에는 생략하되, 그 팩에 없던 에너지를 만들지는 않는다.
+        // 제조사가 비율을 공개하지 않아 커뮤니티 개봉에서 흔히 관측되는 1/4을 시뮬레이터 값으로 쓴다.
+        let vstarMarker = Self.vstarMarkerSets.contains(setID)
+            && !cards.isEmpty
+            && SupplementalEnergyCard.stableIndex(setID: "vstar-\(setID)", cards: cards,
+                                                   upperBound: 4) == 0
+        return Self(energyCount: vstarMarker ? 0 : counts.energyCardCount,
+                    holoEnergy: setID == "cel30" || variant == .blackBoltWhiteFlareGod,
                     codeCount: counts.codeCardCount)
     }
+
+    static let vstarMarkerSets: Set<String> = [
+        "swsh9", "swsh9tg", "swsh10", "swsh10tg", "pgo", "swsh11", "swsh11tg",
+        "swsh12", "swsh12tg", "swsh12pt5", "swsh12pt5gg",
+    ]
 }
 
 struct OpeningRecord: Codable, Identifiable, Sendable {

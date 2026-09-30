@@ -31,7 +31,7 @@ struct DimensionalBallSheet: View {
                     sphere.opacity = energy
                     sphere.clip(to: shape)
                     sphere.fill(shape, with: .radialGradient(Gradient(colors: [
-                        .white.opacity(0.74), cool.opacity(0.85), cool.opacity(0.38), .black.opacity(0.34),
+                        .white.opacity(0.84), cool, cool.opacity(0.52), .black.opacity(0.52),
                     ]), center: CGPoint(x: center.x - radius * (0.30 + tilt.nx * 0.20),
                                         y: center.y - radius * 0.30),
                         startRadius: 0, endRadius: radius * 1.65))

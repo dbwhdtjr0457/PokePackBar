@@ -7,12 +7,19 @@ import Foundation
 /// 캐시를 디스크에 저장해 **콜드 스타트(전체 파싱 ~수십초)를 최초 1회로** 제한한다(배터리).
 actor LocalUsageCache {
     static let shared = LocalUsageCache()
+    /// 스냅샷은 원본 로그가 아니라 재계산 가능한 성능 캐시다. 큰 Codex 세션에서는 직렬화 자체가
+    /// 화면 갱신보다 무거우므로 매 분 쓰지 않고, 메모리 변경을 모아 낮은 빈도로 영속화한다.
+    static let persistenceInterval: TimeInterval = 10 * 60
 
     private struct Blob: Codable { let mtime: Date; let size: Int; let entries: [LocalUsageReader.Entry] }
     private struct CodexBlob: Codable {
         let mtime: Date
         let size: Int
         let rollout: LocalUsageReader.CodexParsedRollout
+        /// 마지막으로 완전히 처리한 JSONL 바이트와 파서 상태. 구버전 캐시는 nil로 디코드된다.
+        let checkpoint: LocalUsageReader.CodexParseCheckpoint?
+        /// `size` 시점 파일 끝 최대 64바이트. 단순 성장인지 교체인지 확인한다.
+        let tailFingerprint: Data?
     }
 
     /// rollout 파일의 세션 id 만 담는 경량 항목 — blob 없이도 부모 후보를 가려내기 위한 인덱스.
@@ -296,11 +303,32 @@ actor LocalUsageCache {
                 }
                 return blob.rollout
             }
-            let rollout = LocalUsageReader.parseCodexRollout(file.url, fmt: fmt)
+
+            let previous = codexCache[file.path]
+            let canResume = previous.map { blob in
+                file.size > blob.size
+                    && blob.checkpoint != nil
+                    && blob.tailFingerprint != nil
+                    && tailFingerprint(of: file.url, endingAt: blob.size) == blob.tailFingerprint
+            } ?? false
+            let parsed = LocalUsageReader.parseCodexRolloutIncrementally(
+                file.url,
+                fmt: fmt,
+                previous: canResume ? previous?.rollout : nil,
+                checkpoint: canResume ? previous?.checkpoint : nil
+            )
+            if !parsed.succeeded, let previous {
+                // 일시적 읽기 실패에 새 size/mtime을 확정하면 읽지 못한 구간을 다음 갱신부터
+                // 영구히 건너뛴다. 기존 blob을 그대로 두고 다음 주기에 같은 구간을 재시도한다.
+                return previous.rollout
+            }
+            let rollout = parsed.rollout
             codexCache[file.path] = CodexBlob(
                 mtime: file.mtime,
                 size: file.size,
-                rollout: rollout
+                rollout: rollout,
+                checkpoint: parsed.checkpoint,
+                tailFingerprint: tailFingerprint(of: file.url, endingAt: file.size)
             )
             dirty = true
             // blob 은 40일 prune 대상이라 오래된 부모는 곧 사라진다. 세션 id 만 인덱스에 남겨
@@ -359,6 +387,20 @@ actor LocalUsageCache {
         return result
     }
 
+    /// 이전 EOF 직전 바이트가 그대로일 때만 append로 간주한다. 크기만 늘어난 atomic rewrite를
+    /// 증분 처리하면 오래된 이벤트와 새 이벤트가 섞이므로, 짧은 prefix guard로 전체 재파싱한다.
+    private func tailFingerprint(of url: URL, endingAt size: Int) -> Data? {
+        guard size >= 0, let handle = try? FileHandle(forReadingFrom: url) else { return nil }
+        defer { try? handle.close() }
+        let count = min(64, size)
+        do {
+            try handle.seek(toOffset: UInt64(size - count))
+            return try handle.read(upToCount: count) ?? Data()
+        } catch {
+            return nil
+        }
+    }
+
     // MARK: 영속화
 
     private func ensureLoaded() {
@@ -368,6 +410,12 @@ actor LocalUsageCache {
         // zlib 압축 스냅샷(현행) → 실패 시 평문 JSON(구버전 캐시) 폴백
         let data = (try? (raw as NSData).decompressed(using: .zlib) as Data) ?? raw
         guard let snap = try? JSONDecoder().decode(Snapshot.self, from: data) else { return }
+        // 프로세스가 다시 뜬 직후에는 마지막 저장 시각을 메모리에서 잃는다. 이를 nil로 두면
+        // 첫 로그 append 하나만 있어도 첫 refresh의 UI 민감 구간에서 수 MB 스냅샷을 다시
+        // JSON 인코딩·zlib 압축한다. 로드 시점을 throttle 기준으로 삼아 저장만 뒤로 미룬다.
+        // 변경된 blob은 메모리에 즉시 반영되며, 저장 전에 종료돼도 다음 실행에서 같은 append를
+        // 다시 읽으면 되므로 집계 정확성이나 원본 로그에는 영향이 없다.
+        lastSave = now()
         claudeCache = snap.claude
         codexCache = snap.codex
         codexSessionIDs = snap.codexSessionIDs
@@ -405,10 +453,11 @@ actor LocalUsageCache {
         piCache = piCache.filter { $0.value.mtime >= cutoff }
     }
 
-    /// 변경이 있으면 디스크에 저장(최소 60초 간격으로 throttle — 잦은 쓰기 방지).
+    /// 변경이 있으면 디스크에 저장. 대형 Codex 스냅샷의 직렬화가 자동 갱신마다 프레임을
+    /// 방해하지 않도록 변경분을 10분 단위로 합친다. 원본 로그가 진실 공급원이므로 지연은 안전하다.
     private func saveIfNeeded() {
         guard dirty else { return }
-        if let last = lastSave, now().timeIntervalSince(last) < 60 { return }
+        if let last = lastSave, now().timeIntervalSince(last) < Self.persistenceInterval { return }
         prune()
         let snap = Snapshot(
             claude: claudeCache,

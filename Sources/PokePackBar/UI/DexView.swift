@@ -15,10 +15,17 @@ struct DexView: View {
     @State private var section: Section = .theme
     @State private var openedEra: String?
     @State private var selected: String?
+    @State private var searchText = ""
     /// 확정 카드로 방금 받은 것. 뒤집어 볼 때까지 이 화면이 덮는다.
     @State private var granted: PulledCard?
     /// 그 카드의 가림막이 이미 걷혔는가.
     @State private var revealed = false
+
+    init(wallet: WalletStore, index: CardIndex?, initialSearchText: String = "") {
+        self.wallet = wallet
+        self.index = index
+        _searchText = State(initialValue: initialSearchText)
+    }
 
     private func statuses(_ dexes: [Dex]) -> [DexStatus] {
         DexProgress.sorted(dexes.map { wallet.dexStatus($0, index: index) })
@@ -44,6 +51,7 @@ struct DexView: View {
             } else {
                 VStack(spacing: 8) {
                     sectionPicker
+                    searchField
                     switch section {
                     case .theme: themeList
                     case .set:   setBrowser
@@ -61,16 +69,47 @@ struct DexView: View {
         ], selection: $section)
     }
 
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(wallet.l.dexCardSearchPlaceholder, text: $searchText)
+                .textFieldStyle(.plain)
+                .font(Typography.body)
+                .accessibilityLabel(wallet.l.dexCardSearchLabel)
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(wallet.l.dexCardSearchClear)
+            }
+        }
+        .padding(.horizontal, 9).padding(.vertical, 6)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .onExitCommand { searchText = "" }
+    }
+
     /// 조합 도감 — 예전 목록 그대로. 140개라 스크롤로 훑는다.
     private var themeList: some View {
         let all = statuses(wallet.dexes.filter { $0.kind == .theme })
+        let visible = filtered(all)
         return ScrollView {
             LazyVStack(spacing: 8) {
                 header(all)
-                ForEach(all) { status in
+                if visible.isEmpty, !DexCardSearch.normalized(searchText).isEmpty {
+                    searchEmpty
+                }
+                ForEach(visible) { status in
                     // 버튼으로 감싸지 않는다. 버튼 라벨 안에 들어간 자식 뷰는
                     // 마우스를 버튼이 가져가 `.help` 툴팁이 뜨지 않는다.
                     DexRow(wallet: wallet, index: index, status: status,
+                           searchMatches: searchMatchNames(status.dex),
                            onGranted: show)
                         .contentShape(Rectangle())
                         .onTapGesture { selected = status.id }
@@ -94,7 +133,23 @@ struct DexView: View {
     /// 세트 도감 — 시대를 한 단계 두고 그 안에서 세트를 늘어놓는다.
     @ViewBuilder
     private var setBrowser: some View {
-        if let index, let openedEra,
+        if let index, !DexCardSearch.normalized(searchText).isEmpty {
+            let all = statuses(wallet.dexes.filter { $0.kind == .set })
+            let visible = filtered(all)
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    header(all)
+                    if visible.isEmpty { searchEmpty }
+                    ForEach(visible) { status in
+                        DexRow(wallet: wallet, index: index, status: status,
+                               searchMatches: searchMatchNames(status.dex),
+                               onGranted: show)
+                            .contentShape(Rectangle())
+                            .onTapGesture { selected = status.id }
+                    }
+                }
+            }
+        } else if let index, let openedEra,
            let era = index.eras.first(where: { $0.name == openedEra }) {
             let ids = Set(era.sets.map(\.id))
             let rows = statuses(wallet.dexes.filter { $0.kind == .set && ids.contains($0.homeSet) })
@@ -120,6 +175,29 @@ struct DexView: View {
         } else if let index {
             eraList(index)
         }
+    }
+
+    private func filtered(_ rows: [DexStatus]) -> [DexStatus] {
+        guard let index, !DexCardSearch.normalized(searchText).isEmpty else { return rows }
+        return rows.filter {
+            DexCardSearch.containsCard(named: searchText, in: $0.dex, index: index)
+        }
+    }
+
+    private func searchMatchNames(_ dex: Dex) -> [String] {
+        guard let index, !DexCardSearch.normalized(searchText).isEmpty else { return [] }
+        let matches = DexCardSearch.matches(named: searchText, in: dex, index: index, limit: 4)
+        var names = matches.prefix(3).map { $0.displayName(wallet.language) }
+        if matches.count > 3 { names.append("…") }
+        return names
+    }
+
+    private var searchEmpty: some View {
+        Text(wallet.l.dexCardSearchEmpty(searchText.trimmingCharacters(in: .whitespacesAndNewlines)))
+            .font(Typography.body)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 24)
     }
 
     /// 시대 목록. 시대마다 그 안 세트 도감의 진행을 요약한다.
@@ -241,6 +319,7 @@ private struct DexRow: View {
     let wallet: WalletStore
     let index: CardIndex?
     let status: DexStatus
+    var searchMatches: [String] = []
     /// 확정 카드를 받았을 때 알린다.
     var onGranted: ((DexClaim) -> Void)? = nil
 
@@ -257,6 +336,12 @@ private struct DexRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             title
+            if !searchMatches.isEmpty {
+                Text(wallet.l.dexCardSearchMatches(searchMatches))
+                    .font(Typography.label)
+                    .foregroundStyle(Color.accentColor)
+                    .lineLimit(1)
+            }
             dexValue
             if dex.kind == .set {
                 // 284장을 띠로 늘어놓을 수 없다. 마일스톤 세 칸의 진행을 막대로 보인다.
@@ -434,11 +519,14 @@ private struct DexClaimAction: View {
             Button(l.dexClaim) {
                 // 확정 카드를 받았으면 무엇이 나왔는지 보여 준다. 조용히 컬렉션에 넣으면
                 // 「MUR 이상 1장」이라 적어 놓고 무엇을 줬는지 알 길이 없다.
-                if let claim = wallet.claim(status.dex.id, step: step), claim.card != nil {
-                    onGranted?(claim)
+                Task {
+                    if let claim = await wallet.claimDexOnlineAware(status.dex.id, step: step), claim.card != nil {
+                        onGranted?(claim)
+                    }
                 }
             }
             .buttonStyle(.borderedProminent).font(Typography.button)
+            .disabled(wallet.resourceActionsDisabled)
         } else if status.claimed {
             Label(l.dexClaimed, systemImage: "checkmark.circle.fill")
                 .font(Typography.label).foregroundStyle(.green)

@@ -26,6 +26,8 @@ FIXTURES = [
     ('sma-SV1', 'shiny', 'art'), ('bw1-19', 'holo', 'art'),
     ('hgss1-ONE', 'holo', 'interior'), ('cel30-147', 'etched', 'interior'),
     ('me1-155', 'etched', 'interior'), ('me1-187', 'gold', 'interior'),
+    ('sv8pt5-144', 'etched', 'interior'),
+    ('me2pt5-295', 'gold', 'interior'), ('cel30c-21', 'celebrationsClassic', 'interior'),
     ('hgss1-111', 'holo', 'interior'), ('ex10-46', 'reverseHolo', 'art'),
     ('bw11-RC1', 'radiantCollection', 'interior'), ('ex11-1', 'holo', 'subject'),
     ('hgss1-105', 'holo', 'art'), ('ex7-1', 'reverseHolo', 'art'),
@@ -33,7 +35,14 @@ FIXTURES = [
     ('xy10-14', 'breakFoil', 'interior'), ('me2pt5-1', 'reverseHolo', 'outsideArt'),
     ('me2pt5-1', 'patternedReverse', 'outsideArt'), ('ex1-100', 'holo', 'art'),
     ('sm35-27', 'shiny', 'art'), ('neo4-106', 'shiny', 'art'),
+    ('rsv10pt5-172', 'blackWhite', 'interior'),
+    ('rsv10pt5-173', 'blackWhite', 'interior'), ('zsv10pt5-172', 'blackWhite', 'interior'),
 ]
+
+# Full-face carrier guard for the one material that previously produced a
+# broad moving white plate. This is a regression ceiling, not physical proof.
+MAX_LARGE_MEAN_DELTA = {'rsv10pt5-172#blackWhite': 28.0}
+MIN_LARGE_FRACTION = {'ex7-1#reverseHolo': 0.095}
 
 
 def response(frames, indices, region):
@@ -47,11 +56,28 @@ def measure(frames, region):
                 large=response(frames, range(5, 10), region))
 
 
-def visible(metrics):
+def texture_response(frames, indices, region):
+    """Animated sub-3px detail, not source-art sharpness or whole-face brightness.
+
+    Subtract the rest frame before filtering so the printed art cannot satisfy
+    this measure. This is a contrast diagnostic, not a physical-fidelity score.
+    """
+    detail_changes = []
+    for i in indices:
+        delta = frames[i] - frames[0]
+        height, width = delta.shape[:2]
+        padded = np.pad(delta, ((1, 1), (1, 1), (0, 0)), mode='edge')
+        smooth = sum(padded[y:y+height, x:x+width] for y in range(3) for x in range(3)) / 9
+        detail_changes.append(np.abs(delta - smooth).mean(axis=2))
+    peak = np.max(detail_changes, axis=0)[region]
+    return dict(meanDetailDelta255=float(peak.mean()), fractionAbove4=float(np.mean(peak > 4)))
+
+
+def visible(metrics, minimum_large_fraction=0.10):
     # A deliberately lenient low-signal guard. Artistic acceptance is separate.
     return (metrics['small']['meanDelta255'] >= 2.5
             and metrics['large']['meanDelta255'] >= 5.0
-            and metrics['large']['fractionAbove8'] >= 0.10)
+            and metrics['large']['fractionAbove8'] >= minimum_large_fraction)
 
 
 def subject_region(entry, width=240, height=335):
@@ -74,8 +100,12 @@ def main():
     parser.add_argument('--baseline-binary', type=Path, help='Compare the same six large-angle poses to an older app')
     parser.add_argument('--keys', nargs='*')
     parser.add_argument('--enforce', action='store_true')
+    parser.add_argument('--min-texture-gain', type=float,
+                        help='Require this detail-response ratio versus baseline (e.g. 1.10); comparison-only')
     parser.add_argument('--classify-only', action='store_true')
     args = parser.parse_args()
+    if args.min_texture_gain is not None and (not args.baseline_binary or args.min_texture_gain <= 0):
+        parser.error('--min-texture-gain requires --baseline-binary and a positive ratio')
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, PPB_OFFLINE='1')
@@ -112,7 +142,15 @@ def main():
         if area == 'subject':
             region &= subject_region(subjects[card_id])
         metrics = measure(frames, region)
+        fixture_key = f'{card_id}#{finish}'
+        response_ceiling = MAX_LARGE_MEAN_DELTA.get(fixture_key)
+        minimum_large_fraction = MIN_LARGE_FRACTION.get(fixture_key, 0.10)
+        has_visible_response = visible(metrics, minimum_large_fraction)
+        is_overexposed = (response_ceiling is not None
+                          and metrics['large']['meanDelta255'] > response_ceiling)
+        texture = texture_response(frames, range(5, 10), region)
         baseline = None
+        baseline_texture = None
         if args.baseline_binary:
             baseline_folder = output / 'baseline-images' / key
             if not args.classify_only:
@@ -123,6 +161,10 @@ def main():
                                 .crop((120, 120, 600, 790)).resize((240, 335)), dtype=float)
                                for pose in [POSES[0], *POSES[5:]]]
             baseline = response(baseline_frames, range(1, 6), region)
+            baseline_texture = texture_response(baseline_frames, range(1, 6), region)
+        texture_gain = (texture['meanDetailDelta255'] / max(0.000001, baseline_texture['meanDetailDelta255'])
+                        if baseline_texture else None)
+        texture_passes = args.min_texture_gain is None or texture_gain >= args.min_texture_gain
         # Mutate real pixels, then traverse the same measurement path. A
         # successful render with frozen/over-attenuated light must be rejected.
         frozen = measure([frames[0]] * len(frames), region)
@@ -136,9 +178,15 @@ def main():
             draw.text((x+3, y+3), f'{card_id} {POSES[i]}', fill='white')
             sheet.paste(Image.fromarray(frame.astype('uint8')), (x, y+22))
         sheet.save(output / f'{key}.jpg', quality=95)
-        return dict(key=f'{card_id}#{finish}', region=area, metrics=metrics,
+        return dict(key=fixture_key, region=area, metrics=metrics,
                     baselineLarge=baseline,
-                    renderStatus='pass', signalStatus='pass' if visible(metrics) else 'review',
+                    texture=texture, baselineTexture=baseline_texture,
+                    textureGain=texture_gain,
+                    responseCeiling=response_ceiling,
+                    minimumLargeFraction=minimum_large_fraction,
+                    renderStatus='pass',
+                    signalStatus='pass' if has_visible_response and not is_overexposed and texture_passes else 'review',
+                    overexposed=is_overexposed,
                     rejectedMutations=['frozen_native_frames', 'one_percent_native_response'],
                     visualStatus='requires_human_review')
 
@@ -149,6 +197,7 @@ def main():
                   baselineSHA256=hashlib.sha256(args.baseline_binary.read_bytes()).hexdigest() if args.baseline_binary else None,
                   frames=len(results)*len(POSES), results=results,
                   weakCandidates=[r['key'] for r in results if r['signalStatus'] != 'pass'],
+                  overexposureCandidates=[r['key'] for r in results if r['overexposed']],
                   nativePixelMutationsRejected=True, physicalAccuracy='not_certified')
     (output / 'results.json').write_text(json.dumps(result, ensure_ascii=False, indent=2))
     for row in results:

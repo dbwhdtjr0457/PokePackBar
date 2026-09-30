@@ -59,6 +59,12 @@ enum CardArtLibrary {
 
     @MainActor
     static func image(_ data: Data, hires: Bool) -> NSImage? {
+        guard let bitmap = bitmap(data, hires: hires) else { return nil }
+        return NSImage(cgImage: bitmap, size: NSSize(width: bitmap.width, height: bitmap.height))
+    }
+
+    /// ImageIO decoding/rotation is CPU work; the async loader runs it off the UI actor.
+    static func bitmap(_ data: Data, hires: Bool) -> CGImage? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
         // Grid cards decode a small thumbnail from the same original. Detail
         // views retain the original pixels; neither path enlarges a source.
@@ -83,7 +89,7 @@ enum CardArtLibrary {
             guard let portrait = context.makeImage() else { return nil }
             cgImage = portrait
         }
-        return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        return cgImage
     }
 
     @MainActor

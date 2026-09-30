@@ -20,6 +20,7 @@ struct PackMarketPrices: Sendable {
     let asOf: String
     let currency: String
     let source: String
+    let snapshotDigest: String
 
     private let bySetID: [String: Entry]
 
@@ -56,6 +57,7 @@ struct PackMarketPrices: Sendable {
                                 asOf: payload.asOf,
                                 currency: payload.currency,
                                 source: payload.source,
+                                snapshotDigest: OpeningRules.digest(data),
                                 bySetID: payload.packs)
     }
 

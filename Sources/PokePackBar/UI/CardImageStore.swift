@@ -39,6 +39,8 @@ actor CardImageStore {
     }
 
     func data(cardID: String, hires: Bool) async -> Data? {
+        if let local = SupplementalEnergyCard.data(cardID: cardID),
+           SupplementalEnergyCard.accepts(local) { return local }
         if let local = CardArtLibrary.data(cardID), CardArtLibrary.accepts(local, hires: hires) { return local }
         return await data(key: Self.cacheKey(cardID: cardID, hires: hires),
                    urls: CardImageSource.urls(cardID: cardID, hires: hires))
@@ -70,9 +72,12 @@ actor CardImageStore {
         if let existing = inFlight[key] { return await existing.value }
 
         let task = Task<Data?, Never> {
+            let deadline = Date().addingTimeInterval(6)
             for url in sources {
-                guard !Task.isCancelled else { return nil }
-                guard let (data, response) = try? await URLSession.shared.data(from: url),
+                let remaining = deadline.timeIntervalSinceNow
+                guard !Task.isCancelled, remaining > 0 else { return nil }
+                let request = URLRequest(url: url, timeoutInterval: remaining)
+                guard let (data, response) = try? await URLSession.shared.data(for: request),
                       (response as? HTTPURLResponse)?.statusCode == 200,
                       CardArtLibrary.accepts(data, hires: hires) else { continue }
                 return data
@@ -107,8 +112,37 @@ actor CardImageStore {
     }
 }
 
+/// Serial decoder bounds CPU pressure while keeping ImageIO off the main actor.
+private actor CardBitmapDecoder {
+    static let shared = CardBitmapDecoder()
+    func decode(_ data: Data, hires: Bool) -> CGImage? {
+        guard !Task.isCancelled else { return nil }
+        return CardArtLibrary.bitmap(data, hires: hires)
+    }
+}
+
 @MainActor
 enum CardImageLoader {
+    private static let decodedCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.totalCostLimit = 96 * 1024 * 1024
+        cache.countLimit = 256
+        return cache
+    }()
+
+    static func preparedImage(cardID: String, hires: Bool) -> NSImage? {
+        decodedCache.object(forKey: CardImageStore.cacheKey(cardID: cardID, hires: hires) as NSString)
+    }
+
+    private static func decoded(_ data: Data, cardID: String, hires: Bool) async -> NSImage? {
+        guard let bitmap = await CardBitmapDecoder.shared.decode(data, hires: hires),
+              !Task.isCancelled else { return nil }
+        let image = NSImage(cgImage: bitmap, size: NSSize(width: bitmap.width, height: bitmap.height))
+        decodedCache.setObject(image,
+            forKey: CardImageStore.cacheKey(cardID: cardID, hires: hires) as NSString,
+            cost: bitmap.bytesPerRow * bitmap.height)
+        return image
+    }
 
     /// 이번 프레임에 그릴 그림을 고른다.
     ///
@@ -127,6 +161,8 @@ enum CardImageLoader {
     /// 디스크 캐시에 이미 있으면 네트워크 없이 즉시 반환한다.
     /// 격자를 다시 그릴 때 매번 비동기로 가면 화면이 한 번 빈 뒤 채워져 깜빡인다.
     static func cachedImage(cardID: String, hires: Bool) -> NSImage? {
+        if let data = SupplementalEnergyCard.data(cardID: cardID),
+           let image = CardArtLibrary.image(data, hires: hires) { return image }
         if let data = CardArtLibrary.data(cardID), let image = CardArtLibrary.image(data, hires: hires) { return image }
         if let image = readCache(cardID: cardID, hires: hires) { return image }
         // 큰 그림이 없으면 작은 그림으로라도 그린다 — 아래 `image(cardID:hires:)` 와 같은 이유다.
@@ -142,14 +178,16 @@ enum CardImageLoader {
 
     /// A low-resolution emergency fallback is temporary, never an HD cache hit.
     static func image(cardID: String, hires: Bool) async -> NSImage? {
+        guard !Task.isCancelled else { return nil }
+        if let ready = preparedImage(cardID: cardID, hires: hires) { return ready }
         if let d = await CardImageStore.shared.data(cardID: cardID, hires: hires) {
-            return CardArtLibrary.image(d, hires: hires)
+            return await decoded(d, cardID: cardID, hires: hires)
         }
         guard hires,
               let d = await CardImageStore.shared.data(cardID: cardID, hires: false) else {
             return nil
         }
-        return CardArtLibrary.image(d, hires: false)
+        return await decoded(d, cardID: cardID, hires: false)
     }
 
     /// 곧바로 내놓을 수 있는 팩 아트. 메모리에 있거나 번들에 있으면 기다릴 것이 없다.
@@ -215,10 +253,15 @@ enum CardImageLoader {
     /// 표시 시점에 각자 다시 시도한다.
     static func prefetch(cardIDs: [String], hires: Bool,
                          timeout: Duration = .seconds(6)) async -> [String: NSImage] {
-        guard !cardIDs.isEmpty else { return [:] }
+        guard !cardIDs.isEmpty, !Task.isCancelled else { return [:] }
+        var seen = Set<String>()
+        let ids = cardIDs.filter { seen.insert($0).inserted }
         return await withTaskGroup(of: (String, NSImage?)?.self) { group in
-            for id in Set(cardIDs) {
+            var next = 0
+            let concurrency = min(6, ids.count)
+            for id in ids.prefix(concurrency) {
                 group.addTask { (id, await image(cardID: id, hires: hires)) }
+                next += 1
             }
             group.addTask {
                 try? await Task.sleep(for: timeout)
@@ -226,12 +269,17 @@ enum CardImageLoader {
             }
 
             var out: [String: NSImage] = [:]
-            var remaining = Set(cardIDs).count
+            var remaining = ids.count
             for await result in group {
                 guard let result else { group.cancelAll(); break }   // 마감
                 if let img = result.1 { out[result.0] = img }
                 remaining -= 1
                 if remaining == 0 { group.cancelAll(); break }
+                if next < ids.count, !Task.isCancelled {
+                    let id = ids[next]
+                    next += 1
+                    group.addTask { (id, await image(cardID: id, hires: hires)) }
+                }
             }
             return out
         }
@@ -294,7 +342,7 @@ struct CardImageView: View {
                 image = preloaded; imageKey = wanted
                 if !hires || CardArtLibrary.isHighResolution(preloaded) { return }
             }
-            if let cached = CardImageLoader.cachedImage(cardID: cardID, hires: hires) {
+            if let cached = CardImageLoader.preparedImage(cardID: cardID, hires: hires) {
                 image = cached; imageKey = wanted
                 if !hires || CardArtLibrary.isHighResolution(cached) { return }
             }

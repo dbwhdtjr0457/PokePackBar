@@ -13,6 +13,7 @@ final class FoilImageField: @unchecked Sendable {
     let luminance: [Double]
     let direction: [Double]
     let edge: [Double]
+    let meanLuminance: Double
 
     init?(image: CGImage) {
         let width = self.width
@@ -45,6 +46,7 @@ final class FoilImageField: @unchecked Sendable {
             }
         }
         luminance = light
+        meanLuminance = light.reduce(0, +) / Double(count)
         direction = directions
         edge = edges
     }
