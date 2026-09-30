@@ -57,6 +57,12 @@ extension L {
     var releaseNotes: [ReleaseNote] {
         [
             ReleaseNote(version: "0.11.12", lines: [
+                t("온라인 계정으로 여러 Mac의 카드·팩·재화를 공유하고 친구·교환·마켓을 사용할 수 있습니다. 초대 코드로 가입하며, 기존 세이브는 운영자와 이전한 뒤 연결합니다. 에너지 이미지를 포함한 모든 카드 그림은 CDN에서 받아 캐시합니다.",
+                  "Online accounts share cards, packs and currency across Macs, with friends, trades and a marketplace. Register with an invitation code; existing saves must be migrated by the operator before linking. All card artwork, including Energy, is fetched from the CDN and cached.",
+                  "オンラインアカウントでMac間のカード・パック・通貨を共有し、フレンド・交換・マーケットを利用できます。招待コードで登録し、既存セーブは運営による移行後に接続します。エネルギーを含む画像はCDNから取得します。",
+                  "Las cuentas en línea comparten cartas, sobres y moneda entre Macs, con amigos, intercambios y mercado. Regístrate con un código; el operador debe migrar las partidas existentes antes de vincularlas. Todas las imágenes, incluidas Energía, se descargan del CDN.",
+                  "Les comptes en ligne partagent cartes, boosters et monnaie entre Macs, avec amis, échanges et marché. Inscrivez-vous avec un code ; les sauvegardes existantes doivent être migrées par l’opérateur avant liaison. Toutes les images, Énergie comprise, viennent du CDN.",
+                  "Contas online compartilham cartas, pacotes e moeda entre Macs, com amigos, trocas e mercado. Cadastre-se com um convite; o operador deve migrar os saves existentes antes da vinculação. Todas as imagens, incluindo Energia, vêm do CDN."),
                 t("보유한 같은 세트의 팩 수만큼 개봉 수량을 직접 입력할 수 있습니다. 온라인 대량 개봉은 최대 1,000팩씩 확정하며, 중단되면 온라인 창의 작업 탭에서 이어갈 수 있습니다. 이미 완료된 묶음은 유지됩니다.",
                   "Enter how many owned packs to open from the same set. Online bulk opening commits up to 1,000 packs per chunk and can resume from the online window’s Jobs tab after interruption. Completed chunks are retained.",
                   "同じセットの所持パック数まで開封数を直接入力できます。オンライン一括開封は最大1,000パックずつ確定し、中断後はオンライン画面の作業タブから再開できます。完了分は保持されます。",
