@@ -26,6 +26,83 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        if let at = CommandLine.arguments.firstIndex(of: "--audit-account-window"), CommandLine.arguments.indices.contains(at + 1) {
+            NSApp.setActivationPolicy(.prohibited)
+            Task { @MainActor in
+                do { try await AccountLayoutAudit.run(output: URL(fileURLWithPath: CommandLine.arguments[at + 1])); exit(0) }
+                catch { FileHandle.standardError.write(Data("Account layout failed: \(error)\n".utf8)); exit(1) }
+            }
+            return
+        }
+        if let at = CommandLine.arguments.firstIndex(of: "--audit-online-window"), CommandLine.arguments.indices.contains(at + 1) {
+            NSApp.setActivationPolicy(.accessory)
+            Task { @MainActor in
+                do { try await OnlineLayoutAudit.run(output: URL(fileURLWithPath: CommandLine.arguments[at + 1])); exit(0) }
+                catch { FileHandle.standardError.write(Data("Online layout audit failed: \(error)\n".utf8)); exit(1) }
+            }
+            return
+        }
+        if let at = CommandLine.arguments.firstIndex(of: "--audit-online-game") {
+            NSApp.setActivationPolicy(.prohibited)
+            guard CommandLine.arguments.indices.contains(at + 1) else { exit(1) }
+            Task { @MainActor in
+                do { try await OnlineGameAudit.run(address: CommandLine.arguments[at + 1]); exit(0) }
+                catch {
+                    FileHandle.standardError.write(Data("Online audit failed: \(error)\n".utf8))
+                    exit(1)
+                }
+            }
+            return
+        }
+        if CommandLine.arguments.contains("--server-rules") {
+            NSApp.setActivationPolicy(.prohibited)
+            do { try ServerRulesBridge.run(); exit(0) }
+            catch {
+                FileHandle.standardError.write(Data("Server rule command rejected\n".utf8))
+                exit(2)
+            }
+        }
+        if let at = CommandLine.arguments.firstIndex(of: "--audit-catalogue-foil") {
+            NSApp.setActivationPolicy(.prohibited)
+            Task { @MainActor in
+                do {
+                    try await CatalogueFoilAudit.run(arguments: CommandLine.arguments, at: at)
+                    exit(0)
+                } catch {
+                    FileHandle.standardError.write(Data("Catalogue foil audit failed: \(error)\n".utf8))
+                    exit(1)
+                }
+            }
+            return
+        }
+        if let at = CommandLine.arguments.firstIndex(of: "--benchmark-bulk-opening") {
+            NSApp.setActivationPolicy(.prohibited)
+            guard CommandLine.arguments.indices.contains(at + 1),
+                  let count = Int(CommandLine.arguments[at + 1]), (1...100_000).contains(count)
+            else { exit(1) }
+            Task { @MainActor in
+                do {
+                    try await BulkOpeningAudit.benchmark(count: count)
+                    exit(0)
+                } catch {
+                    FileHandle.standardError.write(Data("Bulk opening audit failed: \(error)\n".utf8))
+                    exit(1)
+                }
+            }
+            return
+        }
+        if CommandLine.arguments.contains("--unregister-login-item") {
+            NSApp.setActivationPolicy(.prohibited)
+            do {
+                try LoginItem.setEnabled(false)
+                print("PASS login item unregistered")
+                exit(0)
+            } catch {
+                FileHandle.standardError.write(
+                    Data("Login item unregister failed: \(error)\n".utf8))
+                exit(1)
+            }
+        }
         if let position = CommandLine.arguments.firstIndex(of: "--audit-popover-layout") {
             guard CommandLine.arguments.indices.contains(position+1) else {
                 FileHandle.standardError.write(Data("Missing layout audit output directory\n".utf8))
@@ -106,10 +183,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         wallet = WalletStore()
         // 한 번만 주는 보상은 기동할 때 넣는다. 팝오버를 열 때 넣으면 안 여는 동안
         // 팩이 안 들어와 있고, 안내도 그만큼 늦는다.
-        wallet.claim(WalletStore.apologyGift)
-        wallet.claim(WalletStore.patchGift)
-        wallet.claim(WalletStore.oripaUpdateGift)
-        wallet.claim(WalletStore.dexUpdateGift)
+        if !wallet.isOnline {
+            wallet.claim(WalletStore.apologyGift)
+            wallet.claim(WalletStore.patchGift)
+            wallet.claim(WalletStore.oripaUpdateGift)
+            wallet.claim(WalletStore.dexUpdateGift)
+        }
         updater = UpdateChecker()
         store.localizationLanguage = wallet.language   // 알림 현지화용 미러 시드
         store.onRefresh = { [weak self] in self?.onStoreRefreshed() }   // 한도 로드 후 companion·사탕 지급
@@ -361,7 +440,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
         if popover.isShown {
-            popover.performClose(nil)   // 메뉴 애니메이션 재개는 popoverDidClose 에서
+            closePopover()
         } else {
             // 트리는 처음 열 때 한 번만 만들고 그대로 둔다. 닫을 때 버리면 화면에 붙어 있던
             // 상태가 함께 죽어, 팩을 뜯다 닫으면 뜯던 자리가 사라진다.
@@ -398,13 +477,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         navigation.isShown = false
     }
 
+    /// 자식 alert 가 열린 채 부모 팝오버를 먼저 닫으면 AppKit sheet 만 떨어져 나가고 SwiftUI 의
+    /// presentation 상태가 남는다. 먼저 숨김을 알려 일시적인 입력 상태를 정리한 뒤 닫는다.
+    private func closePopover() {
+        navigation.isShown = false
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.popover.isShown else { return }
+            self.popover.performClose(nil)
+        }
+    }
+
     /// 다른 메뉴바 팝업은 앱을 비활성화 안 시켜 .transient 가 못 닫는다 → 열림 동안만 앱 밖 클릭을 직접 감지해 닫는다(관찰 전용, 권한 불필요).
     private func startOutsideClickMonitor() {
         outsideClickMonitor.start {
             NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
                 Task { @MainActor in
                     guard let self, self.popover.isShown else { return }
-                    self.popover.performClose(nil)
+                    self.closePopover()
                 }
             }
         }

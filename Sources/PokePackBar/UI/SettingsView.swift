@@ -14,6 +14,7 @@ struct SettingsView: View {
     @State private var launchAtLoginError: String?
     @State private var reportError: String?
     @State private var advancedExpanded = false
+    @State private var section = "일반"
     @State private var isCheckingUpdate = false
     @State private var didCheckUpdate = false
     @State private var selectedScanProviderID = "claude_code"
@@ -27,6 +28,12 @@ struct SettingsView: View {
     @State private var customScanMatchGeneration = 0
     @FocusState private var customScanFocused: Bool
     private var l: L { wallet.l }
+
+    init(onClose: @escaping () -> Void, onOpenReleaseNotes: @escaping () -> Void = {}, initialSection: String = "일반") {
+        self.onClose = onClose
+        self.onOpenReleaseNotes = onOpenReleaseNotes
+        _section = State(initialValue: initialSection)
+    }
 
     private var isBundledApp: Bool { AppEnv.isBundledApp }
 
@@ -47,16 +54,35 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             header
             Divider()
+            Picker("설정 분류", selection: $section) {
+                ForEach(["일반", "표시", "데이터", "고급"], id: \.self) { Text($0).tag($0) }
+            }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    generalGroup(store)
-                    menuBarGroup(store)
-                    collectorGroup
-                    ReliabilitySettingsView(wallet: wallet)
-                    notificationsGroup(store)
-                    updateGroup(store)
-                    advancedGroup(store)
-                    aboutSupportGroup
+                    if section == "일반" {
+                        generalGroup(store)
+                        settingsSection("연결") {
+                            groupRow {
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(wallet.isOnline ? "온라인 모드" : "로컬 모드")
+                                    Text("로그인 · 기기 · 복구 · 서버 상태")
+                                        .font(Typography.label).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button("계정 및 서버…") { AccountWindow.shared.show(wallet: wallet) }
+                            }
+                        }
+                        updateGroup(store)
+                    } else if section == "표시" {
+                        menuBarGroup(store)
+                        collectorGroup
+                        notificationsGroup(store)
+                    } else if section == "데이터" {
+                        ReliabilitySettingsView(wallet: wallet)
+                    } else {
+                        advancedGroup(store)
+                        aboutSupportGroup
+                    }
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)

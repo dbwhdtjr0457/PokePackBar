@@ -415,11 +415,14 @@ struct CardSpotlightView: View {
                 }
                 HStack(spacing: 8) {
                     Button(l.sellSpares) {
-                        let got = wallet.sellSpares(cardID: cardID, tier: tier, count: spare)
-                        confirmingSale = false
-                        lastRefund = got > 0 ? got : nil
+                        Task {
+                            let got = await wallet.sellSparesOnlineAware(cardID: cardID, tier: tier, count: spare)
+                            confirmingSale = false
+                            lastRefund = got > 0 ? got : nil
+                        }
                     }
                     .buttonStyle(.borderedProminent)
+                    .disabled(wallet.resourceActionsDisabled)
                     Button(l.cancel) { confirmingSale = false }
                         .buttonStyle(.borderless)
                 }

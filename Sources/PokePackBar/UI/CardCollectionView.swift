@@ -66,8 +66,9 @@ struct CardCollectionView: View {
     private func makeShelf() -> Shelf {
         guard let index else { return Shelf() }
         var shelf = Shelf()
-        shelf.pool.reserveCapacity(index.cardsByValue.count)
-        for entry in index.cardsByValue {
+        let sorted = index.currentCardsByValue
+        shelf.pool.reserveCapacity(sorted.count)
+        for entry in sorted {
             guard selectedSet == nil || entry.setID == selectedSet,
                   selectedTier == nil || entry.tier == selectedTier else { continue }
             shelf.pool.append(entry)

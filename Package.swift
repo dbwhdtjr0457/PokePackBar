@@ -17,6 +17,7 @@ let package = Package(
                 .process("Resources/pack-prices.json"),
                 .process("Resources/card-art.json"),
                 .process("Resources/foil-geometry.json"),
+                .process("Resources/foil-artwork-balance.json"),
                 .process("Resources/foil-subject-masks.json"),
                 .process("Resources/physical-foil-marks.json"),
                 .copy("Resources/foil-marks"),
@@ -24,6 +25,7 @@ let package = Package(
                 .process("Resources/reviewed-foil.json"),
                 .process("Resources/cracked-ice-facets.json"),
                 .process("Resources/catalogue-sources.json"),
+                .process("Resources/supplement-energy"),
             ],
             linkerSettings: [.linkedLibrary("sqlite3")]
         ),

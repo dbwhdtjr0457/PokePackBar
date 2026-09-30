@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from audit_foil_visibility import measure, subject_region, visible
+from audit_foil_visibility import measure, subject_region, texture_response, visible
 
 
 class VisibilityGuardTests(unittest.TestCase):
@@ -42,6 +42,24 @@ class VisibilityGuardTests(unittest.TestCase):
         self.assertFalse(region[15, 50])
         self.assertTrue(region[40, 50])
         self.assertFalse(region[70, 50])
+
+    def test_whole_face_brightness_is_not_texture(self):
+        result = texture_response([self.rest, self.rest + 30], [1], self.region)
+        self.assertEqual(result['meanDetailDelta255'], 0)
+
+    def test_static_printed_detail_is_not_animated_texture(self):
+        detailed = self.rest.copy()
+        detailed[::2, ::2] += 40
+        result = texture_response([detailed, detailed], [1], self.region)
+        self.assertEqual(result['meanDetailDelta255'], 0)
+
+    def test_local_ridges_produce_texture_contrast(self):
+        changed = self.rest.copy()
+        changed[::2, :] += 20
+        changed[1::2, :] -= 10
+        result = texture_response([self.rest, changed], [1], self.region)
+        self.assertGreater(result['meanDetailDelta255'], 10)
+        self.assertGreater(result['fractionAbove4'], 0.9)
 
 
 if __name__ == '__main__':

@@ -18,6 +18,7 @@ struct ReliabilitySettingsView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .disabled(wallet.resourceActionsDisabled)
             Text(l.realisticNote).font(Typography.label).foregroundStyle(.secondary)
             DisclosureGroup("\(l.exportHistory) (\(wallet.state.openingHistory.count))") {
                 VStack(alignment: .leading, spacing: 6) {
@@ -50,6 +51,11 @@ struct ReliabilitySettingsView: View {
                     do { try PriceSnapshotStore.shared.reset(); message = l.pricesApplied }
                     catch { message = error.localizedDescription }
                 }.disabled(!PriceSnapshotStore.shared.usesImportedSnapshot)
+            }
+            .disabled(wallet.isOnline)
+            if wallet.isOnline {
+                Text("온라인 시세는 서버에서 자동 갱신됩니다. 마지막 정상 시세를 사용하며 앱 재설치는 필요하지 않습니다.")
+                    .font(Typography.caption).foregroundStyle(.secondary)
             }
             if let message { Text(message).font(Typography.label).textSelection(.enabled) }
         }

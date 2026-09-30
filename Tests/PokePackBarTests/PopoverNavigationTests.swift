@@ -30,6 +30,31 @@ final class PopoverNavigationTests: XCTestCase {
                       "트리를 열 때마다 새로 만들고 있다")
     }
 
+    /// 숫자 입력 alert 는 화면 진행 상태와 달리 부모 팝오버를 닫을 때 폐기해야 한다.
+    /// 남겨 두면 다시 연 화면 위에 보이지 않는 모달 상태가 남아 모든 클릭을 막는다.
+    func testClosingPopoverDismissesTransientQuantityEditor() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let stepper = try String(contentsOf: root.appendingPathComponent(
+            "Sources/PokePackBar/UI/PackQuantityStepper.swift"), encoding: .utf8)
+        let app = try String(contentsOf: root.appendingPathComponent(
+            "Sources/PokePackBar/PokePackBarApp.swift"), encoding: .utf8)
+
+        XCTAssertTrue(stepper.contains(".onChange(of: navigation.isShown)"),
+                      "부모 팝오버가 닫혀도 수량 입력 alert 상태가 남는다")
+        XCTAssertTrue(stepper.contains("isEditing = false"),
+                      "숨은 수량 입력 모달을 실제로 해제하지 않는다")
+        XCTAssertTrue(app.contains("private func closePopover()"),
+                      "팝오버 종료 순서를 한 곳에서 보장하지 않는다")
+
+        let closeMethod = try XCTUnwrap(app.range(of: "private func closePopover()"))
+        let closeBody = app[closeMethod.lowerBound...]
+        let hide = try XCTUnwrap(closeBody.range(of: "navigation.isShown = false"))
+        let close = try XCTUnwrap(closeBody.range(of: "popover.performClose(nil)"))
+        XCTAssertLessThan(hide.lowerBound, close.lowerBound,
+                          "자식 모달을 해제하기 전에 부모 팝오버를 닫고 있다")
+    }
+
     /// **카드 상세에서 그 카드가 나오는 팩을 사러 갈 수 있어야 한다.**
     ///
     /// 갖고 싶은 카드를 크게 보고 있을 때 다음에 하고 싶은 일이 그것이다. 예전에는 팩

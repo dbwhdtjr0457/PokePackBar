@@ -47,7 +47,8 @@ enum CardTier: String, Codable, Sendable, CaseIterable {
     case megaUltraRare = "MUR"  // 메가 울트라레어 — 메가 에볼루션 이후
     case futureUltra = "FUR"    // 퓨처울트라레어 — 30th CELEBRATION 한정
 
-    /// 등급 순위. 정렬과 개봉 순서가 이 값을 쓴다. 클수록 희귀하다.
+    /// 등급 순위. 도감 정렬과 등급 기반 보정에 쓴다. 클수록 희귀하다.
+    /// 팩 공개 순서는 이 값이 아니라 세트 레시피의 물리 슬롯 순서를 따른다.
     var rank: Int { Self.allCases.firstIndex(of: self) ?? 0 }
 
     /// 요청한 등급이 그 세트에 없을 때 대신 찾아볼 순서.
@@ -242,6 +243,10 @@ struct CardIndex: Sendable {
     /// 화면이 다시 그려지고 그때마다 정렬이 돌아, 컬렉션을 훑으면 덜컹거렸다. 정렬 기준인
     /// 시세는 실행 중에 바뀌지 않으므로 한 번만 세우면 된다.
     let cardsByValue: [CardEntry]
+    private let onlinePriceOrder = PriceOrderCache()
+    var currentCardsByValue: [CardEntry] {
+        onlinePriceOrder.sorted(cards, prices: CardPrices.shared)
+    }
 
     /// 오리파 후보를 값 구간별로 미리 나눈 선반. 상점 화면은 이 값을 그대로 재사용한다.
     let oripaShelf: OripaConfig.Shelf
@@ -430,6 +435,23 @@ struct CardIndex: Sendable {
                          presentTiers: CardTier.allCases.reversed().filter(present.contains),
                          byID: Dictionary(entries.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a }),
                          bySetID: Dictionary(sets.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a }))
+    }
+}
+
+/// Re-sort once per immutable price version, never once per card image render.
+private final class PriceOrderCache: @unchecked Sendable {
+    private let lock = NSLock()
+    private var digest: String?
+    private var entries: [CardEntry] = []
+    func sorted(_ cards: [CardEntry], prices: CardPrices?) -> [CardEntry] {
+        lock.withLock {
+            let next = prices?.snapshotDigest ?? "bundled-fallback"
+            if digest != next {
+                entries = CardIndex.byValue(cards, prices: prices)
+                digest = next
+            }
+            return entries
+        }
     }
 }
 

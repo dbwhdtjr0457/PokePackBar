@@ -228,6 +228,8 @@ enum MarketEconomy {
                 * specialChance
         case .blackBoltWhiteFlareGod:
             adjustment += requestsAdjustment(PackRecipe.blackBoltWhiteFlareGodPack) * specialChance
+        case .ascendedHeroesGod:
+            adjustment += requestsAdjustment(PackRecipe.ascendedHeroesGodPack) * specialChance
         case .standard, .celebrations, .prismaticEvolutionsDemigod, nil:
             break
         }

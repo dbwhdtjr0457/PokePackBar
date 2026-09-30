@@ -77,6 +77,17 @@ enum ReviewedFoilAudit {
         try LocalAudit.require(abs(ReviewedFoilLayer.facetResponse(phase: 0, tilt: neutral)
             - ReviewedFoilLayer.facetResponse(phase: 0, tilt: tilted)) > 0.3,
             "Facets do not respond to tilt")
+        try verifyFacetDistribution()
+        let smallTilt = TiltVector(nx: 0.18, ny: -0.12)
+        let confettiResponse = ReviewedFoilLayer.facetResponse(
+            phase: 0, tilt: smallTilt, material: .confetti)
+        let etchingResponse = ReviewedFoilLayer.facetResponse(
+            phase: 0, tilt: smallTilt, material: .microEtching)
+        let goldRimResponse = ReviewedFoilLayer.starResponse(
+            phase: 0, tilt: smallTilt, goldBorder: true)
+        try LocalAudit.require(abs(confettiResponse - etchingResponse) > 0.08
+                               && abs(confettiResponse - goldRimResponse) > 0.08,
+                               "Confetti, micro-etching and gold rim share one reflection speed")
         for number in 1...30 {
             let id = "cel30c-\(number)"
             let rim = try layer(id, "gold-rim")
@@ -84,6 +95,53 @@ enum ReviewedFoilAudit {
                 "Classic rim reverted to generic frame: \(id)")
             _ = try layer(id, "illustration-stars")
         }
-        print("PASS reviewed foil: 85 explicit printings, all 30 Classic gold masks, 12 registered shard sets, original/finish isolation, subject/background separation, paper/gold distinction, local angular response; physical plates NOT certified; wallet untouched")
+        print("PASS reviewed foil: 85 explicit printings, no diagonal hue bands, independent facet normals with weak local coherence, distinct confetti/etching/gold speeds, all 30 Classic gold masks, 12 registered shard sets; physical plates NOT certified; wallet untouched")
+    }
+
+    /// Rejects the former `x * 0.42 + y * 0.58` colour partition. Hue is
+    /// circular, so both sine and cosine components must be uncorrelated with
+    /// that axis; checking the numeric hue directly would be invalid at wrap.
+    private static func verifyFacetDistribution() throws {
+        var generator = PackSeedGenerator(seed: 0xC31E_BA71)
+        func next() -> Double { Double(generator.next() >> 11) / Double(1 << 53) }
+        var diagonal: [Double] = []
+        var hueX: [Double] = []
+        var hueY: [Double] = []
+        var groups = Set<Int>()
+        diagonal.reserveCapacity(12_000)
+        hueX.reserveCapacity(12_000)
+        hueY.reserveCapacity(12_000)
+        for _ in 0..<12_000 {
+            let x = next(), y = next(), independentHue = next(), independentNormal = next()
+            let hue = ReviewedFacetDistribution.huePhase(
+                x: x, y: y, independent: independentHue, seed: 0xC31E_BA71)
+            diagonal.append(x * 0.42 + y * 0.58)
+            hueX.append(cos(hue * .pi * 2))
+            hueY.append(sin(hue * .pi * 2))
+            groups.insert(ReviewedFacetDistribution.group(
+                x: x, y: y, independentHue: independentHue,
+                independentNormal: independentNormal, seed: 0xC31E_BA71))
+        }
+        let directionalCorrelation = max(abs(correlation(diagonal, hueX)),
+                                         abs(correlation(diagonal, hueY)))
+        try LocalAudit.require(directionalCorrelation < 0.08,
+                               "Reviewed facets still form a diagonal colour band")
+        try LocalAudit.require(groups.count == ReviewedFacetDistribution.groupCount,
+                               "Reviewed facets lost independent hue/normal phases")
+    }
+
+    private static func correlation(_ lhs: [Double], _ rhs: [Double]) -> Double {
+        guard lhs.count == rhs.count, !lhs.isEmpty else { return 1 }
+        let lhsMean = lhs.reduce(0, +) / Double(lhs.count)
+        let rhsMean = rhs.reduce(0, +) / Double(rhs.count)
+        var numerator = 0.0, lhsSquared = 0.0, rhsSquared = 0.0
+        for (left, right) in zip(lhs, rhs) {
+            let l = left - lhsMean, r = right - rhsMean
+            numerator += l * r
+            lhsSquared += l * l
+            rhsSquared += r * r
+        }
+        let denominator = sqrt(lhsSquared * rhsSquared)
+        return denominator > 0 ? numerator / denominator : 1
     }
 }

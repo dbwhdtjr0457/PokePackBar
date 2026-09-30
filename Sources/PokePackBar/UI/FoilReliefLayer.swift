@@ -180,6 +180,21 @@ enum FoilReliefMaterial: Equatable {
         return 1
     }
 
+    /// Dense ridges and isolated glints have different jobs. Attenuate only
+    /// the continuous micro-coating; preserve its normals, colors and peaks.
+    /// Dark photographic MUR scans need more protection than flat gold art.
+    func coatingGain(meanLuminance: Double?) -> Double {
+        switch self {
+        case .gold(.megaGold):
+            return (meanLuminance ?? 1) < 0.50 ? 0.30 : 0.44
+        case .illustration: return 0.70
+        case .engraved(.rainbowSplash, _): return 0.55
+        case .engraved(.stone, _): return 0.65
+        case .engraved(.satin, _), .engraved(.mirage, _): return 0.72
+        default: return 1
+        }
+    }
+
     /// Amazing Rare scans already contain the colored splash. Keep flat ink
     /// much quieter than its detailed splash/subject; this is image-guided
     /// roughness, not a claim to have the factory's selective coating mask.
@@ -256,13 +271,30 @@ enum FoilReliefMaterial: Equatable {
         return false
     }
 
+    /// Correlation scale is material-specific; gold keeps a finer metallic grain
+    /// while illustration etching reveals small connected patches of relief.
+    var lightNeighbourhoodColumns: Double? {
+        if isIllustrationEtch { return 24 }
+        if isGold { return 38 }
+        if isMicroEtched { return 32 }
+        if isEngraved { return 28 }
+        return nil
+    }
+
+    func reliefShadowGain(magnitude: Double) -> Double {
+        if isIllustrationEtch { return 0.70 + magnitude * 0.80 }
+        if isMicroEtched || isEngraved { return 0.50 + magnitude * 0.65 }
+        if isGold { return 0.90 + magnitude * 0.45 }
+        return 1
+    }
+
     var ridgeWidth: Double {
-        if isIllustrationEtch { return 0.48 }
-        if isEngraved { return 0.56 }
+        if isIllustrationEtch { return 0.60 }
+        if isEngraved { return 0.66 }
         if self == .neoShining { return 0.55 }
-        if self == .gold(.megaGold) { return 0.78 }
-        if isGold { return 0.64 }
-        return isMicroEtched ? 0.50 : 0.44
+        if self == .gold(.megaGold) { return 0.88 }
+        if isGold { return 0.70 }
+        return isMicroEtched ? 0.60 : 0.44
     }
 
     var lengthVariation: Double {
@@ -290,6 +322,7 @@ struct FoilReliefLayer: View {
     let seed: UInt64
     let tilt: TiltVector
     var imageField: FoilImageField? = nil
+    var coatingScale: Double = 1
 
     private static let lightLevels = 8
     private static let shadowLevels = 4
@@ -314,27 +347,25 @@ struct FoilReliefLayer: View {
             let pitch = size.width / CGFloat(material.columns)
             let angleCos = cos(angle)
             let angleSin = sin(angle)
-            let lightX = 0.46 - tilt.nx * 0.34
-            let lightY = 0.38 - tilt.ny * 0.26
             // A face-on etched sheet is not a layer of dark dust. Let tilt
             // reveal the relief, chiefly through the illuminated ridge edges.
-            let etched = material.isMicroEtched || material.isEngraved || material.isIllustrationEtch
+            let pairedRelief = material.lightNeighbourhoodColumns != nil
             let highlightGain = material.highlightGain(magnitude: tilt.magnitude)
-            let shadowGain = etched ? 0.16 + tilt.magnitude * 0.46 : (material.isGold ? 0.58 : 1)
-            let lightSpreadX = material.isMicroEtched ? 0.040 : 0.055
-            let lightSpreadY = material.isMicroEtched ? 0.09 : 0.12
+            let shadowGain = material.reliefShadowGain(magnitude: tilt.magnitude)
+            let coatingGain = material.coatingGain(meanLuminance: imageField?.meanLuminance) * coatingScale
 
             for facet in facets {
-                let dx = facet.x - lightX
-                let dy = (facet.y - lightY) * 0.717
-                // A broad source illuminates many microscopic ridges, never
-                // an unmasked planar rectangle. Normal response breaks it up.
-                let illumination = exp(-dx * dx / lightSpreadX - dy * dy / lightSpreadY)
+                let illumination = FoilAreaLighting.facetIllumination(
+                    x: facet.x, y: facet.y, phase: facet.lightPhase, angle: angle,
+                    minimum: pairedRelief ? 0.28 : 0.18)
                 let alignment = facet.normalCos * angleCos - facet.normalSin * angleSin
                 let reflected = pow(max(0, alignment), material.reflectionExponent)
                     * (0.025 + illumination * 0.975) * facet.responseWeight
                 let occluded = pow(max(0, -alignment), 1.8)
                     * (0.06 + illumination * 0.94) * facet.responseWeight
+                // A lit ridge needs a neighbouring dark edge to read as relief
+                // on a bright scan. Both remain microscopic, never a face wash.
+                let shadow = max(occluded, pairedRelief ? reflected * 0.65 : 0)
                 let center = CGPoint(x: facet.x * size.width,
                                      y: facet.y * size.height)
                 let vx = pitch * facet.halfVectorX
@@ -357,19 +388,21 @@ struct FoilReliefLayer: View {
                                                     height: pitch * 0.4))
                     }
                 }
-                if occluded > 0.10 {
+                if shadow > 0.10 {
                     let level = min(Self.shadowLevels - 1,
-                                    Int(occluded * Double(Self.shadowLevels)))
-                    shadows[level].move(to: start)
-                    shadows[level].addLine(to: end)
+                                    Int(shadow * Double(Self.shadowLevels)))
+                    let offset = pairedRelief ? pitch * 0.32 : 0
+                    let shadowOffset = CGVector(dx: facet.bevelX * offset, dy: facet.bevelY * offset)
+                    shadows[level].move(to: CGPoint(x: start.x + shadowOffset.dx, y: start.y + shadowOffset.dy))
+                    shadows[level].addLine(to: CGPoint(x: end.x + shadowOffset.dx, y: end.y + shadowOffset.dy))
                 }
             }
 
             for level in 0..<Self.shadowLevels {
                 let energy = Double(level + 1) / Double(Self.shadowLevels)
                 context.stroke(shadows[level],
-                               with: .color(material.shadowColor.opacity(energy * material.shadowStrength * shadowGain)),
-                               style: StrokeStyle(lineWidth: pitch * (material.isIllustrationEtch ? 0.30 : (material.isMicroEtched ? 0.58 : 0.46)),
+                               with: .color(material.shadowColor.opacity(energy * material.shadowStrength * shadowGain * coatingGain)),
+                               style: StrokeStyle(lineWidth: pitch * (material.isIllustrationEtch ? 0.44 : (material.isMicroEtched ? 0.66 : 0.46)),
                                                   lineCap: .round))
             }
             for colorIndex in colors.indices {
@@ -377,7 +410,7 @@ struct FoilReliefLayer: View {
                     let energy = Double(level + 1) / Double(Self.lightLevels)
                     let index = colorIndex * Self.lightLevels + level
                     context.stroke(reflections[index],
-                                   with: .color(colors[colorIndex].opacity(min(1, (0.12 + energy * 0.78) * highlightGain))),
+                                   with: .color(colors[colorIndex].opacity(min(1, (0.12 + energy * 0.78) * highlightGain) * coatingGain)),
                                    style: StrokeStyle(lineWidth: pitch * material.ridgeWidth,
                                                       lineCap: .round))
                 }
@@ -398,7 +431,10 @@ private enum FoilReliefCache {
         let normalSin: Double
         let halfVectorX: Double
         let halfVectorY: Double
+        let bevelX: Double
+        let bevelY: Double
         let colorPhase: Double
+        let lightPhase: Double
         let glint: Bool
         let responseWeight: Double
     }
@@ -488,11 +524,20 @@ private enum FoilReliefCache {
                 let normalJitter = material.isIllustrationEtch || material.isEngraved ? 0.55 : (material.isMicroEtched ? 1.65 : 4.2)
                 let normal = geometry.normal + (grain - 0.5) * normalJitter
                 let halfLength = (material.facetLength + random() * material.lengthVariation) * 0.5
+                let lightPhase: Double
+                if let columns = material.lightNeighbourhoodColumns {
+                    lightPhase = FoilAreaLighting.neighbourhoodPhase(x: x, y: y, seed: seed, columns: columns)
+                        + (grain - 0.5) * (material.isGold ? 1.4 : 0.8)
+                } else {
+                    lightPhase = grain * .pi * 2
+                }
                 facets.append(Facet(x: x, y: y,
                                     normalCos: cos(normal), normalSin: sin(normal),
                                     halfVectorX: cos(geometry.direction) * halfLength,
                                     halfVectorY: sin(geometry.direction) * halfLength,
+                                    bevelX: -sin(geometry.direction), bevelY: cos(geometry.direction),
                                     colorPhase: geometry.color + grain * 0.065,
+                                    lightPhase: lightPhase,
                                     glint: grain > (material.isIllustrationEtch ? 0.93 : 0.98),
                                     responseWeight: responseWeight))
             }
@@ -618,8 +663,8 @@ struct ScannedFoilReliefLayer: View {
     let cardID: String
     let preloaded: NSImage?
     let isWhite: Bool
-    let highlight: CGPoint
-    let width: CGFloat
+    let isMonochrome: Bool
+    let tilt: TiltVector
 
     @State private var loaded: NSImage?
     @State private var loadedCardID: String?
@@ -628,52 +673,13 @@ struct ScannedFoilReliefLayer: View {
         loadedCardID == cardID ? loaded : preloaded
     }
 
+    /// Keep the scan's engraving, but light separate groups of ridge normals.
+    /// A single gradient over luminance only changes the whole plate's brightness.
     var body: some View {
         ZStack {
             if let image {
-                ZStack {
-                    RadialGradient(stops: [
-                        .init(color: Color(white: 0.08).opacity(isWhite ? 0.95 : 0.65), location: 0),
-                        .init(color: Color(white: 0.16).opacity(0.62), location: 0.50),
-                        .init(color: .clear, location: 1),
-                    ], center: UnitPoint(x: 1 - highlight.x, y: 1 - highlight.y),
-                       startRadius: 0, endRadius: width * 0.92)
-                    RadialGradient(stops: [
-                        .init(color: .white.opacity(0.98), location: 0),
-                        .init(color: Color(white: 0.98).opacity(0.72), location: 0.38),
-                        .init(color: .clear, location: 1),
-                    ], center: UnitPoint(x: highlight.x, y: highlight.y),
-                       startRadius: 0, endRadius: width * 0.60)
-                }
-                .mask {
-                    Canvas { context, size in
-                        var matrix = ColorMatrix()
-                        let gain: Float = isWhite ? 4.5 : 2.6
-                        let sign: Float = isWhite ? -1 : 1
-                        matrix.a1 = sign * gain * 0.2126
-                        matrix.a2 = sign * gain * 0.7152
-                        matrix.a3 = sign * gain * 0.0722
-                        matrix.a4 = isWhite ? gain : 0
-                        context.addFilter(.colorMatrix(matrix))
-                        context.draw(Image(nsImage: image),
-                                     in: CGRect(origin: .zero, size: size))
-                    }
-                    .mask {
-                        // Printed black text on white BWR (and white text on
-                        // black BWR) is ink, not an engraved reflecting ridge.
-                        Canvas { context, size in
-                            var inkMask = ColorMatrix()
-                            let gain: Float = isWhite ? 8 : -8
-                            inkMask.a1 = gain * 0.2126
-                            inkMask.a2 = gain * 0.7152
-                            inkMask.a3 = gain * 0.0722
-                            inkMask.a4 = isWhite ? -4.4 : 4.4
-                            context.addFilter(.colorMatrix(inkMask))
-                            context.draw(Image(nsImage: image),
-                                         in: CGRect(origin: .zero, size: size))
-                        }
-                    }
-                }
+                ScannedEmbossHighlights(source: image, cardID: cardID,
+                    isWhite: isWhite, isMonochrome: isMonochrome, tilt: tilt)
             }
         }
         .task(id: cardID) {

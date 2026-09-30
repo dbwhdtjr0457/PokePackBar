@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-VERSION="0.11.11"
+VERSION="0.11.12"
 APP_NAME="PokePackBar"
 BUILD_DIR="build"
 # 원본과 겹치면 로그인 항목·Keychain ACL·LaunchServices 상태가 섞인다.
@@ -32,6 +32,13 @@ cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 # 빼먹으면 빌드도 테스트도 통과하는데(테스트는 .build 에서 직접 읽는다) 설치된 앱만
 # "카드 목록을 불러올 수 없어요" 가 된다. 그래서 아래에서 존재를 확인한다.
 cp -R ".build/release/${APP_NAME}_${APP_NAME}.bundle" "$APP/Contents/Resources/"
+# SwiftPM 증분 번들에 남을 수 있는, 잘못 가져온 일본어 에너지 8장의 구버전 파일.
+# 새 영문 원본은 mee-en / mee30-en 이름만 사용한다.
+for ENERGY_TYPE in grass fire water lightning psychic fighting darkness metal; do
+    for ENERGY_EXT in png webp; do
+        rm -f "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/mee-${ENERGY_TYPE}.${ENERGY_EXT}"
+    done
+done
 # SwiftPM의 증분 리소스 번들은 Package.swift에서 제외된 디렉터리를 지우지 않을 수 있다.
 # 네트워크 배포로 전환한 카드/팩 원본이 이전 빌드에서 남아 앱에 다시 섞이지 않게 한다.
 rm -rf "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/packs"
@@ -115,6 +122,12 @@ echo "   card-names-ko.json $(wc -c < "$KO_NAMES" | tr -d ' ') bytes"
 echo "   card-prices.json $(wc -c < "$PRICES" | tr -d ' ') bytes"
 [[ -s "$PACK_PRICES" ]] || { echo "✗ pack-prices.json 이 번들에 없다" >&2; exit 1; }
 echo "   pack-prices.json $(wc -c < "$PACK_PRICES" | tr -d ' ') bytes"
+
+# 파일 개수만 맞아도 언어/도안이 틀릴 수 있다. 실제 번들 41장의 영문 제목,
+# 해상도와 MEE 번호를 OCR로 검사하고 실제 로더/팩별 도안 선택도 검증한다.
+swift scripts/audit_energy_art.swift "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle"
+PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-physical-pack-cards
+PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --benchmark-bulk-opening 1000
 
 # 조립된 앱에게 직접 물어본다. 위 검사는 "파일이 거기 있나" 이고, 이건 "앱이 그걸 여나" 다.
 # 앱이 보는 위치와 스크립트가 검사하는 위치가 어긋나 배포된 적이 있어 둘 다 둔다.

@@ -26,6 +26,10 @@ struct PulledCardView: View {
     /// 가림막이 걷혔는가. 걷히기 전까지는 카드가 보이지 않는다.
     @State private var opened = false
     @State private var pulse = false
+    /// 카드 표면을 가리지 않고 공개 순간에만 바깥에서 터지는 희귀도 신호.
+    @State private var showBurst = false
+    /// 카드가 착지한 다음 찍힌다. 카드와 동시에 뜨면 첫 시선이 둘로 갈라진다.
+    @State private var showNewBadge = false
     /// 가림막을 민 거리.
     @State private var drag: CGSize = .zero
     /// 지금 잡고 있는가. 잡고 있는 동안에는 숨쉬는 움직임을 멈춘다 —
@@ -35,6 +39,7 @@ struct PulledCardView: View {
     /// 팝오버가 보이는가. 닫혀도 화면 트리가 남으므로 이 값을 봐야 한다 —
     /// 끝없이 도는 숨쉬기가 닫힌 채로도 계속 다시 그리면 그만큼 그냥 태우는 것이다.
     @Environment(PopoverNavigation.self) private var nav
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// 뽑기 화면에서 카드를 그리는 폭(pt).
     ///
@@ -101,7 +106,7 @@ struct PulledCardView: View {
 
     /// 숨쉬기를 건다. **팝오버가 보일 때만** 건다.
     private func startBreathing() {
-        guard nav.isShown, !opened, !holding else { return }
+        guard nav.isShown, !opened, !holding, !reduceMotion else { return }
         withAnimation(.easeInOut(duration: 0.32).repeatForever(autoreverses: true)) {
             pulse = true
         }
@@ -117,9 +122,42 @@ struct PulledCardView: View {
 
     private func reveal() {
         guard !opened else { return }
+        if reduceMotion {
+            drag = .zero
+            opened = true
+            showBurst = RevealMotionProfile.forCard(card).emphasis != .none
+            showNewBadge = card.isNew
+            if showBurst {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(450))
+                    guard !Task.isCancelled else { return }
+                    showBurst = false
+                }
+            }
+            onReveal()
+            return
+        }
         withAnimation(.spring(response: 0.42, dampingFraction: 0.62)) {
             drag = .zero
             opened = true
+        }
+        let profile = RevealMotionProfile.forCard(card)
+        if profile.emphasis != .none {
+            showBurst = true
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(520))
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: 0.18)) { showBurst = false }
+            }
+        }
+        if card.isNew {
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(190))
+                guard !Task.isCancelled else { return }
+                withAnimation(.spring(response: 0.28, dampingFraction: 0.62)) {
+                    showNewBadge = true
+                }
+            }
         }
         onReveal()
     }
@@ -130,10 +168,14 @@ struct PulledCardView: View {
             Spacer(minLength: 0)
 
             ZStack {
+                if showBurst {
+                    RevealBurst(card: card, width: Self.cardWidth)
+                        .id("pulled-\(card.id)-\(card.finish.rawValue)")
+                }
                 // 카드는 처음부터 여기 있다. 가림막이 밀린 만큼 그대로 드러난다 —
                 // 나중에 그리면 밀어도 아무것도 없는 자리가 보인다.
-                TierGlow(tier: card.tier, width: Self.cardWidth)
-                    .opacity(opened ? 1 : peek)
+                // 등급 후광은 HolographicCardView 안에 이미 있다. 같은 blur를 바깥에 중복해서
+                // 그리면 가림막 drag 중 네 개의 대형 blur가 동시에 다시 합성된다.
                 HolographicCardView(cardID: card.id, tier: card.tier,
                                     finish: card.finish, width: Self.cardWidth)
                     .shadow(radius: opened ? 10 : 0, y: opened ? 4 : 0)
@@ -166,7 +208,11 @@ struct PulledCardView: View {
                         }
                     }
                     .lineLimit(1).minimumScaleFactor(0.8)
-                    if card.isNew { NewBadge(text: l.newCardBadge).padding(.top, 1) }
+                    if card.isNew, showNewBadge {
+                        NewBadge(text: l.newCardBadge)
+                            .padding(.top, 1)
+                            .transition(.scale(scale: 1.45).combined(with: .opacity))
+                    }
                 }
                 .transition(.opacity)
             } else {
@@ -194,10 +240,20 @@ struct PulledCardView: View {
         .onChange(of: nav.isShown) {
             nav.isShown ? startBreathing() : stopBreathing()
         }
+        .onChange(of: reduceMotion) {
+            if reduceMotion { stopBreathing() }
+            else { startBreathing() }
+        }
         .task(id: card.id) {
             drag = .zero
             holding = false
-            if startOpened { opened = true; return }
+            showBurst = false
+            showNewBadge = false
+            if startOpened {
+                opened = true
+                showNewBadge = card.isNew
+                return
+            }
             opened = false
             startBreathing()
         }

@@ -352,19 +352,19 @@ private struct PackDetailView: View {
     /// 그 목록에서 크게 보고 있는 카드.
     @State private var spotlight: String?
 
-    /// 실제로 낼 낱개 값 — 쿠폰이 있으면 쿠폰가다.
-    private var price: Int { wallet.packPrice(setID: set.id, index: index) }
     /// 쿠폰을 빼기 전의 값. 쿠폰이 있을 때만 줄을 그어 함께 보인다.
     private var listPrice: Int { wallet.listPrice(setID: set.id, index: index) }
     private var coupons: Int { wallet.couponCount(setID: set.id) }
     private var recipe: PackRecipe { PackRecipe.forSet(set.id, era: index.era(set.id)) }
     /// 이 팩에서 나올 수 있는 카드. **값이 비싼 것부터** — 무엇을 노리고 사는지가 먼저 읽혀야 한다.
     /// 인덱스가 이미 값순으로 세워 둔 것을 거르므로 여기서 다시 정렬하지 않는다.
-    private var members: [CardEntry] { index.cardsByValue.filter { $0.setID == set.id } }
+    private var members: [CardEntry] { index.currentCardsByValue.filter { $0.setID == set.id } }
     private var ownedCount: Int { members.filter { wallet.cardCount($0.id) > 0 }.count }
 
-    /// 잔액으로 살 수 있는 최대 수량. 한 번에 스무 개면 충분하다.
-    private var maxQuantity: Int { max(1, min(20, wallet.availableTokens / max(price, 1))) }
+    /// 잔액으로 살 수 있는 최대 수량. 임의의 배치 상한은 두지 않는다.
+    private var maxQuantity: Int {
+        max(1, wallet.maximumAffordablePackCount(setID: set.id, index: index))
+    }
     /// 총액은 낱개 값의 곱이 아니다 — **쿠폰은 한 장에 팩 하나**라, 쿠폰보다 많이 사면
     /// 나머지는 정가다. 값을 곱으로 적으면 살 때 빠지는 액수와 어긋난다.
     private var total: Int { wallet.packTotal(setID: set.id, count: quantity, index: index) }
@@ -556,9 +556,10 @@ private struct PackDetailView: View {
         VStack(spacing: 5) {
             HStack(spacing: 8) {
                 Text(l.packQuantity).font(Typography.label).foregroundStyle(.secondary)
-                Stepper(value: $quantity, in: 1...maxQuantity) {
-                    Text("\(quantity)").font(Typography.title).monospacedDigit()
-                }
+                PackQuantityStepper(quantity: $quantity, maximum: maxQuantity,
+                                    showsMultiplier: false,
+                                    accessibilityLabel: l.packQuantity, l: l)
+                    .font(Typography.title)
                 .fixedSize()
                 Spacer()
                 // 쿠폰이 있으면 **정가에 줄을 그어 함께 보인다.** 값에 조용히 곱해지면
@@ -594,7 +595,7 @@ private struct PackDetailView: View {
             Button(canBuy ? l.buyCount(quantity) : l.notEnoughTokens) { buy() }
                 .buttonStyle(.borderedProminent)
                 .font(Typography.button)
-                .disabled(!canBuy)
+                .disabled(!canBuy || wallet.resourceActionsDisabled)
                 .frame(maxWidth: .infinity)
         }
         // 잔액이 줄면 살 수 있는 수량도 줄어든다. 남은 수량이 한도를 넘으면 끌어내린다.
@@ -606,7 +607,11 @@ private struct PackDetailView: View {
     private func buy() {
         // 총액을 한 번에 차감한다. 개당 차감하면 중간에 실패했을 때 몇 개를 준 건지 흐려진다.
         // 값 차감·보유량·할인 부스터 소모를 한 곳에서 한다. 따로 부르면 한 군데를 잊는다.
-        guard wallet.buyPacks(setID: set.id, count: quantity, total: total) else { return }
-        quantity = 1
+        let selectedCount = quantity
+        let selectedTotal = total
+        Task {
+            guard await wallet.purchasePacks(setID: set.id, count: selectedCount, total: selectedTotal) else { return }
+            quantity = 1
+        }
     }
 }

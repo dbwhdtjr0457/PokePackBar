@@ -43,7 +43,7 @@ struct ReviewedFoilLayer: View {
             let y = border ? (edge >= 2 ? along : (edge == 0 ? 0.02 : 0.98)) : next()
             let radius = (0.004 + next() * (border ? 0.006 : 0.009)) * size.width
             let phase = next() * .pi * 2
-            let response = Self.facetResponse(phase: phase, tilt: tilt)
+            let response = Self.starResponse(phase: phase, tilt: tilt, goldBorder: border)
             var path = Path()
             for point in 0..<10 {
                 let angle = Double(point) / 10 * .pi * 2 + phase
@@ -68,29 +68,42 @@ struct ReviewedFoilLayer: View {
                 with: .color(.black.opacity(material == .goldFragments ? 0.18 : 0.08)))
         }
         for (group, path) in groups.enumerated() {
-            let phase = Double(group % 8) / 8 * .pi * 2
-            let response = Self.facetResponse(phase: phase, tilt: tilt)
-            let hue = Self.wrap(Double(group / 8) / 6 + tilt.nx * 0.26 - tilt.ny * 0.19)
+            let normalGroup = group % ReviewedFacetDistribution.normalGroupCount
+            let hueGroup = group / ReviewedFacetDistribution.normalGroupCount
+            let phase = Double(normalGroup) / Double(ReviewedFacetDistribution.normalGroupCount) * .pi * 2
+            let response = Self.facetResponse(phase: phase, tilt: tilt, material: material)
+            let hue = Self.wrap(Double(hueGroup) / Double(ReviewedFacetDistribution.hueGroupCount)
+                                + tilt.nx * 0.10 - tilt.ny * 0.07)
             let color: Color
             if material == .microEtching {
                 color = response > 0.48 ? Color(white: 0.98) : Color(white: 0.09)
             } else if material == .goldFragments {
-                // Warm substrate, with isolated red/green diffraction observed
-                // in the anniversary foil. This is NOT the MUR gold material.
-                color = group % 3 == 0
-                    ? Color(hue: hue, saturation: 0.82, brightness: 1)
-                    : Color(hue: 0.13 + sin(phase + tilt.nx * 0.8) * 0.065,
-                            saturation: group % 4 == 0 ? 0.34 : 0.85, brightness: 1)
+                // The warm metal remains gold. Only one eighth of the faces
+                // diffract toward the sparse red/green flashes seen in the
+                // anniversary border; they never become a full rainbow field.
+                if hueGroup == 0 {
+                    color = Color(hue: normalGroup.isMultiple(of: 2) ? 0.01 : 0.34,
+                                  saturation: 0.72, brightness: 1)
+                } else {
+                    color = Color(hue: 0.125 + sin(phase + tilt.nx * 0.45) * 0.018,
+                                  saturation: 0.76, brightness: 1)
+                }
             } else {
-                color = group % 7 == 0 ? Color(white: 1)
+                color = normalGroup == 0 ? Color(white: 1)
                     : Color(hue: hue, saturation: 0.76, brightness: 1)
             }
             if material == .microEtching {
-                context.stroke(path, with: .color(color.opacity(0.06 + response * 0.27)),
-                               lineWidth: 0.00085)
+                context.stroke(path, with: .color(color.opacity((0.08 + response * 0.43) * 0.75)),
+                               lineWidth: 0.00090)
             } else {
-                context.fill(path, with: .color(.black.opacity((1 - response) * 0.36)))
-                context.fill(path, with: .color(color.opacity(0.12 + response * 0.86)))
+                // Keep the gold rim untouched. Interior confetti flashes at
+                // its peak but spends less of the tilt cycle covering ink.
+                let goldRim = material == .goldFragments
+                let darkReturn = goldRim ? 0.36 : 0.18
+                let reflection = goldRim ? 0.12 + response * 0.86
+                    : 0.04 + pow(response, 1.4) * 0.94
+                context.fill(path, with: .color(.black.opacity((1 - response) * darkReturn)))
+                context.fill(path, with: .color(color.opacity(reflection)))
             }
         }
     }
@@ -136,9 +149,28 @@ struct ReviewedFoilLayer: View {
         }
     }
 
-    static func facetResponse(phase: Double, tilt: TiltVector) -> Double {
-        let normal = phase + tilt.nx * 3.6 + tilt.ny * 2.9
-        return 0.12 + 0.88 * pow(max(0, cos(normal)), 4)
+    static func facetResponse(phase: Double, tilt: TiltVector,
+                              material: ReviewedFoilProfiles.Material = .confetti) -> Double {
+        let coefficients: (x: Double, y: Double, exponent: Double)
+        switch material {
+        case .microEtching:
+            coefficients = (2.05, 1.55, 3.0)
+        case .goldFragments:
+            coefficients = (2.75, 2.15, 4.5)
+        case .silverFragments, .confetti:
+            coefficients = (4.65, 3.75, 6.0)
+        case .radialFans, .goldStars, .spectralStars:
+            coefficients = (3.6, 2.9, 4.0)
+        }
+        let normal = phase + tilt.nx * coefficients.x + tilt.ny * coefficients.y
+        return 0.10 + 0.90 * pow(max(0, cos(normal)), coefficients.exponent)
+    }
+
+    static func starResponse(phase: Double, tilt: TiltVector, goldBorder: Bool) -> Double {
+        // The embossed gold rim turns more slowly than the loose confetti.
+        let speed = goldBorder ? (x: 1.65, y: 1.25) : (x: 3.85, y: 3.10)
+        let normal = phase + tilt.nx * speed.x + tilt.ny * speed.y
+        return 0.10 + 0.90 * pow(max(0, cos(normal)), goldBorder ? 3.0 : 5.0)
     }
 
     static func fanResponse(angle: Double, phase: Double, tilt: TiltVector) -> Double {
@@ -161,23 +193,21 @@ private enum ReviewedFacetCache {
     private static let capacity = 24
 
     static func groups(seed: UInt64, material: ReviewedFoilProfiles.Material) -> [Path] {
-        let key = "\(seed)#\(material.rawValue)"
+        let key = "v2#\(seed)#\(material.rawValue)"
         if let cached = cache[key] { return cached }
         var random = PackSeedGenerator(seed: seed)
         func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
         if material != .microEtching {
-            let mesh = fragmentMesh(material: material, random: &random)
+            let mesh = fragmentMesh(material: material, seed: seed, random: &random)
             remember(mesh, key: key)
             return mesh
         }
         let count = 19000
-        var groups = Array(repeating: Path(), count: 48)
-        for index in 0..<count {
+        var groups = Array(repeating: Path(), count: ReviewedFacetDistribution.groupCount)
+        for _ in 0..<count {
             let x = next(), y = next(), angle = next() * .pi * 2
-            // Spatial color coherence without a drawn rainbow stripe: each
-            // region still contains eight independently oriented facet groups.
-            let band = min(5, Int((x * 0.42 + y * 0.58) * 6))
-            let group = band * 8 + index % 8
+            let group = ReviewedFacetDistribution.group(
+                x: x, y: y, independentHue: next(), independentNormal: next(), seed: seed)
             let length = 0.002 + next() * 0.007
             let bend = sin(x * 31 + y * 27) * 0.75 + angle * 0.12
             groups[group].move(to: CGPoint(x: x, y: y))
@@ -193,6 +223,7 @@ private enum ReviewedFacetCache {
     /// Jittered, split cells have finite flake faces and dark seams. Overlapping
     /// random polygons reduced to colored TV noise at the actual 240pt size.
     private static func fragmentMesh(material: ReviewedFoilProfiles.Material,
+                                     seed: UInt64,
                                      random: inout PackSeedGenerator) -> [Path] {
         func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
         let columns = material == .goldFragments ? 116 : 144
@@ -204,11 +235,13 @@ private enum ReviewedFacetCache {
                                       y: (Double(row) + (next() - 0.5) * 0.72) / Double(rows)))
             }
         }
-        var groups = Array(repeating: Path(), count: 48)
-        func add(_ vertices: [CGPoint], band: Int) {
-            let group = band * 8 + min(7, Int(next() * 8))
+        var groups = Array(repeating: Path(), count: ReviewedFacetDistribution.groupCount)
+        func add(_ vertices: [CGPoint]) {
             let center = CGPoint(x: vertices.map(\.x).reduce(0,+) / Double(vertices.count),
                                  y: vertices.map(\.y).reduce(0,+) / Double(vertices.count))
+            let group = ReviewedFacetDistribution.group(
+                x: center.x, y: center.y,
+                independentHue: next(), independentNormal: next(), seed: seed)
             let inset = 0.72 + next() * 0.22
             for (index, vertex) in vertices.enumerated() {
                 let p = CGPoint(x: center.x + (vertex.x-center.x) * inset,
@@ -223,12 +256,11 @@ private enum ReviewedFacetCache {
                 let b = points[row * (columns+1) + column+1]
                 let c = points[(row+1) * (columns+1) + column+1]
                 let d = points[(row+1) * (columns+1) + column]
-                let band = max(0, min(5, Int((a.x * 0.42 + a.y * 0.58) * 6)))
                 if next() < 0.42 {
-                    add([a,b,c], band: band)
-                    add([a,c,d], band: band)
+                    add([a,b,c])
+                    add([a,c,d])
                 } else {
-                    add([a,b,c,d], band: band)
+                    add([a,b,c,d])
                 }
             }
         }
@@ -239,5 +271,73 @@ private enum ReviewedFacetCache {
         if order.count == capacity { cache.removeValue(forKey: order.removeFirst()) }
         cache[key] = groups
         order.append(key)
+    }
+}
+
+/// Assigns each physical facet its own normal and hue phase. A small smooth
+/// component gives neighbouring flakes a weak shared response, while the
+/// dominant independent component prevents card-wide directional bands.
+enum ReviewedFacetDistribution {
+    static let normalGroupCount = 8
+    static let hueGroupCount = 8
+    static let groupCount = normalGroupCount * hueGroupCount
+
+    static func group(x: Double, y: Double, independentHue: Double,
+                      independentNormal: Double, seed: UInt64) -> Int {
+        let hue = mixedPhase(independent: independentHue,
+                             local: valueNoise(x: x * 12, y: y * 17,
+                                               seed: seed &+ 0x9E3779B97F4A7C15),
+                             localWeight: 0.18)
+        let normal = mixedPhase(independent: independentNormal,
+                                local: valueNoise(x: x * 19, y: y * 13,
+                                                  seed: seed &+ 0xD1B54A32D192ED03),
+                                localWeight: 0.12)
+        let hueGroup = min(hueGroupCount - 1, Int(hue * Double(hueGroupCount)))
+        let normalGroup = min(normalGroupCount - 1, Int(normal * Double(normalGroupCount)))
+        return hueGroup * normalGroupCount + normalGroup
+    }
+
+    static func huePhase(x: Double, y: Double, independent: Double, seed: UInt64) -> Double {
+        mixedPhase(independent: independent,
+                   local: valueNoise(x: x * 12, y: y * 17,
+                                     seed: seed &+ 0x9E3779B97F4A7C15),
+                   localWeight: 0.18)
+    }
+
+    private static func mixedPhase(independent: Double, local: Double,
+                                   localWeight: Double) -> Double {
+        let independentAngle = independent * .pi * 2
+        let localAngle = local * .pi * 2
+        let x = cos(independentAngle) * (1 - localWeight) + cos(localAngle) * localWeight
+        let y = sin(independentAngle) * (1 - localWeight) + sin(localAngle) * localWeight
+        let angle = atan2(y, x) / (.pi * 2)
+        return angle < 0 ? angle + 1 : angle
+    }
+
+    private static func valueNoise(x: Double, y: Double, seed: UInt64) -> Double {
+        let x0 = Int(floor(x)), y0 = Int(floor(y))
+        let tx = smooth(x - Double(x0)), ty = smooth(y - Double(y0))
+        let a = lerp(hashUnit(x0, y0, seed), hashUnit(x0 + 1, y0, seed), tx)
+        let b = lerp(hashUnit(x0, y0 + 1, seed), hashUnit(x0 + 1, y0 + 1, seed), tx)
+        return lerp(a, b, ty)
+    }
+
+    private static func hashUnit(_ x: Int, _ y: Int, _ seed: UInt64) -> Double {
+        var value = seed ^ UInt64(truncatingIfNeeded: x) &* 0x9E3779B97F4A7C15
+        value ^= UInt64(truncatingIfNeeded: y) &* 0xD1B54A32D192ED03
+        value ^= value >> 30
+        value &*= 0xBF58476D1CE4E5B9
+        value ^= value >> 27
+        value &*= 0x94D049BB133111EB
+        value ^= value >> 31
+        return Double(value >> 11) / Double(1 << 53)
+    }
+
+    private static func smooth(_ value: Double) -> Double {
+        value * value * (3 - 2 * value)
+    }
+
+    private static func lerp(_ a: Double, _ b: Double, _ amount: Double) -> Double {
+        a + (b - a) * amount
     }
 }

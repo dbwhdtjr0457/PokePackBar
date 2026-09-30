@@ -20,6 +20,28 @@ final class PriceSnapshotStore: @unchecked Sendable {
         let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("PokePackBar")
         self.url = url ?? dir.appendingPathComponent("price-snapshot.json")
+        // Online previews and the server evaluator must use the same bundled
+        // prices. Never inherit the host user's private imported snapshot.
+        let environment = ProcessInfo.processInfo.environment
+        let authoritative = CommandLine.arguments.contains("--server-rules")
+            || CommandLine.arguments.contains("--audit-online-game")
+            || environment["PPB_SERVER_URL"] != nil
+            || UserDefaults.standard.bool(forKey: "ppb.server.enabled")
+        if url == nil && authoritative {
+            if CommandLine.arguments.contains("--server-rules"),
+               let path = environment["PPB_RULE_PRICES"], let data = try? Self.read(URL(fileURLWithPath: path)) {
+                // Full catalogue validation runs in ServerRulesBridge after
+                // initialization; calling it here recurses through CardIndex.
+                if let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let cardsObject = object["cardPrices"], let packsObject = object["packPrices"],
+                   let cardsData = try? JSONSerialization.data(withJSONObject: cardsObject, options: [.sortedKeys]),
+                   let packsData = try? JSONSerialization.data(withJSONObject: packsObject, options: [.sortedKeys]),
+                   let cards = CardPrices.decode(cardsData), let packs = PackMarketPrices.decode(packsData) {
+                    snapshot = Snapshot(cards: cards, packs: packs)
+                }
+            }
+            return
+        }
         if let data = try? Self.read(self.url) { snapshot = try? Self.validate(data) }
     }
 
@@ -81,6 +103,15 @@ final class PriceSnapshotStore: @unchecked Sendable {
             try previous.write(to: url.appendingPathExtension("previous"), options: .atomic)
         }
         try data.write(to: url, options: .atomic)
+        lock.withLock { snapshot = candidate }
+        NotificationCenter.default.post(name: Self.changed, object: nil)
+    }
+
+    /// Online cache is scoped by server/account; never overwrite the offline import.
+    func applyOnline(_ data: Data, cacheURL: URL) throws {
+        let candidate = try Self.validate(data)
+        try FileManager.default.createDirectory(at: cacheURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: cacheURL, options: .atomic)
         lock.withLock { snapshot = candidate }
         NotificationCenter.default.post(name: Self.changed, object: nil)
     }

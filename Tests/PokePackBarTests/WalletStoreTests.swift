@@ -193,6 +193,22 @@ final class WalletStoreTests: XCTestCase {
         XCTAssertEqual(s.availableTokens, 100)
     }
 
+    func testAffordablePackCountHasNoTwentyPackCeiling() throws {
+        let s = makeStore()
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        let setID = "sv10"
+        let desiredCount = 37
+        let unitPrice = s.packPrice(setID: setID, index: index)
+
+        s.update(todayTokensByProvider: ["a": 0], todayDate: "2026-08-26",
+                 hasUsageData: true)
+        s.update(todayTokensByProvider: ["a": unitPrice * desiredCount],
+                 todayDate: "2026-08-26", hasUsageData: true)
+
+        XCTAssertEqual(s.maximumAffordablePackCount(setID: setID, index: index),
+                       desiredCount)
+    }
+
     // MARK: 보유량
 
     func testPackAndCardInventory() {
@@ -211,6 +227,71 @@ final class WalletStoreTests: XCTestCase {
         XCTAssertEqual(s.cardCount("sv10-1"), 2)
         XCTAssertEqual(s.distinctCardCount, 2)
         XCTAssertEqual(s.totalCardCount, 3)
+    }
+
+    /// 여러 팩도 소비·수집·천장·이력이 한 번에 이어져야 한다.
+    func testBatchOpeningConsumesAndRecordsEveryPack() throws {
+        let s = makeStore()
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        let setID = "sv10"
+        let count = 12
+        s.addPack(setID: setID, count: count)
+
+        let seeds = (0..<count).map { UInt64(101 + $0) }
+        let result = try XCTUnwrap(s.openPacks(setID: setID, count: count, index: index,
+                                              seeds: seeds))
+        let cardsPerPack = PackRecipe.forSet(setID, era: index.era(setID)).contents.gameCardCount
+
+        XCTAssertEqual(result.packs.count, count)
+        XCTAssertEqual(result.cards.count, cardsPerPack * count)
+        XCTAssertEqual(s.packCount(setID: setID), 0)
+        XCTAssertEqual(s.state.packsOpened, count)
+        XCTAssertEqual(s.totalCardCount, cardsPerPack * count)
+        XCTAssertEqual(s.state.openingHistory.map(\.seed), seeds.map(String.init))
+        XCTAssertEqual(s.state.openingHistory[0].pityAfter,
+                       s.state.openingHistory[1].pityBefore,
+                       "다음 팩이 직전 팩의 천장을 이어받지 않았다")
+        XCTAssertEqual(s.state.openingHistory[1].pityAfter,
+                       s.state.openingHistory[2].pityBefore)
+    }
+
+    /// 같은 결과를 두 번 뽑아도 둘째 팩에서는 첫째 팩에서 얻은 카드를 신규로 표시하지 않는다.
+    func testBatchOpeningUpdatesNewCardStateBetweenPacks() throws {
+        let s = makeStore()
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        s.setOpeningMode(.realistic)
+        s.addPack(setID: "sv10", count: 2)
+
+        let result = try XCTUnwrap(s.openPacks(setID: "sv10", count: 2, index: index,
+                                              seeds: [77, 77]))
+        XCTAssertEqual(result.packs[0].cards.map(\.id), result.packs[1].cards.map(\.id))
+        XCTAssertTrue(result.packs[1].cards.allSatisfy { !$0.isNew },
+                      "같은 배치의 앞 팩에서 얻은 카드를 다시 NEW로 표시했다")
+    }
+
+    /// 배치 저장이 실패하면 팩 한 개와 카드 한 장도 남아서는 안 된다.
+    func testBatchOpeningRollsBackAsAWholeWhenSaveFails() throws {
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        let url = dir.appendingPathComponent("batch-failure.json")
+        var initial = GameState()
+        initial.packs = ["sv10": 3]
+        let persistence = GamePersistence(url: url)
+        try persistence.commit(initial)
+
+        var commits = 0
+        let s = WalletStore(fileURL: url, dexes: [], ladder: [], commitState: { _ in
+            commits += 1
+            throw NSError(domain: "BatchOpeningTests", code: 1)
+        })
+
+        XCTAssertNil(s.openPacks(setID: "sv10", count: 3, index: index,
+                                 seeds: [1, 2, 3]))
+        XCTAssertEqual(commits, 1, "배치 개봉이 한 번보다 많이 저장을 시도했다")
+        XCTAssertEqual(s.packCount(setID: "sv10"), 3)
+        XCTAssertEqual(s.state.packsOpened, 0)
+        XCTAssertTrue(s.state.cards.isEmpty)
+        XCTAssertTrue(s.state.printingCards.isEmpty)
+        XCTAssertTrue(s.state.openingHistory.isEmpty)
     }
 
     func testPrintingInventoryKeepsAggregateAndSurvivesReload() {
@@ -789,6 +870,16 @@ final class BulkSaleTests: XCTestCase {
     }
 
     /// 시세를 모르는 카드는 잡카드로 본다 — 값을 모르면 남겨 둘 근거도 없다.
+    func testUnlimitedBulkSaleIncludesEveryDuplicateInTheFilteredPool() {
+        let first = CardEntry(id: "expensive", name: "Expensive", tier: .ultraRare, setID: "test")
+        let second = CardEntry(id: "cheap", name: "Cheap", tier: .common, setID: "test")
+        let single = CardEntry(id: "single", name: "Single", tier: .common, setID: "test")
+        let targets = WalletStore.bulkSaleTargets([first, second, single], maxWon: nil,
+            spares: { $0 == single.id ? 0 : 2 }, prices: nil)
+        XCTAssertEqual(targets, [first.id, second.id])
+        XCTAssertTrue(WalletStore.bulkSaleTargets([], maxWon: nil, spares: { _ in 2 }).isEmpty)
+    }
+
     func testUnknownPricesCountAsJunk() throws {
         let s = makeStore()
         let prices = try XCTUnwrap(CardPrices.shared)

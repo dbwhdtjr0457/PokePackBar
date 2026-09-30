@@ -591,13 +591,13 @@ enum CardSale {
 /// `PulledCard` stays source-compatible while the printing-level collection
 /// model is introduced; callers can map this hint to `CardFinish` without
 /// guessing from rarity.
-struct PackSlotResult: Equatable, Sendable {
+struct PackSlotResult: Codable, Equatable, Sendable {
     let card: PulledCard
     let finishHint: PackFinishHint
 }
 
 /// 팩 개봉 결과. 카드와 함께 어떤 세트 전용 변형 팩이었는지 알려 준다.
-struct OpenedCards: Equatable, Sendable {
+struct OpenedCards: Codable, Equatable, Sendable {
     let slotResults: [PackSlotResult]
     let variant: PackVariant
 
@@ -621,7 +621,7 @@ struct OpenedCards: Equatable, Sendable {
 }
 
 /// 팩 개봉 결과 카드 1장.
-struct PulledCard: Equatable, Sendable, Identifiable {
+struct PulledCard: Codable, Equatable, Sendable, Identifiable {
     let id: String        // 카드 ID
     let tier: CardTier
     /// 이 개봉으로 처음 얻은 카드인가. 연출에서 신규 표시에 쓴다.
@@ -673,13 +673,50 @@ enum PackOpening {
         mode: OpeningMode = .game,
         using generator: inout some RandomNumberGenerator
     ) -> OpenedCards {
+        draw(setID: setID, index: index, alreadyOwned: alreadyOwned, perks: perks,
+             pity: &pity, mode: mode, forcedVariant: nil, using: &generator)
+    }
+
+    /// 실제 재화·보유량을 건드리지 않고 갓팩 구성과 연출을 확인할 때 쓴다.
+    /// 세트 레시피에 등록된 갓팩만 강제할 수 있어 일반 팩에 가짜 갓팩을 만들지 않는다.
+    static func godPackPreview(
+        setID: String,
+        index: CardIndex,
+        alreadyOwned: Set<String>,
+        using generator: inout some RandomNumberGenerator
+    ) -> OpenedCards? {
+        let recipe = PackRecipe.forSet(setID, era: index.era(setID))
+        guard let variant = recipe.specialRules.map(\.variant).first(where: \.isGodPack) else {
+            return nil
+        }
+        var pity = 0
+        let opened = draw(setID: setID, index: index, alreadyOwned: alreadyOwned,
+                          perks: .none, pity: &pity, mode: .realistic,
+                          forcedVariant: variant, using: &generator)
+        guard opened.variant == variant,
+              opened.cards.count == recipe.contents.gameCardCount else { return nil }
+        return opened
+    }
+
+    private static func draw(
+        setID: String,
+        index: CardIndex,
+        alreadyOwned: Set<String>,
+        perks: DexPerks,
+        pity: inout Int,
+        mode: OpeningMode,
+        forcedVariant: PackVariant?,
+        using generator: inout some RandomNumberGenerator
+    ) -> OpenedCards {
         let perks = mode == .realistic ? DexPerks.none : perks
         if mode == .realistic { pity = 0 }
         guard let pool = index.pools[setID], !pool.isEmpty else { return .empty }
         let era = index.era(setID)
         let recipe = PackRecipe.forSet(setID, era: era)
         let rolledVariant: PackVariant
-        if let rule = recipe.specialVariant {
+        if let forcedVariant {
+            rolledVariant = forcedVariant
+        } else if let rule = recipe.specialVariant {
             let roll = Int(generator.next(upperBound: UInt64(rule.estimatedSimulatorOneIn)))
             rolledVariant = roll < recipe.specialRules.count
                 ? recipe.specialRules[roll].variant : recipe.baseVariant
@@ -717,6 +754,9 @@ enum PackOpening {
             pity = 0
         case .blackBoltWhiteFlareGod:
             requests = PackRecipe.blackBoltWhiteFlareGodPack
+            pity = 0
+        case .ascendedHeroesGod:
+            requests = PackRecipe.ascendedHeroesGodPack
             pity = 0
         case .standard, .celebrations:
             requests = standardRequests(
@@ -766,6 +806,17 @@ enum PackOpening {
             let card = PulledCard(id: id, tier: actualTier,
                                   isNew: !alreadyOwned.contains(id), finish: finish)
             picked.append(PackSlotResult(card: card, finishHint: request.finishHint))
+        }
+        // 일부 영문 스페셜 세트는 번호 없는 기본 에너지도 reverse 슬롯 후보였다. 일반
+        // 에너지 자리는 그대로 남으므로 당첨 팩에는 에너지 두 장이 보이는 것이 정상이다.
+        if let energyFinish = PackRecipe.reverseSlotEnergyFinish[setID],
+           Int.random(in: 0..<PackRecipe.estimatedReverseSlotEnergyOneIn(setID: setID),
+                      using: &generator) == 0,
+           let reverseIndex = picked.firstIndex(where: { $0.card.finish == .reverseHolo }) {
+            let energy = SupplementalEnergyCard.randomCard(
+                setID: setID, era: era, finish: energyFinish, using: &generator
+            )
+            picked[reverseIndex] = PackSlotResult(card: energy, finishHint: .defaultForCard)
         }
         if mode == .realistic { pity = 0 }
         return OpenedCards(slotResults: picked, variant: rolledVariant)
@@ -1157,6 +1208,10 @@ enum PackOpening {
             for request in PackRecipe.blackBoltWhiteFlareGodPack {
                 addRequest(request, share: specialChance)
             }
+        case .ascendedHeroesGod:
+            for request in PackRecipe.ascendedHeroesGodPack {
+                addRequest(request, share: specialChance)
+            }
         case .standard, .celebrations, .prismaticEvolutionsDemigod, nil:
             break
         }
@@ -1223,12 +1278,11 @@ enum PackOpening {
             .sorted { $0.tier.rank > $1.tier.rank }
     }
 
-    /// 개봉에서 보여줄 순서 — 등급 오름차순. 가장 희귀한 카드가 마지막에 나온다.
-    /// 같은 등급 안에서는 뽑힌 순서를 유지한다.
+    /// 개봉에서 보여줄 순서. `draw`가 세트 레시피의 슬롯 순서대로 카드를 만들므로
+    /// 여기서는 그 순서를 그대로 보존한다. 희귀도 재정렬을 하면 리버스 슬롯의 IR/SIR,
+    /// Radiant Collection, 기념팩의 고정 카드, 갓팩 배열이 실물과 달라진다.
     static func revealOrder(_ cards: [PulledCard]) -> [PulledCard] {
-        cards.enumerated()
-            .sorted { ($0.element.tier.rank, $0.offset) < ($1.element.tier.rank, $1.offset) }
-            .map(\.element)
+        cards
     }
 
     /// 히트 슬롯의 계층을 가중 추첨한다. 그 세트에 없는 계층은 후보에서 빼고 가중치를 다시 정규화한다.

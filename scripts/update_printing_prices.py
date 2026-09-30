@@ -166,16 +166,17 @@ def add_fallbacks(payload, fallbacks, fresh, finishes, evidence):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--binary", default=".build/release/PokePackBar")
+    parser.add_argument("--resources", type=Path, default=Path("Sources/PokePackBar/Resources"))
     parser.add_argument("--output", type=Path, default=Path("Sources/PokePackBar/Resources/card-prices.json"))
     parser.add_argument("--snapshot", type=Path, default=Path("build/price-snapshot.json"))
     parser.add_argument("--packs-output", type=Path, default=Path("Sources/PokePackBar/Resources/pack-prices.json"))
     args = parser.parse_args()
-    index = json.loads(Path("Sources/PokePackBar/Resources/card-index.json").read_text())
+    index = json.loads((args.resources / "card-index.json").read_text())
     payload = json.loads(args.output.read_text())
     packs = json.loads(args.packs_output.read_text())
-    catalogue = json.loads(Path("Sources/PokePackBar/Resources/catalogue-sources.json").read_text())
-    parallels = json.loads(Path("Sources/PokePackBar/Resources/expansion-foil.json").read_text())["ascendedParallels"]
-    fallbacks = json.loads(Path("scripts/curated-price-references.json").read_text())["cards"]
+    catalogue = json.loads((args.resources / "catalogue-sources.json").read_text())
+    parallels = json.loads((args.resources / "expansion-foil.json").read_text())["ascendedParallels"]
+    fallbacks = json.loads((Path(__file__).parent / "curated-price-references.json").read_text())["cards"]
     finishes = json.loads(subprocess.check_output([args.binary, "--export-printing-map"], text=True))
     groups, _ = fetch(f"{BASE}/groups")
     for field in ("printingPrices", "printingDates", "printingSources", "printingKinds", "priceDates", "priceSources", "priceKinds"):

@@ -601,7 +601,10 @@ final class UsageStore {
         }
         await withTaskGroup(of: DailyOutcome.self) { group in
             for provider in providers {
-                group.addTask {
+                // 로그 스캔은 최신 숫자를 만들지만 포인터·카드 애니메이션보다 급하지 않다.
+                // 부모 MainActor의 user-initiated 우선순위를 그대로 물려받으면 대형 JSONL 파싱이
+                // 홀로 합성과 경쟁하므로 utility로 명시한다.
+                group.addTask(priority: .utility) {
                     do {
                         let today = try await provider.fetchDaily()
                         return DailyOutcome(id: provider.id, today: today, errorDescription: nil)
@@ -676,7 +679,9 @@ final class UsageStore {
         // ── Phase 2: 블록/주월 누적 상세 (best effort) — 실패 시 이전 값 유지
         await withTaskGroup(of: (String, ProviderEnrichment).self) { group in
             for provider in providers {
-                group.addTask { (provider.id, await provider.fetchEnrichment()) }
+                group.addTask(priority: .utility) {
+                    (provider.id, await provider.fetchEnrichment())
+                }
             }
             for await (id, enrichment) in group {
                 guard let index = snapshots.firstIndex(where: { $0.providerID == id }) else {

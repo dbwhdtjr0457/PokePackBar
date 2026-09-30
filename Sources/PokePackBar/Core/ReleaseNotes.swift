@@ -56,6 +56,32 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.11.12", lines: [
+                t("보유한 같은 세트의 팩 수만큼 개봉 수량을 직접 입력할 수 있습니다. 온라인 대량 개봉은 최대 1,000팩씩 확정하며, 중단되면 온라인 창의 작업 탭에서 이어갈 수 있습니다. 이미 완료된 묶음은 유지됩니다.",
+                  "Enter how many owned packs to open from the same set. Online bulk opening commits up to 1,000 packs per chunk and can resume from the online window’s Jobs tab after interruption. Completed chunks are retained.",
+                  "同じセットの所持パック数まで開封数を直接入力できます。オンライン一括開封は最大1,000パックずつ確定し、中断後はオンライン画面の作業タブから再開できます。完了分は保持されます。",
+                  "Introduce cuántos sobres del mismo set quieres abrir, hasta los que posees. La apertura en línea confirma lotes de hasta 1.000 y puede reanudarse desde la pestaña de trabajos. Los lotes completados se conservan.",
+                  "Saisissez le nombre de boosters possédés du même set à ouvrir. L’ouverture en ligne valide des lots de 1 000 au maximum et reprend depuis l’onglet des tâches après une interruption. Les lots terminés sont conservés.",
+                  "Digite quantos pacotes do mesmo set deseja abrir, até a quantidade que possui. A abertura online confirma lotes de até 1.000 e pode ser retomada na aba de tarefas. Os lotes concluídos são preservados."),
+                t("성장 중인 Codex 로그는 새로 추가된 부분만 읽어 60초 갱신 때 발생하던 CPU 급등을 줄였습니다. 홀로 카드는 포인터 입력을 화면 프레임 단위로 합치고, 개봉 중 가려진 다음 카드의 중복 홀로·후광 합성을 제거했습니다.",
+                  "Growing Codex logs now parse only appended data, reducing CPU spikes during periodic refreshes. Holographic cards coalesce pointer input per display frame and no longer render duplicate foil and glow layers for the covered next card.",
+                  "増加中のCodexログは追記部分だけを解析し、定期更新時のCPU急上昇を抑えました。ホログラムカードはポインター入力を画面フレーム単位にまとめ、開封中に隠れている次のカードの重複ホイル・発光合成を削除しました。",
+                  "Los registros de Codex en crecimiento ahora analizan solo los datos añadidos, reduciendo los picos de CPU. Las cartas holográficas agrupan la entrada del puntero por fotograma y evitan efectos duplicados en la siguiente carta cubierta.",
+                  "Les journaux Codex en croissance n’analysent désormais que les données ajoutées, réduisant les pics CPU. Les cartes holographiques regroupent les mouvements par image et évitent les effets dupliqués sur la carte suivante masquée.",
+                  "Logs Codex em crescimento agora processam apenas os dados anexados, reduzindo picos de CPU. Cartas holográficas agrupam o ponteiro por quadro e evitam efeitos duplicados na próxima carta coberta."),
+                t("도감에서 한국어·영문 카드 이름을 검색해 해당 카드가 들어간 조합과 세트를 바로 찾을 수 있습니다.",
+                  "Search Korean or English card names in the dex to find every combo and set containing that card.",
+                  "図鑑で韓国語・英語のカード名を検索し、そのカードを含む組み合わせとセットを探せます。",
+                  "Busca nombres de cartas en coreano o inglés para encontrar cada combo y set que las contiene.",
+                  "Recherchez les noms coréens ou anglais pour trouver chaque combinaison et set contenant la carte.",
+                  "Busque nomes de cartas em coreano ou inglês para encontrar cada combinação e set que contém a carta."),
+                t("Sun & Moon·Team Rocket Returns 리버스의 문양 반응을 강화하고, RBG/BWR 카드의 넓은 백색 반사를 줄여 그림과 글자가 가려지지 않도록 했습니다.",
+                  "Strengthened Sun & Moon and Team Rocket Returns reverse motifs, and reduced the broad white return on RBG/BWR cards so artwork and text remain visible.",
+                  "Sun & MoonとTeam Rocket Returnsのリバース模様を強化し、RBG/BWRカードの広い白反射を抑えて絵と文字を見やすくしました。",
+                  "Reforzados los motivos reverse de Sun & Moon y Team Rocket Returns, y reducido el reflejo blanco amplio de las cartas RBG/BWR para conservar la ilustración y el texto.",
+                  "Renforcement des motifs reverse Sun & Moon et Team Rocket Returns, et réduction du large reflet blanc des cartes RBG/BWR afin de préserver l’illustration et le texte.",
+                  "Reforçados os padrões reverse de Sun & Moon e Team Rocket Returns, com redução do reflexo branco amplo nas cartas RBG/BWR para preservar a arte e o texto."),
+            ]),
             ReleaseNote(version: "0.11.11", lines: [
                 t("위젯 창을 400pt 폭·480pt 본문으로 줄였습니다. 상세 카드와 개봉 화면을 맞추고, 중복 카드 가격·판매 안내가 잘리지 않도록 했습니다. Generations RC 19종의 잘못된 새김 재질을 평활 포일로 수정하고 피카츄 RC29의 노란 테두리를 제외했습니다. 카드별 문양·반사 영역의 전체 실물 대조 완료를 뜻하지 않습니다.",
                   "Reduced the widget window to 400pt wide with a 480pt content area. Adapted detail/reveal cards and kept duplicate prices and sale actions accessible. Removed erroneous engraved relief from 19 Generations RC cards and excluded Pikachu RC29's yellow rim. Individual motif and foil-area verification remains incomplete.",

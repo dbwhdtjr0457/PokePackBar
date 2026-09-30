@@ -315,6 +315,21 @@ extension L {
     var packOddsColumns: String { t("카드 한 장 기준", "Per card", "カード1枚あたり",
                                      "Por carta", "Par carte", "Por carta") }
     var packQuantity: String { t("수량", "Quantity", "数量", "Cantidad", "Quantité", "Quantidade") }
+    var packQuantityInputTitle: String {
+        t("수량 직접 입력", "Enter quantity", "数量を直接入力", "Ingresar cantidad",
+          "Saisir la quantité", "Inserir quantidade")
+    }
+    var packQuantityInputPlaceholder: String {
+        t("양의 정수", "Positive whole number", "1以上の整数", "Número entero positivo",
+          "Nombre entier positif", "Número inteiro positivo")
+    }
+    func packQuantityInputRange(_ maximum: Int) -> String {
+        t("1~\(maximum)개 사이로 입력하세요.", "Enter a whole number from 1 to \(maximum).",
+          "1から\(maximum)までの整数を入力してください。",
+          "Introduce un número entero entre 1 y \(maximum).",
+          "Saisissez un nombre entier entre 1 et \(maximum).",
+          "Insira um número inteiro entre 1 e \(maximum).")
+    }
     func buyCount(_ n: Int) -> String {
         t("\(n)개 구매", "Buy \(n)", "\(n)個 購入", "Comprar \(n)", "Acheter \(n)", "Comprar \(n)")
     }
@@ -331,6 +346,39 @@ extension L {
     var packPreparing: String { t("카드를 꺼내는 중…", "Getting the cards ready…", "カードを準備中…",
                                     "Preparando las cartas…", "Préparation des cartes…", "Preparando as cartas…") }
     var openPack: String { t("뜯기", "Open", "開ける", "Abrir", "Ouvrir", "Abrir") }
+    func openPackCount(_ count: Int) -> String {
+        guard count > 1 else { return openPack }
+        return t("\(count)개 뜯기", "Open \(count)", "\(count)パック開ける",
+                 "Abrir \(count)", "Ouvrir \(count)", "Abrir \(count)")
+    }
+    func packOpenQuantity(_ count: Int) -> String {
+        t("개봉 수량 \(count)개", "Open quantity: \(count)", "開封数：\(count)",
+          "Cantidad: \(count)", "Quantité : \(count)", "Quantidade: \(count)")
+    }
+    func packPreparingCount(_ count: Int) -> String {
+        t("\(count)팩의 카드를 꺼내는 중…", "Getting \(count) packs ready…",
+          "\(count)パックを準備中…", "Preparando \(count) sobres…",
+          "Préparation de \(count) boosters…", "Preparando \(count) pacotes…")
+    }
+    func packBatchOpened(_ count: Int) -> String {
+        t("\(count)팩 개봉 결과", "\(count)-pack results", "\(count)パックの開封結果",
+          "Resultado de \(count) sobres", "Résultat de \(count) boosters",
+          "Resultado de \(count) pacotes")
+    }
+    func specialPacksFound(_ count: Int) -> String {
+        t("특수팩 \(count)개!", "\(count) special pack\(count == 1 ? "" : "s")!",
+          "スペシャルパック\(count)個！", "¡\(count) sobres especiales!",
+          "\(count) booster\(count == 1 ? "" : "s") spécial\(count == 1 ? "" : "aux") !",
+          "\(count) pacote\(count == 1 ? "" : "s") especial\(count == 1 ? "" : "is")!")
+    }
+    func packBatchSupplement(energy: Int, holoEnergy: Int, code: Int) -> String {
+        t("별도 기본 에너지 \(energy)장 (홀로 \(holoEnergy)장) · 코드 \(code)장 · 도감 제외",
+          "Plus \(energy) Basic Energy (\(holoEnergy) holo) + \(code) code cards · not in the collection",
+          "別枠エネルギー\(energy)枚（ホロ\(holoEnergy)枚）・コード\(code)枚・図鑑対象外",
+          "+ \(energy) Energías (\(holoEnergy) holo) + \(code) códigos · fuera de colección",
+          "+ \(energy) Énergies (\(holoEnergy) holo) + \(code) codes · hors collection",
+          "+ \(energy) Energias (\(holoEnergy) holo) + \(code) códigos · fora da coleção")
+    }
     var packOpened: String { t("개봉 결과", "Pack results", "開封結果",
                                  "Resultado", "Résultat", "Resultado") }
     var newCardBadge: String { t("NEW", "NEW", "NEW", "NUEVA", "NOUVEAU", "NOVA") }
@@ -457,12 +505,20 @@ extension L {
     var bulkSell: String { t("한번에 판매", "Sell in bulk", "まとめて売る",
                               "Vender en lote", "Vendre en lot", "Vender em lote") }
     /// 무엇을 고르는 화면인지 한 줄로. 「중복분만」이 규칙의 핵심이라 여기 적는다.
-    var bulkSellPrompt: String { t("얼마 이하인 카드의 중복분을 팔까요?",
-                                    "Sell spare copies of cards worth up to…",
-                                    "いくら以下のカードの重複を売りますか？",
-                                    "¿Vender repetidas de cartas hasta…?",
-                                    "Vendre les doubles des cartes jusqu'à…",
-                                    "Vender repetidas de cartas até…?") }
+    var bulkSellPrompt: String { t("중복 카드를 판매할 가격 범위를 골라 주세요.",
+                                    "Choose a price range for selling spare cards.",
+                                    "重複カードを売る価格範囲を選んでください。",
+                                    "Elige un rango de precios para vender repetidas.",
+                                    "Choisissez une gamme de prix pour vendre les doubles.",
+                                    "Escolha uma faixa de preços para vender repetidas.") }
+    var bulkSellAllPrices: String { t("전체 범위", "All prices", "価格制限なし",
+                                       "Todos los precios", "Tous les prix", "Todos os preços") }
+    var bulkSellAllPricesHint: String { t("현재 필터 안의 중복 카드를 가격 제한 없이 판매",
+        "Sell spare cards in the current filter without a price limit",
+        "現在のフィルター内の重複カードを価格制限なしで売る",
+        "Vender repetidas del filtro actual sin límite de precio",
+        "Vendre les doubles du filtre actuel sans limite de prix",
+        "Vender repetidas do filtro atual sem limite de preço") }
     /// 임계값 칩. "1,000원 이하" 처럼 읽힌다.
     func bulkSellUpTo(_ money: String) -> String {
         t("\(money) 이하", "up to \(money)", "\(money) 以下",
@@ -630,6 +686,26 @@ extension L {
                                  "このパックは全てレア以上です。", "Todas las cartas son raras o mejores.",
                                  "Toutes les cartes sont rares ou mieux.", "Todas as cartas são raras ou melhores.") }
     var godPackBadge: String { t("갓팩", "God Pack", "神引き", "Dorado", "Divin", "Divino") }
+    var godPackPreviewButton: String {
+        t("갓팩 연출 테스트", "Test God Pack", "神パック演出テスト", "Probar God Pack",
+          "Tester le God Pack", "Testar God Pack")
+    }
+    var godPackPreviewHelp: String {
+        t("팩과 재화를 쓰지 않고 실제 갓팩 구성으로 연출만 확인해요.",
+          "Preview the real God Pack composition without consuming packs or currency.",
+          "パックや通貨を消費せず、実際の神パック構成で演出だけ確認します。",
+          "Previsualiza la composición real sin gastar sobres ni moneda.",
+          "Prévisualise la vraie composition sans consommer de booster ni de monnaie.",
+          "Pré-visualiza a composição real sem gastar pacotes ou moeda.")
+    }
+    var godPackPreviewNotice: String {
+        t("연출 테스트 · 팩 차감 및 카드 지급 없음",
+          "Effect preview · no pack consumed or cards granted",
+          "演出テスト・パック消費／カード付与なし",
+          "Vista previa · no consume sobre ni entrega cartas",
+          "Aperçu · aucun booster consommé, aucune carte ajoutée",
+          "Prévia · nenhum pacote consumido ou carta concedida")
+    }
 
     func specialPackTitle(_ variant: PackVariant) -> String {
         switch variant {
@@ -641,6 +717,8 @@ extension L {
         case .prismaticEvolutionsGod:
             return godPackTitle
         case .blackBoltWhiteFlareGod:
+            return godPackTitle
+        case .ascendedHeroesGod:
             return godPackTitle
         case .standard, .celebrations:
             return packOpened
@@ -671,6 +749,13 @@ extension L {
                      "Nueve cartas de Ilustración Rara y una Ilustración Especial Rara.",
                      "Neuf Illustration Rares et une Illustration Spéciale Rare.",
                      "Nove Raras de Ilustração e uma Rara de Ilustração Especial.")
+        case .ascendedHeroesGod:
+            return t("메가어택 레어 3장과 스페셜 일러스트레이션 레어 7장이 들어 있어요.",
+                     "Three Mega Attack Rares plus seven Special Illustration Rares.",
+                     "メガアタックレア3枚とスペシャルアートレア7枚入りです。",
+                     "Tres Mega Attack Rares y siete Special Illustration Rares.",
+                     "Trois Mega Attack Rares et sept Special Illustration Rares.",
+                     "Três Mega Attack Rares e sete Special Illustration Rares.")
         case .standard, .celebrations:
             return ""
         }
@@ -684,6 +769,8 @@ extension L {
         case .prismaticEvolutionsGod:
             return godPackBadge
         case .blackBoltWhiteFlareGod:
+            return godPackBadge
+        case .ascendedHeroesGod:
             return godPackBadge
         case .standard, .celebrations:
             return ""
@@ -716,6 +803,13 @@ extension L {
                      "God Pack de Black Bolt / White Flare · ajuste ~1/\(odds) (no es una tasa oficial)",
                      "God Pack Black Bolt / White Flare · réglage ~1/\(odds) (taux non officiel)",
                      "God Pack Black Bolt / White Flare · ajuste ~1/\(odds) (taxa não oficial)")
+        case .ascendedHeroesGod:
+            return t("어센디드 히어로즈 갓팩 · 시뮬레이터 설정 약 1/\(odds) (공식 확률 아님)",
+                     "Ascended Heroes God Pack · simulator setting ~1/\(odds) (not an official rate)",
+                     "アセンデッドヒーローズ神パック・シミュレーター設定 約1/\(odds)（公式確率ではありません）",
+                     "God Pack de Ascended Heroes · ajuste ~1/\(odds) (no es una tasa oficial)",
+                     "God Pack Ascended Heroes · réglage ~1/\(odds) (taux non officiel)",
+                     "God Pack Ascended Heroes · ajuste ~1/\(odds) (taxa não oficial)")
         case .standard, .celebrations:
             return ""
         }
@@ -734,6 +828,26 @@ extension L {
     // MARK: 도감 개편 — 갈래·마일스톤·새 보상 통로
     var dexThemeSection: String { t("조합", "Combos", "組み合わせ", "Combos", "Combos", "Combos") }
     var dexSetSection: String { t("세트", "Sets", "セット", "Sets", "Sets", "Sets") }
+    var dexCardSearchPlaceholder: String { t("카드 이름 검색", "Search card names", "カード名を検索",
+                                              "Buscar cartas", "Rechercher une carte", "Buscar cartas") }
+    var dexCardSearchLabel: String { t("도감 카드 이름 검색", "Search dex by card name", "図鑑をカード名で検索",
+                                       "Buscar en el dex por carta", "Rechercher dans le dex par carte",
+                                       "Buscar no dex por carta") }
+    var dexCardSearchClear: String { t("검색어 지우기", "Clear search", "検索を消去",
+                                       "Borrar búsqueda", "Effacer la recherche", "Limpar busca") }
+    func dexCardSearchEmpty(_ query: String) -> String {
+        t("‘\(query)’ 카드가 들어간 도감이 없어요.", "No dex contains a card matching ‘\(query)’.",
+          "「\(query)」に一致するカードを含む図鑑はありません。",
+          "Ningún dex contiene una carta que coincida con ‘\(query)’.",
+          "Aucun dex ne contient de carte correspondant à « \(query) ».",
+          "Nenhum dex contém uma carta correspondente a ‘\(query)’.")
+    }
+    func dexCardSearchMatches(_ names: [String]) -> String {
+        let joined = names.joined(separator: ", ")
+        return t("일치 카드: \(joined)", "Matching cards: \(joined)", "一致カード：\(joined)",
+                 "Cartas coincidentes: \(joined)", "Cartes correspondantes : \(joined)",
+                 "Cartas correspondentes: \(joined)")
+    }
     /// 세트 도감의 목표 — 그 세트의 **종**을 몇 할까지 모으는가.
     func dexMilestone(_ percent: Int) -> String {
         t("\(percent)% 수집", "\(percent)% collected", "\(percent)% 収集",

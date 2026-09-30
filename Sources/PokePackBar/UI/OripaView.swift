@@ -267,12 +267,15 @@ struct OripaView: View {
     private func pull() {
         guard let envelope = picked else { return }
         confirmingReplace = false
-        guard let result = wallet.pullOripa(index: index, envelope: envelope) else { return }
-        picked = nil
-        refilled = wallet.oripaBox(index: index).remaining == OripaConfig.slotsPerBox
-        focused = nil
-        revealed = false
-        drawn = result.card
+        guard !wallet.resourceActionsDisabled else { return }
+        Task {
+            guard let result = await wallet.pullOripaOnlineAware(index: index, envelope: envelope) else { return }
+            picked = nil
+            refilled = wallet.oripaBox(index: index).remaining == OripaConfig.slotsPerBox
+            focused = nil
+            revealed = false
+            drawn = result.card
+        }
     }
 }
 

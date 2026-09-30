@@ -38,7 +38,9 @@ struct ExpansionFoilLayer: View {
             relief(.engraved(.mirage, .scarletVioletEtched)).opacity(0.76)
         case .ascendedEnergy, .ascendedBall:
             ZStack {
-                relief(.linear(.mirage)).opacity(0.68)
+                // Faster angular travel, not a brighter full-face coating.
+                FoilReliefLayer(material: .linear(.mirage), seed: seed,
+                    tilt: TiltVector(nx: tilt.nx * 1.3, ny: tilt.ny * 1.3))
                 AscendedMark(cardID: cardID, ball: treatment == .ascendedBall,
                     tilt: tilt)
             }.mask { AscendedReverseMask(cardID: cardID) }
