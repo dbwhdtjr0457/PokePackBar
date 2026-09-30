@@ -64,7 +64,8 @@ enum SupplementalEnergyCard {
         guard cardID.hasPrefix(idPrefix) else { return nil }
         let parts = cardID.dropFirst(idPrefix.count).split(separator: "-", maxSplits: 1)
         guard parts.count == 2, let style = Style(rawValue: String(parts[0])),
-              let type = EnergyType(rawValue: String(parts[1])) else { return nil }
+              let type = EnergyType(rawValue: String(parts[1])),
+              style == .sunMoon || type != .fairy else { return nil }
         return Descriptor(style: style, type: type)
     }
 
@@ -73,15 +74,17 @@ enum SupplementalEnergyCard {
     }
 
     static func data(cardID: String) -> Data? {
-        guard let descriptor = descriptor(cardID: cardID), let bundle = AppResources.bundle else { return nil }
-        // 검증된 영문 원본만 선택한다. 확장자 fallback으로 이전 일본어 PNG/WebP를
-        // 다시 읽지 않으며, MEE 파일명에도 언어를 명시한다.
+        // Original scans are explicit development/audit input only. Distributed
+        // apps use CardImageStore's managed-CDN variants and on-demand cache.
+        guard let descriptor = descriptor(cardID: cardID),
+              let directory = ProcessInfo.processInfo.environment["PPB_SUPPLEMENT_ART_DIR"],
+              !directory.isEmpty else { return nil }
+        // Never fall back to an obsolete non-English MEE filename.
         let isMega = descriptor.style == .megaEvolution || descriptor.style == .anniversary
         let name = "\(descriptor.style.rawValue)\(isMega ? "-en" : "")-\(descriptor.type.rawValue)"
         let ext = descriptor.style == .scarletViolet ? "png" : "jpg"
-        guard let url = bundle.url(forResource: name, withExtension: ext)
-            ?? bundle.url(forResource: name, withExtension: ext, subdirectory: "supplement-energy")
-        else { return nil }
+        let url = URL(fileURLWithPath: directory, isDirectory: true)
+            .appendingPathComponent("\(name).\(ext)")
         return try? Data(contentsOf: url, options: .mappedIfSafe)
     }
 

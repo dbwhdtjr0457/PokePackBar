@@ -39,6 +39,12 @@ for ENERGY_TYPE in grass fire water lightning psychic fighting darkness metal; d
         rm -f "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/mee-${ENERGY_TYPE}.${ENERGY_EXT}"
     done
 done
+# The 41 supplemental scans stay in the repository for source audits, never
+# in the distributed app. Remove flattened files left by incremental SwiftPM.
+for ENERGY_SOURCE in Sources/PokePackBar/Resources/supplement-energy/*; do
+    rm -f "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/${ENERGY_SOURCE##*/}"
+done
+rm -rf "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/supplement-energy"
 # SwiftPM의 증분 리소스 번들은 Package.swift에서 제외된 디렉터리를 지우지 않을 수 있다.
 # 네트워크 배포로 전환한 카드/팩 원본이 이전 빌드에서 남아 앱에 다시 섞이지 않게 한다.
 rm -rf "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle/packs"
@@ -123,11 +129,17 @@ echo "   card-prices.json $(wc -c < "$PRICES" | tr -d ' ') bytes"
 [[ -s "$PACK_PRICES" ]] || { echo "✗ pack-prices.json 이 번들에 없다" >&2; exit 1; }
 echo "   pack-prices.json $(wc -c < "$PACK_PRICES" | tr -d ' ') bytes"
 
-# 파일 개수만 맞아도 언어/도안이 틀릴 수 있다. 실제 번들 41장의 영문 제목,
-# 해상도와 MEE 번호를 OCR로 검사하고 실제 로더/팩별 도안 선택도 검증한다.
-swift scripts/audit_energy_art.swift "$APP/Contents/Resources/${APP_NAME}_${APP_NAME}.bundle"
-PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-physical-pack-cards
-PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --benchmark-bulk-opening 1000
+# Source scans remain an explicit audit input. Verify their English titles,
+# dimensions and MEE numbers, then the packaged app's actual pack selection.
+ENERGY_ART_DIR="$PWD/Sources/PokePackBar/Resources/supplement-energy"
+swift scripts/audit_energy_art.swift "$ENERGY_ART_DIR"
+PPB_SUPPLEMENT_ART_DIR="$ENERGY_ART_DIR" PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-physical-pack-cards
+if find "$APP/Contents/Resources" -type f | grep -E '/(sm|swsh|sve|mee|mee30)(-en)?-(grass|fire|water|lightning|psychic|fighting|darkness|metal|fairy)\.(jpg|png|webp)$'; then
+    echo "✗ Supplemental original artwork leaked into the app bundle" >&2
+    exit 1
+fi
+# The prefetch benchmark deliberately exercises the same eight Energy fixtures.
+PPB_SUPPLEMENT_ART_DIR="$ENERGY_ART_DIR" PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --benchmark-bulk-opening 1000
 
 # 조립된 앱에게 직접 물어본다. 위 검사는 "파일이 거기 있나" 이고, 이건 "앱이 그걸 여나" 다.
 # 앱이 보는 위치와 스크립트가 검사하는 위치가 어긋나 배포된 적이 있어 둘 다 둔다.

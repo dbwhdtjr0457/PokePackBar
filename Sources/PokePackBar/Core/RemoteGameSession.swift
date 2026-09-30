@@ -38,7 +38,9 @@ struct RemoteGameConfiguration: Codable, Sendable {
     }
 
     var storageKey: String {
-        SHA256.hash(data: Data("\(baseURL.absoluteString)/\(accountID)".utf8))
+        // The server tracks cumulative usage by device. Reusing another device's
+        // local collector or pending report would credit its historical total again.
+        SHA256.hash(data: Data("\(baseURL.absoluteString)/\(accountID)/\(deviceID)".utf8))
             .map { String(format: "%02x", $0) }.joined()
     }
 }

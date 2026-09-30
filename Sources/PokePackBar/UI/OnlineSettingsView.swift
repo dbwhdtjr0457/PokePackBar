@@ -7,7 +7,7 @@ struct OnlineSettingsView: View {
     let wallet: WalletStore
     private let auditing: Bool
     @State private var enabled = UserDefaults.standard.bool(forKey: "ppb.server.enabled")
-    @State private var address = UserDefaults.standard.string(forKey: "ppb.server.url") ?? "http://127.0.0.1:8000"
+    @State private var address = UserDefaults.standard.string(forKey: "ppb.server.url") ?? "https://ppb-api.wonyangs.com"
     @State private var email = ""
     @State private var password = ""
     @State private var confirmation = ""

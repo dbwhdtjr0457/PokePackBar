@@ -364,14 +364,17 @@ final class WalletStoreTests: XCTestCase {
         XCTAssertEqual(reloaded.cardCount("base1-4"), 1)
     }
 
-    /// 손상된 파일은 새로 시작하되 원본을 보존한다. 덮어써 버리면 복구 여지가 없다.
-    func testCorruptStateIsBackedUpNotOverwritten() throws {
+    /// 복구할 백업이 없는 손상 파일은 원래 위치에 보존하고 새 저장을 막는다.
+    func testUnrecoverableStateIsPreservedAndCannotBeOverwritten() throws {
         let file = dir.appendingPathComponent("game-state.json")
-        try Data("not json at all".utf8).write(to: file)
+        let original = Data("not json at all".utf8)
+        try original.write(to: file)
 
         let s = makeStore()
         XCTAssertEqual(s.availableTokens, 0)
-        XCTAssertTrue(FileManager.default.fileExists(atPath: file.appendingPathExtension("corrupt").path))
+        s.addPack(setID: "base1")
+        XCTAssertEqual(s.packCount(setID: "base1"), 0)
+        XCTAssertEqual(try Data(contentsOf: file), original)
     }
 
     // MARK: 보너스 팩
@@ -502,7 +505,7 @@ final class WalletStoreTests: XCTestCase {
     func testLegacySaveIsNotPaidAgainAfterUpgrade() throws {
         let file = dir.appendingPathComponent("game-state.json")
         let legacy = """
-        {"packGrantSeeded":true,"packGrantTier":{"claude.fiveHour":1}}
+        {"cards":{},"usedSinceInstall":0,"packGrantSeeded":true,"packGrantTier":{"claude.fiveHour":1}}
         """
         try Data(legacy.utf8).write(to: file)
 

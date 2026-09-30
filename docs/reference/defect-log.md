@@ -11,6 +11,18 @@ read_when:
 
 # 결함 대응 축적 규칙
 
+### 2026-09-30 — Bind online collection and pending requests to the device
+
+- The server credits cumulative usage per device, but the first online client keyed its local
+  collector and durable requests only by server URL/account. Regenerating the device UUID or
+  selecting `PPB_SERVER_DEVICE_ID` could replay the old cumulative total as a new device's usage.
+- Include device identity in the shared storage key for collection, pending requests, snapshots,
+  and credentials. A new device seeds its own baseline; the old device's uncertain request stays
+  intact at its old device-specific path. This lands before the first public online release.
+- `RemoteGameSessionTests` covers fresh baselines, same-device restart, changed-device isolation,
+  retained pending requests, and preservation of the original offline save. Reverting the device
+  key makes the changed-device test fail five assertions, including historical usage recredit.
+
 `CLAUDE.md` §결함 대응 프로토콜의 4단계(근본원인 → 부류 스윕 → 회귀 테스트 → 영구 캡처)를 거쳐
 남은 규칙들이다. 각 항목은 실제로 겪은 회귀에 묶여 있다.
 
@@ -505,6 +517,17 @@ read_when:
   함께 확인한다(테스트가 트리거 브랜치를 실제로 밟는지 보증).
 
 ## 렌더 기하 (스프라이트·이미지)
+
+- **New supplemental artwork follows the same CDN contract as collection cards.**
+  The online PR added 41 English Energy originals as SwiftPM resources and loaded
+  them before the CDN, despite the prior no-originals packaging requirement.
+  Source-only visual audits passed because they deliberately expected bundled
+  originals. Keep scans as explicit `PPB_SUPPLEMENT_ART_DIR` audit inputs, generate
+  both WebP sizes, and verify managed-only supplemental URLs plus actual packaged
+  resource absence. The build retains source OCR, physical-pack and duplicate-heavy
+  prefetch audits; both native image audits receive the explicit source fixture
+  path. Those inputs are not distributed. A fresh generation directory prevents unchanged
+  dimensions from allowing stale converted artwork to survive source replacement.
 
 - **성공한 HTTP 응답·`_hires` 파일명은 고해상도 보장이 아니다.** HD 파일이 없을 때 작은 그림으로
   폴백한 뒤 `CardImageView.task`가 캐시/미리받기 그림을 보고 즉시 종료해 확대 화면도 계속 흐렸다.

@@ -498,6 +498,8 @@ enum CardImageSource {
     /// Separately numbered subsets such as `sma-SV1` and `cel25c-2_A` retain
     /// their source IDs, so the official image CDN path is deterministic.
     static func upstreamURL(cardID: String, hires: Bool) -> URL? {
+        // Supplemental art is curated separately and has no provider card ID.
+        guard !cardID.hasPrefix(SupplementalEnergyCard.idPrefix) else { return nil }
         guard let dash = cardID.firstIndex(of: "-") else { return nil }
         let setID = String(cardID[..<dash])
         let number = String(cardID[cardID.index(after: dash)...])
@@ -511,6 +513,10 @@ enum CardImageSource {
     /// The managed mirror serves both thumbnail and full-resolution variants.
     /// Provider URLs remain recovery paths if a mirrored object is unavailable.
     static func urls(cardID: String, hires: Bool) -> [URL] {
+        if cardID.hasPrefix(SupplementalEnergyCard.idPrefix) {
+            guard SupplementalEnergyCard.descriptor(cardID: cardID) != nil else { return [] }
+            return [url(cardID: cardID, hires: hires)].compactMap { $0 }
+        }
         let original = CardArtLibrary.entries[cardID].flatMap { URL(string: $0.sourceURL) }
         let candidates = hires
             ? [url(cardID: cardID, hires: true), original, upstreamURL(cardID: cardID, hires: true)]

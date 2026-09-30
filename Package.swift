@@ -8,7 +8,7 @@ let package = Package(
         .executableTarget(
             name: "PokePackBar",
             path: "Sources/PokePackBar",
-            exclude: ["Resources/packs"],
+            exclude: ["Resources/packs", "Resources/supplement-energy"],
             resources: [
                 .process("Resources/card-index.json"),
                 .process("Resources/dex.json"),
@@ -25,7 +25,6 @@ let package = Package(
                 .process("Resources/reviewed-foil.json"),
                 .process("Resources/cracked-ice-facets.json"),
                 .process("Resources/catalogue-sources.json"),
-                .process("Resources/supplement-energy"),
             ],
             linkerSettings: [.linkedLibrary("sqlite3")]
         ),

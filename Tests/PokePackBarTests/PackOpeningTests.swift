@@ -832,6 +832,19 @@ final class CardImageSourceTests: XCTestCase {
         XCTAssertEqual(hires.absoluteString, "https://example.test/public/cards/sv8pt5/sv8pt5-1_hires.webp")
     }
 
+    func testSupplementalEnergyUsesOnlyManagedLowAndHighVariants() throws {
+        UserDefaults.standard.set("https://example.test/public", forKey: "cardImageBaseURL")
+        for hires in [false, true] {
+            let urls = CardImageSource.urls(cardID: "supplement-energy-mee30-grass", hires: hires)
+            XCTAssertEqual(urls.count, 1)
+            XCTAssertEqual(urls.first?.absoluteString,
+                "https://example.test/public/cards/supplement/supplement-energy-mee30-grass\(hires ? "_hires" : "").webp")
+            XCTAssertNil(CardImageSource.upstreamURL(cardID: "supplement-energy-mee30-grass", hires: hires))
+        }
+        XCTAssertTrue(CardImageSource.urls(cardID: "supplement-energy-unknown-grass", hires: true).isEmpty)
+        XCTAssertTrue(CardImageSource.urls(cardID: "supplement-energy-sve-fairy", hires: true).isEmpty)
+    }
+
     /// A literal question mark is an object-key character, not a URL query.
     func testEscapesReservedCharactersInCardID() throws {
         UserDefaults.standard.set("https://example.test/public", forKey: "cardImageBaseURL")
