@@ -22,6 +22,7 @@ struct DexView: View {
     @State private var granted: PulledCard?
     /// 그 카드의 가림막이 이미 걷혔는가.
     @State private var revealed = false
+    @Environment(PopoverNavigation.self) private var nav
 
     init(wallet: WalletStore, index: CardIndex?, initialSearchText: String = "") {
         self.wallet = wallet
@@ -63,6 +64,27 @@ struct DexView: View {
             }
         }
         .frame(height: PopoverMetrics.tabHeight)
+        // 카드 상세의 도감 배지가 남긴 목적지. 예전에는 값을 남기기만 하고 읽지 않아서
+        // 배지를 누르면 도감 탭으로만 넘어가고 그 도감은 열리지 않았다.
+        .onAppear(perform: consumeNavigation)
+        .onChange(of: nav.dexID) { consumeNavigation() }
+        .onChange(of: nav.dexSearch) { consumeNavigation() }
+    }
+
+    private func consumeNavigation() {
+        if let id = nav.dexID {
+            nav.dexID = nil
+            granted = nil
+            selected = id
+        }
+        if let search = nav.dexSearch {
+            nav.dexSearch = nil
+            granted = nil
+            selected = nil
+            section = .theme
+            searchText = search
+            appliedSearch = search
+        }
     }
 
     private var sectionPicker: some View {

@@ -354,15 +354,14 @@ struct OnlineCatalogueSearch: View {
     @State private var quantity = 1
     @Environment(\.dismiss) private var dismiss
 
-    private static let resultLimit = 200
-
     /// 이름이 똑같은 카드, 그 말로 시작하는 카드, 포함하는 카드 순. 같은 묶음 안에서는 시세 높은 순.
     ///
     /// 예전에는 카드 목록 순서대로 앞 60장만 보여 줬다. 「뮤」로 찾으면 뮤츠까지 108장이 걸리는데
-    /// 목록 뒤쪽인 30주년 RGB 뮤(105~107번째)가 잘려 위시리스트에 넣을 수 없었다.
-    private var matches: (cards: [CardEntry], total: Int) {
+    /// 목록 뒤쪽인 30주년 RGB 뮤(105~107번째)가 잘려 위시리스트에 넣을 수 없었다. 이제 개수를
+    /// 자르지 않는다. 격자가 보이는 칸만 그리므로 수천 장이 걸려도 스크롤로 전부 볼 수 있다.
+    private var matches: [CardEntry] {
         let needle = DexCardSearch.normalized(appliedQuery)
-        guard !needle.isEmpty, let index = CardIndex.shared else { return ([], 0) }
+        guard !needle.isEmpty, let index = CardIndex.shared else { return [] }
         var exact: [CardEntry] = [], prefix: [CardEntry] = [], partial: [CardEntry] = []
         for entry in index.currentCardsByValue {
             let names = [entry.name, entry.nameKo].compactMap { $0 }.map(DexCardSearch.normalized)
@@ -370,8 +369,7 @@ struct OnlineCatalogueSearch: View {
             else if names.contains(where: { $0.hasPrefix(needle) }) { prefix.append(entry) }
             else if names.contains(where: { $0.contains(needle) }) { partial.append(entry) }
         }
-        let all = exact + prefix + partial
-        return (Array(all.prefix(Self.resultLimit)), all.count)
+        return exact + prefix + partial
     }
 
     private func finishes(_ card: CardEntry) -> [CardFinish] {
@@ -416,17 +414,15 @@ struct OnlineCatalogueSearch: View {
                     let found = matches
                     if query.isEmpty {
                         OnlineEmptyState(icon: "magnifyingglass", title: "찾을 카드 이름을 입력하세요")
-                    } else if found.cards.isEmpty {
+                    } else if found.isEmpty {
                         OnlineEmptyState(icon: "questionmark.square",
                                          title: appliedQuery == query ? "맞는 카드가 없어요" : "찾는 중…")
                     } else {
-                        if found.total > found.cards.count {
-                            Text("\(found.total.formatted())장이 걸려서 \(found.cards.count)장만 보여요. 이름을 더 입력하면 좁혀져요.")
-                                .font(Typography.caption).foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                        Text("\(found.count.formatted())장, 이름이 같은 카드부터 시세 높은 순이에요.")
+                            .font(Typography.caption).foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
-                            ForEach(found.cards) { card in
+                            ForEach(found) { card in
                                 Button {
                                     picked = card
                                     finish = allowsAnyFinish ? nil : finishes(card).first

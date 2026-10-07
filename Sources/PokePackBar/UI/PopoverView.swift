@@ -48,6 +48,9 @@ final class PopoverNavigation {
     /// 도감 탭에서 바로 열어야 할 도감. 카드 상세의 도감 배지가 채운다.
     var dexID: String?
 
+    /// 도감 탭을 이 검색어로 연다. 카드 상세에서 보이지 않는 나머지 도감(「+N」)을 볼 때 쓴다.
+    var dexSearch: String?
+
 }
 
 @MainActor

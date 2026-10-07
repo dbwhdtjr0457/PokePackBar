@@ -47,7 +47,7 @@ struct CardSpotlightView: View {
             // The shop has an extra picker above this view. Measure its real
             // height instead of assuming that every caller gets the whole tab.
             let informationHeight: CGFloat = ownedCount > 1 ? 182 : 160
-            let dexHeight: CGFloat = relatedDexes.isEmpty ? 0 : 42
+            let dexHeight: CGFloat = relatedDexes.shown.isEmpty ? 0 : 42
             let saleHeight: CGFloat = wallet.spareCount(cardID) == 0 ? 0 : (confirmingSale ? 110 : 36)
             let cardWidth = min(230, max(150,
                 ((geometry.size.height - informationHeight - dexHeight - saleHeight) * 0.717).rounded(.down)))
@@ -334,9 +334,10 @@ struct CardSpotlightView: View {
 
     /// 이 카드가 들어가는 도감. 눌러서 그 도감으로 넘어간다.
     ///
-    /// 미완성인 것만, 완성에 가까운 것부터 최대 두 개까지 보여준다 — 한 카드가 여덧 도감에
-    /// 걸리는 경우가 있어 전부 늘어놓으면 카드보다 배지가 커진다.
-    private var relatedDexes: [DexStatus] {
+    /// 미완성인 것만, 완성에 가까운 것부터 두 개까지 배지로 보여준다 — 한 카드가 여덟 도감에
+    /// 걸리는 경우가 있어 전부 늘어놓으면 카드보다 배지가 커진다. 나머지는 「+N」으로 알리고
+    /// 누르면 도감 탭을 이 카드 이름으로 검색해 전부 보여 준다.
+    private var relatedDexes: (shown: [DexStatus], hidden: Int) {
         let claimed = wallet.claimedDexIDs
         let owned: (String) -> Bool = { wallet.cardCount($0) > 0 }
         var out: [DexStatus] = []
@@ -347,12 +348,13 @@ struct CardSpotlightView: View {
             if a.missing.count != b.missing.count { return a.missing.count < b.missing.count }
             return a.dex.id < b.dex.id
         }
-        return Array(out.prefix(2))
+        return (Array(out.prefix(2)), max(0, out.count - 2))
     }
 
     @ViewBuilder
     private func dexBadges(_ l: L) -> some View {
-        let related = relatedDexes
+        let related = relatedDexes.shown
+        let hidden = relatedDexes.hidden
         if !related.isEmpty {
             VStack(spacing: 3) {
                 Text(l.dexCardBelongsTo)
@@ -375,6 +377,19 @@ struct CardSpotlightView: View {
                             .background(Color.secondary.opacity(0.12), in: Capsule())
                         }
                         .buttonStyle(.plain)
+                    }
+                    if hidden > 0 {
+                        Button {
+                            nav.dexSearch = name
+                            nav.tab = .dex
+                        } label: {
+                            Text(verbatim: "+\(hidden)")
+                                .font(.system(size: 14, weight: .semibold)).monospacedDigit()
+                                .padding(.horizontal, 7).padding(.vertical, 2.5)
+                                .background(Color.secondary.opacity(0.12), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .help("이 카드가 들어가는 도감 \(related.count + hidden)개 모두 보기")
                     }
                 }
             }
