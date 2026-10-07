@@ -147,7 +147,7 @@ final class CardFinishResolverTests: XCTestCase {
                     tier: .characterRare, finish: .fullArt, coverage: .fullCard,
                     pattern: .satin, texture: .none),
             Example(setID: "sv6", rarity: "ACE SPEC Rare", tier: .aceSpec,
-                    finish: .aceSpec, coverage: .outsideArt, pattern: .aceDiamond,
+                    finish: .aceSpec, coverage: .fullCard, pattern: .aceDiamond,
                     texture: .embossed),
             Example(setID: "sv8pt5", rarity: "Poké Ball Reverse", tier: .common,
                     finish: .pokeBall, coverage: .outsideArt, pattern: .pokeBall,

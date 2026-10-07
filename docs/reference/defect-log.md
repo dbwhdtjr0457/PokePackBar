@@ -11,6 +11,44 @@ read_when:
 
 # 결함 대응 축적 규칙
 
+### 2026-10-02 — Image-guided foil relief never prepared in the app (uncommitted foil-preparation work)
+
+- Symptom: in the app, FUR (`cel30-157`, chrome) and RGB Mew (`cel30-*_RGB`, printedRGB) lost
+  their crackly per-grain glints entirely. The v0.11.12 release binary shows them. Every build that included the uncommitted
+  asynchronous foil-preparation work on top of v0.11.12 did not. This applied in the collection
+  detail and any view that does not prefetch.
+- Root cause: `ImageGuidedFoilRelief` draws
+  `Group { if let field { FoilReliefLayer(...) } }.task(id: preparationKey) { prepare field }`.
+  A `Group` passes its modifiers to its children. With no field there is no child, so the
+  `.task` never runs, and the field it would prepare never arrives.
+  A traced build showed zero task starts for 8 cards over 20 s.
+- Why every check missed it: `--render-holo-preview` calls `FoilPreparation.prepare` before
+  drawing. That covers both the ImageRenderer and the NSView window capture. Pack opening
+  prefetches the same way. The prepare call fills `FoilImageFieldCache`, so the synchronous lookup
+  succeeds and the relief draws. As a result, 128 offline comparisons and side-by-side previews
+  showed v0.11.12 and this tree as identical.
+- Cost: a full day of foil tuning on 2026-10-01 chased this symptom with stronger effects and
+  extra layers. The missing texture was this deadlock, not foil strength.
+- Fix: use a container that always has a child. For example:
+  `ZStack { Color.clear; if let field { FoilReliefLayer(...) } }`.
+  - Verified in a diagnostic build only; not applied.
+  - On 2026-10-02 the async work was set aside in `git stash` ("Codex async foil preparation work") and the
+    tree returned to v0.11.12. Apply this fix before reviving it.
+  - With the fix, all four FUR cards prepare the image field in about 0.4 s and their chrome or
+    RGB facets (80k to 223k) in about 0.5 s.
+- Sweep: the other `.task(id: preparationKey)` sites (`FoilSheetLayer`, `ReviewedFoilLayer`,
+  `ScannedEmbossHighlights`, `FoilCoverageMask`) hang off an always-present `Canvas` or `ZStack`.
+  Only this site had the pattern.
+- Rules:
+  - Never attach a preparation `.task`/`.onAppear` to a `Group` (or any view) whose children all
+    depend on that task's result.
+  - Check asynchronously prepared foil in an app-like window: `HolographicCardView`, no preloaded
+    image, no `FoilPreparation.prepare`, several cards at once.
+  - Renders that pre-warm caches are not evidence that the app draws the same thing.
+- Regression test to add with the fix: host `HolographicCardView` for `cel30-157` in an
+  `NSHostingView` window without calling `FoilPreparation.prepare`. Spin the run loop for 2 s and
+  assert that `FoilImageFieldCache` holds a field for the displayed image.
+
 ### 2026-09-30 — Bind online collection and pending requests to the device
 
 - The server credits cumulative usage per device, but the first online client keyed its local
