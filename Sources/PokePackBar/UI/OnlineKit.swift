@@ -529,16 +529,26 @@ struct OnlineStockPicker: View {
 
 // MARK: 실패 안내
 
+/// 로컬 모드라 온라인 세션이 없다. 서버에 보낸 요청이 아니라 요청 번호가 없다.
+struct OnlineSignedOut: LocalizedError {
+    var errorDescription: String? { "온라인 계정에 로그인하지 않았어요." }
+}
+
 /// 실패를 사용자가 구분할 수 있는 종류로. 연결 실패와 서버 오류를 같은 말로 뭉뚱그리면
 /// 인터넷을 고칠지 기다릴지 알 수 없다.
 struct OnlineProblem {
-    enum Kind { case unreachable, server, rejected, other }
+    enum Kind { case signedOut, unreachable, server, rejected, other }
     let kind: Kind
     let requestID: String?
 
     init(_ error: (any Error)?) {
         let traced = error as? any ServerTraceable
         requestID = traced?.requestID
+        if error is OnlineSignedOut || traced?.status == 401
+            || (error as? RemoteGameSession.Failure)?.message == ServerAuthentication.loginRequired {
+            kind = .signedOut
+            return
+        }
         switch traced?.status {
         case .none where error is ServerUnreachable: kind = .unreachable
         case .some(let status) where status >= 500: kind = .server
@@ -549,6 +559,7 @@ struct OnlineProblem {
 
     var title: String {
         switch kind {
+        case .signedOut: "로그인이 필요해요"
         case .unreachable: "서버에 연결하지 못했어요"
         case .server: "서버에서 오류가 났어요"
         case .rejected: "요청이 처리되지 않았어요"
@@ -558,6 +569,7 @@ struct OnlineProblem {
 
     var icon: String {
         switch kind {
+        case .signedOut: "person.crop.circle.badge.exclamationmark"
         case .unreachable: "wifi.exclamationmark"
         case .server: "exclamationmark.icloud"
         case .rejected, .other: "exclamationmark.circle"
@@ -566,6 +578,7 @@ struct OnlineProblem {
 
     var hint: String {
         switch kind {
+        case .signedOut: "계정 창에서 로그인하면 바로 이어서 쓸 수 있어요."
         case .unreachable: "마지막으로 불러온 내용을 보여 주는 중이에요. 연결되면 다시 거래할 수 있어요."
         case .server: "내 카드와 금액은 바뀌지 않았어요. 계속되면 아래 요청 번호를 알려 주세요."
         case .rejected, .other: "마지막으로 불러온 내용을 보여 주는 중이에요."
@@ -580,6 +593,10 @@ struct OnlineFailureBanner: View {
     let problem: OnlineProblem
     let message: String
     let loading: Bool
+    /// 자동 재연결 시각. 지났거나 없으면 표시하지 않는다.
+    var retryAt: Date? = nil
+    /// 로그인이 필요할 때 계정 창을 연다.
+    var signIn: (() -> Void)? = nil
     let retry: () -> Void
     @State private var copied = false
 
@@ -600,13 +617,25 @@ struct OnlineFailureBanner: View {
                         }
                         .buttonStyle(.link)
                     }
-                    Button("로그 보기") { NSWorkspace.shared.activateFileViewerSelecting([AppLog.logFileURL]) }
-                        .buttonStyle(.link)
+                    if problem.kind != .signedOut {
+                        Button("로그 보기") { NSWorkspace.shared.activateFileViewerSelecting([AppLog.logFileURL]) }
+                            .buttonStyle(.link)
+                    }
+                    if let retryAt, problem.kind == .unreachable || problem.kind == .server {
+                        TimelineView(.periodic(from: .now, by: 1)) { context in
+                            let seconds = Int(retryAt.timeIntervalSince(context.date).rounded(.up))
+                            if seconds > 0 { Text("\(seconds)초 뒤에 다시 연결해요").monospacedDigit() }
+                        }
+                    }
                 }
                 .font(Typography.label).foregroundStyle(.secondary)
             }
             Spacer()
-            Button("다시 시도", action: retry).disabled(loading)
+            if problem.kind == .signedOut, let signIn {
+                Button("로그인하기", action: signIn).buttonStyle(.borderedProminent)
+            } else {
+                Button("다시 시도", action: retry).disabled(loading)
+            }
         }
         .padding(12)
         .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))

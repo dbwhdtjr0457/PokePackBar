@@ -201,7 +201,7 @@ enum ServerAuthentication {
         try ServerCredentialStore.remove(configuration)
     }
 
-    static let loginRequired = "로그인이 필요하거나 세션이 만료됐습니다. 같은 계정으로 다시 로그인하세요."
+    nonisolated static let loginRequired = "로그인이 필요하거나 세션이 만료됐습니다. 같은 계정으로 다시 로그인하세요."
 
     static func request(url: URL, path: String, body: [String: Any] = [:],
                         credential: ServerCredential? = nil, method: String = "POST") async throws -> Data {

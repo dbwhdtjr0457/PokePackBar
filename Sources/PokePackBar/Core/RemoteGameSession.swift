@@ -119,6 +119,10 @@ final class RemoteGameSession {
     @ObservationIgnored private let tokenProvider: (() throws -> String?)?
     /// 키체인에서 한 번 읽은 로그인 정보. 요청마다 키체인을 다시 읽지 않는다.
     @ObservationIgnored private var cachedCredential: ServerCredential?
+    /// 서버에 연속으로 닿지 못하거나 5xx 를 받은 횟수와, 그다음 동기화를 미룰 시각.
+    /// 끊긴 동안 탭을 옮기거나 다시 시도할 때마다 바로 재연결하면 21초에 16번처럼 몰렸다.
+    @ObservationIgnored private var failureStreak = 0
+    private(set) var retryAt: Date?
     private var pendingURL: URL { directory.appendingPathComponent("pending.json") }
     var cacheURL: URL { directory.appendingPathComponent("game-state.json") }
 
@@ -153,8 +157,10 @@ final class RemoteGameSession {
         collector.update(todayTokensByProvider: providers, todayDate: date, hasUsageData: hasData)
     }
 
-    func synchronize() async {
+    /// `force` 는 사용자가 직접 누른 다시 시도와 새로고침이다. 자동 호출은 `retryAt` 까지 기다린다.
+    func synchronize(force: Bool = false) async {
         guard !busy else { return }
+        if !force, let retryAt, retryAt > Date() { return }
         busy = true
         defer { busy = false }
         do {
@@ -191,12 +197,30 @@ final class RemoteGameSession {
             }
             error = nil
             lastFailure = nil
+            failureStreak = 0
+            retryAt = nil
         } catch {
             self.error = error.localizedDescription
             lastFailure = error
             ready = false
+            if Self.isTransient(error) {
+                failureStreak += 1
+                // 2, 4, 8, 16, 32초, 그 뒤로는 60초마다.
+                let delay = min(60, 2 << min(failureStreak - 1, 5))
+                retryAt = Date().addingTimeInterval(TimeInterval(delay))
+            } else {
+                failureStreak = 0
+                retryAt = nil
+            }
             return
         }
+    }
+
+    /// 기다리면 나아질 수 있는 실패. 서버에 닿지 못했거나 서버가 5xx 를 냈다.
+    static func isTransient(_ error: any Error) -> Bool {
+        if error is ServerUnreachable { return true }
+        if let status = (error as? any ServerTraceable)?.status { return status >= 500 }
+        return false
     }
 
     func execute(_ command: ServerRulesBridge.Command, expectedTokens: Int? = nil) async -> ServerRulesBridge.Result? {

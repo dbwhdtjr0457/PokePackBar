@@ -91,16 +91,21 @@ final class OnlineHubModel {
     /// `full` 이 아니면 지금 탭에 필요한 것만 받는다. 계정 동기화는 앱이 10초마다 따로 하므로
     /// 탭을 옮기거나 거를 때마다 다시 할 필요가 없다. 창을 열 때, 주기 갱신, 새로고침, 거래 뒤에만
     /// 동기화와 서버 상태, 프로필까지 함께 받는다.
-    func refresh(full: Bool = true) async {
+    /// `force` 는 사용자가 누른 다시 시도와 새로고침이다. 끊긴 동안 자동 갱신은 재연결 간격을 지킨다.
+    func refresh(full: Bool = true, force: Bool = false) async {
         guard !loading, !mutating else {
             refreshAgain = true
             refreshAgainFull = refreshAgainFull || full
             return
         }
-        guard let remote else { phase = .failed("온라인에 로그인하지 않았어요. 메뉴바 설정에서 로그인한 뒤 앱을 다시 열어 주세요."); return }
+        guard let remote else {
+            failure = OnlineSignedOut()
+            phase = .failed("이 Mac은 아직 로컬 모드예요. 로그인하고 온라인 모드를 켜면 마켓, 교환, 친구를 쓸 수 있어요.")
+            return
+        }
         phase = .loading
         do {
-            if full || !remote.ready { await remote.synchronize() }
+            if full || !remote.ready { await remote.synchronize(force: force) }
             guard remote.ready else {
                 throw remote.lastFailure ?? RemoteGameSession.Failure(message: remote.error ?? "로그인이 필요합니다.")
             }
@@ -238,7 +243,8 @@ struct OnlineHubView: View {
             header
             if let error = model.errorText {
                 OnlineFailureBanner(problem: OnlineProblem(model.failure), message: error,
-                                    loading: model.loading) { reload(full: true) }
+                                    loading: model.loading, retryAt: model.remote?.retryAt,
+                                    signIn: { AccountWindow.shared.show(wallet: model.wallet) }) { reload(full: true, force: true) }
             }
             if let jobs = model.documents["server"]?["jobs"] as? [[String: Any]],
                jobs.contains(where: { ["failed", "stale"].contains($0["state"] as? String ?? "") }) {
@@ -254,8 +260,13 @@ struct OnlineHubView: View {
                 Label(message, systemImage: "checkmark.circle").font(Typography.label).foregroundStyle(.secondary)
             }
             if model.remote?.authenticationExpired == true {
-                OnlineEmptyState(icon: "lock", title: "다시 로그인해 주세요",
-                                 message: "로그인이 만료돼서 이 화면을 비웠어요. 같은 계정으로 다시 로그인하면 처리 중이던 요청도 이어서 확인해요.")
+                VStack(spacing: 12) {
+                    OnlineEmptyState(icon: "lock", title: "다시 로그인해 주세요",
+                                     message: "로그인이 만료돼서 이 화면을 비웠어요. 같은 계정으로 다시 로그인하면 처리 중이던 요청도 이어서 확인해요.")
+                    Button("로그인하기") { AccountWindow.shared.show(wallet: model.wallet) }
+                        .buttonStyle(.borderedProminent)
+                }
+                .frame(maxWidth: .infinity)
             }
             else if model.section == "통계" { statistics }
             else if model.section == "컬렉션·친구" { OnlineSocialView(model: model) }
@@ -298,7 +309,7 @@ struct OnlineHubView: View {
             Text("쓸 수 있는 금액 \(OnlineText.won(tokens: model.wallet.availableTokens))")
                 .font(Typography.bodySemibold).monospacedDigit()
             if model.loading { ProgressView().controlSize(.small) }
-            Button { reload(full: true) } label: { Image(systemName: "arrow.clockwise") }
+            Button { reload(full: true, force: true) } label: { Image(systemName: "arrow.clockwise") }
                 .help("새로고침").disabled(model.loading)
             Button { AccountWindow.shared.show(wallet: model.wallet) } label: { Image(systemName: "person.crop.circle") }
                 .help("계정과 서버")
@@ -511,7 +522,7 @@ struct OnlineHubView: View {
     }
 
     /// 탭 이동, 필터, 쪽 넘기기는 그 탭만. 새로고침 버튼과 다시 시도는 전체.
-    private func reload(full: Bool = false) { Task { await model.refresh(full: full) } }
+    private func reload(full: Bool = false, force: Bool = false) { Task { await model.refresh(full: full, force: force) } }
 }
 
 extension Dictionary where Key == String, Value == Any {
