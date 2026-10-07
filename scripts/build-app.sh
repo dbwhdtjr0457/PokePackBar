@@ -160,9 +160,15 @@ PPB_OFFLINE=1 "$APP/Contents/MacOS/$APP_NAME" --audit-reviewed-foil
 echo "==> codesign"
 SIGN_IDENTITY="${CODESIGN_IDENTITY:-PokePackBar Local}"
 # 안정적 Keychain ACL 을 위해서는 인증서 존재가 아니라 유효한 codesigning identity 가 필요하다.
+# 신뢰 설정이 빠진 자체 서명 인증서(CSSMERR_TP_NOT_TRUSTED)도 SHA-1 지문으로는 서명할 수 있고,
+# designated requirement 가 인증서 leaf 해시로 고정되므로 Keychain "항상 허용"이 유지된다.
+UNTRUSTED_SIGN_HASH=$(security find-identity -p codesigning | awk -v n="\"$SIGN_IDENTITY\"" 'index($0, n) {print $2; exit}')
 if security find-identity -v -p codesigning | grep -F "\"$SIGN_IDENTITY\"" >/dev/null; then
     # 안정적 자체 서명 신원 → 재빌드해도 Keychain "항상 허용" 유지
     codesign --force -s "$SIGN_IDENTITY" "$APP"
+elif [[ -n "$UNTRUSTED_SIGN_HASH" ]]; then
+    echo "   ('$SIGN_IDENTITY' 신뢰 설정 없음 -> 지문 $UNTRUSTED_SIGN_HASH 로 고정 서명)"
+    codesign --force -s "$UNTRUSTED_SIGN_HASH" "$APP"
 else
     # 인증서 없음 → ad-hoc (빌드마다 cdhash 변경 = Keychain 재프롬프트 가능)
     if [[ "${PTB_REQUIRE_STABLE_SIGN:-0}" == "1" ]]; then
