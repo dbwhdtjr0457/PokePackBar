@@ -33,12 +33,14 @@ enum PhysicalFoilMarks {
         let inkMasks: [String: [[[Double]]]]
         let exLogos: [String: Logo]
     }
-    private static let manifest: Manifest? = {
+    nonisolated private static let manifest: Manifest? = {
         guard let url = AppResources.bundle?.url(forResource: "physical-foil-marks", withExtension: "json"),
               let data = try? Data(contentsOf: url),
               let value = try? JSONDecoder().decode(Manifest.self, from: data), value.version == 1 else { return nil }
         return value
     }()
+    /// 기동할 때 백그라운드에서 미리 읽는다(3MB, 90ms 남짓). `ResourceWarmup` 참고.
+    nonisolated static func warm() { _ = manifest }
     static var templates: [String: Template] { manifest?.templates ?? [:] }
     static var registrations: [String: Registration] { manifest?.ascended ?? [:] }
     static var logos: [String: Logo] { manifest?.exLogos ?? [:] }

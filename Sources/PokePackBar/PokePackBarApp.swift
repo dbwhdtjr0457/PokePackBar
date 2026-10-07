@@ -177,6 +177,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         CrashReporter.install(
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?")
         NSApp.setActivationPolicy(.accessory)
+        ResourceWarmup.start()
         Self.migrateLegacyStorageIfNeeded()   // TokenMac → PokePackBar 리네임: 기존 companion/캐시 보존
         LoginItem.migrateFromLegacyLoginItemIfNeeded()   // 로그인아이템 → KeepAlive 에이전트(크래시 자동 재실행)
         store = UsageStore()
