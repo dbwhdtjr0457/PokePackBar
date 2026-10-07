@@ -13,6 +13,8 @@ struct CardCollectionView: View {
     @State private var selectedSet: String?
     @State private var selectedTier: CardTier?
     @State private var selectedCard: String?
+    /// 이름(한국어, 원문)이나 카드 번호로 거른다. 세트, 등급 필터 안에서 함께 걸린다.
+    @State private var query = ""
     /// 한번에 판매 화면을 열었는가. 탭 안에서 화면만 바꾼다.
     @State private var bulkSelling = false
 
@@ -32,12 +34,13 @@ struct CardCollectionView: View {
     /// 등급순은 「무슨 등급을 모았나」, 최근 획득순은 「방금 뭘 얻었나」,
     /// 중복 많은순은 「무엇을 팔까」다.
     enum CardSort: String, CaseIterable {
-        case value, tier, acquired, duplicates
+        case value, tier, number, acquired, duplicates
 
         func label(_ l: L) -> String {
             switch self {
             case .value:      return l.sortByValue
             case .tier:       return l.sortByTier
+            case .number:     return l.sortByNumber
             case .acquired:   return l.sortByAcquired
             case .duplicates: return l.sortByDuplicates
             }
@@ -50,7 +53,7 @@ struct CardCollectionView: View {
     /// 한 번 그릴 때마다 18,327장을 네 번 지나갔고 갱신 한 번에 27ms 가 걸렸다. 필요한 것을
     /// 한 자리에서 같이 세면 한 번이면 된다.
     struct Shelf {
-        /// 세트·등급 필터만 건 목록. 「몇 장 중 몇 장」의 분모가 여기서 나온다 —
+        /// 세트, 등급 필터만 건 목록. 「몇 장 중 몇 장」의 분모가 여기서 나온다 —
         /// 보유 필터까지 건 목록으로 세면 늘 "90 / 90" 이 되어 아무것도 말해 주지 않는다.
         var pool: [CardEntry] = []
         /// 실제로 격자에 그릴 것.
@@ -68,9 +71,11 @@ struct CardCollectionView: View {
         var shelf = Shelf()
         let sorted = index.currentCardsByValue
         shelf.pool.reserveCapacity(sorted.count)
+        let needle = DexCardSearch.normalized(query)
         for entry in sorted {
             guard selectedSet == nil || entry.setID == selectedSet,
-                  selectedTier == nil || entry.tier == selectedTier else { continue }
+                  selectedTier == nil || entry.tier == selectedTier,
+                  needle.isEmpty || Self.matches(entry, needle: needle, index: index) else { continue }
             shelf.pool.append(entry)
             let count = wallet.cardCount(entry.id)
             if count > 0 {
@@ -94,20 +99,35 @@ struct CardCollectionView: View {
     /// 지키게 해서 값 순서가 그대로 남고, 그 덕에 정렬 안에서 시세를 한 번도 조회하지
     /// 않는다 — 비교 안에서 조회하면 1만 8천 장 한 번 정렬에 사전 조회가 수십만 번 일어난다.
     private func ordered(_ entries: [CardEntry]) -> [CardEntry] {
-        Self.ordered(entries, by: sort,
-                     count: { wallet.cardCount($0) },
-                     acquired: { wallet.firstAcquiredStamp($0) })
+        let setOrder = sort == .number ? (index?.setOrder ?? [:]) : [:]
+        return Self.ordered(entries, by: sort,
+                            count: { wallet.cardCount($0) },
+                            acquired: { wallet.firstAcquiredStamp($0) },
+                            number: { CardIndex.numberSortKey($0, setOrder: setOrder) })
+    }
+
+    /// 이름은 한국어와 원문 모두, 번호는 "4" 나 "4/102" 처럼 친 그대로 맞춘다.
+    static func matches(_ entry: CardEntry, needle: String, index: CardIndex) -> Bool {
+        if [entry.name, entry.nameKo].compactMap({ $0 })
+            .contains(where: { DexCardSearch.normalized($0).contains(needle) }) { return true }
+        guard let number = index.numberLabel(entry.id) else { return false }
+        let compact = DexCardSearch.normalized(number)
+        return compact == needle
+            || DexCardSearch.normalized(String(number.split(separator: "/").first ?? "")) == needle
     }
 
     /// 순수 함수로 떼어 둔다 — 정렬은 눈으로 확인하기 어렵고, 기준을 하나 더할 때마다
     /// 조용히 어긋난다.
     static func ordered(_ entries: [CardEntry], by sort: CardSort,
-                        count: (String) -> Int, acquired: (String) -> Int) -> [CardEntry] {
+                        count: (String) -> Int, acquired: (String) -> Int,
+                        number: (String) -> Int = { _ in 0 }) -> [CardEntry] {
         guard sort != .value, entries.count > 1 else { return entries }
         let keyed = entries.enumerated().map { at, entry -> (rank: Int, at: Int, entry: CardEntry) in
             switch sort {
             case .value:      return (0, at, entry)
             case .tier:       return (entry.tier.rank, at, entry)
+            // 큰 것부터 세우는 정렬이라 부호를 뒤집어 작은 번호가 앞에 오게 한다.
+            case .number:     return (-number(entry.id), at, entry)
             case .acquired:   return (acquired(entry.id), at, entry)
             case .duplicates: return (count(entry.id), at, entry)
             }
@@ -169,6 +189,7 @@ struct CardCollectionView: View {
         .frame(height: PopoverMetrics.tabHeight)
         .onChange(of: ownedOnly) { selectedCard = nil }
         .onChange(of: sort) { selectedCard = nil }
+        .onChange(of: query) { selectedCard = nil }
     }
 
     /// 보이는 카드가 없을 때의 안내. 격자 자리는 그대로 두고 위에 한 줄만 얹는다.
@@ -257,6 +278,14 @@ struct CardCollectionView: View {
                 .toggleStyle(.checkbox)
                 .font(Typography.label)
                 .fixedSize()
+            // 남는 폭만 쓴다. 오른쪽 버튼들은 한 줄로 고정하고 검색창이 줄어든다 —
+            // 반대로 두면 「한번에 판매」와 「등급별 수집 현황」이 두 줄로 꺾인다.
+            TextField(l.searchCards, text: $query)
+                .textFieldStyle(.roundedBorder)
+                .controlSize(.regular)
+                .font(Typography.label)
+                .frame(minWidth: 56, maxWidth: 110)
+                .layoutPriority(-1)
             Spacer(minLength: 4)
             // 잡카드 정리로 들어가는 문. 중복이 없으면 누를 것이 없으므로 감춘다.
             if shelf.hasSpares {
@@ -267,6 +296,8 @@ struct CardCollectionView: View {
                     }
                     .font(Typography.label)
                     .foregroundStyle(Color.accentColor)
+                    .lineLimit(1)
+                    .fixedSize()
                 }
                 .buttonStyle(.plain)
                 .help(l.bulkSellPrompt)
@@ -281,6 +312,8 @@ struct CardCollectionView: View {
                 }
                 .font(Typography.label)
                 .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .fixedSize()
             }
             .buttonStyle(.plain)
         }

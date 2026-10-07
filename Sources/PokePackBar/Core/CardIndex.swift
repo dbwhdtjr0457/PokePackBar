@@ -272,6 +272,32 @@ struct CardIndex: Sendable {
     }
     func set(_ id: String) -> CardSet? { bySetID[id] }
 
+    /// 세트 안 카드 번호. 본 세트 카드 수를 알면 "4/102", 서브셋 번호(SV87, TG01)는 그대로 둔다.
+    func numberLabel(_ cardID: String) -> String? {
+        guard let dash = cardID.firstIndex(of: "-") else { return nil }
+        let prefix = String(cardID[..<dash])
+        let number = String(cardID[cardID.index(after: dash)...])
+        if Int(number) != nil, let total = set(prefix)?.cardCount { return "\(number)/\(total)" }
+        return number
+    }
+
+    /// 세트 목록 순서. 번호순 정렬에서 한 번 만들어 넘긴다.
+    var setOrder: [String: Int] {
+        Dictionary(sets.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    /// 번호순 정렬 키. 세트 목록 순서가 먼저, 그 안에서 번호. 숫자가 아닌 서브셋 번호는
+    /// 같은 세트의 숫자 번호 뒤에 둔다.
+    static func numberSortKey(_ cardID: String, setOrder: [String: Int]) -> Int {
+        guard let dash = cardID.firstIndex(of: "-") else { return Int.max / 2 }
+        let prefix = String(cardID[..<dash])
+        let number = String(cardID[cardID.index(after: dash)...])
+        let setRank = setOrder[prefix] ?? setOrder.count
+        let digits = Int(number.filter(\.isNumber)) ?? 0
+        let within = Int(number).map { min($0, 99_999) } ?? (100_000 + min(digits, 99_999))
+        return setRank * 1_000_000 + within
+    }
+
     /// 이 세트의 팩 시대. 팩 구성과 봉입률이 여기서 갈린다.
     ///
     /// 세트를 훑어 찾지 않는다 — 팩 하나를 뜯을 때마다, 확률표를 그릴 때마다 불리는 자리라

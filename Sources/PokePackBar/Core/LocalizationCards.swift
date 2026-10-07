@@ -286,6 +286,50 @@ extension L {
                                     "Adicionadas recentemente") }
     var sortByDuplicates: String { t("중복 많은순", "Most duplicates", "重複が多い順",
                                       "Más repetidas", "Plus de doublons", "Mais repetidas") }
+    /// 세트 안 카드 번호 순서. 세트를 하나 골라 두고 실물 바인더처럼 훑을 때 쓴다.
+    var sortByNumber: String { t("번호순", "By number", "番号順", "Por número", "Par numéro", "Por número") }
+    /// 컬렉션 보기 줄의 좁은 검색창에 들어가므로 짧게 둔다.
+    var searchCards: String { t("검색", "Search", "検索", "Buscar", "Chercher", "Buscar") }
+
+    // MARK: 통계
+    var statsTab: String { t("통계", "Stats", "統計", "Stats", "Stats", "Stats") }
+    var statsOpening: String { t("개봉", "Opening", "開封", "Apertura", "Ouverture", "Abertura") }
+    var statsPacksOpened: String { t("개봉한 팩", "Packs opened", "開封したパック",
+                                     "Sobres abiertos", "Boosters ouverts", "Pacotes abertos") }
+    /// 보유 장수에 판 장수를 더한 값이라는 것을 라벨에 적는다.
+    var statsCardsPulled: String { t("얻은 카드 (보유 + 판매)", "Cards pulled (kept + sold)",
+                                     "入手カード（所持＋売却）", "Cartas obtenidas (guardadas + vendidas)",
+                                     "Cartes obtenues (gardées + vendues)", "Cartas obtidas (guardadas + vendidas)") }
+    func statsSpecialPacks(_ window: String) -> String {
+        t("특수팩 (최근 \(window)팩)", "Special packs (last \(window))", "特殊パック（直近\(window)）",
+          "Sobres especiales (últimos \(window))", "Boosters spéciaux (\(window) derniers)",
+          "Pacotes especiais (últimos \(window))")
+    }
+    func statsBestPack(_ window: String) -> String {
+        t("최고 가치 팩 (최근 \(window)팩)", "Best pack (last \(window))", "最高価値パック（直近\(window)）",
+          "Mejor sobre (últimos \(window))", "Meilleur booster (\(window) derniers)",
+          "Melhor pacote (últimos \(window))")
+    }
+    var statsUnique: String { t("보유 종류", "Unique cards", "所持種類", "Cartas distintas",
+                                "Cartes distinctes", "Cartas distintas") }
+    var statsCopies: String { t("보유 장수", "Copies held", "所持枚数", "Copias", "Exemplaires", "Cópias") }
+    var statsTopCard: String { t("가장 비싼 보유 카드", "Most valuable card", "最も高い所持カード",
+                                 "Carta más valiosa", "Carte la plus chère", "Carta mais valiosa") }
+    var statsTokens: String { t("토큰", "Tokens", "トークン", "Tokens", "Jetons", "Tokens") }
+    var statsTokensSpent: String { t("쓴 토큰", "Tokens spent", "使ったトークン",
+                                     "Tokens gastados", "Jetons dépensés", "Tokens gastos") }
+    var statsTokensRefunded: String { t("판매로 돌려받은 토큰", "Tokens from sales", "売却で戻ったトークン",
+                                        "Tokens por ventas", "Jetons des ventes", "Tokens de vendas") }
+    var statsCardsSold: String { t("판매한 카드", "Cards sold", "売却したカード",
+                                   "Cartas vendidas", "Cartes vendues", "Cartas vendidas") }
+    var statsHistoryNote: String {
+        t("개봉 기록은 최근 1,000팩까지만 남아 특수팩과 최고 가치 팩은 그 안에서 셉니다.",
+          "Opening history keeps the last 1,000 packs, so special and best packs are counted within it.",
+          "開封記録は直近1,000パックまでのため、特殊パックと最高価値パックはその中で数えます。",
+          "El historial guarda los últimos 1.000 sobres; los especiales y el mejor se cuentan ahí.",
+          "L'historique garde les 1 000 derniers boosters ; spéciaux et meilleur y sont comptés.",
+          "O histórico guarda os últimos 1.000 pacotes; especiais e o melhor são contados nele.")
+    }
     /// 카드를 처음 얻은 날. 기록이 있는 카드에만 붙는다.
     func cardFirstAcquired(_ date: String) -> String {
         t("처음 얻은 날 \(date)", "First obtained \(date)", "初入手 \(date)",

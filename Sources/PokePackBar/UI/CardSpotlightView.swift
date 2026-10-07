@@ -210,6 +210,13 @@ struct CardSpotlightView: View {
                 .font(linked ? Typography.bodySemibold : Typography.body)
                 .foregroundStyle(linked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.primary))
                 .lineLimit(1).truncationMode(.tail)
+            // 실물 카드 하단의 번호(4/102). 바인더나 시세표에서 같은 카드를 찾을 때 쓴다.
+            if let number = CardIndex.shared?.numberLabel(cardID) {
+                Text(number)
+                    .font(Typography.label).monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1).fixedSize()
+            }
         }
         .contentShape(Rectangle())
     }

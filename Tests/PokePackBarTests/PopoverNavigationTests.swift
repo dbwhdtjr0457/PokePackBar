@@ -124,10 +124,10 @@ final class PopoverNavigationTests: XCTestCase {
         XCTAssertTrue(nav.showSettings)
     }
 
-    /// 기획에 필요한 탭만 둔다 — 팩을 사고, 팩을 열고, 카드를 보고, 조합을 모은다.
-    func testExposesExactlyFourTabs() {
-        XCTAssertEqual(PopoverTab.allCases.count, 4)
-        XCTAssertEqual(PopoverTab.allCases, [.shop, .packs, .collection, .dex])
+    /// Core game navigation includes the collection statistics introduced in 0.12.
+    func testExposesTheGameAndStatisticsTabs() {
+        XCTAssertEqual(PopoverTab.allCases.count, 5)
+        XCTAssertEqual(PopoverTab.allCases, [.shop, .packs, .collection, .dex, .stats])
     }
 
     /// 탭 라벨이 팝오버 폭에 들어가는가.
