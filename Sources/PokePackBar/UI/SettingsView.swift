@@ -56,7 +56,7 @@ struct SettingsView: View {
             Divider()
             Picker("설정 분류", selection: $section) {
                 ForEach(["일반", "표시", "데이터", "고급"], id: \.self) { Text($0).tag($0) }
-            }.pickerStyle(.segmented).padding(.horizontal, 16).padding(.vertical, 10)
+            }.pickerStyle(.segmented).labelsHidden().padding(.horizontal, 16).padding(.vertical, 10)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     if section == "일반" {
@@ -111,7 +111,7 @@ struct SettingsView: View {
         HStack(spacing: 5) {
             Text("v\(Self.appVersion)")
             Text(AppLinks.updateChannel)
-            Text("·")
+            // 구분점은 링크 앞에만 둔다. 조건 밖에 하나 더 있어서 「stable · · GitHub」로 찍혔다.
             if let github = AppLinks.githubURL {
                 Text("·")
                 footerLink("GitHub", github.absoluteString)

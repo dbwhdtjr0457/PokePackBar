@@ -18,6 +18,8 @@ struct ReliabilitySettingsView: View {
                 }
             }
             .pickerStyle(.segmented)
+            // 바로 위 제목과 같은 말이 세그먼트 앞에 한 번 더 붙지 않게 한다.
+            .labelsHidden()
             .disabled(wallet.resourceActionsDisabled)
             Text(l.realisticNote).font(Typography.label).foregroundStyle(.secondary)
             DisclosureGroup("\(l.exportHistory) (\(wallet.state.openingHistory.count))") {
