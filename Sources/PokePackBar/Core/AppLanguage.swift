@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// 앱 언어. 포켓몬 이름은 PokéAPI 다국어 names 에서 가져온다.
 enum AppLanguage: String, Codable, Sendable, CaseIterable {
@@ -33,6 +34,14 @@ enum AppLanguage: String, Codable, Sendable, CaseIterable {
         for code in apiCodes { if let n = byLang[code] { return n } }
         return byLang["en"]
     }
+
+    /// 지금 화면에 쓰는 언어. 메인 액터 밖에서 만드는 오류 설명(서버 응답, 로그인 실패)도
+    /// 화면과 같은 언어로 쓰려고 둔다. `WalletStore` 가 언어를 정하거나 바꿀 때 갱신한다.
+    nonisolated static var current: AppLanguage {
+        get { shown.withLock { $0 } }
+        set { shown.withLock { $0 = newValue } }
+    }
+    private static let shown = OSAllocatedUnfairLock(initialState: AppLanguage.ko)
 
     /// 신규 설치 기본 언어 — 시스템 선호 언어에서 유추(글로벌 출시: 한국어 강제 금지).
     /// ko/ja/es/fr/pt 만 매칭, 그 외 전부 영어(fallback-of-fallback). 기존 사용자는 저장된 언어를 그대로 쓴다.

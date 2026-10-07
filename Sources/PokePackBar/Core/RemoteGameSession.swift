@@ -55,6 +55,8 @@ final class RemoteGameSession {
         let balance: Int
         let state: GameState
         var reserved: [String: Int]? = nil
+        /// 서버가 계산한 공개 상태의 지문. 변경분을 적용하기 전에 같은 상태인지 확인한다.
+        var state_digest: String? = nil
     }
     struct Request: Codable {
         let request_id: UUID
@@ -65,7 +67,8 @@ final class RemoteGameSession {
         var quoted_tokens: Int? = nil
     }
     struct Response: Decodable {
-        let snapshot: Snapshot
+        /// 변경분(`snapshot_patch`)으로 온 응답에는 없다.
+        let snapshot: Snapshot?
         let result: ServerRulesBridge.Result
         let event_revision: Int
         let replayed: Bool
@@ -83,6 +86,13 @@ final class RemoteGameSession {
     struct OpeningJobResult: Decodable { let job: OpeningJob; let packs: OpenedPackBatch? }
     struct OpeningJobReply: Decodable { let result: OpeningJobResult }
     struct PriceStatus: Decodable { let version: String?; let last_success: Int?; let error: String? }
+    /// 메뉴바에서 온라인 창을 열지 않아도 알 수 있게 하는 개수.
+    struct NotificationSummary: Decodable, Equatable {
+        let unread: Int
+        let incoming_trades: Int
+        let incoming_friends: Int
+        var isEmpty: Bool { unread == 0 && incoming_trades == 0 && incoming_friends == 0 }
+    }
     struct Quote: Decodable { let tokens: Int; let price_version: String?; let revision: Int }
     struct Failure: LocalizedError, ServerTraceable {
         let message: String
@@ -103,6 +113,10 @@ final class RemoteGameSession {
     private(set) var recoveredResult: ServerRulesBridge.Result?
     private(set) var priceVersion: String?
     private(set) var priceStatus: PriceStatus?
+    private(set) var notificationSummary: NotificationSummary?
+    @ObservationIgnored private var summaryCheckedAt: Date?
+    /// 요약 API 가 없는 예전 서버. 매분 404 를 로그에 남기지 않게 한 번 확인하면 더 묻지 않는다.
+    @ObservationIgnored private var summaryUnsupported = false
     private(set) var reservedPrintings: [String: Int] = [:]
     private(set) var authenticationExpired = false
     private(set) var hasOnlinePending = false
@@ -115,8 +129,19 @@ final class RemoteGameSession {
     @ObservationIgnored private var reportedTokens = 0
     @ObservationIgnored private var acceptedSnapshot = false
     @ObservationIgnored private var lastSnapshot: Snapshot?
+    /// 기동할 때 캐시해 둔 시세를 백그라운드에서 검증하는 작업. 첫 동기화는 이것을 기다린다.
+    @ObservationIgnored private var cachedPrices: Task<Void, Never>?
+    /// 계정 상태 캐시 파일을 순서대로 쓰는 큐. 1.3MB 상태를 저장하는 데 70ms 가 걸려 명령마다
+    /// 메인 스레드에서 쓰면 화면이 끊겼다. 서버가 원본이라 캐시는 조금 늦게 써도 된다.
+    @ObservationIgnored private let cacheWriter = DispatchQueue(label: "PokePackBar.online-state-cache", qos: .utility)
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private let tokenProvider: (() throws -> String?)?
+    /// 키체인에서 한 번 읽은 로그인 정보. 요청마다 키체인을 다시 읽지 않는다.
+    @ObservationIgnored private var cachedCredential: ServerCredential?
+    /// 서버에 연속으로 닿지 못하거나 5xx 를 받은 횟수와, 그다음 동기화를 미룰 시각.
+    /// 끊긴 동안 탭을 옮기거나 다시 시도할 때마다 바로 재연결하면 21초에 16번처럼 몰렸다.
+    @ObservationIgnored private var failureStreak = 0
+    private(set) var retryAt: Date?
     private var pendingURL: URL { directory.appendingPathComponent("pending.json") }
     var cacheURL: URL { directory.appendingPathComponent("game-state.json") }
 
@@ -128,12 +153,32 @@ final class RemoteGameSession {
         hasPending = FileManager.default.fileExists(atPath: directory.appendingPathComponent("pending.json").path)
         hasOnlinePending = FileManager.default.fileExists(atPath: directory.appendingPathComponent("online-pending.json").path)
         let priceCache = directory.appendingPathComponent("prices.json")
-        if let data = try? PriceSnapshotStore.read(priceCache) {
-            do {
-                try PriceSnapshotStore.shared.applyOnline(data, cacheURL: priceCache)
-                priceVersion = OpeningRules.digest(data)
-            } catch { self.error = "시세 캐시가 손상되어 서버에서 다시 받아야 합니다." }
+        // 캐시해 둔 8MB 시세를 검증하는 데 0.6초 넘게 걸린다. 기동 중 메인 스레드에서 하면 메뉴바
+        // 아이콘이 그만큼 늦게 떴다. 검증은 백그라운드에서 하고, 그동안은 번들 시세를 쓴다.
+        cachedPrices = Task { [weak self] in
+            let loaded = await Task.detached(priority: .userInitiated) {
+                RemoteGameSession.loadCachedPrices(priceCache)
+            }.value
+            guard let self else { return }
+            switch loaded {
+            case .missing: break
+            case .corrupt: self.error = L.current.priceCacheCorrupt
+            case .valid(let candidate, let version):
+                PriceSnapshotStore.shared.installOnline(candidate)
+                self.priceVersion = version
+            }
         }
+    }
+
+    enum CachedPrices: Sendable {
+        case missing, corrupt
+        case valid(PriceSnapshotStore.Snapshot, version: String)
+    }
+
+    nonisolated static func loadCachedPrices(_ url: URL) -> CachedPrices {
+        guard let data = try? PriceSnapshotStore.read(url) else { return .missing }
+        guard let candidate = try? PriceSnapshotStore.validate(data) else { return .corrupt }
+        return .valid(candidate, version: OpeningRules.digest(data))
     }
 
     func start() {
@@ -151,10 +196,13 @@ final class RemoteGameSession {
         collector.update(todayTokensByProvider: providers, todayDate: date, hasUsageData: hasData)
     }
 
-    func synchronize() async {
+    /// `force` 는 사용자가 직접 누른 다시 시도와 새로고침이다. 자동 호출은 `retryAt` 까지 기다린다.
+    func synchronize(force: Bool = false) async {
         guard !busy else { return }
+        if !force, let retryAt, retryAt > Date() { return }
         busy = true
         defer { busy = false }
+        await cachedPrices?.value
         do {
             if hasOnlinePending { _ = try await replayOnlinePending() }
             // Restore committed requests before new-version checks: an old draw
@@ -166,14 +214,23 @@ final class RemoteGameSession {
             if !ready {
                 let version: RuleVersion = try await get("v1/rules")
                 guard version.rules_version == ServerRulesBridge.version else {
-                    throw Failure(message: "서버와 앱의 게임 규칙·시세 버전이 다릅니다. 같은 빌드로 업데이트하세요.")
+                    throw Failure(message: L.current.rulesVersionMismatch)
                 }
             }
             let status: PriceStatus = try await get("v1/prices")
             if let version = status.version, priceVersion != version {
                 let data = try await api("v1/prices/snapshot")
-                guard OpeningRules.digest(data) == version else { throw Failure(message: "시세 데이터 검증에 실패했습니다.") }
-                try PriceSnapshotStore.shared.applyOnline(data, cacheURL: directory.appendingPathComponent("prices.json"))
+                let cacheURL = directory.appendingPathComponent("prices.json")
+                // 검증(0.6초 남짓)과 캐시 저장은 메인 스레드 밖에서 하고, 적용만 여기서 한다.
+                let candidate = try await Task.detached(priority: .userInitiated) {
+                    guard OpeningRules.digest(data) == version else {
+                        throw Failure(message: L.current.priceVerificationFailed)
+                    }
+                    let candidate = try PriceSnapshotStore.validate(data)
+                    try PriceSnapshotStore.cacheOnline(data, at: cacheURL)
+                    return candidate
+                }.value
+                PriceSnapshotStore.shared.installOnline(candidate)
                 priceVersion = version
             }
             priceStatus = status
@@ -189,19 +246,52 @@ final class RemoteGameSession {
             }
             error = nil
             lastFailure = nil
+            failureStreak = 0
+            retryAt = nil
+            if summaryCheckedAt.map({ Date().timeIntervalSince($0) >= 60 }) ?? true {
+                await refreshNotificationSummary()
+            }
         } catch {
             self.error = error.localizedDescription
             lastFailure = error
             ready = false
+            if Self.isTransient(error) {
+                failureStreak += 1
+                // 2, 4, 8, 16, 32초, 그 뒤로는 60초마다.
+                let delay = min(60, 2 << min(failureStreak - 1, 5))
+                retryAt = Date().addingTimeInterval(TimeInterval(delay))
+            } else {
+                failureStreak = 0
+                retryAt = nil
+            }
             return
         }
     }
 
+    /// 기다리면 나아질 수 있는 실패. 서버에 닿지 못했거나 서버가 5xx 를 냈다.
+    static func isTransient(_ error: any Error) -> Bool {
+        if error is ServerUnreachable { return true }
+        if let status = (error as? any ServerTraceable)?.status { return status >= 500 }
+        return false
+    }
+
+    /// 받은 교환 제안, 친구 신청, 안 읽은 알림 개수. 실패해도 동기화는 실패로 치지 않는다.
+    func refreshNotificationSummary() async {
+        guard !summaryUnsupported else { return }
+        summaryCheckedAt = Date()
+        do {
+            let summary: NotificationSummary = try await get("v1/notifications/summary")
+            if summary != notificationSummary { notificationSummary = summary }
+        } catch let failure as Failure where failure.status == 404 {
+            summaryUnsupported = true
+        } catch {}
+    }
+
     func execute(_ command: ServerRulesBridge.Command, expectedTokens: Int? = nil) async -> ServerRulesBridge.Result? {
-        guard !hasOnlinePending else { error = "미확인 온라인 거래를 먼저 복구하세요."; return nil }
-        guard !busy else { error = "다른 서버 요청을 처리하고 있습니다."; return nil }
-        guard ready else { error = "서버 연결을 먼저 확인하세요. 로컬 자원은 변경하지 않았습니다."; return nil }
-        guard !hasPending else { error = "응답을 확인하지 못한 요청이 있습니다. 먼저 재시도하세요."; return nil }
+        guard !hasOnlinePending else { error = L.current.recoverOnlineTradeFirst; return nil }
+        guard !busy else { error = L.current.anotherRequestRunning; return nil }
+        guard ready else { error = L.current.checkServerFirst; return nil }
+        guard !hasPending else { error = L.current.retryPendingFirst; return nil }
         busy = true
         defer { busy = false }
         do {
@@ -216,11 +306,11 @@ final class RemoteGameSession {
             let data = try await api("v1/quotes", method: "POST", body: JSONEncoder().encode(request))
             let quote = try JSONDecoder().decode(Quote.self, from: data)
             guard quote.price_version == priceVersion, quote.revision == revision else {
-                throw Failure(message: "가격이나 계정 상태가 바뀌었습니다. 동기화 후 금액을 다시 확인하세요.")
+                throw Failure(message: L.current.stateChangedResync)
             }
             request.quoted_tokens = quote.tokens
             if let expectedTokens, expectedTokens != quote.tokens {
-                throw Failure(message: "확인한 금액과 서버 견적이 다릅니다. 새로고침 후 변경된 금액을 다시 확인하세요.")
+                throw Failure(message: L.current.quoteMismatch)
             }
         }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -242,19 +332,22 @@ final class RemoteGameSession {
     func dismissRecoveredResult() { recoveredResult = nil }
 
     func invalidateAuthentication() {
+        cachedCredential = nil
         authenticationExpired = true
         ready = false
         error = ServerAuthentication.loginRequired
     }
 
     private func send(_ body: Request) async throws -> ServerRulesBridge.Result {
-        var request = try urlRequest("v1/commands")
+        var request = try await urlRequest("v1/commands")
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // 계정 상태 전체(오래 한 계정은 1.3MB, 대부분 개봉 기록) 대신 바뀐 부분만 받는다.
+        request.setValue("1", forHTTPHeaderField: "X-PPB-State-Patch")
         request.httpBody = try JSONEncoder().encode(body)
         let exchange = try await ServerTransport.exchange(request)
         let data = exchange.data, status = exchange.status
-        guard status != 0 else { throw Failure(message: "잘못된 서버 응답", requestID: exchange.requestID) }
+        guard status != 0 else { throw Failure(message: L.current.invalidServerReply, requestID: exchange.requestID) }
         if status == 401 || status == 403 {
             invalidateAuthentication()
             // Keep the durable request: after re-login it must replay the same ID.
@@ -266,18 +359,85 @@ final class RemoteGameSession {
                 try clearPending()
                 ready = false
             }
-            throw Failure(message: "서버가 요청을 거절했습니다. 다른 기기에서 상태가 바뀌었거나 조건을 충족하지 않습니다. 새로고침 후 다시 시도하세요.",
+            throw Failure(message: L.current.requestRefused,
                           status: status, requestID: exchange.requestID)
         }
         guard status == 200 else {
-            throw Failure(message: "서버 응답 \(status). 요청 ID를 보존했습니다. 같은 요청으로 재시도할 수 있습니다.",
+            throw Failure(message: L.current.serverReplyKept(status),
                           status: status, requestID: exchange.requestID)
         }
-        let reply = try JSONDecoder().decode(Response.self, from: data)
-        try accept(reply.snapshot)
+        let reply = try await Self.decoded(Response.self, from: data)
+        try accept(try await resolvedSnapshot(reply.snapshot, data: data))
         try clearPending()
         error = nil
         return reply.result
+    }
+
+    /// 변경분을 적용한 횟수. 통합 검사가 변경분 경로를 실제로 탔는지 확인한다.
+    @ObservationIgnored private(set) var appliedStatePatches = 0
+
+    /// 명령 응답이 바뀐 부분만 담고 있으면 가진 상태에 적용한다. 가진 상태가 서버가 말한 이전
+    /// 상태와 정확히 같을 때(지문 비교)만 적용하고, 아니면 전체 상태를 다시 받는다. 서버는 버전을
+    /// 올리지 않고 상태를 정리하는 경우가 있어 버전 번호만으로는 같은 상태라고 볼 수 없다.
+    private func resolvedSnapshot(_ full: Snapshot?, data: Data) async throws -> Snapshot {
+        if let full { return full }
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let patch = object["snapshot_patch"] as? [String: Any] else {
+            throw Failure(message: L.current.replyMissingState)
+        }
+        if let base = lastSnapshot, base.revision == patch["base_revision"] as? Int,
+           let digest = base.state_digest, digest == patch["base_digest"] as? String {
+            do {
+                // 1.3MB 상태를 다시 만들어 적용하는 데 50ms 가까이 걸린다. 명령마다 메인 스레드에서
+                // 하면 토큰 적립(쓰는 동안 10초마다)과 팩 개봉 순간에 화면이 끊겼다.
+                let patchData = try JSONSerialization.data(withJSONObject: patch)
+                let patched = try await Task.detached(priority: .userInitiated) {
+                    try RemoteGameSession.applying(patchData: patchData, to: base)
+                }.value
+                appliedStatePatches += 1
+                return patched
+            } catch {
+                AppLog.write("[online] state patch could not be applied: \(String(describing: error).prefix(300)); fetching full state")
+            }
+        } else {
+            AppLog.write("[online] state patch base differs from local state; fetching full state")
+        }
+        return try await fetchSnapshot()
+    }
+
+    /// 서버 `state_patch` 의 적용. 순서는 값 교체, 사전 항목 교체, 키 삭제, 개봉 기록 앞쪽 버리고 뒤에 붙이기.
+    nonisolated static func applying(patchData: Data, to base: Snapshot) throws -> Snapshot {
+        guard let patch = try JSONSerialization.jsonObject(with: patchData) as? [String: Any] else {
+            throw Failure(message: L.current.patchUnreadable)
+        }
+        return try applying(patch, to: base)
+    }
+
+    nonisolated static func applying(_ patch: [String: Any], to base: Snapshot) throws -> Snapshot {
+        guard var state = try JSONSerialization.jsonObject(with: JSONEncoder().encode(base.state)) as? [String: Any],
+              let accountID = patch["account_id"] as? String,
+              let revision = patch["revision"] as? Int,
+              let balance = patch["balance"] as? Int else {
+            throw Failure(message: L.current.patchUnreadable)
+        }
+        for (key, value) in patch["set"] as? [String: Any] ?? [:] { state[key] = value }
+        for (key, change) in patch["merge"] as? [String: [String: Any]] ?? [:] {
+            var merged = state[key] as? [String: Any] ?? [:]
+            for (entry, value) in change["set"] as? [String: Any] ?? [:] { merged[entry] = value }
+            for entry in change["remove"] as? [String] ?? [] { merged.removeValue(forKey: entry) }
+            state[key] = merged
+        }
+        for key in patch["remove"] as? [String] ?? [] { state.removeValue(forKey: key) }
+        if let history = patch["history"] as? [String: Any] {
+            var records = state["openingHistory"] as? [Any] ?? []
+            records.removeFirst(min(max(0, history["drop"] as? Int ?? 0), records.count))
+            records.append(contentsOf: history["append"] as? [Any] ?? [])
+            state["openingHistory"] = records
+        }
+        let decoded = try GamePersistence.decode(JSONSerialization.data(withJSONObject: state))
+        return Snapshot(account_id: accountID, revision: revision, balance: balance, state: decoded,
+                        reserved: patch["reserved"] as? [String: Int],
+                        state_digest: patch["state_digest"] as? String)
     }
 
     private func clearPending() throws {
@@ -287,10 +447,13 @@ final class RemoteGameSession {
 
     private func accept(_ snapshot: Snapshot) throws {
         guard UUID(uuidString: snapshot.account_id) == configuration.accountID,
-              snapshot.revision >= revision else { throw Failure(message: "계정 또는 버전이 맞지 않는 응답입니다.") }
+              snapshot.revision >= revision else { throw Failure(message: L.current.replyAccountMismatch) }
         if acceptedSnapshot && snapshot.revision == revision { return }
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try GamePersistence(url: cacheURL).commit(snapshot.state)
+        let url = cacheURL, state = snapshot.state
+        cacheWriter.async {
+            do { try GamePersistence(url: url).commit(state) }
+            catch { AppLog.write("[online] state cache write failed: \(error.localizedDescription)") }
+        }
         revision = snapshot.revision
         acceptedSnapshot = true
         lastSnapshot = snapshot
@@ -299,7 +462,7 @@ final class RemoteGameSession {
     }
 
     private func fetchSnapshot() async throws -> Snapshot {
-        var request = try urlRequest("v1/state")
+        var request = try await urlRequest("v1/state")
         if acceptedSnapshot { request.setValue("\"\(revision)\"", forHTTPHeaderField: "If-None-Match") }
         let exchange = try await ServerTransport.exchange(request)
         let status = exchange.status
@@ -309,21 +472,56 @@ final class RemoteGameSession {
         }
         if status == 304, let lastSnapshot { return lastSnapshot }
         guard status == 200 else {
-            throw Failure(message: "서버 상태를 가져오지 못했습니다. (HTTP \(status))", status: status, requestID: exchange.requestID)
+            throw Failure(message: L.current.serverStatusFailed(status), status: status, requestID: exchange.requestID)
         }
-        return try JSONDecoder().decode(Snapshot.self, from: exchange.data)
+        return try await Self.decoded(Snapshot.self, from: exchange.data)
     }
 
-    private func urlRequest(_ path: String) throws -> URLRequest {
+    /// 전체 상태(1.3MB)를 담은 응답은 해석에 20ms 가까이 걸려 메인 스레드 밖에서 읽는다.
+    nonisolated static func decoded<T: Decodable & Sendable>(_ type: T.Type, from data: Data) async throws -> T {
+        try await Task.detached(priority: .userInitiated) {
+            // Cache writes run later now. Preserve their strict resource checks
+            // before publishing a response to the live wallet, still off-main.
+            if T.self == Snapshot.self || T.self == Response.self {
+                guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    throw Failure(message: L.current.patchUnreadable)
+                }
+                let snapshot = T.self == Snapshot.self ? object : object["snapshot"] as? [String: Any]
+                if let snapshot {
+                    guard let state = snapshot["state"] as? [String: Any] else {
+                        throw Failure(message: L.current.patchUnreadable)
+                    }
+                    _ = try GamePersistence.decode(JSONSerialization.data(withJSONObject: state))
+                }
+            }
+            return try JSONDecoder().decode(T.self, from: data)
+        }.value
+    }
+
+    /// 계정 창에서 같은 계정으로 다시 로그인했을 때 새 로그인 정보를 읽게 한다.
+    func forgetCredential() { cachedCredential = nil }
+
+    /// 키체인은 세션마다 한 번, 메인 스레드 밖에서 읽는다. 앱 서명이 바뀐 뒤(업데이트 등) 첫 읽기는
+    /// macOS 의 접근 허용 창에 답할 때까지 멈추는데, 메인 스레드에서 읽으면 그동안 메뉴바 아이콘조차
+    /// 그리지 못해 앱이 실행되지 않은 것처럼 보였다(v0.12.0 업데이트 직후 실제로 겪음).
+    private func accessToken() async throws -> String? {
+        if let tokenProvider { return try tokenProvider() }
+        let now = Int(Date().timeIntervalSince1970)
+        if let cached = cachedCredential, cached.expires_at > now { return cached.access_token }
+        let configuration = self.configuration
+        let credential = try await Task.detached(priority: .userInitiated) {
+            try ServerCredentialStore.load(configuration)
+        }.value
+        cachedCredential = credential
+        guard let credential, credential.expires_at > now else { return nil }
+        return credential.access_token
+    }
+
+    private func urlRequest(_ path: String) async throws -> URLRequest {
         var request = URLRequest(url: configuration.baseURL.appendingPathComponent(path),
                                  cachePolicy: .reloadIgnoringLocalCacheData)
         request.timeoutInterval = 90
-        let token: String?
-        if let tokenProvider { token = try tokenProvider() }
-        else if let credential = try ServerCredentialStore.load(configuration),
-                credential.expires_at > Int(Date().timeIntervalSince1970) {
-            token = credential.access_token
-        } else { token = nil }
+        let token = try await accessToken()
         guard let token, !token.isEmpty else {
             invalidateAuthentication()
             throw Failure(message: ServerAuthentication.loginRequired)
@@ -338,7 +536,7 @@ final class RemoteGameSession {
     }
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
-        let exchange = try await ServerTransport.exchange(urlRequest(path))
+        let exchange = try await ServerTransport.exchange(await urlRequest(path))
         let status = exchange.status
         if status == 401 || status == 403 {
             invalidateAuthentication()
@@ -352,7 +550,7 @@ final class RemoteGameSession {
 
     func api(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
         let parts = path.split(separator: "?", maxSplits: 1).map(String.init)
-        var request = try urlRequest(parts[0])
+        var request = try await urlRequest(parts[0])
         if parts.count > 1, var components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false) {
             components.percentEncodedQuery = parts[1]
             request.url = components.url
@@ -377,14 +575,14 @@ final class RemoteGameSession {
     static func describe(status: Int, data: Data) -> String {
         let detail = ServerTransport.detail(data) ?? "HTTP \(status)"
         if status >= 500 {
-            return "서버에서 오류가 났어요 (HTTP \(status), \(detail)). 잠시 뒤 다시 시도해 주세요."
+            return L.current.serverFailure(status, detail)
         }
-        return "요청을 완료하지 못했습니다: \(detail). 새로고침 후 조건을 다시 확인하세요."
+        return L.current.requestNotCompleted(detail)
     }
 
     func onlineMutation(path: String, body: Data) async throws -> Data {
         guard ready, !busy, !hasPending, !hasOnlinePending else {
-            throw Failure(message: "다른 요청 또는 미확인 거래를 먼저 복구하세요.")
+            throw Failure(message: L.current.recoverOtherRequestFirst)
         }
         busy = true
         defer { busy = false }

@@ -52,7 +52,7 @@ enum BulkOpeningAudit {
         var pity = 0
         for (offset, opened) in result.packs.enumerated() {
             var generator = PackSeedGenerator(seed: seeds[offset])
-            let reference = PackOpening.draw(setID: "zsv10pt5", index: index, alreadyOwned: owned,
+            let reference = PackOpening.draw(setID: "zsv10pt5", index: index, alreadyOwned: owned,  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
                 pity: &pity, mode: state.openingMode, using: &generator)
             try LocalAudit.require(reference == opened, "Draw/NEW/variant/order mismatch at \(offset)")
             owned.formUnion(reference.cards.filter { !$0.isSupplementalEnergy }.map(\.id))

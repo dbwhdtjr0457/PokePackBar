@@ -8,7 +8,10 @@ final class PriceSnapshotStore: @unchecked Sendable {
     static let changed = Notification.Name("PokePackBar.priceSnapshotChanged")
     struct Snapshot: Sendable { let cards: CardPrices; let packs: PackMarketPrices }
     private let lock = NSLock()
-    private var snapshot: Snapshot?
+    private var snapshot: Snapshot? { didSet { generation += 1 } }
+    private var generation = 0
+    /// 시세가 바뀔 때마다 하나씩 오른다. 시세로 계산한 값을 다시 쓸지 판단할 때 본다.
+    var currentGeneration: Int { lock.withLock { generation } }
     let url: URL
     private let bundledCards = CardPrices.loadBundled()
     private let bundledPacks = PackMarketPrices.loadBundled()
@@ -110,10 +113,21 @@ final class PriceSnapshotStore: @unchecked Sendable {
     /// Online cache is scoped by server/account; never overwrite the offline import.
     func applyOnline(_ data: Data, cacheURL: URL) throws {
         let candidate = try Self.validate(data)
-        try FileManager.default.createDirectory(at: cacheURL.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try data.write(to: cacheURL, options: .atomic)
+        try Self.cacheOnline(data, at: cacheURL)
+        installOnline(candidate)
+    }
+
+    /// 이미 검증한 온라인 시세를 적용한다. 8MB 시세 검증은 0.6초 넘게 걸려서, 호출하는 쪽이
+    /// 메인 스레드 밖에서 `validate` 를 마친 뒤 결과만 넘긴다. 적용은 지금처럼 한 번에 바꾸고 알린다.
+    func installOnline(_ candidate: Snapshot) {
         lock.withLock { snapshot = candidate }
         NotificationCenter.default.post(name: Self.changed, object: nil)
+    }
+
+    /// 검증을 마친 온라인 시세 원본을 계정별 캐시에 남긴다.
+    static func cacheOnline(_ data: Data, at cacheURL: URL) throws {
+        try FileManager.default.createDirectory(at: cacheURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: cacheURL, options: .atomic)
     }
 
     func reset() throws {

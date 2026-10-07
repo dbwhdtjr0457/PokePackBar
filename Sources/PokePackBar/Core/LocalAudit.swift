@@ -162,7 +162,7 @@ enum LocalAudit {
         var valueSquares = 0.0
         let expected = PackRecipe.forSet(setID, era: index.era(setID)).contents.gameCardCount
         for _ in 0..<count {
-            let result = PackOpening.draw(setID: setID, index: index, alreadyOwned: [],
+            let result = PackOpening.draw(setID: setID, index: index, alreadyOwned: [],  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
                 pity: &pity, mode: mode, using: &rng)
             try require(result.cards.count == expected, "Wrong card count: \(setID)")
             variants[result.variant.rawValue, default: 0] += 1
@@ -192,7 +192,7 @@ enum LocalAudit {
             var pity = 0
             var seen: Set<String> = []
             for _ in 0..<10_000 {
-                let result = PackOpening.draw(setID: "cel30", index: index, alreadyOwned: [],
+                let result = PackOpening.draw(setID: "cel30", index: index, alreadyOwned: [],  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
                     pity: &pity, mode: .realistic, using: &generator)
                 try require(result.cards.count == 5 && !result.variant.isGodPack, "30th physical composition failed")
                 try require(result.cards.filter { index.card($0.id)?.rarity == "Pikachu Rare" }.count == 1,
@@ -257,7 +257,7 @@ enum LocalAudit {
         try require(commits == 1 && opened.opened.cards.count == 10, "Opening is not one commit")
         var replay = PackSeedGenerator(seed: 11)
         var pity = record.pityBefore
-        let result = PackOpening.draw(setID: record.setID, index: index, alreadyOwned: [], pity: &pity,
+        let result = PackOpening.draw(setID: record.setID, index: index, alreadyOwned: [], pity: &pity,  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
                                       mode: record.mode, using: &replay)
         try require(result.cards.map { CardPrintingKey(cardID: $0.id, finish: $0.finish) } == record.printings,
                     "Seed replay differs")
@@ -370,7 +370,7 @@ enum LocalAudit {
         var samples = 0
         for set in index.sets {
             let recipe = PackRecipe.forSet(set.id, era: index.era(set.id))
-            let odds = PackOpening.packOdds(setID: set.id, index: index)
+            let odds = PackOpening.packOdds(setID: set.id, index: index)  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
             try require(abs(odds.reduce(0) { $0 + $1.probability } - 1) < 0.000001, "Odds sum: \(set.id)")
             for _ in 0..<200 {
                 var pity = PackConfig.pityThreshold
@@ -388,7 +388,7 @@ enum LocalAudit {
         for seed in 0..<100_000 {
             var rng = PackSeedGenerator(seed: UInt64(seed))
             var pity = 0
-            let result = PackOpening.draw(setID: "sv8pt5", index: index, alreadyOwned: [],
+            let result = PackOpening.draw(setID: "sv8pt5", index: index, alreadyOwned: [],  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
                                           pity: &pity, mode: .realistic, using: &rng)
             if result.variant == .prismaticEvolutionsDemigod {
                 try require(result.cards.filter { $0.tier == .specialArtRare }.count == 3, "Demi composition")
@@ -480,7 +480,7 @@ enum LocalAudit {
             let recipe = PackRecipe.forSet(set.id, era: era)
             var generator = PackSeedGenerator(seed: UInt64(offset + 1))
             var pity = 0
-            let opened = PackOpening.draw(setID: set.id, index: index, alreadyOwned: [],
+            let opened = PackOpening.draw(setID: set.id, index: index, alreadyOwned: [],  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
                 pity: &pity, mode: .realistic, using: &generator)
             try require(opened.cards.count == recipe.contents.gameCardCount,
                         "Expansion-card count mismatch: \(set.id)")
@@ -526,7 +526,7 @@ enum LocalAudit {
             var pity = 0
             var found = false
             for _ in 0..<200 {
-                let opened = PackOpening.draw(setID: setID, index: index, alreadyOwned: [],
+                let opened = PackOpening.draw(setID: setID, index: index, alreadyOwned: [],  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
                     pity: &pity, mode: .realistic, using: &generator)
                 try require(opened.cards.count == PackRecipe.forSet(setID, era: index.era(setID)).contents.gameCardCount,
                             "Reverse Energy changed pack size: \(setID)")

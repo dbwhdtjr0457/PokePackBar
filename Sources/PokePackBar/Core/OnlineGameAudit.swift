@@ -43,6 +43,12 @@ enum OnlineGameAudit {
         await second.synchronize()
         try LocalAudit.require(secondState.cards == firstState.cards && second.revision == first.revision,
                                "Second device did not receive authoritative collection")
+        // The first device built its state from command patches; the second fetched it whole.
+        let canonical = JSONEncoder()
+        canonical.outputFormatting = .sortedKeys
+        try LocalAudit.require(try canonical.encode(firstState) == canonical.encode(secondState),
+                               "State built from command patches differs from the full server state")
+        try LocalAudit.require(first.appliedStatePatches > 0, "Commands never used state patches")
 
         // Persist a request, commit it through HTTP, then deliberately discard
         // its response as if the app had terminated before receiving it.
@@ -156,7 +162,16 @@ enum OnlineGameAudit {
             "offered": [["printing": offered, "quantity": 2]], "requested": [["printing": requested, "quantity": 1]]])
         try LocalAudit.require(first.reservedPrintings[offered] == 2, "Reservation snapshot not applied")
         let tradeID = (trade["result"] as? [String: Any])?.string("id") ?? ""
+        // The recipient learns about the offer from the menu bar summary, then answers it.
+        await buyer.refreshNotificationSummary()
+        if let summary = buyer.notificationSummary {
+            try LocalAudit.require(summary.incoming_trades == 1, "Trade offer missing from the notification summary")
+        }
         _ = try await mutate(buyer, "trades", ["action": "trade_accept", "target_id": tradeID, "target_version": 0])
+        await buyer.refreshNotificationSummary()
+        if let summary = buyer.notificationSummary {
+            try LocalAudit.require(summary.incoming_trades == 0, "Accepted trade still counted as pending")
+        }
         await first.synchronize()
         try LocalAudit.require(first.reservedPrintings.isEmpty, "Completed trade retained reservation")
         let listing = try await mutate(buyer, "market/listings", ["action": "listing_create", "printing": offered, "quantity": 1, "unit_tokens": 123])

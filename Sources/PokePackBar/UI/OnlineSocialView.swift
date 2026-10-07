@@ -4,6 +4,7 @@ import SwiftUI
 /// 친구 — 내 프로필, 친구, 위시리스트, 바인더, 서버에 있는 내 카드.
 ///
 /// 서버 경로와 보내는 값은 그대로 두고, 화면만 그림과 쉬운 말로 바꿨다.
+@MainActor
 struct OnlineSocialView: View {
     @Bindable var model: OnlineHubModel
     @State private var nickname = ""
@@ -18,22 +19,51 @@ struct OnlineSocialView: View {
     @State private var preview: PrintingSelection?
     @State private var copied = false
 
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
-                profile
-                friends
-                wishlist
-                binder
-                inventory
+    /// 친구 탭의 하위 화면. 프로필 설정부터 내 카드까지 한 페이지에 이어 두니 길어서
+    /// 원하는 칸을 찾으려면 계속 내려야 했다. 마켓처럼 위에서 고른다.
+    enum Page: String, CaseIterable, Identifiable {
+        case friends, wishlist, binder, cards, profile
+        var id: String { rawValue }
+        @MainActor var title: String {
+            switch self {
+            case .friends: OnlineText.l.friendsTitle
+            case .wishlist: OnlineText.l.wishlistTitle
+            case .binder: OnlineText.l.binderTitle
+            case .cards: OnlineText.l.myCardsTitle
+            case .profile: OnlineText.l.myProfileTitle
             }
-            .padding(.bottom, 12)
+        }
+    }
+    @State private var page: Page = .friends
+
+    var body: some View {
+        let incoming = model.items("friends").filter { $0.string("status") == "pending" && $0.bool("incoming") }.count
+        VStack(alignment: .leading, spacing: 16) {
+            Picker("", selection: $page) {
+                ForEach(Page.allCases) { option in
+                    Text(option == .friends && incoming > 0 ? "\(option.title) \(incoming)" : option.title).tag(option)
+                }
+            }
+            .pickerStyle(.segmented).labelsHidden().fixedSize()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 30) {
+                    switch page {
+                    case .friends: friends
+                    case .wishlist: wishlist
+                    case .binder: binder
+                    case .cards: inventory
+                    case .profile: profile
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 12)
+            }
         }
         .onAppear { loadDraft() }
         .onChange(of: model.generation) { loadDraft() }
         .sheet(item: $preview) { OnlinePrintingDetail(printing: $0.id) }
         .sheet(isPresented: $addingWish) {
-            OnlineCatalogueSearch(title: "위시리스트에 추가", actionTitle: "추가하기", allowsAnyFinish: true, maxQuantity: 1000) { cardID, finish, target in
+            OnlineCatalogueSearch(title: OnlineText.l.addToWishlist, actionTitle: OnlineText.l.addConfirm, allowsAnyFinish: true, maxQuantity: 1000) { cardID, finish, target in
                 var wishes = currentWishes
                 wishes.append(["card_id": cardID, "finish": finish.map { $0.rawValue as Any } ?? NSNull(), "target": target])
                 act("wishlist", ["action": "wishlist", "wishes": wishes])
@@ -52,33 +82,33 @@ struct OnlineSocialView: View {
     // MARK: 내 프로필
 
     private var profile: some View {
-        OnlineSection(title: "내 프로필", subtitle: "잔액, 사용량, 개봉 기록은 친구에게 보이지 않아요.") {
+        OnlineSection(title: OnlineText.l.myProfileTitle, subtitle: OnlineText.l.profilePrivacyNote) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
-                    Text("닉네임").font(Typography.labelSemibold).frame(width: 64, alignment: .leading)
-                    TextField("친구에게 보일 이름", text: $nickname).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
-                    Button("저장") { saveProfile() }
+                    Text(OnlineText.l.nicknameLabel).font(Typography.labelSemibold).frame(width: 64, alignment: .leading)
+                    TextField(OnlineText.l.nicknamePlaceholder, text: $nickname).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
+                    Button(OnlineText.l.saveAction) { saveProfile() }
                         .disabled(!model.canWrite || nickname.isEmpty || nickname == model.profile.string("nickname"))
                 }
                 HStack(spacing: 10) {
-                    Text("친구 코드").font(Typography.labelSemibold).frame(width: 64, alignment: .leading)
+                    Text(OnlineText.l.friendCodeLabel).font(Typography.labelSemibold).frame(width: 64, alignment: .leading)
                     Text(model.profile.string("friend_code"))
                         .font(.system(size: 15, weight: .medium, design: .monospaced)).textSelection(.enabled)
-                    Button(copied ? "복사했어요" : "복사") {
+                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction) {
                         NSPasteboard.general.clearContents()
                         NSPasteboard.general.setString(model.profile.string("friend_code"), forType: .string)
                         copied = true
                     }
                     .disabled(model.profile.string("friend_code").isEmpty)
-                    Button("새 코드 받기") { act("profile", ["action": "rotate_code"]) }
+                    Button(OnlineText.l.newFriendCode) { act("profile", ["action": "rotate_code"]) }
                         .buttonStyle(.borderless).disabled(!model.canWrite)
-                        .help("예전 코드로는 더 이상 친구 신청을 받을 수 없어요.")
+                        .help(OnlineText.l.newFriendCodeHelp)
                 }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("친구에게 보여 줄 것").font(Typography.labelSemibold)
-                    Toggle("내 컬렉션", isOn: $collectionPublic)
-                    Toggle("위시리스트", isOn: $wishlistPublic)
-                    Toggle("바인더", isOn: $binderPublic)
+                    Text(OnlineText.l.showToFriends).font(Typography.labelSemibold)
+                    Toggle(OnlineText.l.myCollectionToggle, isOn: $collectionPublic)
+                    Toggle(OnlineText.l.wishlistTitle, isOn: $wishlistPublic)
+                    Toggle(OnlineText.l.binderTitle, isOn: $binderPublic)
                 }
                 .onChange(of: collectionPublic) { if draftLoaded { saveProfile() } }
                 .onChange(of: wishlistPublic) { if draftLoaded { saveProfile() } }
@@ -94,51 +124,63 @@ struct OnlineSocialView: View {
         let incoming = items.filter { $0.string("status") == "pending" && $0.bool("incoming") }
         let outgoing = items.filter { $0.string("status") == "pending" && !$0.bool("incoming") }
         let accepted = items.filter { $0.string("status") == "accepted" }
-        return OnlineSection(title: "친구") {
+        return OnlineSection(title: OnlineText.l.friendsTitle) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
-                    TextField("친구 코드 입력", text: $code).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
+                    TextField(OnlineText.l.enterFriendCode, text: $code).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
                         .onSubmit(sendRequest)
-                    Button("친구 신청", action: sendRequest).disabled(!model.canWrite || code.isEmpty)
+                    Button(OnlineText.l.sendFriendRequest, action: sendRequest).disabled(!model.canWrite || code.isEmpty)
+                }
+                // 친구를 맺으려면 내 코드도 건네야 한다. 프로필 탭까지 가지 않게 여기에도 둔다.
+                HStack(spacing: 8) {
+                    Text(OnlineText.l.myFriendCode).font(Typography.label).foregroundStyle(.secondary)
+                    Text(model.profile.string("friend_code"))
+                        .font(.system(size: 14, weight: .medium, design: .monospaced)).textSelection(.enabled)
+                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction) {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(model.profile.string("friend_code"), forType: .string)
+                        copied = true
+                    }
+                    .buttonStyle(.link).font(Typography.label)
                 }
                 ForEach(incoming, id: \.onlineID) { item in
-                    friendRow(item, note: "나에게 친구 신청을 보냈어요") {
-                        Button("거절") { friendAction("friend_reject", item) }
-                        Button("수락") { friendAction("friend_accept", item) }.buttonStyle(.borderedProminent)
+                    friendRow(item, note: OnlineText.l.sentYouRequest) {
+                        Button(OnlineText.l.declineAction) { friendAction("friend_reject", item) }
+                        Button(OnlineText.l.acceptShort) { friendAction("friend_accept", item) }.buttonStyle(.borderedProminent)
                     }
                 }
                 ForEach(accepted, id: \.onlineID) { item in
                     friendRow(item, note: nil) {
-                        Button("바인더 보기") {
+                        Button(OnlineText.l.viewBinder) {
                             model.documents["friend"] = nil; model.documents["friendInventory"] = nil
                             model.selectedFriend = item.string("public_id")
                             visitingFriend = item.string("public_id")
                             Task { await model.refresh(full: false) }
                         }
                         Menu {
-                            Button("친구 끊기") { friendAction("friend_remove", item) }
-                            Button("차단하기", role: .destructive) { act("friends", ["action": "block", "target_id": item.string("public_id")]) }
+                            Button(OnlineText.l.unfriend) { friendAction("friend_remove", item) }
+                            Button(OnlineText.l.blockUser, role: .destructive) { act("friends", ["action": "block", "target_id": item.string("public_id")]) }
                         } label: { Image(systemName: "ellipsis") }
                         .menuStyle(.borderlessButton).fixedSize()
                     }
                 }
                 ForEach(outgoing, id: \.onlineID) { item in
-                    friendRow(item, note: "수락을 기다리는 중") {
-                        Button("신청 취소") { friendAction("friend_remove", item) }
+                    friendRow(item, note: OnlineText.l.awaitingAcceptance) {
+                        Button(OnlineText.l.cancelRequest) { friendAction("friend_remove", item) }
                     }
                 }
                 if items.isEmpty {
-                    Text("친구 코드를 받아 신청해 보세요. 상대가 수락하면 서로 바인더를 보고 교환할 수 있어요.")
+                    Text(OnlineText.l.friendsEmptyHint)
                         .font(Typography.label).foregroundStyle(.secondary)
                 }
                 let blocks = model.items("blocks")
                 if !blocks.isEmpty {
-                    DisclosureGroup("차단한 사용자 \(blocks.count)명") {
+                    DisclosureGroup(OnlineText.l.blockedUsers(blocks.count)) {
                         ForEach(blocks, id: \.onlineID) { item in
                             HStack {
                                 Text(item.string("nickname"))
                                 Spacer()
-                                Button("차단 풀기") { act("friends", ["action": "unblock", "target_id": item.string("public_id")]) }
+                                Button(OnlineText.l.unblock) { act("friends", ["action": "unblock", "target_id": item.string("public_id")]) }
                                     .disabled(!model.canWrite)
                             }
                         }
@@ -173,22 +215,21 @@ struct OnlineSocialView: View {
 
     private var wishlist: some View {
         let wishes = model.profile["wishlist"] as? [[String: Any]] ?? []
-        return OnlineSection(title: "위시리스트", subtitle: "갖고 싶은 카드를 적어 두면 마켓에 올라왔을 때 알려 드리고, 교환 상대도 찾아 드려요.") {
-            Button { addingWish = true } label: { Label("카드 추가", systemImage: "plus") }
+        return OnlineSection(title: OnlineText.l.wishlistTitle, subtitle: OnlineText.l.wishlistNote) {
+            Button { addingWish = true } label: { Label(OnlineText.l.addCard, systemImage: "plus") }
                 .disabled(!model.canWrite)
         } content: {
             if wishes.isEmpty {
-                Text("아직 적어 둔 카드가 없어요.").font(Typography.label).foregroundStyle(.secondary)
+                Text(OnlineText.l.wishlistEmpty).font(Typography.label).foregroundStyle(.secondary)
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 14)], alignment: .leading, spacing: 16) {
                     ForEach(Array(wishes.enumerated()), id: \.offset) { position, wish in
                         let finish = wish.string("finish")
                         OnlineCardTile(cardID: wish.string("card_id"), finish: finish, width: 104,
-                                       badge: wish.int("missing") == 0 ? ("다 모았어요", .green) : nil) {
-                            Text(finish.isEmpty ? "어떤 판형이든, \(wish.int("owned"))/\(wish.int("target"))장"
-                                                : "\(wish.int("owned"))/\(wish.int("target"))장")
+                                       badge: wish.int("missing") == 0 ? (OnlineText.l.collectedAll, .green) : nil) {
+                            Text(OnlineText.l.wishProgress(owned: wish.int("owned"), target: wish.int("target"), anyFinish: finish.isEmpty))
                                 .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit()
-                            Button("빼기") {
+                            Button(OnlineText.l.removeCard) {
                                 let next = currentWishes.enumerated().filter { $0.offset != position }.map(\.element)
                                 act("wishlist", ["action": "wishlist", "wishes": next])
                             }
@@ -204,13 +245,13 @@ struct OnlineSocialView: View {
 
     private var binder: some View {
         let keys = model.profile["binder"] as? [String] ?? []
-        return OnlineSection(title: "내 바인더", subtitle: "친구에게 자랑할 카드를 최대 \(BinderEditorSheet.capacity)장까지 꽂아 두세요.") {
-            Button { editingBinder = true } label: { Label("카드 고르기", systemImage: "rectangle.stack.badge.plus") }
+        return OnlineSection(title: OnlineText.l.myBinder, subtitle: OnlineText.l.binderNote(BinderEditorSheet.capacity)) {
+            Button { editingBinder = true } label: { Label(OnlineText.l.chooseCards, systemImage: "rectangle.stack.badge.plus") }
                 .buttonStyle(.borderedProminent)
                 .disabled(!model.canWrite)
         } content: {
             if keys.isEmpty {
-                Text("아직 꽂은 카드가 없어요. 「카드 고르기」에서 시세 높은 카드부터 골라 한 번에 꽂을 수 있어요.")
+                Text(OnlineText.l.binderEmptyHint)
                     .font(Typography.label).foregroundStyle(.secondary)
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 14)], alignment: .leading, spacing: 16) {
@@ -221,13 +262,20 @@ struct OnlineSocialView: View {
                                 Button { var next = keys; next.swapAt(i, i - 1); act("binder", ["action": "binder", "binder": next]) } label: {
                                     Image(systemName: "arrow.left")
                                 }
-                                .help("앞으로").disabled(!model.canWrite || i == 0)
-                                Button("빼기") { var next = keys; next.remove(at: i); act("binder", ["action": "binder", "binder": next]) }
+                                .help(OnlineText.l.moveEarlier).disabled(!model.canWrite || i == 0)
+                                Button(OnlineText.l.removeCard) { var next = keys; next.remove(at: i); act("binder", ["action": "binder", "binder": next]) }
                                     .disabled(!model.canWrite)
                             }
                             .buttonStyle(.borderless).font(Typography.caption)
                         }
                         .onTapGesture { preview = PrintingSelection(id: key) }
+                        // 끌어다 다른 카드 위에 놓으면 그 자리로 옮기고 바로 저장한다.
+                        .draggable(key)
+                        .dropDestination(for: String.self) { items, _ in
+                            guard model.canWrite, let moving = items.first, moving != key else { return false }
+                            act("binder", ["action": "binder", "binder": BinderOrder.moving(moving, onto: key, in: keys)])
+                            return true
+                        }
                     }
                 }
             }
@@ -239,13 +287,13 @@ struct OnlineSocialView: View {
     private var inventory: some View {
         let binderKeys = model.profile["binder"] as? [String] ?? []
         let items = model.items("inventory")
-        return OnlineSection(title: "내 카드", subtitle: "판매나 교환에 걸려 있는 카드는 그 거래가 끝날 때까지 쓸 수 없어요.") {
-            TextField("이름으로 찾기", text: $model.search)
+        return OnlineSection(title: OnlineText.l.myCardsTitle, subtitle: OnlineText.l.myCardsNote) {
+            TextField(OnlineText.l.searchByName, text: $model.search)
                 .textFieldStyle(.roundedBorder).frame(width: 220)
                 .onSubmit { model.offset = 0; Task { await model.refresh(full: false) } }
         } content: {
             if items.isEmpty {
-                Text(model.search.isEmpty ? "서버에 올라간 카드가 아직 없어요." : "맞는 카드가 없어요.")
+                Text(model.search.isEmpty ? OnlineText.l.noServerCards : OnlineText.l.noMatchingCardsSentence)
                     .font(Typography.label).foregroundStyle(.secondary)
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 14)], alignment: .leading, spacing: 16) {
@@ -253,12 +301,12 @@ struct OnlineSocialView: View {
                         let key = item.string("printing")
                         let printing = CardPrintingKey(storageKey: key)
                         OnlineCardTile(cardID: printing.cardID, finish: printing.finish.rawValue, width: 104) {
-                            Text(item.int("reserved") > 0 ? "\(item.int("quantity"))장, \(item.int("reserved"))장 거래 중" : "\(item.int("quantity"))장")
+                            Text(item.int("reserved") > 0 ? OnlineText.l.reservedCount(quantity: item.int("quantity"), reserved: item.int("reserved")) : OnlineText.l.cardsCount(item.int("quantity")))
                                 .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit()
                             if binderKeys.contains(key) {
-                                Text("바인더에 있어요").font(Typography.caption).foregroundStyle(.secondary)
+                                Text(OnlineText.l.inBinder).font(Typography.caption).foregroundStyle(.secondary)
                             } else {
-                                Button("바인더에 꽂기") { act("binder", ["action": "binder", "binder": binderKeys + [key]]) }
+                                Button(OnlineText.l.putInBinder) { act("binder", ["action": "binder", "binder": binderKeys + [key]]) }
                                     .buttonStyle(.borderless).font(Typography.caption)
                                     .disabled(!model.canWrite || binderKeys.count >= BinderEditorSheet.capacity)
                             }
@@ -323,6 +371,9 @@ struct BinderEditorSheet: View {
     private let onSave: ([String]) -> Void
     @State private var picked: [String]
     @State private var query = ""
+    /// 끌어다 놓을 자리. 놓일 곳을 테두리로 보여 준다.
+    @State private var dropTarget: String?
+    @State private var appliedQuery = ""
     @Environment(\.dismiss) private var dismiss
 
     init(wallet: WalletStore, current: [String], onSave: @escaping ([String]) -> Void) {
@@ -345,11 +396,10 @@ struct BinderEditorSheet: View {
     }
 
     private var visible: [Entry] {
-        let needle = DexCardSearch.normalized(query)
+        let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return entries }
         return entries.filter {
-            DexCardSearch.normalized(OnlineText.cardName($0.cardID)).contains(needle)
-                || DexCardSearch.normalized(CardIndex.shared?.card($0.cardID)?.name ?? "").contains(needle)
+            DexCardSearch.names(cardID: $0.cardID).contains { $0.contains(needle) }
         }
     }
 
@@ -358,12 +408,12 @@ struct BinderEditorSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("바인더 고르기").font(Typography.heading)
-                    Text("시세 높은 카드부터 보여요. 누르면 담기고, 다시 누르면 빠져요.")
+                    Text(OnlineText.l.chooseBinder).font(Typography.heading)
+                    Text(OnlineText.l.binderEditorNote)
                         .font(Typography.label).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Text("\(picked.count)/\(Self.capacity)장").font(Typography.bodySemibold).monospacedDigit()
+                Text(OnlineText.l.binderFill(picked.count, Self.capacity)).font(Typography.bodySemibold).monospacedDigit()
             }
             if !picked.isEmpty {
                 ScrollView(.horizontal) {
@@ -372,14 +422,24 @@ struct BinderEditorSheet: View {
                             Button { toggle(key) } label: {
                                 CardImageView(cardID: CardPrintingKey(storageKey: key).cardID, width: 50)
                                     .overlay(alignment: .topTrailing) {
-                                        Image(systemName: "xmark.circle.fill")
+                                        Image(systemName: "minus.circle.fill")
                                             .font(.system(size: 15))
                                             .foregroundStyle(.white, .black.opacity(0.55))
                                             .padding(2)
                                     }
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .strokeBorder(Color.accentColor, lineWidth: dropTarget == key ? 2 : 0)
+                                    }
                             }
                             .buttonStyle(.plain)
-                            .help("\(OnlineText.cardName(CardPrintingKey(storageKey: key).cardID)) 빼기")
+                            .help(OnlineText.l.binderSlotHelp(OnlineText.cardName(CardPrintingKey(storageKey: key).cardID)))
+                            .draggable(key)
+                            .dropDestination(for: String.self) { items, _ in
+                                guard let moving = items.first else { return false }
+                                picked = BinderOrder.moving(moving, onto: key, in: picked)
+                                return true
+                            } isTargeted: { dropTarget = $0 ? key : (dropTarget == key ? nil : dropTarget) }
                         }
                     }
                     .padding(.vertical, 2)
@@ -387,24 +447,25 @@ struct BinderEditorSheet: View {
                 .frame(height: 76)
             }
             HStack(spacing: 10) {
-                TextField("이름으로 찾기", text: $query).textFieldStyle(.roundedBorder)
-                Button { fillTop() } label: { Label("비싼 카드로 채우기", systemImage: "sparkles") }
+                TextField(OnlineText.l.searchByName, text: $query).textFieldStyle(.roundedBorder)
+                    .debouncedSearch(query, into: $appliedQuery)
+                Button { fillTop() } label: { Label(OnlineText.l.fillWithTop, systemImage: "sparkles") }
                     .disabled(picked.count >= Self.capacity)
-                    .help("남은 칸을 시세 높은 카드로 채워요. 같은 카드는 한 장만 넣어요.")
-                Button("모두 빼기") { picked = [] }.disabled(picked.isEmpty)
+                    .help(OnlineText.l.fillWithTopHelp)
+                Button(OnlineText.l.removeAll) { picked = [] }.disabled(picked.isEmpty)
             }
             ScrollView {
                 if visible.isEmpty {
                     OnlineEmptyState(icon: "rectangle.stack",
-                                     title: entries.isEmpty ? "가진 카드가 없어요" : "맞는 카드가 없어요",
-                                     message: entries.isEmpty ? "팩을 열면 여기에 나타나요." : nil)
+                                     title: entries.isEmpty ? OnlineText.l.noCardsOwned : OnlineText.l.noMatchingCards,
+                                     message: entries.isEmpty ? OnlineText.l.openPacksToSee : nil)
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
                         ForEach(visible) { entry in
                             let selected = chosen.contains(entry.key)
                             Button { toggle(entry.key) } label: {
                                 OnlineCardTile(cardID: entry.cardID, finish: entry.finish.rawValue, width: 92) {
-                                    Text(entry.won.map(OnlineText.wonText) ?? "시세 없음")
+                                    Text(entry.won.map(OnlineText.wonText) ?? OnlineText.l.noMarketPrice)
                                         .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit()
                                 }
                                 .padding(5)
@@ -435,9 +496,9 @@ struct BinderEditorSheet: View {
             }
             .frame(height: 380)
             HStack {
-                Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(OnlineText.l.cancel) { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
-                Button("바인더에 저장") { dismiss(); onSave(picked) }
+                Button(OnlineText.l.saveToBinder) { dismiss(); onSave(picked) }
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
                     .disabled(picked == initial)
@@ -466,6 +527,7 @@ struct BinderEditorSheet: View {
 }
 
 /// 친구의 공개 바인더, 위시리스트, 컬렉션.
+@MainActor
 private struct FriendBinderSheet: View {
     @Bindable var model: OnlineHubModel
     @State private var preview: PrintingSelection?
@@ -475,9 +537,9 @@ private struct FriendBinderSheet: View {
         let friend = model.documents["friend"] ?? [:]
         VStack(alignment: .leading, spacing: 18) {
             HStack {
-                Text(friend.isEmpty ? "불러오는 중…" : "\(friend.string("nickname"))님의 카드").font(Typography.heading)
+                Text(friend.isEmpty ? OnlineText.l.loading : OnlineText.l.friendsCards(friend.string("nickname"))).font(Typography.heading)
                 Spacer()
-                Button("닫기") {
+                Button(OnlineText.l.close) {
                     model.selectedFriend = ""; model.documents["friend"] = nil; model.documents["friendInventory"] = nil
                     dismiss()
                 }
@@ -485,26 +547,26 @@ private struct FriendBinderSheet: View {
             }
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    OnlineSection(title: "바인더") {
+                    OnlineSection(title: OnlineText.l.binderTitle) {
                         let keys = friend["binder"] as? [String] ?? []
                         if !friend.bool("binder_public") {
-                            Text("바인더를 공개하지 않았어요.").font(Typography.label).foregroundStyle(.secondary)
+                            Text(OnlineText.l.binderPrivate).font(Typography.label).foregroundStyle(.secondary)
                         } else if keys.isEmpty {
-                            Text("바인더가 비어 있어요.").font(Typography.label).foregroundStyle(.secondary)
+                            Text(OnlineText.l.binderEmpty).font(Typography.label).foregroundStyle(.secondary)
                         } else {
                             grid(keys.map { ($0, nil) })
                         }
                     }
                     if friend.bool("wishlist_public") {
-                        OnlineSection(title: "갖고 싶어 하는 카드") {
+                        OnlineSection(title: OnlineText.l.cardsTheyWant) {
                             let wishes = friend["wishlist"] as? [[String: Any]] ?? []
                             if wishes.isEmpty {
-                                Text("적어 둔 카드가 없어요.").font(Typography.label).foregroundStyle(.secondary)
+                                Text(OnlineText.l.noWishes).font(Typography.label).foregroundStyle(.secondary)
                             } else {
                                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 12)], alignment: .leading, spacing: 14) {
                                     ForEach(Array(wishes.enumerated()), id: \.offset) { _, wish in
                                         OnlineCardTile(cardID: wish.string("card_id"), finish: wish.string("finish"), width: 96) {
-                                            Text("\(wish.int("missing"))장 더 필요").font(Typography.caption).foregroundStyle(.secondary)
+                                            Text(OnlineText.l.moreNeeded(wish.int("missing"))).font(Typography.caption).foregroundStyle(.secondary)
                                         }
                                     }
                                 }
@@ -512,14 +574,14 @@ private struct FriendBinderSheet: View {
                         }
                     }
                     if friend.bool("collection_public") {
-                        OnlineSection(title: "컬렉션") {
+                        OnlineSection(title: OnlineText.l.collectionTitle) {
                             let items = model.items("friendInventory")
                             if items.isEmpty {
-                                Button("컬렉션 보기") { load(offset: 0) }
+                                Button(OnlineText.l.viewCollection) { load(offset: 0) }
                             } else {
-                                grid(items.map { ($0.string("printing"), "\($0.int("quantity"))장") })
+                                grid(items.map { ($0.string("printing"), OnlineText.l.cardsCount($0.int("quantity"))) })
                                 if let next = model.documents["friendInventory"]?["next_offset"] as? Int {
-                                    Button("더 보기") { load(offset: next) }.frame(maxWidth: .infinity)
+                                    Button(OnlineText.l.showMore) { load(offset: next) }.frame(maxWidth: .infinity)
                                 }
                             }
                         }
@@ -554,6 +616,7 @@ private struct FriendBinderSheet: View {
 
 struct PrintingSelection: Identifiable { let id: String }
 
+@MainActor
 struct OnlinePrintingArt: View {
     let printing: String
     var width: CGFloat = 180
@@ -567,6 +630,7 @@ struct OnlinePrintingArt: View {
 }
 
 /// 카드 한 장을 크게. 판형과 참고 시세를 원화로 보여 준다.
+@MainActor
 struct OnlinePrintingDetail: View {
     let printing: String
     @Environment(\.dismiss) private var dismiss
@@ -578,15 +642,29 @@ struct OnlinePrintingDetail: View {
                 .font(Typography.label).foregroundStyle(.secondary)
             OnlinePrintingArt(printing: printing, width: 260)
             if let won = OnlineText.referenceWon(printing), let prices = CardPrices.shared {
-                Text("참고 시세 \(OnlineText.wonText(won))").font(Typography.bodySemibold).monospacedDigit()
-                Text("\(prices.sourceDate(cardID: key.cardID, finish: key.finish)) 기준")
+                Text(OnlineText.l.referencePrice(OnlineText.wonText(won))).font(Typography.bodySemibold).monospacedDigit()
+                Text(OnlineText.l.asOf(prices.sourceDate(cardID: key.cardID, finish: key.finish)))
                     .font(Typography.caption).foregroundStyle(.secondary)
                 if let source = prices.sourceURL(cardID: key.cardID, finish: key.finish), let url = URL(string: source), ["https", "http"].contains(url.scheme) {
-                    Link("가격 출처 보기", destination: url).font(Typography.label)
+                    Link(OnlineText.l.viewPriceSource, destination: url).font(Typography.label)
                 }
             }
-            Button("닫기") { dismiss() }.keyboardShortcut(.cancelAction).padding(.top, 4)
+            Button(OnlineText.l.close) { dismiss() }.keyboardShortcut(.cancelAction).padding(.top, 4)
         }
         .padding(24)
+    }
+}
+
+/// 바인더 순서 바꾸기. 오른쪽으로 끌면 놓은 카드 뒤에, 왼쪽으로 끌면 앞에 둔다.
+enum BinderOrder {
+    static func moving(_ key: String, onto target: String, in order: [String]) -> [String] {
+        guard key != target, let from = order.firstIndex(of: key), let to = order.firstIndex(of: target) else {
+            return order
+        }
+        var next = order
+        next.remove(at: from)
+        let landing = next.firstIndex(of: target) ?? next.endIndex
+        next.insert(key, at: from < to ? landing + 1 : landing)
+        return next
     }
 }

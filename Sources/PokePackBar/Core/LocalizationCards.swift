@@ -21,6 +21,8 @@ extension L {
     var collectionValue: String { t("컬렉션 가치", "Collection value", "コレクション価値",
                                     "Valor de la colección", "Valeur de la collection",
                                     "Valor da coleção") }
+    /// 카드 상세 값 표에서 시세의 출처 줄 라벨.
+    var priceBasis: String { t("기준", "Basis", "基準", "Base", "Base", "Base") }
     var marketHoldings: String { t("보유", "Holdings", "保有", "En posesión", "En stock", "Em posse") }
     func cardFinishName(_ finish: CardFinish) -> String {
         switch finish {
@@ -290,6 +292,10 @@ extension L {
     var sortByNumber: String { t("번호순", "By number", "番号順", "Por número", "Par numéro", "Por número") }
     /// 컬렉션 보기 줄의 좁은 검색창에 들어가므로 짧게 둔다.
     var searchCards: String { t("검색", "Search", "検索", "Buscar", "Chercher", "Buscar") }
+    var collectionSearchPlaceholder: String {
+        t("이름이나 카드 번호로 찾기", "Search by name or card number", "名前かカード番号で検索",
+          "Buscar por nombre o número", "Chercher par nom ou numéro", "Buscar por nome ou número")
+    }
 
     // MARK: 통계
     var statsTab: String { t("통계", "Stats", "統計", "Stats", "Stats", "Stats") }

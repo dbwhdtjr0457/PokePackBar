@@ -47,7 +47,7 @@ struct CardSpotlightView: View {
             // The shop has an extra picker above this view. Measure its real
             // height instead of assuming that every caller gets the whole tab.
             let informationHeight: CGFloat = ownedCount > 1 ? 182 : 160
-            let dexHeight: CGFloat = relatedDexes.isEmpty ? 0 : 42
+            let dexHeight: CGFloat = relatedDexes.shown.isEmpty ? 0 : 42
             let saleHeight: CGFloat = wallet.spareCount(cardID) == 0 ? 0 : (confirmingSale ? 110 : 36)
             let cardWidth = min(230, max(150,
                 ((geometry.size.height - informationHeight - dexHeight - saleHeight) * 0.717).rounded(.down)))
@@ -230,33 +230,47 @@ struct CardSpotlightView: View {
         if let prices = CardPrices.shared,
            let unit = displayedFinish.flatMap({ prices.price(cardID: cardID, finish: $0) })
                 ?? prices.price(cardID) {
-            // 개별 가격은 자르지 않는다. 중복 보유 총액은 별도 행을 쓴다.
-            HStack(spacing: 5) {
-                if let displayedFinish {
-                    finishPicker(l, displayedFinish)
-                    Text("·").font(Typography.label).foregroundStyle(.tertiary)
-                }
-                Text(prices.formattedWithKRW(unit, language: wallet.language))
-                    .font(Typography.bodySemibold).monospacedDigit()
-                if ownedCount <= 1 { acquiredTag(l) }
-            }
-            .lineLimit(1).minimumScaleFactor(0.75)
-            .help(l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
-            if ownedCount > 1 {
-                HStack(spacing: 5) {
-                    let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
-                        $0 + MarketEconomy.usd($1.printing, prices: prices) * Double($1.count)
+            // 값 정보는 라벨을 붙인 작은 표로 둔다. 가운뎃점으로만 이어 붙인 줄은 시세, 보유 총액,
+            // 시세의 출처가 한눈에 구분되지 않았다. 줄 수는 예전과 같아 카드 크기 계산은 그대로다.
+            Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 3) {
+                // 개별 가격은 자르지 않는다. 중복 보유 총액은 별도 행을 쓴다.
+                GridRow {
+                    infoLabel(l.marketPrice)
+                    HStack(spacing: 5) {
+                        if let displayedFinish { finishPicker(l, displayedFinish) }
+                        Text(prices.formattedWithKRW(unit, language: wallet.language))
+                            .font(Typography.bodySemibold).monospacedDigit()
+                        if ownedCount <= 1 { acquiredTag(l) }
                     }
-                    Text(l.marketHoldings).font(.system(size: 14)).foregroundStyle(.tertiary)
-                    Text(WonFormatter.money(prices.krw(total), language: wallet.language))
-                        .font(Typography.bodySemibold).monospacedDigit()
-                        .foregroundStyle(Color.accentColor)
-                    acquiredTag(l)
+                    .lineLimit(1).minimumScaleFactor(0.75)
+                    .help(l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
                 }
-                .lineLimit(1).minimumScaleFactor(0.75)
+                if ownedCount > 1 {
+                    GridRow {
+                        infoLabel(l.marketHoldings)
+                        HStack(spacing: 5) {
+                            let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
+                                $0 + MarketEconomy.usd($1.printing, prices: prices) * Double($1.count)
+                            }
+                            Text(WonFormatter.money(prices.krw(total), language: wallet.language))
+                                .font(Typography.bodySemibold).monospacedDigit()
+                                .foregroundStyle(Color.accentColor)
+                            acquiredTag(l)
+                        }
+                        .lineLimit(1).minimumScaleFactor(0.75)
+                    }
+                }
+                GridRow {
+                    infoLabel(l.priceBasis)
+                    priceBasisLabel(l, prices).lineLimit(1).minimumScaleFactor(0.8)
+                }
             }
-            priceBasisLabel(l, prices)
         }
+    }
+
+    private func infoLabel(_ text: String) -> some View {
+        Text(text).font(.system(size: 14)).foregroundStyle(.tertiary)
+            .gridColumnAlignment(.trailing)
     }
 
     private func priceBasisLabel(_ l: L, _ prices: CardPrices) -> some View {
@@ -290,7 +304,7 @@ struct CardSpotlightView: View {
                 HStack(spacing: 3) {
                     Text(l.cardFinishName(displayedFinish))
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
+                        .imageScale(.small)
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.secondary)
@@ -334,9 +348,10 @@ struct CardSpotlightView: View {
 
     /// 이 카드가 들어가는 도감. 눌러서 그 도감으로 넘어간다.
     ///
-    /// 미완성인 것만, 완성에 가까운 것부터 최대 두 개까지 보여준다 — 한 카드가 여덧 도감에
-    /// 걸리는 경우가 있어 전부 늘어놓으면 카드보다 배지가 커진다.
-    private var relatedDexes: [DexStatus] {
+    /// 미완성인 것만, 완성에 가까운 것부터 두 개까지 배지로 보여준다 — 한 카드가 여덟 도감에
+    /// 걸리는 경우가 있어 전부 늘어놓으면 카드보다 배지가 커진다. 나머지는 「+N」으로 알리고
+    /// 누르면 도감 탭을 이 카드 이름으로 검색해 전부 보여 준다.
+    private var relatedDexes: (shown: [DexStatus], hidden: Int) {
         let claimed = wallet.claimedDexIDs
         let owned: (String) -> Bool = { wallet.cardCount($0) > 0 }
         var out: [DexStatus] = []
@@ -347,12 +362,13 @@ struct CardSpotlightView: View {
             if a.missing.count != b.missing.count { return a.missing.count < b.missing.count }
             return a.dex.id < b.dex.id
         }
-        return Array(out.prefix(2))
+        return (Array(out.prefix(2)), max(0, out.count - 2))
     }
 
     @ViewBuilder
     private func dexBadges(_ l: L) -> some View {
-        let related = relatedDexes
+        let related = relatedDexes.shown
+        let hidden = relatedDexes.hidden
         if !related.isEmpty {
             VStack(spacing: 3) {
                 Text(l.dexCardBelongsTo)
@@ -375,6 +391,19 @@ struct CardSpotlightView: View {
                             .background(Color.secondary.opacity(0.12), in: Capsule())
                         }
                         .buttonStyle(.plain)
+                    }
+                    if hidden > 0 {
+                        Button {
+                            nav.dexSearch = name
+                            nav.tab = .dex
+                        } label: {
+                            Text(verbatim: "+\(hidden)")
+                                .font(.system(size: 14, weight: .semibold)).monospacedDigit()
+                                .padding(.horizontal, 7).padding(.vertical, 2.5)
+                                .background(Color.secondary.opacity(0.12), in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .help(wallet.l.showAllDexes(related.count + hidden))
                     }
                 }
             }

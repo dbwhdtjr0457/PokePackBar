@@ -338,13 +338,13 @@ enum HoloVisualDiagnostics {
         var errorDescription: String? {
             switch self {
             case .malformedArguments:
-                "사용법: --render-holo-preview <card-id> <output-directory> [finish] [--compact] [--actual-size] [--flat-card] [--sweep]"
+                "Usage: --render-holo-preview <card-id> <output-directory> [finish] [--compact] [--actual-size] [--flat-card] [--sweep]"
             case .unknownCard(let cardID):
-                "카드 인덱스에 없는 ID: \(cardID)"
+                "Not in the card index: \(cardID)"
             case .missingImage(let cardID):
-                "카드 이미지를 읽을 수 없음: \(cardID)"
+                "Could not read the card image: \(cardID)"
             case .renderingFailed(let name):
-                "PNG 렌더링 실패: \(name)"
+                "PNG rendering failed: \(name)"
             }
         }
     }

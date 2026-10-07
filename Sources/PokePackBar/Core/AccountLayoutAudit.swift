@@ -5,6 +5,9 @@ import SwiftUI
     static func run(output: URL) async throws {
         try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         let wallet = WalletStore(fileURL: output.appendingPathComponent("fixture.json"))
+        wallet.setLanguage(LayoutAuditOptions.language)
+        LayoutAuditOptions.applyAppearance()
+        OnlineText.wallet = wallet
         let suite = "ppb-account-layout-\(UUID().uuidString)"
         guard let defaults = UserDefaults(suiteName: suite) else { return }
         defer { defaults.removePersistentDomain(forName: suite) }
@@ -33,31 +36,46 @@ import SwiftUI
                                  "minimumWidth": controller.view.fittingSize.width])
             window.close()
         }
-        for section in ["일반", "표시", "데이터", "고급"] {
-            try await capture("settings-\(section)", view: AnyView(SettingsView(onClose: {}, initialSection: section)
+        for section in SettingsView.SettingsTab.allCases {
+            try await capture("settings-\(section.rawValue)", view: AnyView(SettingsView(onClose: {}, initialSection: section)
                 .environment(usage).environment(wallet).environment(updater)),
                 size: NSSize(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight))
         }
-        for section in ["연결", "보안", "기기", "서버 상태"] {
+        for section in OnlineSettingsView.AccountTab.allCases {
             for width in [CGFloat(560), CGFloat(760)] {
-                try await capture("account-\(section)-\(Int(width))", view: AnyView(OnlineSettingsView(wallet: wallet,
-                    auditSection: section, signedIn: section != "연결").padding(24)
+                try await capture("account-\(section.rawValue)-\(Int(width))", view: AnyView(OnlineSettingsView(wallet: wallet,
+                    auditSection: section, signedIn: section != .connection).padding(24)
                     .preferredColorScheme(width == 760 ? .light : .dark)), size: NSSize(width: width, height: 560))
             }
         }
-        try await capture("account-recover", view: AnyView(OnlineSettingsView(wallet: wallet, auditSection: "보안").padding(24)),
+        try await capture("account-recover", view: AnyView(OnlineSettingsView(wallet: wallet, auditSection: .security).padding(24)),
                           size: NSSize(width: 560, height: 500))
         try JSONSerialization.data(withJSONObject: measurements, options: [.prettyPrinted, .sortedKeys])
             .write(to: output.appendingPathComponent("measurements.json"))
         for _ in 0..<2 {
             AccountWindow.shared.show(wallet: wallet, auditing: true)
             try await Task.sleep(for: .milliseconds(100))
-            guard let window = NSApp.windows.first(where: { $0.title == "PPB 계정 및 서버" && $0.isVisible }) else {
+            guard let window = NSApp.windows.first(where: { $0.title == OnlineText.l.accountWindowTitle && $0.isVisible }) else {
                 throw LocalAudit.Failure(description: "Account window did not reopen")
             }
             window.close()
             try LocalAudit.require(window.contentView == nil, "Hidden account form retained")
         }
         print("PASS account layout: 4 compact settings sections, 9 native states, light/dark, close/reopen and form disposal; isolated fixtures, no login")
+    }
+}
+
+extension AccountLayoutAudit {
+    /// 계정 창 레이아웃 검사용 기기 목록. 실제 사용처럼 긴 한국어 이름을 넣어 줄바꿈을 본다.
+    static var fixtureDevices: [AccountDevice] {
+        [AccountDevice(device_id: UUID().uuidString, name: "집에서 사용하는 MacBook Pro", last_login: 1_790_738_400, current: true),
+         AccountDevice(device_id: UUID().uuidString, name: "여행용 Mac", last_login: nil, current: false)]
+    }
+
+    static var fixtureJobs: [AccountJob] {
+        [AccountJob(name: "backup", state: "ok", last_success: 1_790_738_400, next_run: nil, error: nil),
+         AccountJob(name: "prices", state: "failed", last_success: nil, next_run: nil,
+                    error: "시세를 갱신하지 못했어요. 마지막 정상 가격을 유지하고 1시간 뒤에 다시 해요."),
+         AccountJob(name: "expiry", state: "running", last_success: nil, next_run: nil, error: nil)]
     }
 }

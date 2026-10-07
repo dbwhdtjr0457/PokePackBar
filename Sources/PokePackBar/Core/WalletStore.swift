@@ -95,7 +95,10 @@ extension CardSale {
 @Observable
 final class WalletStore {
 
-    private(set) var state = GameState()
+    private(set) var state = GameState() { didSet { collectionValueCache = nil } }
+    /// 머리글의 컬렉션 가치. 계산에 10ms 안팎이 들어 팝오버를 그릴 때마다 다시 하지 않고,
+    /// 상태나 시세가 바뀐 뒤 처음 읽을 때만 계산한다.
+    @ObservationIgnored private var collectionValueCache: (prices: Int, value: Double)?
     private let fileURL: URL
     @ObservationIgnored private var durableState = GameState()
     @ObservationIgnored private var transactionDepth = 0
@@ -140,12 +143,14 @@ final class WalletStore {
         self.ladder = ladder ?? bundled?.ladder ?? []
         if invalidConnection {
             savingBlocked = true
-            persistenceError = "온라인 연결 설정이 잘못되었습니다. 설정을 수정하고 재시작하세요. 로컬 세이브는 변경하지 않았습니다."
+            persistenceError = L(AppLanguage.current).invalidOnlineConfig
         } else { load() }
         refreshPerks()
+        if fileURL == nil { AppLanguage.current = language }
         session?.onSnapshot = { [weak self] state in
             guard let self else { return }
             self.state = state
+            AppLanguage.current = self.language
             self.protectedPrintings = self.remote?.reservedPrintings.mapValues { $0 + 1 } ?? [:]
             self.durableState = state
             self.refreshPerks()
@@ -192,6 +197,7 @@ final class WalletStore {
         state.openingMode = mode; save()
     }
     func setLanguage(_ lang: AppLanguage) {
+        AppLanguage.current = lang
         if isOnline {
             UserDefaults.standard.set(lang.rawValue, forKey: "ppb.online.language")
             state.language = lang; durableState.language = lang
@@ -740,6 +746,17 @@ final class WalletStore {
     ///
     /// "몇 장 모았나" 만으로는 컬렉션이 자라는 감각이 약하다. 1999년 커먼 한 장이 최신
     /// SR 보다 비싸기도 해서, 장수와 값이 서로 다른 이야기를 한다.
+    /// 지금 시세로 매긴 컬렉션 가치. 같은 상태와 시세면 지난 계산을 그대로 쓴다.
+    func currentCollectionValueUSD() -> Double {
+        let generation = PriceSnapshotStore.shared.currentGeneration
+        // 캐시를 써도 상태를 읽은 것으로 남겨 상태가 바뀌면 화면이 다시 그려지게 한다.
+        _ = state.cards.isEmpty
+        if let cached = collectionValueCache, cached.prices == generation { return cached.value }
+        let value = collectionValueUSD(prices: CardPrices.shared)
+        collectionValueCache = (generation, value)
+        return value
+    }
+
     func collectionValueUSD(prices: CardPrices? = CardPrices.shared) -> Double {
         // `ownedPrintings(cardID:)` 를 카드마다 호출하면 그 안에서 `printingCards` 전체를
         // 다시 훑는다. 카드 2,103종·판형 812개인 실제 세이브에서는 카드를 한 장 넘길
@@ -1430,14 +1447,14 @@ final class WalletStore {
         guard let remote else { return buyPacks(setID: setID, count: count, total: total) }
         guard count > 0 else { return false }
         guard let index = CardIndex.shared, total == packTotal(setID: setID, count: count, index: index) else {
-            persistenceError = "팩 가격이 바뀌었습니다. 구매 수량과 금액을 다시 확인하세요."
+            persistenceError = l.packPriceChanged
             return false
         }
         var remaining = count
         while remaining > 0 {
             let chunk = min(remaining, 1000)
             guard await remote.execute(.init(kind: "buy_packs", set_id: setID, count: chunk), expectedTokens: packTotal(setID: setID, count: chunk, index: index)) != nil else {
-                persistenceError = "\(count - remaining)/\(count)팩 구매 완료. \(remote.error ?? "요청 실패")"
+                persistenceError = l.packsBoughtPartly(count - remaining, of: count, reason: remote.error)
                 return false
             }
             remaining -= chunk
@@ -1513,16 +1530,16 @@ final class WalletStore {
                 do {
                     let reply = try await remote.advanceOpeningJob(job)
                     openingJob = reply.job
-                    guard let opened = reply.packs else { throw RemoteGameSession.Failure(message: "개봉 결과가 없습니다.") }
+                    guard let opened = reply.packs else { throw RemoteGameSession.Failure(message: l.noOpeningResult) }
                     batch = opened
                 } catch {
-                    persistenceError = "\(packs.count)/\(count)팩 확인. 온라인 창의 ‘작업’에서 이어갈 수 있습니다. \(error.localizedDescription)"
+                    persistenceError = l.openingJobPaused(packs.count, of: count, reason: error.localizedDescription)
                     break
                 }
             } else {
                 guard let result = await remote.execute(.init(kind: "open_packs", set_id: setID, count: chunk)),
                       let opened = result.packs else {
-                    persistenceError = "\(packs.count)/\(count)팩 개봉 확인. \(remote.error ?? "결과 확인 실패")"
+                    persistenceError = l.packsOpenedPartly(packs.count, of: count, reason: remote.error)
                     break
                 }
                 batch = opened
@@ -1683,7 +1700,7 @@ final class WalletStore {
         if isOnline {
             state = durableState
             refreshPerks()
-            persistenceError = "온라인 자원은 서버 명령으로만 변경할 수 있습니다."
+            persistenceError = l.onlineChangesThroughServer
             return false
         }
         if transactionDepth > 0 { return !savingBlocked }

@@ -6,6 +6,9 @@ import SwiftUI
     static func run(output: URL) async throws {
         try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
         let wallet = WalletStore(fileURL: output.appendingPathComponent("fixture.json"))
+        wallet.setLanguage(LayoutAuditOptions.language)
+        LayoutAuditOptions.applyAppearance()
+        OnlineText.wallet = wallet
         let model = OnlineHubModel(wallet: wallet)
         let card = CardIndex.shared?.cards.first?.id ?? "base1-1"
         let profile: [String: Any] = ["nickname": "레이아웃 검사", "friend_code": "0123456789ABCDEF", "wishlist": [], "binder": []]
@@ -18,7 +21,7 @@ import SwiftUI
                       "variants": ["standard": 1199, "god": 1], "variant_rates": ["god": 1.0 / 1200]]
         model.openingJobs = [RemoteGameSession.OpeningJob(id: UUID().uuidString, set_id: "sv8pt5", total: 2500, completed: 1000,
             version: 1, status: "active", opening_mode: "realistic")]
-        for section in ["통계", "컬렉션·친구", "교환", "마켓", "작업", "알림"] {
+        for section in [OnlineHubModel.Tab.stats, .social, .trades, .market, .jobs, .alerts] {
             model.section = section
             for width in [CGFloat(740), CGFloat(980)] {
                 let size = NSSize(width: width, height: width == 740 ? 540 : 720)
@@ -33,7 +36,7 @@ import SwiftUI
                 guard let bitmap = host.view.bitmapImageRepForCachingDisplay(in: host.view.bounds) else { throw LocalAudit.Failure(description: "Online view capture failed") }
                 host.view.cacheDisplay(in: host.view.bounds, to: bitmap)
                 guard let png = bitmap.representation(using: .png, properties: [:]) else { throw LocalAudit.Failure(description: "Online view encoding failed") }
-                try png.write(to: output.appendingPathComponent("\(section)-\(Int(width)).png"))
+                try png.write(to: output.appendingPathComponent("\(section.rawValue)-\(Int(width)).png"))
                 window.close()
             }
         }
@@ -41,10 +44,10 @@ import SwiftUI
         model.clearPrivateData()
         try LocalAudit.require(model.documents.isEmpty && model.data.isEmpty, "Logout retained online data")
         OnlineWindow.shared.show(wallet: wallet)
-        NSApp.windows.first(where: { $0.title == "PokePackBar 온라인" })?.close()
+        NSApp.windows.first(where: { $0.title == OnlineText.l.onlineWindowTitle })?.close()
         OnlineWindow.shared.show(wallet: wallet)
-        try LocalAudit.require(NSApp.windows.contains(where: { $0.title == "PokePackBar 온라인" && $0.isVisible }), "Online window did not reopen")
-        NSApp.windows.first(where: { $0.title == "PokePackBar 온라인" })?.close()
+        try LocalAudit.require(NSApp.windows.contains(where: { $0.title == OnlineText.l.onlineWindowTitle && $0.isVisible }), "Online window did not reopen")
+        NSApp.windows.first(where: { $0.title == OnlineText.l.onlineWindowTitle })?.close()
         print("PASS online native layout: six sections at 740×540 and 980×720, logout cache clearing, close/reopen")
     }
 }
