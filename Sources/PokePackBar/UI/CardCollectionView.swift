@@ -72,6 +72,7 @@ struct CardCollectionView: View {
         let sorted = index.currentCardsByValue
         shelf.pool.reserveCapacity(sorted.count)
         let needle = DexCardSearch.normalized(query)
+        var missing: [CardEntry] = []
         for entry in sorted {
             guard selectedSet == nil || entry.setID == selectedSet,
                   selectedTier == nil || entry.tier == selectedTier,
@@ -83,12 +84,13 @@ struct CardCollectionView: View {
                 if count > 1 { shelf.hasSpares = true }
                 shelf.visible.append(entry)
             } else if !ownedOnly {
-                shelf.visible.append(entry)
+                missing.append(entry)
             }
         }
-        // 보유 필터가 꺼져 있으면 값 순서를 지켜야 하므로 pool 을 그대로 쓴다 —
-        // 위 루프는 가진 것을 먼저 넣지 않는다(순서대로 담는다).
-        if !ownedOnly { shelf.visible = shelf.pool }
+        // 가격순은 가진 카드를 먼저 세운다. 섞어 두면 아직 없는 비싼 카드가 맨 위를 차지해
+        // 내 컬렉션을 보러 와서 남의 카드부터 보게 된다. 없는 카드는 그 뒤에 값 순으로 남는다.
+        // 다른 정렬은 들어온 자리를 지켜야 해서(번호순은 바인더처럼 이어져야 한다) pool 그대로.
+        if !ownedOnly { shelf.visible = sort == .value ? shelf.visible + missing : shelf.pool }
         shelf.visible = ordered(shelf.visible)
         return shelf
     }
@@ -179,6 +181,7 @@ struct CardCollectionView: View {
             } else {
                 // 카드가 없어도 격자를 보여준다. 무엇을 모을 수 있는지 알아야
                 // 어느 팩을 살지 정할 수 있다 — 빈 화면은 그 판단을 막는다.
+                searchField
                 filterBar(shelf)
                 viewOptions(shelf)
                 if showTiers { tierSummary }
@@ -190,6 +193,31 @@ struct CardCollectionView: View {
         .onChange(of: ownedOnly) { selectedCard = nil }
         .onChange(of: sort) { selectedCard = nil }
         .onChange(of: query) { selectedCard = nil }
+    }
+
+    /// 검색은 한 줄을 통째로 쓴다. 보기 줄 사이에 끼워 두니 글자 두 개 폭으로 줄어
+    /// 무엇을 쳤는지도 보이지 않았다. 모양은 도감 탭 검색창과 같다.
+    private var searchField: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            TextField(wallet.l.collectionSearchPlaceholder, text: $query)
+                .textFieldStyle(.plain)
+                .font(Typography.body)
+                .accessibilityLabel(wallet.l.searchCards)
+            if !query.isEmpty {
+                Button { query = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(wallet.l.dexCardSearchClear)
+            }
+        }
+        .padding(.horizontal, 9).padding(.vertical, 6)
+        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
+        .onExitCommand { query = "" }
     }
 
     /// 보이는 카드가 없을 때의 안내. 격자 자리는 그대로 두고 위에 한 줄만 얹는다.
@@ -278,14 +306,6 @@ struct CardCollectionView: View {
                 .toggleStyle(.checkbox)
                 .font(Typography.label)
                 .fixedSize()
-            // 남는 폭만 쓴다. 오른쪽 버튼들은 한 줄로 고정하고 검색창이 줄어든다 —
-            // 반대로 두면 「한번에 판매」와 「등급별 수집 현황」이 두 줄로 꺾인다.
-            TextField(l.searchCards, text: $query)
-                .textFieldStyle(.roundedBorder)
-                .controlSize(.regular)
-                .font(Typography.label)
-                .frame(minWidth: 56, maxWidth: 110)
-                .layoutPriority(-1)
             Spacer(minLength: 4)
             // 잡카드 정리로 들어가는 문. 중복이 없으면 누를 것이 없으므로 감춘다.
             if shelf.hasSpares {

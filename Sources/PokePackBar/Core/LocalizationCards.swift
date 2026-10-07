@@ -290,6 +290,10 @@ extension L {
     var sortByNumber: String { t("번호순", "By number", "番号順", "Por número", "Par numéro", "Por número") }
     /// 컬렉션 보기 줄의 좁은 검색창에 들어가므로 짧게 둔다.
     var searchCards: String { t("검색", "Search", "検索", "Buscar", "Chercher", "Buscar") }
+    var collectionSearchPlaceholder: String {
+        t("이름이나 카드 번호로 찾기", "Search by name or card number", "名前かカード番号で検索",
+          "Buscar por nombre o número", "Chercher par nom ou numéro", "Buscar por nome ou número")
+    }
 
     // MARK: 통계
     var statsTab: String { t("통계", "Stats", "統計", "Stats", "Stats", "Stats") }
