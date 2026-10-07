@@ -65,6 +65,7 @@ enum RevealValueEmphasis {
     static let color = Color(red: 1.0, green: 0.80, blue: 0.32)
     static let chaseFloorUSD = 3.0
     private static var chaseThresholds: [String: Double] = [:]
+    private static var chasePriceDigest: String?
 
     static func emphasis(for card: PulledCard,
                          prices: CardPrices? = CardPrices.shared) -> RevealEmphasis {
@@ -82,6 +83,10 @@ enum RevealValueEmphasis {
 
     /// 세트별로 한 번만 센다. 팩을 열 때마다 세트 전체 시세를 다시 훑지 않는다.
     private static func chaseThreshold(for cardID: String, prices: CardPrices) -> Double? {
+        if chasePriceDigest != prices.snapshotDigest {
+            chaseThresholds.removeAll(keepingCapacity: true)
+            chasePriceDigest = prices.snapshotDigest
+        }
         guard let index = CardIndex.shared else { return nil }
         let setID = index.card(cardID)?.setID ?? String(cardID.prefix { $0 != "-" })
         if let cached = chaseThresholds[setID] { return cached }
