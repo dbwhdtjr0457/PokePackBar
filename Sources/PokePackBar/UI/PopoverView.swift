@@ -3,7 +3,7 @@ import SwiftUI
 
 /// 기획에 필요한 탭만 둔다 — 팩을 사고, 팩을 열고, 카드를 본다.
 /// 잔액과 사용량은 탭이 아니라 상단 고정 영역이 맡는다.
-enum PopoverTab: CaseIterable { case shop, packs, collection, dex }
+enum PopoverTab: CaseIterable { case shop, packs, collection, dex, stats }
 
 /// 팝오버 치수의 단일 소스. 자식이 쓸 수 있는 폭을 알아야 할 때 이 값을 쓴다 — 넘치는 자식이
 /// 부모 폭을 부풀리므로 GeometryReader 로 재면 순환한다.
@@ -409,6 +409,7 @@ struct PopoverView: View {
             .init(value: PopoverTab.packs, label: packsLabel),
             .init(value: PopoverTab.collection, label: l.collection),
             .init(value: PopoverTab.dex, label: l.dexTab),
+            .init(value: PopoverTab.stats, label: l.statsTab),
         ], selection: $nav.tab)
     }
 
@@ -425,6 +426,7 @@ struct PopoverView: View {
         case .packs:      PacksView(wallet: wallet, index: Self.index)
         case .collection: CardCollectionView(wallet: wallet, index: Self.index)
         case .dex:        DexView(wallet: wallet, index: Self.index)
+        case .stats:      StatsView(wallet: wallet, index: Self.index)
         }
     }
 }
