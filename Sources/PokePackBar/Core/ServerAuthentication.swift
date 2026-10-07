@@ -93,6 +93,70 @@ final class ServerTransport: NSObject, URLSessionTaskDelegate, @unchecked Sendab
                     completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
         completionHandler(nil)
     }
+
+    /// 모든 서버 요청이 지나는 길. 요청마다 번호(X-Request-ID)를 붙여 보내고, 서버는 같은 번호로
+    /// 자기 로그를 남기고 응답에 돌려준다. 실패하거나 오래 걸린 요청은 앱 로그에 방법, 경로,
+    /// 상태, 서버가 준 이유, 걸린 시간, 번호만 적는다. 토큰, 헤더, 본문, 쿼리는 적지 않는다.
+    static func exchange(_ request: URLRequest) async throws -> ServerExchange {
+        var request = request
+        let requestID = UUID().uuidString.lowercased()
+        request.setValue(requestID, forHTTPHeaderField: "X-Request-ID")
+        let method = request.httpMethod ?? "GET"
+        let path = request.url?.path ?? ""
+        let started = Date()
+        func elapsed() -> Int { Int(Date().timeIntervalSince(started) * 1000) }
+        do {
+            let (data, response) = try await session.data(for: request)
+            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+            let failed = !(200..<300).contains(status) && status != 304
+            if failed || elapsed() > slowMilliseconds {
+                let reason = failed ? " \(detail(data) ?? "")" : " slow"
+                AppLog.write("[server] \(method) \(path) -> \(status)\(reason), \(elapsed())ms, request \(requestID)")
+            }
+            return ServerExchange(data: data, status: status, requestID: requestID)
+        } catch let error as URLError where error.code == .cancelled {
+            throw error
+        } catch {
+            let code = (error as NSError).code
+            AppLog.write("[server] \(method) \(path) -> no response (\((error as NSError).domain) \(code)) \(error.localizedDescription), \(elapsed())ms, request \(requestID)")
+            throw ServerUnreachable(reason: error.localizedDescription, requestID: requestID, status: nil)
+        }
+    }
+
+    /// 이보다 오래 걸리면 성공해도 적는다. 타임아웃 직전까지 끌다 실패하는 요청을 미리 본다.
+    private static let slowMilliseconds = 8_000
+
+    /// 서버가 준 이유. 서버의 detail 은 정해진 코드 문자열이고, 입력 검증 실패는 필드 위치만 온다.
+    static func detail(_ data: Data) -> String? {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
+        if let text = object["detail"] as? String { return String(text.prefix(120)) }
+        if let entries = object["detail"] as? [[String: Any]] {
+            let fields = entries.compactMap { ($0["loc"] as? [Any])?.map { "\($0)" }.joined(separator: ".") }
+            return String("invalid \(fields.joined(separator: ", "))".prefix(120))
+        }
+        return nil
+    }
+}
+
+/// 서버와 주고받은 한 번. `requestID` 는 서버 로그의 request_id 와 같다.
+struct ServerExchange: Sendable {
+    let data: Data
+    let status: Int
+    let requestID: String
+}
+
+/// 화면에 실패를 보여 줄 때 서버 로그와 맞춰 볼 수 있는 실패. 응답이 없었으면 `status` 가 비어 있다.
+protocol ServerTraceable: Error {
+    var requestID: String? { get }
+    var status: Int? { get }
+}
+
+/// 서버까지 닿지 못했거나 응답을 받지 못한 요청.
+struct ServerUnreachable: LocalizedError, ServerTraceable {
+    let reason: String
+    let requestID: String?
+    let status: Int?
+    var errorDescription: String? { "서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요. (\(reason))" }
 }
 
 @MainActor
@@ -156,11 +220,10 @@ enum ServerAuthentication {
         if let gateway = ProcessInfo.processInfo.environment["PPB_GATEWAY_KEY"], !gateway.isEmpty {
             request.setValue(gateway, forHTTPHeaderField: "X-PPB-Gateway-Key")
         }
-        let (data, response) = try await ServerTransport.session.data(for: request)
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        let reply = try await ServerTransport.exchange(request)
+        let data = reply.data, status = reply.status
         guard (200..<300).contains(status) else {
-            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            let detail = object?["detail"] as? String
+            let detail = ServerTransport.detail(data)
             let message: String
             switch detail {
             case "invalid_credentials": message = "이메일 또는 비밀번호가 올바르지 않습니다."
@@ -172,7 +235,7 @@ enum ServerAuthentication {
             case "too_many_attempts": message = "시도가 너무 많습니다. 1분 후 다시 시도하세요."
             default:
                 message = status == 422 ? "이메일 형식과 비밀번호 길이(가입 시 \(ServerPasswordPolicy.lengthDescription))를 확인하세요."
-                    : "인증 서버 응답 \(status). 주소와 서버 상태를 확인하세요."
+                    : "인증 서버 응답 \(status). 주소와 서버 상태를 확인하세요. (요청 번호 \(reply.requestID.prefix(8)))"
             }
             throw ServerLoginFailure(message: message)
         }

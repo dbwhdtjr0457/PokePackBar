@@ -41,10 +41,10 @@ import SwiftUI
         model.clearPrivateData()
         try LocalAudit.require(model.documents.isEmpty && model.data.isEmpty, "Logout retained online data")
         OnlineWindow.shared.show(wallet: wallet)
-        NSApp.windows.first(where: { $0.title == "PPB 온라인" })?.close()
+        NSApp.windows.first(where: { $0.title == "PokePackBar 온라인" })?.close()
         OnlineWindow.shared.show(wallet: wallet)
-        try LocalAudit.require(NSApp.windows.contains(where: { $0.title == "PPB 온라인" && $0.isVisible }), "Online window did not reopen")
-        NSApp.windows.first(where: { $0.title == "PPB 온라인" })?.close()
+        try LocalAudit.require(NSApp.windows.contains(where: { $0.title == "PokePackBar 온라인" && $0.isVisible }), "Online window did not reopen")
+        NSApp.windows.first(where: { $0.title == "PokePackBar 온라인" })?.close()
         print("PASS online native layout: six sections at 740×540 and 980×720, logout cache clearing, close/reopen")
     }
 }
