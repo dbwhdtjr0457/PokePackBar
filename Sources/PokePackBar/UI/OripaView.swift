@@ -256,7 +256,10 @@ struct OripaView: View {
                     .foregroundStyle(affordable ? .primary : .secondary)
                     .lineLimit(1).minimumScaleFactor(0.75)
             }
-            Button(l.oripaGoPull) { picking = true; picked = nil; confirmingReplace = false }
+            // 꺼진 이유를 버튼 문구로 알린다. 상점의 팩 사기 버튼과 같은 방식이다.
+            Button(wallet.availableTokens >= price ? l.oripaGoPull : l.notEnoughTokens) {
+                picking = true; picked = nil; confirmingReplace = false
+            }
                 .buttonStyle(.borderedProminent)
                 .font(Typography.button)
                 .disabled(!affordable)
@@ -359,7 +362,7 @@ struct OripaPickingScreen: View {
                     .foregroundStyle(canPull ? .primary : .secondary)
                     .lineLimit(1).minimumScaleFactor(0.75)
             }
-            Button(l.oripaPull, action: onPull)
+            Button(wallet.availableTokens >= price ? l.oripaPull : l.notEnoughTokens, action: onPull)
                 .buttonStyle(.borderedProminent)
                 .font(Typography.button)
                 .disabled(!canPull)
