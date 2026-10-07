@@ -305,6 +305,7 @@ struct RevealPop: View {
 }
 
 /// 진행도를 animatableData 로 받아 매 프레임 다시 그린다.
+@MainActor
 private struct RevealPopCanvas: View, @MainActor Animatable {
     var progress: Double
     let seedSource: String
