@@ -15,6 +15,8 @@ struct OnlineSettingsView: View {
     @State private var newPasswordConfirmation = ""
     @State private var linkCode = ""
     @State private var registering = false
+    /// 저장한 설정이 다시 시작해야 적용된다. 메시지 옆에 「지금 다시 시작」을 보여 준다.
+    @State private var needsRestart = false
     @State private var linking = false
     @State private var busy = false
     @State private var credential: ServerCredential?
@@ -51,7 +53,7 @@ struct OnlineSettingsView: View {
                 last_login: 1_790_738_400, current: true), AccountDevice(device_id: UUID().uuidString,
                 name: "여행용 Mac", last_login: nil, current: false)])
             _jobs = State(initialValue: [AccountJob(name: "backup", state: "ok", last_success: 1_790_738_400, next_run: nil, error: nil),
-                AccountJob(name: "prices", state: "failed", last_success: nil, next_run: nil, error: "시세 갱신 실패: 마지막 정상 가격을 유지하고 1시간 후 재시도합니다."),
+                AccountJob(name: "prices", state: "failed", last_success: nil, next_run: nil, error: "시세를 갱신하지 못했어요. 마지막 정상 가격을 유지하고 1시간 뒤에 다시 해요."),
                 AccountJob(name: "expiry", state: "running", last_success: nil, next_run: nil, error: nil)])
         }
     }
@@ -61,7 +63,7 @@ struct OnlineSettingsView: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("계정 및 서버").font(.title2.bold())
-                    Text(credential?.email ?? "로그인하여 기기 간 컬렉션을 연결하세요")
+                    Text(credential?.email ?? "로그인하면 여러 Mac에서 같은 컬렉션을 써요")
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -81,8 +83,15 @@ struct OnlineSettingsView: View {
             }.disabled(busy)
             if let message {
                 Divider()
-                Text(message).font(.callout).textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(alignment: .firstTextBaseline) {
+                    Text(message).font(.callout).textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    // 예전에는 「앱을 완전히 종료하고 다시 실행하세요」라고만 적었다.
+                    if needsRestart {
+                        Button("지금 다시 시작") { AppRelauncher.relaunch() }
+                            .buttonStyle(.borderedProminent)
+                    }
+                }
             }
         }
         .task { if !auditing { loadSavedLogin() } }
@@ -93,17 +102,17 @@ struct OnlineSettingsView: View {
             Button("연결 해제", role: .destructive) {
                 if let device = confirmingRevoke { revoke(device) }; confirmingRevoke = nil
             }
-        } message: { Text("해당 기기는 다시 로그인해야 합니다. 카드와 잔액은 삭제되지 않습니다.") }
+        } message: { Text("그 기기는 다시 로그인해야 해요. 카드와 잔액은 지워지지 않아요.") }
         .alert("새 복구 코드를 발급할까요?", isPresented: $confirmingRecovery) {
             Button("취소", role: .cancel) { }
             Button("발급") { issueRecovery() }
-        } message: { Text("기존 코드는 즉시 무효화됩니다. 새 코드는 한 번만 표시되므로 비밀번호 관리자에 보관하세요.") }
+        } message: { Text("기존 코드는 바로 못 쓰게 돼요. 새 코드는 한 번만 보여 주니 비밀번호 관리자에 보관해 주세요.") }
         .alert("토큰 적립 방식을 바꿀까요?", isPresented: Binding(
             get: { confirmingTokenPolicy != nil }, set: { if !$0 { confirmingTokenPolicy = nil } })) {
             Button("취소", role: .cancel) { confirmingTokenPolicy = nil }
             Button("변경") { if let single = confirmingTokenPolicy { updateTokenPolicy(single: single) }; confirmingTokenPolicy = nil }
         } message: {
-            Text("변경 후 각 기기의 첫 사용량 보고는 기준값만 저장하고 지급하지 않습니다. 이후 증가분부터 새 정책으로 적립합니다. 기존 잔액은 변하지 않습니다.")
+            Text("바꾼 뒤 각 기기의 첫 사용량 보고는 기준값으로만 저장하고 적립하지 않아요. 그 뒤에 늘어난 만큼부터 새 방식으로 적립해요. 지금 잔액은 그대로예요.")
         }
     }
 
@@ -111,18 +120,18 @@ struct OnlineSettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             GroupBox("사용 모드") {
                 VStack(alignment: .leading, spacing: 10) {
-            Toggle("서버에서 자원 관리 (재시작 후 적용)", isOn: $enabled)
+            Toggle("온라인 모드 (카드와 잔액을 서버 계정에 저장)", isOn: $enabled)
                         .disabled(actionsDisabled || unconfirmed)
-                    Text("로컬 세이브와 온라인 계정은 분리됩니다. 모드를 바꿔도 자동 이전하거나 합치지 않습니다.")
+                    Text("이 Mac의 로컬 세이브와 온라인 계정은 따로 있어요. 모드를 바꿔도 옮기거나 합치지 않아요.")
                         .font(.caption).foregroundStyle(.secondary)
-                    Button("모드 설정 저장") { saveConfiguration() }.disabled(actionsDisabled)
+                    Button("저장하고 적용") { saveConfiguration() }.disabled(actionsDisabled)
                 }.padding(6).frame(maxWidth: .infinity, alignment: .leading)
             }
             DisclosureGroup("서버 주소 · 고급 연결") {
             TextField("서버 URL", text: $address).textFieldStyle(.roundedBorder)
                 .disabled(busy)
                 .onChange(of: address) { credential = nil; devices = []; jobs = []; clearSecrets() }
-                Text("같은 서버 주소를 사용해야 다른 기기와 연결됩니다. 원격 주소는 HTTPS가 필요합니다.")
+                Text("다른 기기와 같은 서버 주소를 써야 연결돼요. 원격 주소는 HTTPS여야 해요.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             if credential == nil {
@@ -131,7 +140,7 @@ struct OnlineSettingsView: View {
                 GroupBox("연결된 계정") {
                     VStack(alignment: .leading, spacing: 10) {
                         Text(credential?.email ?? "").textSelection(.enabled)
-                        Text("기기별 연결 해제와 비밀번호 변경은 위 탭에서 관리합니다.")
+                        Text("기기별 연결 해제와 비밀번호 변경은 위쪽 탭에서 할 수 있어요.")
                             .font(.caption).foregroundStyle(.secondary)
                         Button("온라인 컬렉션 열기") { OnlineWindow.shared.show(wallet: wallet) }
                         Button("로그인 갱신 / 다른 계정") { credential = nil; devices = []; jobs = []; clearSecrets() }
@@ -146,35 +155,40 @@ struct OnlineSettingsView: View {
                     Task { await remote.synchronize() }
                 }.disabled(remote.busy)
                 if let error = remote.error { Text(error).font(.caption).foregroundStyle(.orange) }
-            } else { Text("현재 실행은 로컬 모드입니다.").font(.caption).foregroundStyle(.secondary) }
+            } else { Text("지금은 로컬 모드로 실행 중이에요.").font(.caption).foregroundStyle(.secondary) }
         }
     }
 
     private var loginForm: some View {
-        GroupBox(registering ? "새 계정 가입" : "이메일 로그인") {
+        GroupBox("이메일 계정") {
             VStack(alignment: .leading, spacing: 10) {
+            // 로그인과 가입을 체크박스 하나로 오가면 지금 어느 쪽인지 놓치기 쉬웠다.
+            Picker("", selection: $registering) {
+                Text("로그인").tag(false)
+                Text("새 계정 만들기").tag(true)
+            }
+            .pickerStyle(.segmented).labelsHidden().fixedSize().disabled(busy)
             TextField("이메일", text: $email).textFieldStyle(.roundedBorder)
                 .textContentType(.username).disabled(busy)
             SecureField("비밀번호", text: $password).textFieldStyle(.roundedBorder)
                 .textContentType(.password).disabled(busy)
-            Toggle("새 계정 가입", isOn: $registering).disabled(busy)
             if registering {
                 SecureField("비밀번호 확인 (\(ServerPasswordPolicy.lengthDescription))", text: $confirmation).textFieldStyle(.roundedBorder)
                 DisclosureGroup("기존 UUID 계정 연결 (선택)") {
                     Toggle("일회용 연결 코드 사용", isOn: $linking).disabled(busy)
                     if linking {
                     SecureField("서버에서 발급한 일회용 연결 코드", text: $linkCode).textFieldStyle(.roundedBorder)
-                    Text("서버의 issue-link-code 명령으로 발급합니다. UUID만으로는 연결할 수 없으며 기존 카드·잔액은 그대로 유지됩니다.")
+                    Text("서버의 issue-link-code 명령으로 받아요. UUID만으로는 연결할 수 없고, 기존 카드와 잔액은 그대로 남아요.")
                         .font(.caption).foregroundStyle(.secondary)
                     }
                 }
             }
             HStack {
-                Button(registering ? "가입 및 연결" : "로그인") { authenticate() }
+                Button(registering ? "계정 만들고 연결" : "로그인") { authenticate() }
                     .buttonStyle(.borderedProminent)
                     .disabled(actionsDisabled || email.isEmpty || password.isEmpty)
             }
-            Text("같은 서버에서 같은 이메일로 로그인하면 다른 기기에서도 카드와 잔액을 공유합니다. 이메일 수신 인증은 하지 않으며, 기존 로컬 세이브는 자동 업로드하지 않습니다.")
+            Text("같은 서버에서 같은 이메일로 로그인하면 다른 Mac에서도 카드와 잔액을 함께 써요. 이메일 인증은 하지 않고, 이 Mac의 로컬 세이브는 올리지 않아요.")
                 .font(.caption).foregroundStyle(.secondary)
             }
             .padding(6)
@@ -194,7 +208,7 @@ struct OnlineSettingsView: View {
                 SecureField("현재 비밀번호 (변경·복구 코드 발급 시 확인)", text: $password)
                     .textFieldStyle(.roundedBorder).disabled(busy)
                 DisclosureGroup("비밀번호 변경") {
-                    Text("변경하면 모든 기기에서 로그아웃되고 기존 복구 코드도 무효화됩니다.")
+                    Text("바꾸면 모든 기기에서 로그아웃되고 기존 복구 코드도 못 쓰게 돼요.")
                         .font(.caption).foregroundStyle(.secondary)
                     SecureField("새 비밀번호 (\(ServerPasswordPolicy.lengthDescription))", text: $newPassword).textFieldStyle(.roundedBorder)
                     SecureField("새 비밀번호 확인", text: $newPasswordConfirmation).textFieldStyle(.roundedBorder)
@@ -203,21 +217,21 @@ struct OnlineSettingsView: View {
                 }
                 GroupBox("일회용 계정 복구 코드") {
                     VStack(alignment: .leading, spacing: 10) {
-                        Text(recoveryActive ? "사용 가능한 복구 코드가 있습니다." : "복구 코드를 발급해 비밀번호 분실에 대비하세요.")
-                        Text("이 코드를 아는 사람은 비밀번호를 바꿀 수 있습니다. 앱은 원문을 저장하지 않습니다. 화면을 닫으면 다시 볼 수 없습니다.")
+                        Text(recoveryActive ? "쓸 수 있는 복구 코드가 있어요." : "비밀번호를 잊을 때를 대비해 복구 코드를 받아 두세요.")
+                        Text("이 코드를 아는 사람은 비밀번호를 바꿀 수 있어요. 앱은 코드를 저장하지 않아서 화면을 닫으면 다시 볼 수 없어요.")
                             .font(.caption).foregroundStyle(.secondary)
                         Button(recoveryActive ? "복구 코드 재발급…" : "복구 코드 발급…") { confirmingRecovery = true }
                             .disabled(actionsDisabled || password.isEmpty || unconfirmed)
                         if !recoveryCode.isEmpty {
                             Text(recoveryCode).font(.system(.body, design: .monospaced)).textSelection(.enabled)
                                 .padding(10).background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
-                            Button("안전한 곳에 보관했습니다 · 숨기기") { recoveryCode = "" }
+                            Button("안전한 곳에 보관했어요, 숨기기") { recoveryCode = "" }
                         }
                     }.padding(6).frame(maxWidth: .infinity, alignment: .leading)
                 }
             } else {
                 Text("비밀번호를 잊었나요?").font(.headline)
-                Text("미리 저장한 일회용 복구 코드로 비밀번호를 재설정합니다. 코드가 없으면 서버 운영자의 재설정이 필요합니다.")
+                Text("미리 받아 둔 일회용 복구 코드로 비밀번호를 다시 정해요. 코드가 없으면 서버 운영자에게 재설정을 부탁해야 해요.")
                     .font(.callout).foregroundStyle(.secondary)
                 TextField("이메일", text: $email).textFieldStyle(.roundedBorder)
                 SecureField("저장해 둔 복구 코드", text: $recoveryInput).textFieldStyle(.roundedBorder)
@@ -231,29 +245,30 @@ struct OnlineSettingsView: View {
 
     private func saveConfiguration() {
         guard !enabled || credential != nil else {
-            message = "온라인 모드를 켜려면 먼저 로그인하세요."
+            message = "온라인 모드를 켜려면 먼저 로그인해 주세요."
             return
         }
         guard !unconfirmed, wallet.remote?.busy != true else {
-            message = "진행 중이거나 결과가 미확인인 요청을 먼저 동기화하세요."
+            message = "처리 중이거나 결과를 확인하지 못한 요청을 먼저 동기화해 주세요."
             return
         }
         let defaults = UserDefaults.standard
         defaults.set(enabled, forKey: "ppb.server.enabled")
-        message = "저장했습니다. 앱을 완전히 종료하고 다시 실행하면 적용됩니다."
+        message = "저장했어요. 앱을 다시 시작하면 적용돼요."
+        needsRestart = enabled != (wallet.remote != nil)
     }
 
     private var deviceList: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("현재 로그인한 기기").font(.headline)
-            Text("최근 로그인 시각이며 실시간 접속 상태는 아닙니다. 연결 해제 후에도 해당 기기에서 비밀번호로 다시 로그인할 수 있습니다.")
+            Text("최근 로그인 시각이고 지금 접속 중인지는 아니에요. 연결을 해제해도 그 기기에서 비밀번호로 다시 로그인할 수 있어요.")
                 .font(.caption).foregroundStyle(.secondary)
             Button("새로고침") { refreshAccount() }.disabled(busy || credential == nil)
             if credential != nil {
                 DisclosureGroup("토큰 적립 담당") {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(tokenPolicy.collector_device_id == nil ? "현재: 모든 기기의 독립 사용량 합산" : "현재: 지정한 한 기기만 적립")
-                        Text("같은 사용량을 여러 Mac에서 읽는다면 한 대만 지정하세요. 이는 적립 경로 제한이며 보고한 사용량의 진위 검증은 아닙니다.")
+                        Text("같은 사용량을 여러 Mac에서 읽는다면 한 대만 지정해 주세요. 적립 경로를 하나로 묶을 뿐, 보고한 사용량이 진짜인지 확인하지는 않아요.")
                             .font(.caption).foregroundStyle(.secondary)
                         SecureField("정책 변경 확인용 현재 비밀번호", text: $password).textFieldStyle(.roundedBorder)
                         HStack {
@@ -263,8 +278,8 @@ struct OnlineSettingsView: View {
                     }.padding(.top, 8)
                 }
             }
-            if credential == nil { Text("연결 탭에서 먼저 로그인하세요.") }
-            else if statusLoaded && devices.isEmpty { Text("활성 기기가 없습니다. 다시 로그인하세요.") }
+            if credential == nil { Text("연결 탭에서 먼저 로그인해 주세요.") }
+            else if statusLoaded && devices.isEmpty { Text("로그인된 기기가 없어요. 다시 로그인해 주세요.") }
             ForEach(devices) { device in
                 GroupBox {
                     VStack(alignment: .leading, spacing: 8) {
@@ -292,7 +307,7 @@ struct OnlineSettingsView: View {
                 Spacer()
                 Button("새로고침") { refreshAccount() }.disabled(busy || credential == nil)
             }
-            if credential == nil { Text("서버 상태를 보려면 먼저 로그인하세요.") }
+            if credential == nil { Text("서버 상태를 보려면 먼저 로그인해 주세요.") }
             ForEach(jobs) { job in
                 GroupBox {
                     VStack(alignment: .leading, spacing: 6) {
@@ -308,16 +323,16 @@ struct OnlineSettingsView: View {
                     }.padding(6).frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            Text("서버가 꺼져 있으면 자동 작업도 멈춥니다. 백업은 서버 디스크에 보관하므로 디스크 고장 대비용 외부 백업은 별도입니다.")
+            Text("서버가 꺼져 있으면 자동 작업도 멈춰요. 백업은 서버 디스크에 있어서 디스크 고장에 대비한 외부 백업은 따로 해야 해요.")
                 .font(.caption).foregroundStyle(.secondary)
             DisclosureGroup("진단 정보") {
-                Text("토큰 적립: 클라이언트 보고 신뢰 · 실제 사용량 검증 아님")
+                Text("토큰 적립: 앱이 보고한 사용량을 그대로 믿어요. 실제 사용량인지는 확인하지 않아요.")
                 ForEach(latencies.keys.sorted(), id: \.self) { key in
                     if let metric = latencies[key] {
                         Text("\(Self.latencyName(key)): P50 \(metric.p50_ms, specifier: "%.1f")ms / P95 \(metric.p95_ms, specifier: "%.1f")ms (\(metric.samples)회)")
                     }
                 }
-                Text("시간은 응답한 서버 프로세스의 최근 200회 기준입니다. 서버 재시작 시 초기화됩니다. 앱에서 느끼는 시간이 이보다 훨씬 길면 서버 처리보다 전송 구간이 느린 것입니다.")
+                Text("응답한 서버 프로세스의 최근 200회 기준이고, 서버를 다시 시작하면 처음부터 다시 재요. 앱에서 느끼는 시간이 이보다 훨씬 길면 서버 처리보다 전송 구간이 느린 거예요.")
                 if let credential { Text("계정 ID: \(credential.account_id.uuidString)").textSelection(.enabled) }
                 Text(address).textSelection(.enabled)
             }.font(.caption)
@@ -365,7 +380,7 @@ struct OnlineSettingsView: View {
 
     private func rename(_ device: AccountDevice) {
         let name = (deviceNames[device.id] ?? device.name).trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, name.unicodeScalars.count <= 80 else { message = "기기 이름은 1~80자로 입력하세요."; return }
+        guard !name.isEmpty, name.unicodeScalars.count <= 80 else { message = "기기 이름은 1~80자로 입력해 주세요."; return }
         accountAction(path: "auth/devices/\(device.id)/rename", body: ["name": name])
     }
 
@@ -393,8 +408,8 @@ struct OnlineSettingsView: View {
             do {
                 let data = try await ServerAuthentication.request(url: validatedURL(), path: "auth/recovery", body: ["password": password], credential: credential)
                 recoveryCode = try JSONDecoder().decode(AccountIssuedRecovery.self, from: data).code
-                recoveryActive = true; message = "새 복구 코드를 안전한 곳에 보관하세요. 기존 코드는 무효화됐습니다."
-            } catch { message = "\(error.localizedDescription) 응답을 받지 못했다면 다시 발급하세요. 이전 코드는 무효화될 수 있습니다." }
+                recoveryActive = true; message = "새 복구 코드를 안전한 곳에 보관해 주세요. 기존 코드는 이제 못 써요."
+            } catch { message = "\(error.localizedDescription) 응답을 받지 못했다면 다시 받아 주세요. 이전 코드는 못 쓰게 됐을 수 있어요." }
         }
     }
 
@@ -408,8 +423,8 @@ struct OnlineSettingsView: View {
                     "collector_device_id": single ? credential.device_id.uuidString as Any : NSNull()]
                 let data = try await ServerAuthentication.request(url: validatedURL(), path: "auth/token-policy", body: body, credential: credential)
                 tokenPolicy = try JSONDecoder().decode(AccountTokenPolicy.self, from: data)
-                message = "적립 정책을 변경했습니다. 첫 보고를 기준으로 이후 증가분부터 적립합니다."
-            } catch { message = "\(error.localizedDescription) 새로고침으로 현재 정책을 확인하세요." }
+                message = "적립 방식을 바꿨어요. 각 기기의 첫 보고를 기준으로, 그 뒤에 늘어난 만큼부터 적립해요."
+            } catch { message = "\(error.localizedDescription) 새로고침해서 지금 방식을 확인해 주세요." }
         }
     }
 
@@ -418,7 +433,7 @@ struct OnlineSettingsView: View {
         // The pending resource request is preserved and replayed after same-account login.
         guard !actionsDisabled else { return }
         guard ServerPasswordPolicy.accepts(newPassword), newPassword == newPasswordConfirmation else {
-            message = "8~128자의 새 비밀번호를 두 칸에 동일하게 입력하세요."; return
+            message = "8~128자의 새 비밀번호를 두 칸에 똑같이 입력해 주세요."; return
         }
         busy = true
         Task {
@@ -426,15 +441,15 @@ struct OnlineSettingsView: View {
             do {
                 _ = try await ServerAuthentication.request(url: validatedURL(), path: "auth/recover",
                     body: ["email": email, "code": recoveryInput, "new_password": newPassword])
-                section = "연결"; message = "재설정했습니다. 새 비밀번호로 로그인하고 복구 코드를 다시 발급하세요."
-            } catch { message = "\(error.localizedDescription) 응답이 유실됐다면 새 비밀번호로 로그인을 먼저 시도하세요." }
+                section = "연결"; message = "다시 정했어요. 새 비밀번호로 로그인하고 복구 코드를 다시 받아 주세요."
+            } catch { message = "\(error.localizedDescription) 응답을 받지 못했다면 새 비밀번호로 먼저 로그인해 보세요." }
         }
     }
 
     private func validatedURL() throws -> URL {
         guard let url = URL(string: address.trimmingCharacters(in: .whitespacesAndNewlines)),
               RemoteGameConfiguration.validURL(url) else {
-            throw ServerLoginFailure(message: "서버 URL을 확인하세요. 원격 서버는 HTTPS가 필요합니다.")
+            throw ServerLoginFailure(message: "서버 주소를 확인해 주세요. 원격 서버는 HTTPS여야 해요.")
         }
         return url
     }
@@ -457,10 +472,10 @@ struct OnlineSettingsView: View {
     private func authenticate() {
         guard !actionsDisabled else { return }
         if registering && (!ServerPasswordPolicy.accepts(password) || password != confirmation) {
-            message = "\(ServerPasswordPolicy.lengthDescription)의 비밀번호를 두 칸에 동일하게 입력하세요."
+            message = "\(ServerPasswordPolicy.lengthDescription)의 비밀번호를 두 칸에 똑같이 입력해 주세요."
             return
         }
-        if registering && linking && linkCode.isEmpty { message = "연결 코드가 필요합니다."; return }
+        if registering && linking && linkCode.isEmpty { message = "연결 코드가 필요해요."; return }
         busy = true
         Task {
             defer { busy = false; password = ""; confirmation = ""; linkCode = "" }
@@ -475,7 +490,7 @@ struct OnlineSettingsView: View {
                     // A new session was created but must not replace the account
                     // that owns the durable pending request.
                     _ = try? await ServerAuthentication.request(url: url, path: "auth/logout", credential: result)
-                    throw ServerLoginFailure(message: "미확인 요청이 있는 기존 계정으로 먼저 로그인해 복구하세요.")
+                    throw ServerLoginFailure(message: "확인하지 못한 요청이 있는 기존 계정으로 먼저 로그인해서 복구해 주세요.")
                 }
                 try ServerCredentialStore.save(result, configuration: config)
                 credential = result
@@ -487,8 +502,11 @@ struct OnlineSettingsView: View {
                 if let remote = wallet.remote, remote.configuration.storageKey == config.storageKey {
                     remote.forgetCredential()
                     await remote.synchronize()
-                    message = "로그인했습니다. 기존 계정 상태를 동기화했습니다."
-                } else { message = "로그인했습니다. 앱을 완전히 종료하고 다시 실행하면 이 계정에 연결됩니다." }
+                    message = "로그인했어요. 계정 상태를 동기화했어요."
+                } else {
+                    message = "로그인했어요. 앱을 다시 시작하면 이 계정에 연결돼요."
+                    needsRestart = true
+                }
             } catch { message = error.localizedDescription }
         }
     }
@@ -508,7 +526,7 @@ struct OnlineSettingsView: View {
     private func changePassword() {
         guard let credential, !actionsDisabled, !unconfirmed else { return }
         guard ServerPasswordPolicy.accepts(newPassword), newPassword == newPasswordConfirmation else {
-            message = "\(ServerPasswordPolicy.lengthDescription)의 새 비밀번호를 두 칸에 동일하게 입력하세요."; return
+            message = "\(ServerPasswordPolicy.lengthDescription)의 새 비밀번호를 두 칸에 똑같이 입력해 주세요."; return
         }
         busy = true
         Task {
@@ -517,7 +535,7 @@ struct OnlineSettingsView: View {
                 try await ServerAuthentication.changePassword(configuration: configuration(for: credential), credential: credential,
                     current: password, new: newPassword)
                 finishLogout()
-                message = "비밀번호를 변경하고 모든 기기에서 로그아웃했습니다. 새 비밀번호로 다시 로그인하세요."
+                message = "비밀번호를 바꾸고 모든 기기에서 로그아웃했어요. 새 비밀번호로 다시 로그인해 주세요."
             } catch { message = error.localizedDescription }
         }
     }
@@ -527,7 +545,7 @@ struct OnlineSettingsView: View {
         clearSecrets(); devices = []; jobs = []; recoveryActive = false
         wallet.remote?.invalidateAuthentication()
         // Keep online mode selected: logout must not silently switch wallets.
-        message = "로그아웃했습니다. 온라인 자원은 유지되며 다시 로그인하기 전까지 변경할 수 없습니다."
+        message = "로그아웃했어요. 온라인 카드와 잔액은 그대로 있고, 다시 로그인하기 전까지는 바꿀 수 없어요."
     }
 }
 
