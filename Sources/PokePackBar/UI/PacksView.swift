@@ -1104,25 +1104,49 @@ func tierColor(_ tier: CardTier) -> Color {
     case .common:         return .secondary
     case .uncommon:       return .green
     case .rare:           return .blue
-    case .promo:          return Color(red: 0.55, green: 0.60, blue: 0.70)   // 프로모
+    case .promo:          return tierInk(0.55, 0.60, 0.70)   // 프로모
     case .doubleRare:     return .indigo
     case .tripleRare:     return .purple
-    case .prismStar:      return Color(red: 0.60, green: 0.55, blue: 0.90)   // 프리즘스타
-    case .amazing:        return Color(red: 0.35, green: 0.80, blue: 0.75)   // 어메이징
-    case .radiant:        return Color(red: 0.98, green: 0.78, blue: 0.30)   // 찬란한 — 금빛
-    case .characterRare:  return Color(red: 0.30, green: 0.65, blue: 0.85)   // 캐릭터레어
+    case .prismStar:      return tierInk(0.60, 0.55, 0.90)   // 프리즘스타
+    case .amazing:        return tierInk(0.35, 0.80, 0.75)   // 어메이징
+    case .radiant:        return tierInk(0.98, 0.78, 0.30)   // 찬란한 — 금빛
+    case .characterRare:  return tierInk(0.30, 0.65, 0.85)   // 캐릭터레어
     case .artRare:        return .teal
-    case .aceSpec:        return Color(red: 0.90, green: 0.25, blue: 0.35)   // ACE — 붉은 테두리
+    case .aceSpec:        return tierInk(0.90, 0.25, 0.35)   // ACE — 붉은 테두리
     case .superRare:      return .orange
-    case .shiny:          return Color(red: 0.55, green: 0.80, blue: 0.95)   // 샤이니 — 은빛
-    case .shinyUltra:     return Color(red: 0.40, green: 0.70, blue: 0.92)   // 샤이니 풀아트
+    case .shiny:          return tierInk(0.55, 0.80, 0.95)   // 샤이니 — 은빛
+    case .shinyUltra:     return tierInk(0.40, 0.70, 0.92)   // 샤이니 풀아트
     case .specialArtRare: return .pink
-    case .shining:        return Color(red: 0.95, green: 0.85, blue: 0.55)   // 빛나는 포켓몬
-    case .hyperRare:      return Color(red: 0.75, green: 0.45, blue: 0.95)   // 레인보우
-    case .ultraRare:      return .yellow
+    case .shining:        return tierInk(0.95, 0.85, 0.55)   // 빛나는 포켓몬
+    case .hyperRare:      return tierInk(0.75, 0.45, 0.95)   // 레인보우
+    case .ultraRare:      return tierInk(1.00, 0.84, 0.04)   // 시스템 노랑의 다크 모드 값
     case .blackWhiteRare: return Color(white: 0.42)                          // 블랙볼트·화이트플레어
-    case .megaAttack:     return Color(red: 0.95, green: 0.40, blue: 0.55)   // 메가어택레어
-    case .megaUltraRare:  return Color(red: 1.00, green: 0.55, blue: 0.10)   // 메가 울트라레어
-    case .futureUltra:    return Color(red: 0.20, green: 0.85, blue: 0.80)   // 퓨처울트라레어
+    case .megaAttack:     return tierInk(0.95, 0.40, 0.55)   // 메가어택레어
+    case .megaUltraRare:  return tierInk(1.00, 0.55, 0.10)   // 메가 울트라레어
+    case .futureUltra:    return tierInk(0.20, 0.85, 0.80)   // 퓨처울트라레어
     }
+}
+
+/// 등급 색을 바탕에 맞춘다. 다크 모드에서는 고른 색 그대로, 라이트 모드에서는 흰 바탕에서도
+/// 읽히도록(굵은 글자 기준 3:1) 밝기만 낮춘다. 연노랑, 하늘색 등급 이름이 흰 바탕에서
+/// 거의 보이지 않았다.
+private func tierInk(_ red: Double, _ green: Double, _ blue: Double) -> Color {
+    Color(nsColor: NSColor(name: nil) { appearance in
+        let dark = appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let scale = dark ? 1 : min(1, tierInkScale(red, green, blue))
+        return NSColor(srgbRed: red * scale, green: green * scale, blue: blue * scale, alpha: 1)
+    })
+}
+
+/// 상대 휘도가 0.3 이하가 되는 배율. 흰 바탕과 3:1 이상이 된다.
+private func tierInkScale(_ red: Double, _ green: Double, _ blue: Double) -> Double {
+    func linear(_ value: Double) -> Double {
+        value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
+    }
+    func luminance(_ scale: Double) -> Double {
+        0.2126 * linear(red * scale) + 0.7152 * linear(green * scale) + 0.0722 * linear(blue * scale)
+    }
+    var scale = 1.0
+    while luminance(scale) > 0.3 && scale > 0.3 { scale -= 0.02 }
+    return scale
 }
