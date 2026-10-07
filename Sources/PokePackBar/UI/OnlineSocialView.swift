@@ -18,16 +18,36 @@ struct OnlineSocialView: View {
     @State private var preview: PrintingSelection?
     @State private var copied = false
 
+    /// 친구 탭의 하위 화면. 프로필 설정부터 내 카드까지 한 페이지에 이어 두니 길어서
+    /// 원하는 칸을 찾으려면 계속 내려야 했다. 마켓처럼 위에서 고른다.
+    enum Page: String, CaseIterable, Identifiable {
+        case friends = "친구", wishlist = "위시리스트", binder = "바인더", cards = "내 카드", profile = "내 프로필"
+        var id: String { rawValue }
+    }
+    @State private var page: Page = .friends
+
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 30) {
-                profile
-                friends
-                wishlist
-                binder
-                inventory
+        let incoming = model.items("friends").filter { $0.string("status") == "pending" && $0.bool("incoming") }.count
+        VStack(alignment: .leading, spacing: 16) {
+            Picker("", selection: $page) {
+                ForEach(Page.allCases) { option in
+                    Text(option == .friends && incoming > 0 ? "\(option.rawValue) \(incoming)" : option.rawValue).tag(option)
+                }
             }
-            .padding(.bottom, 12)
+            .pickerStyle(.segmented).labelsHidden().fixedSize()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 30) {
+                    switch page {
+                    case .friends: friends
+                    case .wishlist: wishlist
+                    case .binder: binder
+                    case .cards: inventory
+                    case .profile: profile
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 12)
+            }
         }
         .onAppear { loadDraft() }
         .onChange(of: model.generation) { loadDraft() }
@@ -100,6 +120,18 @@ struct OnlineSocialView: View {
                     TextField("친구 코드 입력", text: $code).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
                         .onSubmit(sendRequest)
                     Button("친구 신청", action: sendRequest).disabled(!model.canWrite || code.isEmpty)
+                }
+                // 친구를 맺으려면 내 코드도 건네야 한다. 프로필 탭까지 가지 않게 여기에도 둔다.
+                HStack(spacing: 8) {
+                    Text("내 친구 코드").font(Typography.label).foregroundStyle(.secondary)
+                    Text(model.profile.string("friend_code"))
+                        .font(.system(size: 14, weight: .medium, design: .monospaced)).textSelection(.enabled)
+                    Button(copied ? "복사했어요" : "복사") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(model.profile.string("friend_code"), forType: .string)
+                        copied = true
+                    }
+                    .buttonStyle(.link).font(Typography.label)
                 }
                 ForEach(incoming, id: \.onlineID) { item in
                     friendRow(item, note: "나에게 친구 신청을 보냈어요") {
