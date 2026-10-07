@@ -43,6 +43,12 @@ enum OnlineGameAudit {
         await second.synchronize()
         try LocalAudit.require(secondState.cards == firstState.cards && second.revision == first.revision,
                                "Second device did not receive authoritative collection")
+        // The first device built its state from command patches; the second fetched it whole.
+        let canonical = JSONEncoder()
+        canonical.outputFormatting = .sortedKeys
+        try LocalAudit.require(try canonical.encode(firstState) == canonical.encode(secondState),
+                               "State built from command patches differs from the full server state")
+        try LocalAudit.require(first.appliedStatePatches > 0, "Commands never used state patches")
 
         // Persist a request, commit it through HTTP, then deliberately discard
         // its response as if the app had terminated before receiving it.

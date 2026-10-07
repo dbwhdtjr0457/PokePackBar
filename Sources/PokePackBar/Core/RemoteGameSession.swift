@@ -55,6 +55,8 @@ final class RemoteGameSession {
         let balance: Int
         let state: GameState
         var reserved: [String: Int]? = nil
+        /// 서버가 계산한 공개 상태의 지문. 변경분을 적용하기 전에 같은 상태인지 확인한다.
+        var state_digest: String? = nil
     }
     struct Request: Codable {
         let request_id: UUID
@@ -65,7 +67,8 @@ final class RemoteGameSession {
         var quoted_tokens: Int? = nil
     }
     struct Response: Decodable {
-        let snapshot: Snapshot
+        /// 변경분(`snapshot_patch`)으로 온 응답에는 없다.
+        let snapshot: Snapshot?
         let result: ServerRulesBridge.Result
         let event_revision: Int
         let replayed: Bool
@@ -278,6 +281,8 @@ final class RemoteGameSession {
         var request = try await urlRequest("v1/commands")
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // 계정 상태 전체(오래 한 계정은 1.3MB, 대부분 개봉 기록) 대신 바뀐 부분만 받는다.
+        request.setValue("1", forHTTPHeaderField: "X-PPB-State-Patch")
         request.httpBody = try JSONEncoder().encode(body)
         let exchange = try await ServerTransport.exchange(request)
         let data = exchange.data, status = exchange.status
@@ -301,10 +306,65 @@ final class RemoteGameSession {
                           status: status, requestID: exchange.requestID)
         }
         let reply = try JSONDecoder().decode(Response.self, from: data)
-        try accept(reply.snapshot)
+        try accept(try await resolvedSnapshot(reply.snapshot, data: data))
         try clearPending()
         error = nil
         return reply.result
+    }
+
+    /// 변경분을 적용한 횟수. 통합 검사가 변경분 경로를 실제로 탔는지 확인한다.
+    @ObservationIgnored private(set) var appliedStatePatches = 0
+
+    /// 명령 응답이 바뀐 부분만 담고 있으면 가진 상태에 적용한다. 가진 상태가 서버가 말한 이전
+    /// 상태와 정확히 같을 때(지문 비교)만 적용하고, 아니면 전체 상태를 다시 받는다. 서버는 버전을
+    /// 올리지 않고 상태를 정리하는 경우가 있어 버전 번호만으로는 같은 상태라고 볼 수 없다.
+    private func resolvedSnapshot(_ full: Snapshot?, data: Data) async throws -> Snapshot {
+        if let full { return full }
+        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let patch = object["snapshot_patch"] as? [String: Any] else {
+            throw Failure(message: "서버 응답에 계정 상태가 없어요.")
+        }
+        if let base = lastSnapshot, base.revision == patch["base_revision"] as? Int,
+           let digest = base.state_digest, digest == patch["base_digest"] as? String {
+            do {
+                let patched = try Self.applying(patch, to: base)
+                appliedStatePatches += 1
+                return patched
+            } catch {
+                AppLog.write("[online] state patch could not be applied: \(String(describing: error).prefix(300)); fetching full state")
+            }
+        } else {
+            AppLog.write("[online] state patch base differs from local state; fetching full state")
+        }
+        return try await fetchSnapshot()
+    }
+
+    /// 서버 `state_patch` 의 적용. 순서는 값 교체, 사전 항목 교체, 키 삭제, 개봉 기록 앞쪽 버리고 뒤에 붙이기.
+    static func applying(_ patch: [String: Any], to base: Snapshot) throws -> Snapshot {
+        guard var state = try JSONSerialization.jsonObject(with: JSONEncoder().encode(base.state)) as? [String: Any],
+              let accountID = patch["account_id"] as? String,
+              let revision = patch["revision"] as? Int,
+              let balance = patch["balance"] as? Int else {
+            throw Failure(message: "계정 상태 변경분을 읽지 못했어요.")
+        }
+        for (key, value) in patch["set"] as? [String: Any] ?? [:] { state[key] = value }
+        for (key, change) in patch["merge"] as? [String: [String: Any]] ?? [:] {
+            var merged = state[key] as? [String: Any] ?? [:]
+            for (entry, value) in change["set"] as? [String: Any] ?? [:] { merged[entry] = value }
+            for entry in change["remove"] as? [String] ?? [] { merged.removeValue(forKey: entry) }
+            state[key] = merged
+        }
+        for key in patch["remove"] as? [String] ?? [] { state.removeValue(forKey: key) }
+        if let history = patch["history"] as? [String: Any] {
+            var records = state["openingHistory"] as? [Any] ?? []
+            records.removeFirst(min(max(0, history["drop"] as? Int ?? 0), records.count))
+            records.append(contentsOf: history["append"] as? [Any] ?? [])
+            state["openingHistory"] = records
+        }
+        let decoded = try JSONDecoder().decode(GameState.self, from: JSONSerialization.data(withJSONObject: state))
+        return Snapshot(account_id: accountID, revision: revision, balance: balance, state: decoded,
+                        reserved: patch["reserved"] as? [String: Int],
+                        state_digest: patch["state_digest"] as? String)
     }
 
     private func clearPending() throws {
