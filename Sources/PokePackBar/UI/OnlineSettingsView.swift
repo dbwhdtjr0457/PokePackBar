@@ -447,7 +447,11 @@ struct OnlineSettingsView: View {
         guard let account = UUID(uuidString: UserDefaults.standard.string(forKey: "ppb.server.account") ?? ""),
               let url = try? validatedURL() else { return }
         let config = RemoteGameConfiguration(baseURL: url, accountID: account, deviceID: ServerAuthentication.deviceID())
-        if let saved = try? ServerCredentialStore.load(config) { credential = saved; email = saved.email }
+        // 키체인 접근 허용 창이 뜨면 답할 때까지 멈추므로 메인 스레드 밖에서 읽는다.
+        Task {
+            let saved = await Task.detached(priority: .userInitiated) { try? ServerCredentialStore.load(config) }.value
+            if let saved { credential = saved; email = saved.email }
+        }
     }
 
     private func authenticate() {
@@ -481,6 +485,7 @@ struct OnlineSettingsView: View {
                 defaults.set(true, forKey: "ppb.server.enabled")
                 enabled = true
                 if let remote = wallet.remote, remote.configuration.storageKey == config.storageKey {
+                    remote.forgetCredential()
                     await remote.synchronize()
                     message = "로그인했습니다. 기존 계정 상태를 동기화했습니다."
                 } else { message = "로그인했습니다. 앱을 완전히 종료하고 다시 실행하면 이 계정에 연결됩니다." }

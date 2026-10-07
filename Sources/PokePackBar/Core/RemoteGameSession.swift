@@ -117,6 +117,8 @@ final class RemoteGameSession {
     @ObservationIgnored private var lastSnapshot: Snapshot?
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private let tokenProvider: (() throws -> String?)?
+    /// 키체인에서 한 번 읽은 로그인 정보. 요청마다 키체인을 다시 읽지 않는다.
+    @ObservationIgnored private var cachedCredential: ServerCredential?
     private var pendingURL: URL { directory.appendingPathComponent("pending.json") }
     var cacheURL: URL { directory.appendingPathComponent("game-state.json") }
 
@@ -242,13 +244,14 @@ final class RemoteGameSession {
     func dismissRecoveredResult() { recoveredResult = nil }
 
     func invalidateAuthentication() {
+        cachedCredential = nil
         authenticationExpired = true
         ready = false
         error = ServerAuthentication.loginRequired
     }
 
     private func send(_ body: Request) async throws -> ServerRulesBridge.Result {
-        var request = try urlRequest("v1/commands")
+        var request = try await urlRequest("v1/commands")
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(body)
@@ -299,7 +302,7 @@ final class RemoteGameSession {
     }
 
     private func fetchSnapshot() async throws -> Snapshot {
-        var request = try urlRequest("v1/state")
+        var request = try await urlRequest("v1/state")
         if acceptedSnapshot { request.setValue("\"\(revision)\"", forHTTPHeaderField: "If-None-Match") }
         let exchange = try await ServerTransport.exchange(request)
         let status = exchange.status
@@ -314,16 +317,30 @@ final class RemoteGameSession {
         return try JSONDecoder().decode(Snapshot.self, from: exchange.data)
     }
 
-    private func urlRequest(_ path: String) throws -> URLRequest {
+    /// 계정 창에서 같은 계정으로 다시 로그인했을 때 새 로그인 정보를 읽게 한다.
+    func forgetCredential() { cachedCredential = nil }
+
+    /// 키체인은 세션마다 한 번, 메인 스레드 밖에서 읽는다. 앱 서명이 바뀐 뒤(업데이트 등) 첫 읽기는
+    /// macOS 의 접근 허용 창에 답할 때까지 멈추는데, 메인 스레드에서 읽으면 그동안 메뉴바 아이콘조차
+    /// 그리지 못해 앱이 실행되지 않은 것처럼 보였다(v0.12.0 업데이트 직후 실제로 겪음).
+    private func accessToken() async throws -> String? {
+        if let tokenProvider { return try tokenProvider() }
+        let now = Int(Date().timeIntervalSince1970)
+        if let cached = cachedCredential, cached.expires_at > now { return cached.access_token }
+        let configuration = self.configuration
+        let credential = try await Task.detached(priority: .userInitiated) {
+            try ServerCredentialStore.load(configuration)
+        }.value
+        cachedCredential = credential
+        guard let credential, credential.expires_at > now else { return nil }
+        return credential.access_token
+    }
+
+    private func urlRequest(_ path: String) async throws -> URLRequest {
         var request = URLRequest(url: configuration.baseURL.appendingPathComponent(path),
                                  cachePolicy: .reloadIgnoringLocalCacheData)
         request.timeoutInterval = 90
-        let token: String?
-        if let tokenProvider { token = try tokenProvider() }
-        else if let credential = try ServerCredentialStore.load(configuration),
-                credential.expires_at > Int(Date().timeIntervalSince1970) {
-            token = credential.access_token
-        } else { token = nil }
+        let token = try await accessToken()
         guard let token, !token.isEmpty else {
             invalidateAuthentication()
             throw Failure(message: ServerAuthentication.loginRequired)
@@ -338,7 +355,7 @@ final class RemoteGameSession {
     }
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
-        let exchange = try await ServerTransport.exchange(urlRequest(path))
+        let exchange = try await ServerTransport.exchange(await urlRequest(path))
         let status = exchange.status
         if status == 401 || status == 403 {
             invalidateAuthentication()
@@ -352,7 +369,7 @@ final class RemoteGameSession {
 
     func api(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
         let parts = path.split(separator: "?", maxSplits: 1).map(String.init)
-        var request = try urlRequest(parts[0])
+        var request = try await urlRequest(parts[0])
         if parts.count > 1, var components = URLComponents(url: request.url!, resolvingAgainstBaseURL: false) {
             components.percentEncodedQuery = parts[1]
             request.url = components.url
