@@ -97,7 +97,7 @@ struct DexView: View {
     private var searchField: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             TextField(wallet.l.dexCardSearchPlaceholder, text: $searchText)
@@ -108,7 +108,7 @@ struct DexView: View {
                 Button {
                     searchText = ""
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
+                    Image(systemName: "multiply.circle.fill")
                         .foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)

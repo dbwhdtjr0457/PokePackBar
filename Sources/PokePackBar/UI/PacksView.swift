@@ -1065,7 +1065,7 @@ private struct PulledCardCell: View {
                 }
                 if card.finish != .normal {
                     Image(systemName: "sparkles")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(Typography.caption.weight(.bold)).imageScale(.small)
                         .padding(3)
                         .background(.black.opacity(0.62), in: Circle())
                         .foregroundStyle(.white)

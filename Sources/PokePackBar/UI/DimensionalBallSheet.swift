@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Unseen Forces' diffractive 3D balls are shaded volumes, not white target
 /// outlines. This is a sheet approximation, not a scan of each reverse plate.
+@MainActor
 struct DimensionalBallSheet: View {
     let tilt: TiltVector
 

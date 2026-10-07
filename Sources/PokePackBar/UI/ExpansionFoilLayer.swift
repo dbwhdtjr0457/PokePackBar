@@ -52,6 +52,7 @@ struct ExpansionFoilLayer: View {
     }
 }
 
+@MainActor
 struct ClassicGoldMask: View {
     let cardID: String
     var inverted = false
@@ -72,6 +73,7 @@ struct ClassicGoldMask: View {
     }
 }
 
+@MainActor
 private struct AscendedReverseMask: View {
     let cardID: String
     var body: some View {
@@ -85,6 +87,7 @@ private struct AscendedReverseMask: View {
 
 /// Classic: small angular sparkle grains. Pikachu: fine radial fireworks, not
 /// the old large cyan/pink confetti tiles or a rainbow gradient across the face.
+@MainActor
 private struct AnniversaryFlakes: View {
     let seed: UInt64
     let tilt: TiltVector
@@ -146,6 +149,7 @@ private struct AnniversaryFlakes: View {
     }
 }
 
+@MainActor
 private struct AscendedMark: View {
     let cardID: String
     let ball: Bool

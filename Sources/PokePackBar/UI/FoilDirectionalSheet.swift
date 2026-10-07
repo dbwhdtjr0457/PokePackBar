@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Smooth diffraction foil has a directional return, not etched glitter.
 /// Keep the sheet coordinates fixed; move only the illumination and spectrum.
+@MainActor
 struct FoilDirectionalSheet: View {
     let pattern: FoilPattern
     let tilt: TiltVector

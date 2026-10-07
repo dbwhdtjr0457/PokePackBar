@@ -203,7 +203,7 @@ struct CardCollectionView: View {
     private var searchField: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             TextField(wallet.l.collectionSearchPlaceholder, text: $query)
@@ -212,7 +212,7 @@ struct CardCollectionView: View {
                 .accessibilityLabel(wallet.l.searchCards)
             if !query.isEmpty {
                 Button { query = "" } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.tertiary)
+                    Image(systemName: "multiply.circle.fill").foregroundStyle(.tertiary)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(wallet.l.dexCardSearchClear)

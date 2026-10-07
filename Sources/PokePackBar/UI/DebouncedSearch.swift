@@ -4,6 +4,7 @@ import SwiftUI
 ///
 /// 카드 검색은 글자마다 카드 약 1만 9천 장을 다시 거른다. 치는 동안 매번 거르면 입력이
 /// 끊기고 격자가 글자마다 다시 그려진다. 지우기(빈 검색어)는 기다리지 않고 바로 반영한다.
+@MainActor
 private struct DebouncedSearch: ViewModifier {
     let source: String
     @Binding var target: String

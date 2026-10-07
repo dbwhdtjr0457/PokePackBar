@@ -417,7 +417,7 @@ private struct PackDetailView: View {
             }
 
             Text(pricingSource(l))
-                .font(.system(size: 12))
+                .font(Typography.caption)
                 .foregroundStyle(.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)

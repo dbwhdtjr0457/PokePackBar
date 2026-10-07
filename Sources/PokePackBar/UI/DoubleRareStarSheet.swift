@@ -3,6 +3,7 @@ import SwiftUI
 /// Motif family compared with three differently tilted Miraidon ex 081/198
 /// specimens. Positions are a stable sheet approximation, not factory plates.
 /// Ordinary ex alone dispatches here; Tera, Mega and full-art etches do not.
+@MainActor
 struct DoubleRareStarSheet: View {
     let tilt: TiltVector
 
