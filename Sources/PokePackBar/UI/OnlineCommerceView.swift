@@ -318,7 +318,7 @@ private struct SellSheet: View {
     private func priceChip(_ title: String, _ won: Int) -> some View {
         let rounded = max(MarketEconomy.wonStep, (won / MarketEconomy.wonStep) * MarketEconomy.wonStep)
         return Button(title) { priceWon = rounded }
-            .buttonStyle(.bordered).controlSize(.small)
+            .buttonStyle(.bordered).controlSize(.regular).font(Typography.button)
     }
 }
 
