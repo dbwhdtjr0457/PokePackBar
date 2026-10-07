@@ -108,7 +108,7 @@ enum ExpansionFoil {
         var seen = Set<String>()
         var energySeen = Set<String>()
         for _ in 0..<5_000 {
-            let pack = PackOpening.draw(setID: "me2pt5", index: index, alreadyOwned: [],
+            let pack = PackOpening.draw(setID: "me2pt5", index: index, alreadyOwned: [],  // 혜택 제외: 검사는 혜택 없는 기본 개봉을 본다
                 pity: &pity, mode: .realistic, using: &random)
             for card in pack.cards {
                 if card.finish == .patternedReverse {
