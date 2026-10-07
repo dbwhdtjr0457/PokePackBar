@@ -1,5 +1,6 @@
 import Foundation
 import CoreFoundation
+import os
 
 /// A commit has exactly one durable point: atomic replacement of game-state.json.
 /// Backups contain the previous, decoded state, never the uncommitted candidate.
@@ -7,6 +8,30 @@ struct GamePersistence {
     let url: URL
     var backupDirectory: URL { url.deletingLastPathComponent().appendingPathComponent("save-backups") }
     static let retainedBackups = 8
+
+    /// 마지막으로 읽거나 쓴 파일 내용. 저장할 때마다 이전 파일(1.3MB)을 다시 읽고 해석하느라
+    /// 30ms 가까이 더 걸렸다. 크기와 수정 시각이 그대로면 디스크 파일은 우리가 검증한 그
+    /// 내용이므로 다시 읽지 않는다. 다르면(다른 곳에서 바뀜) 지금처럼 읽어서 검증한다.
+    private struct Known: Sendable { let data: Data; let size: Int; let modified: Date }
+    private static let known = OSAllocatedUnfairLock<[String: Known]>(initialState: [:])
+
+    private static func attributes(_ url: URL) -> (size: Int, modified: Date)? {
+        guard let values = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let size = (values[.size] as? NSNumber)?.intValue,
+              let modified = values[.modificationDate] as? Date else { return nil }
+        return (size, modified)
+    }
+
+    private static func remember(_ data: Data, at url: URL) {
+        guard let now = attributes(url) else { return }
+        known.withLock { $0[url.path] = Known(data: data, size: now.size, modified: now.modified) }
+    }
+
+    private static func knownContents(of url: URL) -> Data? {
+        guard let entry = known.withLock({ $0[url.path] }), let now = attributes(url),
+              now.size == entry.size, now.modified == entry.modified else { return nil }
+        return entry.data
+    }
 
     struct Loaded {
         let state: GameState
@@ -51,7 +76,11 @@ struct GamePersistence {
         let fm = FileManager.default
         let exists = fm.fileExists(atPath: url.path)
         if exists, let data = try? Data(contentsOf: url) {
-            do { return Loaded(state: try Self.decode(data), recovered: false) }
+            do {
+                let state = try Self.decode(data)
+                Self.remember(data, at: url)
+                return Loaded(state: state, recovered: false)
+            }
             catch Failure.newerVersion { throw Failure.newerVersion }
             catch { /* Recover genuinely corrupt data below; never downgrade a newer save. */ }
         }
@@ -77,14 +106,20 @@ struct GamePersistence {
         _ = try Self.decode(data)
         try fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         if fm.fileExists(atPath: url.path) {
-            let previous = try Data(contentsOf: url)
-            _ = try Self.decode(previous)
+            let previous: Data
+            if let known = Self.knownContents(of: url) {
+                previous = known
+            } else {
+                previous = try Data(contentsOf: url)
+                _ = try Self.decode(previous)
+            }
             try fm.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
             let stamp = String(format: "%020.6f", Date().timeIntervalSince1970)
             let backup = backupDirectory.appendingPathComponent("\(stamp)-\(UUID().uuidString).json")
             try previous.write(to: backup, options: .atomic)
         }
         try data.write(to: url, options: .atomic)
+        Self.remember(data, at: url)
         // Cleanup cannot turn a successful durable commit into a reported failure.
         for old in (try? backupURLs())?.dropFirst(Self.retainedBackups) ?? [] {
             do { try fm.removeItem(at: old) }

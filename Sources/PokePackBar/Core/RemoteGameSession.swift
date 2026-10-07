@@ -129,6 +129,11 @@ final class RemoteGameSession {
     @ObservationIgnored private var reportedTokens = 0
     @ObservationIgnored private var acceptedSnapshot = false
     @ObservationIgnored private var lastSnapshot: Snapshot?
+    /// 기동할 때 캐시해 둔 시세를 백그라운드에서 검증하는 작업. 첫 동기화는 이것을 기다린다.
+    @ObservationIgnored private var cachedPrices: Task<Void, Never>?
+    /// 계정 상태 캐시 파일을 순서대로 쓰는 큐. 1.3MB 상태를 저장하는 데 70ms 가 걸려 명령마다
+    /// 메인 스레드에서 쓰면 화면이 끊겼다. 서버가 원본이라 캐시는 조금 늦게 써도 된다.
+    @ObservationIgnored private let cacheWriter = DispatchQueue(label: "PokePackBar.online-state-cache", qos: .utility)
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private let tokenProvider: (() throws -> String?)?
     /// 키체인에서 한 번 읽은 로그인 정보. 요청마다 키체인을 다시 읽지 않는다.
@@ -148,12 +153,32 @@ final class RemoteGameSession {
         hasPending = FileManager.default.fileExists(atPath: directory.appendingPathComponent("pending.json").path)
         hasOnlinePending = FileManager.default.fileExists(atPath: directory.appendingPathComponent("online-pending.json").path)
         let priceCache = directory.appendingPathComponent("prices.json")
-        if let data = try? PriceSnapshotStore.read(priceCache) {
-            do {
-                try PriceSnapshotStore.shared.applyOnline(data, cacheURL: priceCache)
-                priceVersion = OpeningRules.digest(data)
-            } catch { self.error = L.current.priceCacheCorrupt }
+        // 캐시해 둔 8MB 시세를 검증하는 데 0.6초 넘게 걸린다. 기동 중 메인 스레드에서 하면 메뉴바
+        // 아이콘이 그만큼 늦게 떴다. 검증은 백그라운드에서 하고, 그동안은 번들 시세를 쓴다.
+        cachedPrices = Task { [weak self] in
+            let loaded = await Task.detached(priority: .userInitiated) {
+                RemoteGameSession.loadCachedPrices(priceCache)
+            }.value
+            guard let self else { return }
+            switch loaded {
+            case .missing: break
+            case .corrupt: self.error = L.current.priceCacheCorrupt
+            case .valid(let candidate, let version):
+                PriceSnapshotStore.shared.installOnline(candidate)
+                self.priceVersion = version
+            }
         }
+    }
+
+    enum CachedPrices: Sendable {
+        case missing, corrupt
+        case valid(PriceSnapshotStore.Snapshot, version: String)
+    }
+
+    nonisolated static func loadCachedPrices(_ url: URL) -> CachedPrices {
+        guard let data = try? PriceSnapshotStore.read(url) else { return .missing }
+        guard let candidate = try? PriceSnapshotStore.validate(data) else { return .corrupt }
+        return .valid(candidate, version: OpeningRules.digest(data))
     }
 
     func start() {
@@ -177,6 +202,7 @@ final class RemoteGameSession {
         if !force, let retryAt, retryAt > Date() { return }
         busy = true
         defer { busy = false }
+        await cachedPrices?.value
         do {
             if hasOnlinePending { _ = try await replayOnlinePending() }
             // Restore committed requests before new-version checks: an old draw
@@ -194,8 +220,17 @@ final class RemoteGameSession {
             let status: PriceStatus = try await get("v1/prices")
             if let version = status.version, priceVersion != version {
                 let data = try await api("v1/prices/snapshot")
-                guard OpeningRules.digest(data) == version else { throw Failure(message: L.current.priceVerificationFailed) }
-                try PriceSnapshotStore.shared.applyOnline(data, cacheURL: directory.appendingPathComponent("prices.json"))
+                let cacheURL = directory.appendingPathComponent("prices.json")
+                // 검증(0.6초 남짓)과 캐시 저장은 메인 스레드 밖에서 하고, 적용만 여기서 한다.
+                let candidate = try await Task.detached(priority: .userInitiated) {
+                    guard OpeningRules.digest(data) == version else {
+                        throw Failure(message: L.current.priceVerificationFailed)
+                    }
+                    let candidate = try PriceSnapshotStore.validate(data)
+                    try PriceSnapshotStore.cacheOnline(data, at: cacheURL)
+                    return candidate
+                }.value
+                PriceSnapshotStore.shared.installOnline(candidate)
                 priceVersion = version
             }
             priceStatus = status
@@ -331,7 +366,7 @@ final class RemoteGameSession {
             throw Failure(message: L.current.serverReplyKept(status),
                           status: status, requestID: exchange.requestID)
         }
-        let reply = try JSONDecoder().decode(Response.self, from: data)
+        let reply = try await Self.decoded(Response.self, from: data)
         try accept(try await resolvedSnapshot(reply.snapshot, data: data))
         try clearPending()
         error = nil
@@ -353,7 +388,12 @@ final class RemoteGameSession {
         if let base = lastSnapshot, base.revision == patch["base_revision"] as? Int,
            let digest = base.state_digest, digest == patch["base_digest"] as? String {
             do {
-                let patched = try Self.applying(patch, to: base)
+                // 1.3MB 상태를 다시 만들어 적용하는 데 50ms 가까이 걸린다. 명령마다 메인 스레드에서
+                // 하면 토큰 적립(쓰는 동안 10초마다)과 팩 개봉 순간에 화면이 끊겼다.
+                let patchData = try JSONSerialization.data(withJSONObject: patch)
+                let patched = try await Task.detached(priority: .userInitiated) {
+                    try RemoteGameSession.applying(patchData: patchData, to: base)
+                }.value
                 appliedStatePatches += 1
                 return patched
             } catch {
@@ -366,7 +406,14 @@ final class RemoteGameSession {
     }
 
     /// 서버 `state_patch` 의 적용. 순서는 값 교체, 사전 항목 교체, 키 삭제, 개봉 기록 앞쪽 버리고 뒤에 붙이기.
-    static func applying(_ patch: [String: Any], to base: Snapshot) throws -> Snapshot {
+    nonisolated static func applying(patchData: Data, to base: Snapshot) throws -> Snapshot {
+        guard let patch = try JSONSerialization.jsonObject(with: patchData) as? [String: Any] else {
+            throw Failure(message: L.current.patchUnreadable)
+        }
+        return try applying(patch, to: base)
+    }
+
+    nonisolated static func applying(_ patch: [String: Any], to base: Snapshot) throws -> Snapshot {
         guard var state = try JSONSerialization.jsonObject(with: JSONEncoder().encode(base.state)) as? [String: Any],
               let accountID = patch["account_id"] as? String,
               let revision = patch["revision"] as? Int,
@@ -402,8 +449,11 @@ final class RemoteGameSession {
         guard UUID(uuidString: snapshot.account_id) == configuration.accountID,
               snapshot.revision >= revision else { throw Failure(message: L.current.replyAccountMismatch) }
         if acceptedSnapshot && snapshot.revision == revision { return }
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try GamePersistence(url: cacheURL).commit(snapshot.state)
+        let url = cacheURL, state = snapshot.state
+        cacheWriter.async {
+            do { try GamePersistence(url: url).commit(state) }
+            catch { AppLog.write("[online] state cache write failed: \(error.localizedDescription)") }
+        }
         revision = snapshot.revision
         acceptedSnapshot = true
         lastSnapshot = snapshot
@@ -424,7 +474,12 @@ final class RemoteGameSession {
         guard status == 200 else {
             throw Failure(message: L.current.serverStatusFailed(status), status: status, requestID: exchange.requestID)
         }
-        return try JSONDecoder().decode(Snapshot.self, from: exchange.data)
+        return try await Self.decoded(Snapshot.self, from: exchange.data)
+    }
+
+    /// 전체 상태(1.3MB)를 담은 응답은 해석에 20ms 가까이 걸려 메인 스레드 밖에서 읽는다.
+    nonisolated static func decoded<T: Decodable & Sendable>(_ type: T.Type, from data: Data) async throws -> T {
+        try await Task.detached(priority: .userInitiated) { try JSONDecoder().decode(T.self, from: data) }.value
     }
 
     /// 계정 창에서 같은 계정으로 다시 로그인했을 때 새 로그인 정보를 읽게 한다.
