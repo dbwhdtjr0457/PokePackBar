@@ -282,7 +282,7 @@ struct CardCollectionView: View {
             // 반대로 두면 「한번에 판매」와 「등급별 수집 현황」이 두 줄로 꺾인다.
             TextField(l.searchCards, text: $query)
                 .textFieldStyle(.roundedBorder)
-                .controlSize(.small)
+                .controlSize(.regular)
                 .font(Typography.label)
                 .frame(minWidth: 56, maxWidth: 110)
                 .layoutPriority(-1)
