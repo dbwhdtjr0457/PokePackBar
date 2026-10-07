@@ -71,6 +71,17 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.13.0
+
+온라인 창과 계정·오류 안내를 6개 언어로 지원한다. 교환 제안의 빈 카드 전송 문제를
+수정하고, 바인더 카드를 시세순으로 한 번에 고른 뒤 끌어서 순서를 바꿀 수 있다.
+메뉴바에 답할 교환·친구 신청을 표시하며 검색 결과는 정확한 이름부터 보여 준다.
+온라인 상태 변경분과 백그라운드 처리로 전송량과 화면 멈춤을 줄였다.
+배포본은 고정 코드서명 인증서를 사용한다.
+
+![English online marketplace](docs/reference/screenshots/online-market-013-en.png)
+![日本語のオンライン画面](docs/reference/screenshots/online-market-013-ja.png)
+
 ## 0.12.0
 
 온라인 창을 마켓·교환·친구 중심으로 개편하고 요청 번호와 오류 안내를 추가했다.

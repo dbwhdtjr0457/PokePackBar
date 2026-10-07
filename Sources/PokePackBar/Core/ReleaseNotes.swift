@@ -56,6 +56,20 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.13.0", lines: [
+                t("온라인 창·계정·오류 안내를 6개 언어로 지원하고, 교환 제안의 빈 카드 전송 문제를 수정했습니다. 바인더 카드를 시세순으로 고르고 끌어서 순서를 바꿀 수 있습니다.",
+                  "Online views, accounts and errors now support six languages. Fixed empty trade proposals, added a value-sorted binder picker and drag-to-reorder.",
+                  "オンライン画面・アカウント・エラー案内が6言語に対応しました。空の交換提案を修正し、価格順のバインダー選択とドラッグ並べ替えを追加しました。",
+                  "Las vistas online, cuentas y errores admiten seis idiomas. Corregimos las propuestas vacías y añadimos selección por valor y reordenación del álbum.",
+                  "Les vues en ligne, comptes et erreurs prennent en charge six langues. Les offres vides sont corrigées; le classeur se trie par valeur et par glisser-déposer.",
+                  "As telas online, contas e erros agora oferecem seis idiomas. Corrigimos propostas vazias e adicionamos seleção por valor e reordenação do fichário."),
+                t("키체인·시세 검증·온라인 저장을 백그라운드로 옮기고 상태 전체 대신 변경분을 받아 화면 멈춤과 전송량을 줄였습니다. 교환·친구 신청 알림을 메뉴바에서 확인하고 고정 인증서로 서명합니다.",
+                  "Moved Keychain, price validation and online cache work off the main thread. Lightweight state patches reduce transfer and pauses; menu-bar badges show trade and friend requests, with stable certificate signing.",
+                  "キーチェーン・相場検証・オンライン保存をバックグラウンドに移し、差分通信で転送量と停止時間を削減しました。メニューバーに交換・フレンド申請を表示し、固定証明書で署名します。",
+                  "El llavero, la validación de precios y la caché se procesan en segundo plano. Los cambios de estado reducen las pausas y el tráfico; la barra muestra solicitudes y usamos firma estable.",
+                  "Le trousseau, la validation des prix et le cache sont traités en arrière-plan. Les mises à jour partielles réduisent les pauses et le trafic; la barre affiche les demandes et la signature est stable.",
+                  "O chaveiro, a validação de preços e o cache são processados em segundo plano. Atualizações parciais reduzem pausas e tráfego; a barra mostra solicitações e usamos assinatura estável."),
+            ]),
             ReleaseNote(version: "0.12.0", lines: [
                 t("온라인 마켓·교환·친구 창을 개편하고 요청 번호와 오류 안내를 추가했습니다. 판매 가격은 서버 상한 안에서 안전하게 변환합니다.",
                   "Redesigned the online marketplace, trades and friends with request IDs and clearer errors. Listing prices are safely converted within server limits.",
