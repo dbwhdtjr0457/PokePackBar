@@ -260,6 +260,13 @@ struct OnlineSocialView: View {
                             .buttonStyle(.borderless).font(Typography.caption)
                         }
                         .onTapGesture { preview = PrintingSelection(id: key) }
+                        // 끌어다 다른 카드 위에 놓으면 그 자리로 옮기고 바로 저장한다.
+                        .draggable(key)
+                        .dropDestination(for: String.self) { items, _ in
+                            guard model.canWrite, let moving = items.first, moving != key else { return false }
+                            act("binder", ["action": "binder", "binder": BinderOrder.moving(moving, onto: key, in: keys)])
+                            return true
+                        }
                     }
                 }
             }
@@ -355,6 +362,8 @@ struct BinderEditorSheet: View {
     private let onSave: ([String]) -> Void
     @State private var picked: [String]
     @State private var query = ""
+    /// 끌어다 놓을 자리. 놓일 곳을 테두리로 보여 준다.
+    @State private var dropTarget: String?
     @State private var appliedQuery = ""
     @Environment(\.dismiss) private var dismiss
 
@@ -392,7 +401,7 @@ struct BinderEditorSheet: View {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("바인더 고르기").font(Typography.heading)
-                    Text("시세 높은 카드부터 보여요. 누르면 담기고, 다시 누르면 빠져요.")
+                    Text("시세 높은 카드부터 보여요. 누르면 담기고, 다시 누르면 빠져요. 위 줄에서 끌어 순서를 바꿔요.")
                         .font(Typography.label).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -410,9 +419,19 @@ struct BinderEditorSheet: View {
                                             .foregroundStyle(.white, .black.opacity(0.55))
                                             .padding(2)
                                     }
+                                    .overlay {
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .strokeBorder(Color.accentColor, lineWidth: dropTarget == key ? 2 : 0)
+                                    }
                             }
                             .buttonStyle(.plain)
-                            .help("\(OnlineText.cardName(CardPrintingKey(storageKey: key).cardID)) 빼기")
+                            .help("\(OnlineText.cardName(CardPrintingKey(storageKey: key).cardID)) 빼기. 끌어서 순서를 바꿔요.")
+                            .draggable(key)
+                            .dropDestination(for: String.self) { items, _ in
+                                guard let moving = items.first else { return false }
+                                picked = BinderOrder.moving(moving, onto: key, in: picked)
+                                return true
+                            } isTargeted: { dropTarget = $0 ? key : (dropTarget == key ? nil : dropTarget) }
                         }
                     }
                     .padding(.vertical, 2)
@@ -622,5 +641,19 @@ struct OnlinePrintingDetail: View {
             Button("닫기") { dismiss() }.keyboardShortcut(.cancelAction).padding(.top, 4)
         }
         .padding(24)
+    }
+}
+
+/// 바인더 순서 바꾸기. 오른쪽으로 끌면 놓은 카드 뒤에, 왼쪽으로 끌면 앞에 둔다.
+enum BinderOrder {
+    static func moving(_ key: String, onto target: String, in order: [String]) -> [String] {
+        guard key != target, let from = order.firstIndex(of: key), let to = order.firstIndex(of: target) else {
+            return order
+        }
+        var next = order
+        next.remove(at: from)
+        let landing = next.firstIndex(of: target) ?? next.endIndex
+        next.insert(key, at: from < to ? landing + 1 : landing)
+        return next
     }
 }
