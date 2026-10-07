@@ -22,7 +22,8 @@ enum PopoverLayoutAudit {
         defaults.set(ReleaseNotes.runningVersion ?? "", forKey: "lastSeenReleaseVersion")
         let usage = UsageStore(providers: [], autoRefresh: false, defaults: defaults)
         let wallet = WalletStore(fileURL: fixture.appendingPathComponent("game-state.json"))
-        wallet.setLanguage(.ko)
+        wallet.setLanguage(LayoutAuditOptions.language)
+        LayoutAuditOptions.applyAppearance()
         wallet.collect(Array(index.cards.prefix(40)).map(\.id))
         wallet.collect(Array(index.cards.prefix(20)).map(\.id))
         wallet.addPack(setID: "cel30")
@@ -129,5 +130,31 @@ enum PopoverLayoutAudit {
         try JSONSerialization.data(withJSONObject: report, options: [.prettyPrinted, .sortedKeys])
             .write(to: output.appendingPathComponent("layout.json"), options: .atomic)
         print("PASS compact popover layout: \(measurements.count) native screens; isolated wallet; \(Int(PopoverMetrics.width))pt wide")
+    }
+}
+
+/// 레이아웃 감사의 언어와 화면 모드. 기본은 한국어와 시스템 모드다.
+///
+/// `--audit-language en` 처럼 주면 다른 언어에서 글자가 넘치거나 잘리는지 볼 수 있고,
+/// `--audit-appearance light` 로 라이트 모드 대비를 따로 확인한다.
+@MainActor
+enum LayoutAuditOptions {
+    static var language: AppLanguage {
+        value(after: "--audit-language").flatMap(AppLanguage.init(rawValue:)) ?? .ko
+    }
+
+    /// 감사 창이 모두 같은 모드로 그려지게 앱 전체 모드를 정한다.
+    static func applyAppearance() {
+        switch value(after: "--audit-appearance") {
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        default: break
+        }
+    }
+
+    private static func value(after flag: String) -> String? {
+        let arguments = CommandLine.arguments
+        guard let at = arguments.firstIndex(of: flag), arguments.indices.contains(at + 1) else { return nil }
+        return arguments[at + 1]
     }
 }

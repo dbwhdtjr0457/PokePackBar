@@ -14,7 +14,9 @@ struct SettingsView: View {
     @State private var launchAtLoginError: String?
     @State private var reportError: String?
     @State private var advancedExpanded = false
-    @State private var section = "일반"
+    /// 설정 창의 탭.
+    enum SettingsTab: String, CaseIterable, Sendable { case general, display, data, advanced }
+    @State private var section: SettingsTab = .general
     @State private var isCheckingUpdate = false
     @State private var didCheckUpdate = false
     @State private var selectedScanProviderID = "claude_code"
@@ -29,7 +31,7 @@ struct SettingsView: View {
     @FocusState private var customScanFocused: Bool
     private var l: L { wallet.l }
 
-    init(onClose: @escaping () -> Void, onOpenReleaseNotes: @escaping () -> Void = {}, initialSection: String = "일반") {
+    init(onClose: @escaping () -> Void, onOpenReleaseNotes: @escaping () -> Void = {}, initialSection: SettingsTab = .general) {
         self.onClose = onClose
         self.onOpenReleaseNotes = onOpenReleaseNotes
         _section = State(initialValue: initialSection)
@@ -54,30 +56,30 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             header
             Divider()
-            Picker("설정 분류", selection: $section) {
-                ForEach(["일반", "표시", "데이터", "고급"], id: \.self) { Text($0).tag($0) }
-            }.pickerStyle(.segmented).labelsHidden().padding(.horizontal, 16).padding(.vertical, 10)
+            Picker(l.settingsSections, selection: $section) {
+                ForEach(SettingsTab.allCases, id: \.self) { Text(l.settingsTab($0)).tag($0) }
+            }.pickerStyle(.segmented).labelsHidden().frame(maxWidth: .infinity).padding(.horizontal, 16).padding(.vertical, 10)
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    if section == "일반" {
+                    if section == .general {
                         generalGroup(store)
-                        settingsSection("연결") {
+                        settingsSection(l.connectionSection) {
                             groupRow {
                                 VStack(alignment: .leading, spacing: 3) {
-                                    Text(wallet.isOnline ? "온라인 모드" : "로컬 모드")
-                                    Text("로그인 · 기기 · 복구 · 서버 상태")
+                                    Text(wallet.isOnline ? l.onlineModeLabel : l.localModeLabel)
+                                    Text(l.accountSummaryLine)
                                         .font(Typography.label).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Button("계정 및 서버…") { AccountWindow.shared.show(wallet: wallet) }
+                                Button(l.accountAndServerEllipsis) { AccountWindow.shared.show(wallet: wallet) }
                             }
                         }
                         updateGroup(store)
-                    } else if section == "표시" {
+                    } else if section == .display {
                         menuBarGroup(store)
                         collectorGroup
                         notificationsGroup(store)
-                    } else if section == "데이터" {
+                    } else if section == .data {
                         ReliabilitySettingsView(wallet: wallet)
                     } else {
                         advancedGroup(store)
@@ -111,7 +113,7 @@ struct SettingsView: View {
         HStack(spacing: 5) {
             Text("v\(Self.appVersion)")
             Text(AppLinks.updateChannel)
-            // 구분점은 링크 앞에만 둔다. 조건 밖에 하나 더 있어서 「stable · · GitHub」로 찍혔다.
+            // 구분점은 링크 앞에만 둔다. 조건 밖에 하나 더 있어서 stable 과 GitHub 사이에 가운뎃점이 두 개 찍혔다.
             if let github = AppLinks.githubURL {
                 Text("·")
                 footerLink("GitHub", github.absoluteString)

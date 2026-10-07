@@ -152,7 +152,7 @@ final class RemoteGameSession {
             do {
                 try PriceSnapshotStore.shared.applyOnline(data, cacheURL: priceCache)
                 priceVersion = OpeningRules.digest(data)
-            } catch { self.error = "시세 캐시가 손상되어 서버에서 다시 받아야 합니다." }
+            } catch { self.error = L.current.priceCacheCorrupt }
         }
     }
 
@@ -188,13 +188,13 @@ final class RemoteGameSession {
             if !ready {
                 let version: RuleVersion = try await get("v1/rules")
                 guard version.rules_version == ServerRulesBridge.version else {
-                    throw Failure(message: "서버와 앱의 게임 규칙·시세 버전이 다릅니다. 같은 빌드로 업데이트하세요.")
+                    throw Failure(message: L.current.rulesVersionMismatch)
                 }
             }
             let status: PriceStatus = try await get("v1/prices")
             if let version = status.version, priceVersion != version {
                 let data = try await api("v1/prices/snapshot")
-                guard OpeningRules.digest(data) == version else { throw Failure(message: "시세 데이터 검증에 실패했습니다.") }
+                guard OpeningRules.digest(data) == version else { throw Failure(message: L.current.priceVerificationFailed) }
                 try PriceSnapshotStore.shared.applyOnline(data, cacheURL: directory.appendingPathComponent("prices.json"))
                 priceVersion = version
             }
@@ -253,10 +253,10 @@ final class RemoteGameSession {
     }
 
     func execute(_ command: ServerRulesBridge.Command, expectedTokens: Int? = nil) async -> ServerRulesBridge.Result? {
-        guard !hasOnlinePending else { error = "미확인 온라인 거래를 먼저 복구하세요."; return nil }
-        guard !busy else { error = "다른 서버 요청을 처리하고 있습니다."; return nil }
-        guard ready else { error = "서버 연결을 먼저 확인하세요. 로컬 자원은 변경하지 않았습니다."; return nil }
-        guard !hasPending else { error = "응답을 확인하지 못한 요청이 있습니다. 먼저 재시도하세요."; return nil }
+        guard !hasOnlinePending else { error = L.current.recoverOnlineTradeFirst; return nil }
+        guard !busy else { error = L.current.anotherRequestRunning; return nil }
+        guard ready else { error = L.current.checkServerFirst; return nil }
+        guard !hasPending else { error = L.current.retryPendingFirst; return nil }
         busy = true
         defer { busy = false }
         do {
@@ -271,11 +271,11 @@ final class RemoteGameSession {
             let data = try await api("v1/quotes", method: "POST", body: JSONEncoder().encode(request))
             let quote = try JSONDecoder().decode(Quote.self, from: data)
             guard quote.price_version == priceVersion, quote.revision == revision else {
-                throw Failure(message: "가격이나 계정 상태가 바뀌었습니다. 동기화 후 금액을 다시 확인하세요.")
+                throw Failure(message: L.current.stateChangedResync)
             }
             request.quoted_tokens = quote.tokens
             if let expectedTokens, expectedTokens != quote.tokens {
-                throw Failure(message: "확인한 금액과 서버 견적이 다릅니다. 새로고침 후 변경된 금액을 다시 확인하세요.")
+                throw Failure(message: L.current.quoteMismatch)
             }
         }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -312,7 +312,7 @@ final class RemoteGameSession {
         request.httpBody = try JSONEncoder().encode(body)
         let exchange = try await ServerTransport.exchange(request)
         let data = exchange.data, status = exchange.status
-        guard status != 0 else { throw Failure(message: "잘못된 서버 응답", requestID: exchange.requestID) }
+        guard status != 0 else { throw Failure(message: L.current.invalidServerReply, requestID: exchange.requestID) }
         if status == 401 || status == 403 {
             invalidateAuthentication()
             // Keep the durable request: after re-login it must replay the same ID.
@@ -324,11 +324,11 @@ final class RemoteGameSession {
                 try clearPending()
                 ready = false
             }
-            throw Failure(message: "서버가 요청을 거절했습니다. 다른 기기에서 상태가 바뀌었거나 조건을 충족하지 않습니다. 새로고침 후 다시 시도하세요.",
+            throw Failure(message: L.current.requestRefused,
                           status: status, requestID: exchange.requestID)
         }
         guard status == 200 else {
-            throw Failure(message: "서버 응답 \(status). 요청 ID를 보존했습니다. 같은 요청으로 재시도할 수 있습니다.",
+            throw Failure(message: L.current.serverReplyKept(status),
                           status: status, requestID: exchange.requestID)
         }
         let reply = try JSONDecoder().decode(Response.self, from: data)
@@ -348,7 +348,7 @@ final class RemoteGameSession {
         if let full { return full }
         guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let patch = object["snapshot_patch"] as? [String: Any] else {
-            throw Failure(message: "서버 응답에 계정 상태가 없어요.")
+            throw Failure(message: L.current.replyMissingState)
         }
         if let base = lastSnapshot, base.revision == patch["base_revision"] as? Int,
            let digest = base.state_digest, digest == patch["base_digest"] as? String {
@@ -371,7 +371,7 @@ final class RemoteGameSession {
               let accountID = patch["account_id"] as? String,
               let revision = patch["revision"] as? Int,
               let balance = patch["balance"] as? Int else {
-            throw Failure(message: "계정 상태 변경분을 읽지 못했어요.")
+            throw Failure(message: L.current.patchUnreadable)
         }
         for (key, value) in patch["set"] as? [String: Any] ?? [:] { state[key] = value }
         for (key, change) in patch["merge"] as? [String: [String: Any]] ?? [:] {
@@ -400,7 +400,7 @@ final class RemoteGameSession {
 
     private func accept(_ snapshot: Snapshot) throws {
         guard UUID(uuidString: snapshot.account_id) == configuration.accountID,
-              snapshot.revision >= revision else { throw Failure(message: "계정 또는 버전이 맞지 않는 응답입니다.") }
+              snapshot.revision >= revision else { throw Failure(message: L.current.replyAccountMismatch) }
         if acceptedSnapshot && snapshot.revision == revision { return }
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try GamePersistence(url: cacheURL).commit(snapshot.state)
@@ -422,7 +422,7 @@ final class RemoteGameSession {
         }
         if status == 304, let lastSnapshot { return lastSnapshot }
         guard status == 200 else {
-            throw Failure(message: "서버 상태를 가져오지 못했습니다. (HTTP \(status))", status: status, requestID: exchange.requestID)
+            throw Failure(message: L.current.serverStatusFailed(status), status: status, requestID: exchange.requestID)
         }
         return try JSONDecoder().decode(Snapshot.self, from: exchange.data)
     }
@@ -504,14 +504,14 @@ final class RemoteGameSession {
     static func describe(status: Int, data: Data) -> String {
         let detail = ServerTransport.detail(data) ?? "HTTP \(status)"
         if status >= 500 {
-            return "서버에서 오류가 났어요 (HTTP \(status), \(detail)). 잠시 뒤 다시 시도해 주세요."
+            return L.current.serverFailure(status, detail)
         }
-        return "요청을 완료하지 못했습니다: \(detail). 새로고침 후 조건을 다시 확인하세요."
+        return L.current.requestNotCompleted(detail)
     }
 
     func onlineMutation(path: String, body: Data) async throws -> Data {
         guard ready, !busy, !hasPending, !hasOnlinePending else {
-            throw Failure(message: "다른 요청 또는 미확인 거래를 먼저 복구하세요.")
+            throw Failure(message: L.current.recoverOtherRequestFirst)
         }
         busy = true
         defer { busy = false }

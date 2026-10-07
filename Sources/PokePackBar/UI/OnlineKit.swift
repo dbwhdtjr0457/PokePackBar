@@ -7,10 +7,19 @@ import SwiftUI
 /// 앱 머리글과 같은 원화이고, 서버로 보낼 때만 토큰으로 바꾼다.
 @MainActor
 enum OnlineText {
-    static let l = L(.ko)
+    /// 온라인 창과 계정 창이 여는 지갑. 메뉴바에서 고른 언어를 그대로 따른다.
+    static weak var wallet: WalletStore?
+
+    /// 화면에서 읽을 때마다 지갑의 언어를 본다. 언어를 바꾸면 열린 창도 바로 다시 그린다.
+    static var language: AppLanguage {
+        let language = wallet?.language ?? AppLanguage.current
+        if AppLanguage.current != language { AppLanguage.current = language }
+        return language
+    }
+    static var l: L { L(language) }
 
     static func cardName(_ cardID: String) -> String {
-        CardIndex.shared?.card(cardID)?.displayName(.ko) ?? cardID
+        CardIndex.shared?.card(cardID)?.displayName(language) ?? cardID
     }
 
     static func finish(_ raw: String) -> String {
@@ -24,7 +33,7 @@ enum OnlineText {
 
     /// 토큰을 원화로. 시장 가격은 천 원 단위로 뭉개면 안 되므로 끊지 않은 표기를 쓴다.
     static func won(tokens: Int) -> String {
-        WonFormatter.exact(MarketEconomy.won(tokens: tokens), language: .ko)
+        WonFormatter.exact(MarketEconomy.won(tokens: tokens), language: language)
     }
 
     /// 원화 입력을 서버가 받는 토큰으로. 100원 칸 단위로 맞춘다.
@@ -46,44 +55,44 @@ enum OnlineText {
         return MarketEconomy.won(tokens: MarketEconomy.tokens(usd: usd, prices: prices), prices: prices)
     }
 
-    static func wonText(_ won: Int) -> String { WonFormatter.exact(won, language: .ko) }
+    static func wonText(_ won: Int) -> String { WonFormatter.exact(won, language: language) }
 
     static func listingStatus(_ raw: String) -> (text: String, color: Color) {
         switch raw {
-        case "active": return ("판매 중", .green)
-        case "sold": return ("다 팔림", .blue)
-        case "expired": return ("기간 끝남", .secondary)
-        case "cancelled": return ("내림", .secondary)
+        case "active": return (OnlineText.l.listingActive, .green)
+        case "sold": return (OnlineText.l.listingSold, .blue)
+        case "expired": return (OnlineText.l.expiredLabel, .secondary)
+        case "cancelled": return (OnlineText.l.listingCancelled, .secondary)
         default: return (raw, .secondary)
         }
     }
 
     static func tradeStatus(_ raw: String) -> (text: String, color: Color) {
         switch raw {
-        case "pending": return ("답 기다리는 중", .orange)
-        case "accepted": return ("교환 완료", .green)
-        case "rejected": return ("거절됨", .secondary)
-        case "cancelled": return ("취소됨", .secondary)
-        case "expired": return ("기간 끝남", .secondary)
+        case "pending": return (OnlineText.l.tradePending, .orange)
+        case "accepted": return (OnlineText.l.tradeAccepted, .green)
+        case "rejected": return (OnlineText.l.tradeRejected, .secondary)
+        case "cancelled": return (OnlineText.l.tradeCancelled, .secondary)
+        case "expired": return (OnlineText.l.expiredLabel, .secondary)
         default: return (raw, .secondary)
         }
     }
 
     static func notification(_ kind: String) -> (text: String, icon: String) {
         switch kind {
-        case "trade_request": return ("새 교환 제안이 왔어요", "arrow.left.arrow.right")
-        case "trade_accepted": return ("교환이 성사됐어요", "checkmark.circle")
-        case "trade_rejected": return ("교환 제안이 거절됐어요", "xmark.circle")
-        case "trade_cancelled": return ("교환 제안이 취소됐어요", "xmark.circle")
-        case "trade_expired": return ("교환 제안 기간이 끝났어요", "clock")
-        case "listing_sold": return ("올린 카드가 팔렸어요", "wonsign.circle")
-        case "listing_bought": return ("마켓에서 카드를 샀어요", "bag")
-        case "listing_expired": return ("판매 기간이 끝나 카드가 돌아왔어요", "clock")
-        case "wishlist_listing": return ("위시리스트 카드가 마켓에 올라왔어요", "star")
-        case "friend_request": return ("친구 신청이 왔어요", "person.badge.plus")
-        case "friend_accept", "friend_accepted": return ("친구 신청이 수락됐어요", "person.2")
-        case "friend_reject", "friend_rejected": return ("친구 신청이 거절됐어요", "person.badge.minus")
-        case "friend_expired": return ("친구 신청 기간이 끝났어요", "clock")
+        case "trade_request": return (OnlineText.l.noteTradeRequest, "arrow.left.arrow.right")
+        case "trade_accepted": return (OnlineText.l.noteTradeAccepted, "checkmark.circle")
+        case "trade_rejected": return (OnlineText.l.noteTradeRejected, "hand.raised")
+        case "trade_cancelled": return (OnlineText.l.noteTradeCancelled, "arrow.uturn.backward.circle")
+        case "trade_expired": return (OnlineText.l.noteTradeExpired, "clock")
+        case "listing_sold": return (OnlineText.l.noteListingSold, "wonsign.circle")
+        case "listing_bought": return (OnlineText.l.noteListingBought, "bag")
+        case "listing_expired": return (OnlineText.l.noteListingExpired, "clock")
+        case "wishlist_listing": return (OnlineText.l.noteWishlistListing, "star")
+        case "friend_request": return (OnlineText.l.noteFriendRequest, "person.badge.plus")
+        case "friend_accept", "friend_accepted": return (OnlineText.l.noteFriendAccepted, "person.2")
+        case "friend_reject", "friend_rejected": return (OnlineText.l.noteFriendRejected, "person.badge.minus")
+        case "friend_expired": return (OnlineText.l.noteFriendExpired, "clock")
         default: return (kind, "bell")
         }
     }
@@ -91,11 +100,11 @@ enum OnlineText {
     /// "6일 남음" 처럼 남은 시간만 말한다. 날짜와 시각을 통째로 보여 주면 계산을 떠넘긴다.
     static func remaining(until timestamp: Int) -> String {
         let seconds = Double(timestamp) - Date().timeIntervalSince1970
-        guard seconds > 0 else { return "기간 끝남" }
+        guard seconds > 0 else { return OnlineText.l.expiredLabel }
         let hours = Int(seconds / 3600)
-        if hours >= 48 { return "\(hours / 24)일 남음" }
-        if hours >= 1 { return "\(hours)시간 남음" }
-        return "곧 끝나요"
+        if hours >= 48 { return OnlineText.l.daysLeft(hours / 24) }
+        if hours >= 1 { return OnlineText.l.hoursLeft(hours) }
+        return OnlineText.l.endingSoon
     }
 }
 
@@ -232,11 +241,11 @@ struct OnlineQuantity: View {
         HStack(spacing: 10) {
             Button { value = max(range.lowerBound, value - 1) } label: { Image(systemName: "minus") }
                 .disabled(value <= range.lowerBound)
-            Text("\(value)장").font(Typography.bodySemibold).monospacedDigit().frame(minWidth: 52)
+            Text(OnlineText.l.cardsCount(value)).font(Typography.bodySemibold).monospacedDigit().frame(minWidth: 52)
             Button { value = min(range.upperBound, value + 1) } label: { Image(systemName: "plus") }
                 .disabled(value >= range.upperBound)
             if range.upperBound > 1 {
-                Button("최대") { value = range.upperBound }
+                Button(OnlineText.l.maxQuantity) { value = range.upperBound }
                     .buttonStyle(.borderless).font(Typography.label)
                     .disabled(value == range.upperBound)
             }
@@ -265,7 +274,7 @@ struct OnlineSheet<Content: View>: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(OnlineText.l.cancel) { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
                 Button(actionTitle) { dismiss(); action() }
                     .buttonStyle(.borderedProminent)
@@ -289,9 +298,9 @@ struct OnlinePagination: View {
         let hasNext = model.documents[key]?["next_offset"] as? Int != nil
         if model.offset > 0 || hasNext {
             HStack {
-                Button("이전") { model.offset = max(0, model.offset - step); Task { await model.refresh(full: false) } }
+                Button(OnlineText.l.previousPage) { model.offset = max(0, model.offset - step); Task { await model.refresh(full: false) } }
                     .disabled(model.offset == 0 || model.loading)
-                Button("다음") { model.offset += step; Task { await model.refresh(full: false) } }
+                Button(OnlineText.l.nextPage) { model.offset += step; Task { await model.refresh(full: false) } }
                     .disabled(!hasNext || model.loading)
             }
             .frame(maxWidth: .infinity)
@@ -318,12 +327,12 @@ struct OnlineCardStrip: View {
                                 .onTapGesture { onOpen?(key) }
                             if let onRemove {
                                 Button { onRemove(key) } label: {
-                                    Image(systemName: "xmark.circle.fill").font(.system(size: 16))
+                                    Image(systemName: "minus.circle.fill").font(.system(size: 16))
                                         .symbolRenderingMode(.palette)
                                         .foregroundStyle(.white, .black.opacity(0.6))
                                 }
                                 .buttonStyle(.plain).offset(x: 5, y: -5)
-                                .help("빼기")
+                                .help(OnlineText.l.removeCard)
                             }
                         }
                         Text("×\(lines[key] ?? 0)").font(Typography.captionMedium).monospacedDigit()
@@ -394,31 +403,31 @@ struct OnlineCatalogueSearch: View {
                         Text(picked.displayName(.ko)).font(Typography.title)
                         Text(CardIndex.shared?.set(picked.setID)?.name ?? picked.setID)
                             .font(Typography.label).foregroundStyle(.secondary)
-                        Picker("판형", selection: $finish) {
-                            if allowsAnyFinish { Text("어떤 판형이든").tag(CardFinish?.none) }
+                        Picker(OnlineText.l.finishLabel, selection: $finish) {
+                            if allowsAnyFinish { Text(OnlineText.l.anyFinish).tag(CardFinish?.none) }
                             ForEach(finishes(picked), id: \.self) { option in
                                 Text(OnlineText.l.cardFinishName(option)).tag(Optional(option))
                             }
                         }
                         .fixedSize()
                         OnlineQuantity(value: $quantity, range: 1...maxQuantity)
-                        Button("다른 카드 고르기") { self.picked = nil }.buttonStyle(.borderless)
+                        Button(OnlineText.l.pickAnotherCard) { self.picked = nil }.buttonStyle(.borderless)
                     }
                 }
             } else {
-                TextField("카드 이름으로 찾기 (한국어, 영어)", text: $query)
+                TextField(OnlineText.l.searchCardNameKoEn, text: $query)
                     .textFieldStyle(.roundedBorder)
                     .debouncedSearch(query, into: $appliedQuery)
                 ScrollView {
                     // 1만 9천 장을 훑으므로 그리기 한 번에 한 번만 계산한다.
                     let found = matches
                     if query.isEmpty {
-                        OnlineEmptyState(icon: "magnifyingglass", title: "찾을 카드 이름을 입력하세요")
+                        OnlineEmptyState(icon: "magnifyingglass", title: OnlineText.l.typeCardName)
                     } else if found.isEmpty {
                         OnlineEmptyState(icon: "questionmark.square",
-                                         title: appliedQuery == query ? "맞는 카드가 없어요" : "찾는 중…")
+                                         title: appliedQuery == query ? OnlineText.l.noMatchingCards : OnlineText.l.searching)
                     } else {
-                        Text("\(found.count.formatted())장, 이름이 같은 카드부터 시세 높은 순이에요.")
+                        Text(OnlineText.l.catalogueResultCount(found.count))
                             .font(Typography.caption).foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
@@ -445,7 +454,7 @@ struct OnlineCatalogueSearch: View {
                 .frame(height: 360)
             }
             HStack {
-                Button("닫기") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(OnlineText.l.close) { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
                 Button(actionTitle) {
                     if let picked { onPick(picked.id, finish, quantity) }
@@ -495,20 +504,20 @@ struct OnlineStockPicker: View {
                         Text(OnlineText.cardName(picked.cardID)).font(Typography.title)
                         Text(OnlineText.l.cardFinishName(picked.finish))
                             .font(Typography.label).foregroundStyle(.secondary)
-                        Text("내놓을 수 있는 카드 \(picked.available)장")
+                        Text(OnlineText.l.offerableCount(picked.available))
                             .font(Typography.label)
                         OnlineQuantity(value: $quantity, range: 1...min(1000, remaining))
-                        Button("다른 카드 고르기") { self.picked = nil }.buttonStyle(.borderless)
+                        Button(OnlineText.l.pickAnotherCard) { self.picked = nil }.buttonStyle(.borderless)
                     }
                 }
             } else {
-                TextField("내 카드에서 찾기", text: $query).textFieldStyle(.roundedBorder)
+                TextField(OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
                     .debouncedSearch(query, into: $appliedQuery)
                 ScrollView {
                     if stock.isEmpty {
                         OnlineEmptyState(icon: "square.stack",
-                                         title: query.isEmpty ? "내놓을 수 있는 카드가 없어요" : "맞는 카드가 없어요",
-                                         message: query.isEmpty ? "같은 카드를 2장 이상 가지고 있으면 여기에 나타나요. 한 장은 늘 남겨 둬요." : nil)
+                                         title: query.isEmpty ? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
+                                         message: query.isEmpty ? OnlineText.l.spareCardsHint : nil)
                     } else {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
                             ForEach(stock) { item in
@@ -519,7 +528,7 @@ struct OnlineStockPicker: View {
                                     quantity = 1
                                 } label: {
                                     OnlineCardTile(cardID: item.cardID, finish: item.finish.rawValue, width: 92) {
-                                        Text("\(item.available)장 가능").font(Typography.caption).foregroundStyle(.secondary)
+                                        Text(OnlineText.l.availableCount(item.available)).font(Typography.caption).foregroundStyle(.secondary)
                                     }
                                 }
                                 .buttonStyle(.plain)
@@ -532,7 +541,7 @@ struct OnlineStockPicker: View {
                 .frame(height: 360)
             }
             HStack {
-                Button("닫기") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(OnlineText.l.close) { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
                 Button(actionTitle) {
                     if let picked { onPick(picked.key, quantity) }
@@ -551,11 +560,12 @@ struct OnlineStockPicker: View {
 
 /// 로컬 모드라 온라인 세션이 없다. 서버에 보낸 요청이 아니라 요청 번호가 없다.
 struct OnlineSignedOut: LocalizedError {
-    var errorDescription: String? { "온라인 계정에 로그인하지 않았어요." }
+    var errorDescription: String? { L(AppLanguage.current).notSignedInOnline }
 }
 
 /// 실패를 사용자가 구분할 수 있는 종류로. 연결 실패와 서버 오류를 같은 말로 뭉뚱그리면
 /// 인터넷을 고칠지 기다릴지 알 수 없다.
+@MainActor
 struct OnlineProblem {
     enum Kind { case signedOut, unreachable, server, rejected, other }
     let kind: Kind
@@ -579,11 +589,11 @@ struct OnlineProblem {
 
     var title: String {
         switch kind {
-        case .signedOut: "로그인이 필요해요"
-        case .unreachable: "서버에 연결하지 못했어요"
-        case .server: "서버에서 오류가 났어요"
-        case .rejected: "요청이 처리되지 않았어요"
-        case .other: "온라인 기능을 잠시 쓸 수 없어요"
+        case .signedOut: OnlineText.l.problemSignedOut
+        case .unreachable: OnlineText.l.problemUnreachable
+        case .server: OnlineText.l.problemServer
+        case .rejected: OnlineText.l.problemRejected
+        case .other: OnlineText.l.problemOther
         }
     }
 
@@ -598,10 +608,10 @@ struct OnlineProblem {
 
     var hint: String {
         switch kind {
-        case .signedOut: "계정 창에서 로그인하면 바로 이어서 쓸 수 있어요."
-        case .unreachable: "마지막으로 불러온 내용을 보여 주는 중이에요. 연결되면 다시 거래할 수 있어요."
-        case .server: "내 카드와 금액은 바뀌지 않았어요. 계속되면 아래 요청 번호를 알려 주세요."
-        case .rejected, .other: "마지막으로 불러온 내용을 보여 주는 중이에요."
+        case .signedOut: OnlineText.l.problemSignedOutHint
+        case .unreachable: OnlineText.l.problemUnreachableHint
+        case .server: OnlineText.l.problemServerHint
+        case .rejected, .other: OnlineText.l.showingLastLoaded
         }
     }
 }
@@ -629,8 +639,8 @@ struct OnlineFailureBanner: View {
                 Text(message).font(Typography.label).foregroundStyle(.secondary).lineLimit(2).textSelection(.enabled)
                 HStack(spacing: 10) {
                     if let id = problem.requestID {
-                        Text("요청 번호 \(id.prefix(8))").monospaced().textSelection(.enabled)
-                        Button(copied ? "복사했어요" : "복사") {
+                        Text(OnlineText.l.requestNumber(String(id.prefix(8)))).monospaced().textSelection(.enabled)
+                        Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction) {
                             NSPasteboard.general.clearContents()
                             NSPasteboard.general.setString(id, forType: .string)
                             copied = true
@@ -638,13 +648,13 @@ struct OnlineFailureBanner: View {
                         .buttonStyle(.link)
                     }
                     if problem.kind != .signedOut {
-                        Button("로그 보기") { NSWorkspace.shared.activateFileViewerSelecting([AppLog.logFileURL]) }
+                        Button(OnlineText.l.showLogs) { NSWorkspace.shared.activateFileViewerSelecting([AppLog.logFileURL]) }
                             .buttonStyle(.link)
                     }
                     if let retryAt, problem.kind == .unreachable || problem.kind == .server {
                         TimelineView(.periodic(from: .now, by: 1)) { context in
                             let seconds = Int(retryAt.timeIntervalSince(context.date).rounded(.up))
-                            if seconds > 0 { Text("\(seconds)초 뒤에 다시 연결해요").monospacedDigit() }
+                            if seconds > 0 { Text(OnlineText.l.reconnectIn(seconds)).monospacedDigit() }
                         }
                     }
                 }
@@ -652,9 +662,9 @@ struct OnlineFailureBanner: View {
             }
             Spacer()
             if problem.kind == .signedOut, let signIn {
-                Button("로그인하기", action: signIn).buttonStyle(.borderedProminent)
+                Button(OnlineText.l.signIn, action: signIn).buttonStyle(.borderedProminent)
             } else {
-                Button("다시 시도", action: retry).disabled(loading)
+                Button(OnlineText.l.retry, action: retry).disabled(loading)
             }
         }
         .padding(12)

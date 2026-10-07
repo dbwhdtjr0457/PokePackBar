@@ -143,9 +143,11 @@ final class WalletStore {
             persistenceError = "온라인 연결 설정이 잘못되었습니다. 설정을 수정하고 재시작하세요. 로컬 세이브는 변경하지 않았습니다."
         } else { load() }
         refreshPerks()
+        if fileURL == nil { AppLanguage.current = language }
         session?.onSnapshot = { [weak self] state in
             guard let self else { return }
             self.state = state
+            AppLanguage.current = self.language
             self.protectedPrintings = self.remote?.reservedPrintings.mapValues { $0 + 1 } ?? [:]
             self.durableState = state
             self.refreshPerks()
@@ -192,6 +194,7 @@ final class WalletStore {
         state.openingMode = mode; save()
     }
     func setLanguage(_ lang: AppLanguage) {
+        AppLanguage.current = lang
         if isOnline {
             UserDefaults.standard.set(lang.rawValue, forKey: "ppb.online.language")
             state.language = lang; durableState.language = lang

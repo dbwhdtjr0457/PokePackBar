@@ -4,7 +4,7 @@ import Security
 
 enum ServerPasswordPolicy {
     static let lengthRange = 8...128
-    static let lengthDescription = "8~128자"
+    static var lengthDescription: String { L.current.passwordLengthRule }
 
     static func accepts(_ password: String) -> Bool {
         // Match Python's Unicode code-point count without altering the password.
@@ -49,12 +49,12 @@ enum ServerCredentialStore {
         let status = SecItemCopyMatching(fields as CFDictionary, &result)
         if status == errSecItemNotFound { return nil }
         guard status == errSecSuccess, let data = result as? Data else {
-            throw ServerLoginFailure(message: "로그인 정보를 읽지 못했어요. 계정 창에서 다시 로그인해 주세요.")
+            throw ServerLoginFailure(message: L.current.credentialUnreadable)
         }
         let credential = try JSONDecoder().decode(ServerCredential.self, from: data)
         guard credential.account_id == configuration.accountID,
               credential.device_id == configuration.deviceID else {
-            throw ServerLoginFailure(message: "이 Mac과 로그인 정보가 맞지 않아요. 다시 로그인해 주세요.")
+            throw ServerLoginFailure(message: L.current.credentialMismatch)
         }
         return credential
     }
@@ -65,21 +65,21 @@ enum ServerCredentialStore {
         let status = SecItemUpdate(fields as CFDictionary, [kSecValueData as String: data] as CFDictionary)
         if status == errSecSuccess { return }
         guard status == errSecItemNotFound else {
-            throw ServerLoginFailure(message: "Keychain 로그인 정보 갱신 실패 (\(status))")
+            throw ServerLoginFailure(message: L.current.keychainUpdateFailed(status))
         }
         var added = fields
         added[kSecValueData as String] = data
         added[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         let created = SecItemAdd(added as CFDictionary, nil)
         guard created == errSecSuccess else {
-            throw ServerLoginFailure(message: "Keychain 로그인 정보 저장 실패 (\(created))")
+            throw ServerLoginFailure(message: L.current.keychainSaveFailed(created))
         }
     }
 
     static func remove(_ configuration: RemoteGameConfiguration) throws {
         let status = SecItemDelete(query(configuration) as CFDictionary)
         guard status == errSecSuccess || status == errSecItemNotFound else {
-            throw ServerLoginFailure(message: "Keychain 로그인 정보 삭제 실패 (\(status))")
+            throw ServerLoginFailure(message: L.current.keychainDeleteFailed(status))
         }
     }
 }
@@ -156,7 +156,7 @@ struct ServerUnreachable: LocalizedError, ServerTraceable {
     let reason: String
     let requestID: String?
     let status: Int?
-    var errorDescription: String? { "서버에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요. (\(reason))" }
+    var errorDescription: String? { L.current.serverUnreachable(reason) }
 }
 
 @MainActor
@@ -178,7 +178,7 @@ enum ServerAuthentication {
         let data = try await request(url: url, path: register ? "auth/register" : "auth/login", body: body)
         let credential = try JSONDecoder().decode(ServerCredential.self, from: data)
         guard credential.device_id == deviceID, !credential.access_token.isEmpty else {
-            throw ServerLoginFailure(message: "로그인 응답의 기기 정보가 맞지 않아요.")
+            throw ServerLoginFailure(message: L.current.loginDeviceMismatch)
         }
         return credential
     }
@@ -201,12 +201,12 @@ enum ServerAuthentication {
         try ServerCredentialStore.remove(configuration)
     }
 
-    nonisolated static let loginRequired = "로그인이 필요하거나 로그인이 만료됐어요. 같은 계정으로 다시 로그인해 주세요."
+    nonisolated static var loginRequired: String { L.current.loginRequiredMessage }
 
     static func request(url: URL, path: String, body: [String: Any] = [:],
                         credential: ServerCredential? = nil, method: String = "POST") async throws -> Data {
         guard RemoteGameConfiguration.validURL(url) else {
-            throw ServerLoginFailure(message: "원격 서버 주소는 HTTPS여야 해요.")
+            throw ServerLoginFailure(message: L.current.remoteNeedsHTTPS)
         }
         var request = URLRequest(url: url.appendingPathComponent(path), cachePolicy: .reloadIgnoringLocalCacheData)
         request.httpMethod = method
@@ -226,16 +226,16 @@ enum ServerAuthentication {
             let detail = ServerTransport.detail(data)
             let message: String
             switch detail {
-            case "invalid_credentials": message = "이메일이나 비밀번호가 맞지 않아요."
-            case "invalid_recovery": message = "이메일이나 복구 코드가 맞지 않거나 이미 쓴 코드예요."
-            case "device_not_found": message = "기기 목록이 바뀌었어요. 새로고침해 주세요."
+            case "invalid_credentials": message = L.current.invalidCredentials
+            case "invalid_recovery": message = L.current.invalidRecovery
+            case "device_not_found": message = L.current.deviceListChanged
             case "login_required": message = loginRequired
-            case "link_code_invalid": message = "연결 코드가 만료됐거나 이미 쓴 코드예요. 서버에서 새 코드를 받아 주세요."
-            case "registration_unavailable": message = "이 정보로는 가입할 수 없어요. 이미 계정이 있다면 로그인해 주세요."
-            case "too_many_attempts": message = "시도가 너무 많아요. 1분 뒤에 다시 해 주세요."
+            case "link_code_invalid": message = L.current.linkCodeInvalid
+            case "registration_unavailable": message = L.current.registrationUnavailable
+            case "too_many_attempts": message = L.current.tooManyAttempts
             default:
-                message = status == 422 ? "이메일 형식과 비밀번호 길이(가입할 때 \(ServerPasswordPolicy.lengthDescription))를 확인해 주세요."
-                    : "인증 서버가 \(status) 응답을 보냈어요. 주소와 서버 상태를 확인해 주세요. (요청 번호 \(reply.requestID.prefix(8)))"
+                message = status == 422 ? L.current.checkEmailAndLength(ServerPasswordPolicy.lengthDescription)
+                    : L.current.authServerStatus(status, request: String(reply.requestID.prefix(8)))
             }
             throw ServerLoginFailure(message: message)
         }

@@ -230,7 +230,7 @@ struct CardSpotlightView: View {
         if let prices = CardPrices.shared,
            let unit = displayedFinish.flatMap({ prices.price(cardID: cardID, finish: $0) })
                 ?? prices.price(cardID) {
-            // 값 정보는 라벨을 붙인 작은 표로 둔다. 「·」로만 이어 붙인 줄은 시세, 보유 총액,
+            // 값 정보는 라벨을 붙인 작은 표로 둔다. 가운뎃점으로만 이어 붙인 줄은 시세, 보유 총액,
             // 시세의 출처가 한눈에 구분되지 않았다. 줄 수는 예전과 같아 카드 크기 계산은 그대로다.
             Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 3) {
                 // 개별 가격은 자르지 않는다. 중복 보유 총액은 별도 행을 쓴다.
@@ -304,7 +304,7 @@ struct CardSpotlightView: View {
                 HStack(spacing: 3) {
                     Text(l.cardFinishName(displayedFinish))
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
+                        .imageScale(.small)
                 }
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.secondary)
@@ -403,7 +403,7 @@ struct CardSpotlightView: View {
                                 .background(Color.secondary.opacity(0.12), in: Capsule())
                         }
                         .buttonStyle(.plain)
-                        .help("이 카드가 들어가는 도감 \(related.count + hidden)개 모두 보기")
+                        .help(wallet.l.showAllDexes(related.count + hidden))
                     }
                 }
             }

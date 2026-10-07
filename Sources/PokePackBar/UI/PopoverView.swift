@@ -74,15 +74,15 @@ struct PopoverView: View {
             if wallet.isOnline { onlineEntry }
             if let remote = wallet.remote, !remote.ready || remote.error != nil {
                 Button { nav.showSettings = true } label: {
-                    Label(remote.error ?? "서버 연결 중…", systemImage: "network")
+                    Label(remote.error ?? l.connectingToServer, systemImage: "network")
                         .font(Typography.caption).lineLimit(2)
                 }.buttonStyle(.plain).foregroundStyle(.orange)
             }
             if let remote = wallet.remote, let recovered = remote.recoveredResult {
                 HStack {
-                    Text("미확인 요청 복구 완료\(recovered.packs.map { " · \($0.packs.count)팩 개봉" } ?? ""). 도감과 개봉 이력에 반영됐습니다.")
+                    Text(l.recoveredRequest(recovered.packs?.packs.count))
                         .font(Typography.caption)
-                    Button("확인") { remote.dismissRecoveredResult() }
+                    Button(l.done) { remote.dismissRecoveredResult() }
                 }
             }
             if let error = wallet.persistenceError {
@@ -140,16 +140,16 @@ struct PopoverView: View {
     /// 아이콘과 설명을 붙인 한 줄 전체를 누를 수 있게 하고, ⌘O 로도 연다.
     private var onlineEntry: some View {
         let summary = wallet.remote?.notificationSummary
-        let pending = Self.pendingText(summary)
+        let pending = Self.pendingText(summary, l)
         return Button { OnlineWindow.shared.show(wallet: wallet, section: Self.section(for: summary)) } label: {
             HStack(spacing: 9) {
                 Image(systemName: "globe")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(Color.accentColor)
-                Text("온라인").font(Typography.bodySemibold)
+                Text(l.online).font(Typography.bodySemibold)
                 // 답할 것이 있으면 기능 소개 대신 그 개수를 보여 준다. 예전에는 온라인 창을 열어
                 // 봐야만 교환 제안이 왔는지 알 수 있었다.
-                Text(pending ?? "마켓, 교환, 친구").font(pending == nil ? Typography.label : Typography.labelSemibold)
+                Text(pending ?? l.onlineEntryFeatures).font(pending == nil ? Typography.label : Typography.labelSemibold)
                     .foregroundStyle(pending == nil ? AnyShapeStyle(.secondary) : AnyShapeStyle(Color.orange))
                     .lineLimit(1)
                 Spacer(minLength: 4)
@@ -163,27 +163,27 @@ struct PopoverView: View {
         }
         .buttonStyle(OnlineEntryButtonStyle())
         .keyboardShortcut("o", modifiers: .command)
-        .help("온라인 창 열기")
-        .accessibilityLabel(pending.map { "온라인 창 열기, \($0)" } ?? "온라인 창 열기")
-        .accessibilityHint("마켓, 교환, 친구, 통계를 새 창에서 봐요.")
+        .help(l.openOnlineWindow)
+        .accessibilityLabel(pending.map { "\(l.openOnlineWindow), \($0)" } ?? l.openOnlineWindow)
+        .accessibilityHint(l.openOnlineWindowHint)
     }
 
     /// 답해야 할 것부터. 교환 제안은 72시간이 지나면 사라지므로 맨 앞이다.
-    static func pendingText(_ summary: RemoteGameSession.NotificationSummary?) -> String? {
+    static func pendingText(_ summary: RemoteGameSession.NotificationSummary?, _ l: L) -> String? {
         guard let summary, !summary.isEmpty else { return nil }
         var parts: [String] = []
-        if summary.incoming_trades > 0 { parts.append("교환 제안 \(summary.incoming_trades)") }
-        if summary.incoming_friends > 0 { parts.append("친구 신청 \(summary.incoming_friends)") }
-        if summary.unread > 0 { parts.append("알림 \(summary.unread)") }
+        if summary.incoming_trades > 0 { parts.append(l.pendingTrades(summary.incoming_trades)) }
+        if summary.incoming_friends > 0 { parts.append(l.pendingFriends(summary.incoming_friends)) }
+        if summary.unread > 0 { parts.append(l.pendingAlerts(summary.unread)) }
         return parts.joined(separator: ", ")
     }
 
-    /// 눌렀을 때 바로 보여 줄 탭. 화면 키는 온라인 창이 쓰는 것과 같다.
-    static func section(for summary: RemoteGameSession.NotificationSummary?) -> String? {
+    /// 눌렀을 때 바로 보여 줄 탭.
+    static func section(for summary: RemoteGameSession.NotificationSummary?) -> OnlineHubModel.Tab? {
         guard let summary else { return nil }
-        if summary.incoming_trades > 0 { return "교환" }
-        if summary.incoming_friends > 0 { return "컬렉션·친구" }
-        if summary.unread > 0 { return "알림" }
+        if summary.incoming_trades > 0 { return .trades }
+        if summary.incoming_friends > 0 { return .social }
+        if summary.unread > 0 { return .alerts }
         return nil
     }
 

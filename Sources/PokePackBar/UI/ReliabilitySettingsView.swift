@@ -18,6 +18,7 @@ struct ReliabilitySettingsView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .frame(maxWidth: .infinity)
             // 바로 위 제목과 같은 말이 세그먼트 앞에 한 번 더 붙지 않게 한다.
             .labelsHidden()
             .disabled(wallet.resourceActionsDisabled)
@@ -56,7 +57,7 @@ struct ReliabilitySettingsView: View {
             }
             .disabled(wallet.isOnline)
             if wallet.isOnline {
-                Text("온라인 시세는 서버에서 자동 갱신됩니다. 마지막 정상 시세를 사용하며 앱 재설치는 필요하지 않습니다.")
+                Text(l.onlinePricesNote)
                     .font(Typography.caption).foregroundStyle(.secondary)
             }
             if let message { Text(message).font(Typography.label).textSelection(.enabled) }
