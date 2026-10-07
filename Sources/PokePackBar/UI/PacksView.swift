@@ -317,14 +317,14 @@ private struct RevealView: View {
     @State private var position = 0
     /// 결과 화면에서 크게 보고 있는 카드.
     @State private var spotlight: PulledCard?
-    /// 클릭으로 넘길 때 다음 카드가 오기 직전 바깥으로 터지는 신호.
-    @State private var incomingCue: PulledCard?
     @State private var isAdvancing = false
     @State private var advanceTask: Task<Void, Never>?
-    /// 해당 특수팩의 첫 카드가 보인 뒤에만 설정한다.
-    @State private var discoveredVariant: PackVariant?
     @State private var upcomingImages: [String: NSImage] = [:]
+    /// 결과 화면 정렬. 다음 개봉에도 같은 기준으로 보이게 기억한다.
+    @AppStorage("packSummarySort") private var summarySort = SummarySort.price
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    enum SummarySort: String { case price, rarity }
 
     init(wallet: WalletStore, index: CardIndex?, opened: PacksView.OpenedPack,
          initialPosition: Int = 0, onDone: @escaping () -> Void) {
@@ -363,24 +363,14 @@ private struct RevealView: View {
                     current
                 }
             }
-
-            if let variant = discoveredVariant {
-                SpecialPackDiscovery(title: wallet.l.specialPackTitle(variant),
-                                     hint: wallet.l.specialPackHint(variant),
-                                     variant: variant)
-                    .padding(.horizontal, 26)
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onChange(of: opened.id) {
             advanceTask?.cancel()
             advanceTask = nil
             position = 0
-            incomingCue = nil
-            discoveredVariant = nil
             isAdvancing = false
         }
-        .task(id: discoveryTaskID) { await discoverSpecialPackIfNeeded() }
         .task(id: "\(opened.id)-\(position / 8)-\(isSummary)") {
             guard !isSummary else { upcomingImages = [:]; return }
             let images = await CardImageLoader.prefetch(
@@ -418,51 +408,14 @@ private struct RevealView: View {
             if !opened.isPreview { wallet.markAllRevealed() }
             withAnimation(.easeOut(duration: 0.22)) { position += 1 }
         } else {
-            let next = opened.cards[position + 1]
-            let lead = kind == .tap && !reduceMotion
-                ? RevealMotionProfile.forCard(next).clickLeadMilliseconds : 0
-            guard lead > 0 else {
-                position += 1
-                return
-            }
-
-            isAdvancing = true
-            incomingCue = next
-            advanceTask?.cancel()
-            advanceTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(lead))
-                guard !Task.isCancelled else { return }
-                position += 1
-                incomingCue = nil
-                isAdvancing = false
-                advanceTask = nil
-            }
+            // 넘기는 것은 즉시. 등급 신호는 카드를 누르는 순간 RevealStack 이 터뜨린다 —
+            // 신호가 끝날 때까지 다음 카드를 붙잡아 두면 입력이 늦게 먹는 것처럼 보였다.
+            position += 1
         }
     }
 
-    /// 현재 위치가 몇 번째 팩의 첫 장인지 계산한다. 대량 개봉에서도 팩 경계를 잃지 않는다.
-    private func specialVariantStarting(at cardPosition: Int) -> PackVariant? {
-        opened.presentation.specialStarts[cardPosition]
-    }
-
-    private var discoveryTaskID: String { "\(opened.id.uuidString)-\(position)" }
-
-    private func discoverSpecialPackIfNeeded() async {
-        discoveredVariant = nil
-        guard let variant = specialVariantStarting(at: position) else { return }
-        if !reduceMotion { try? await Task.sleep(for: .milliseconds(260)) }
-        guard !Task.isCancelled else { return }
-        discoveredVariant = variant
-        try? await Task.sleep(for: .milliseconds(reduceMotion ? 850 : 1450))
-        guard !Task.isCancelled else { return }
-        if discoveredVariant == variant {
-            if reduceMotion {
-                discoveredVariant = nil
-            } else {
-                withAnimation(.easeOut(duration: 0.22)) { discoveredVariant = nil }
-            }
-        }
-    }
+    // 갓팩과 특수팩은 개봉 도중에 알리지 않는다. 화면 한가운데 "갓팩!" 배너가 카드를 가리고
+    // 흐름을 끊었다. 무엇이 나왔는지는 카드가 말해 주고, 특수팩이었다는 것은 결과 화면 제목이 알린다.
 
     /// 한번에 열기 — 남은 카드를 한 장씩 넘기지 않고 결과 화면으로 바로 간다.
     ///
@@ -532,7 +485,6 @@ private struct RevealView: View {
                         newBadge: l.newCardBadge,
                         preloaded: revealImage(card.id),
                         nextPreloaded: nextCard.flatMap { revealImage($0.id) },
-                        incomingCue: incomingCue,
                         interactionEnabled: !isAdvancing,
                         onAdvance: advance)
 
@@ -566,8 +518,13 @@ private struct RevealView: View {
     }
 
     private var summaryCardOrder: [PulledCard] {
-        // 희귀 카드부터 훑되, 별도 에너지가 요약의 첫 칸을 차지하지 않게 맨 뒤에 둔다.
-        opened.presentation.summaryCards
+        // 공개는 실물 팩 순서 그대로, 결과는 무엇을 건졌는지 바로 보이게 가격순이나
+        // 레어도순으로 다시 놓는다. 별도 에너지는 첫 칸을 차지하지 않게 맨 뒤에 둔다.
+        // 시세가 없으면 가격이 모두 0이라 레어도순과 같아진다.
+        switch summarySort {
+        case .price: opened.presentation.summaryByPrice
+        case .rarity: opened.presentation.summaryByRarity
+        }
     }
 
     @ViewBuilder
@@ -602,31 +559,38 @@ private struct RevealView: View {
         let l = wallet.l
         return VStack(spacing: 8) {
             VStack(spacing: 2) {
-                Text(opened.packCount > 1
-                     ? l.packBatchOpened(opened.packCount)
-                     : (opened.specialVariants.first.map(l.specialPackTitle) ?? l.packOpened))
-                    .font(opened.packCount == 1 && !opened.specialVariants.isEmpty
-                          ? Typography.badgeLarge : Typography.title)
-                    .foregroundStyle(opened.packCount == 1 && !opened.specialVariants.isEmpty
-                                     ? Color.orange : Color.primary)
+                // 특수팩이어도 따로 외치지 않는다. 무엇이 나왔는지는 카드와 총 가치가 말해 준다.
+                Text(opened.packCount > 1 ? l.packBatchOpened(opened.packCount) : l.packOpened)
+                    .font(Typography.title)
+                    .foregroundStyle(Color.primary)
                 Text(opened.isPreview
                      ? "\(opened.setName)  ·  \(l.godPackPreviewNotice)"
                      : "\(opened.setName)  ·  \(l.packOpenSummary(new: newCount, total: opened.cards.count))")
                     .font(Typography.body).foregroundStyle(.secondary)
-                if opened.packCount > 1, !opened.specialVariants.isEmpty {
-                    Text(l.specialPacksFound(opened.specialVariants.count))
-                        .font(Typography.labelSemibold).foregroundStyle(Color.orange)
-                }
                 // 무엇이 나왔는지는 카드 그림이 말해 주지만, 얼마어치가 나왔는지는 숫자로만
                 // 알 수 있다. 팩값과 나란히 놓고 보라고 여기 둔다.
                 if let prices = CardPrices.shared {
                     let worth = opened.presentation.worthUSD
-                    Text(l.packTotalValue(prices.formattedWithKRW(worth,
-                                                                  language: wallet.language)))
-                        .font(Typography.amount).monospacedDigit()
-                        .foregroundStyle(Color.accentColor)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .padding(.top, 1)
+                    // 정렬 전환은 총 가치와 같은 줄에 둔다. 한 팩 요약은 두 줄 격자가
+                    // 꽉 차게 맞춰져 있어 줄을 하나 더 쓰면 카드가 밀린다.
+                    HStack(spacing: 8) {
+                        Text(l.packTotalValue(prices.formattedWithKRW(worth,
+                                                                      language: wallet.language)))
+                            .font(Typography.amount).monospacedDigit()
+                            .foregroundStyle(Color.accentColor)
+                            .lineLimit(1).minimumScaleFactor(0.8)
+                        if opened.cards.count > 1 {
+                            Picker("", selection: $summarySort) {
+                                Text(l.sortByValue).tag(SummarySort.price)
+                                Text(l.sortByTier).tag(SummarySort.rarity)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                            .controlSize(.mini)
+                            .fixedSize()
+                        }
+                    }
+                    .padding(.top, 1)
                 }
             }
             .padding(.top, 2)
@@ -670,24 +634,25 @@ private struct RevealStack: View {
     let preloaded: NSImage?
     /// 다음 장의 그림. 개봉 준비 단계에서 이미 받아 둔 것이라 들출 때 기다릴 것이 없다.
     let nextPreloaded: NSImage?
-    let incomingCue: PulledCard?
     let interactionEnabled: Bool
     let onAdvance: (RevealAdvanceKind) -> Void
 
     @State private var drag: CGSize = .zero
+    /// 지금 누르고 있는가. 누르는 동안 밑에 깔린 다음 장의 기운이 올라온다.
+    @State private var pressing = false
+    /// 누르는 순간 다음 장이 희귀하면 터뜨린 불꽃. 누를 때마다 새로 터진다.
+    @State private var pop: PulledCard?
+    @State private var popID = UUID()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// 얼마나 들췄는가(0~1). 밑장의 밝기와 후광, 위 카드의 그림자에 함께 쓴다.
     private var peek: Double { RevealPeek.amount(drag) }
 
     var body: some View {
         ZStack {
-            if let incomingCue {
-                RevealBurst(card: incomingCue, width: RevealPeek.cardWidth)
-                    .id("cue-\(incomingCue.id)-\(incomingCue.finish.rawValue)")
-            }
             if let next {
                 ZStack {
-                    TierGlow(tier: next.tier, width: RevealPeek.cardWidth).opacity(peek)
+                    TierGlow(tier: next.tier, width: RevealPeek.cardWidth, valueCard: next).opacity(peek)
                     // 다음 장은 가려진 채 부모 drag/brightness가 매 프레임 바뀐다. 여기서 완전한
                     // 홀로 Canvas까지 함께 돌리면 현재 카드와 합쳐 두 장을 매 프레임 합성한다.
                     // 원본 스캔만 깔아 두고, 다음 장이 현재 장이 되는 순간 SpotlightCard가 실제
@@ -699,6 +664,8 @@ private struct RevealStack: View {
                 .offset(y: RevealPeek.deckOffset)
                 // 덮여 있는 동안은 그늘에 있다. 들어 올릴수록 제 색을 찾는다.
                 .brightness(-0.16 * (1 - peek))
+                // 밑장의 기운은 밑장 자리에서 올라온다. 누르는 순간 보이고, 들출수록 진해진다.
+                .background { nextAura }
                 .allowsHitTesting(false)
             }
             SpotlightCard(card: card, newBadge: newBadge, preloaded: preloaded)
@@ -706,21 +673,44 @@ private struct RevealStack: View {
                 .id(card.id)
                 // 교체는 즉시. 기본 전환(페이드)이 걸리면 두 장이 겹쳐 반투명해진다.
                 .transition(.identity)
+                // 기운은 그 카드에서 나온다. 끌어내면 카드와 함께 움직이고 기울며 빼낸 만큼 옅어진다.
+                .background { currentAura }
                 .offset(drag)
                 .rotationEffect(.degrees(RevealPeek.tilt(drag)), anchor: .bottom)
                 // 가만히 있어도 옅은 그림자를 남긴다 — 밑장과 겹쳐 보이지 않게 하는 층 표시다.
                 .shadow(color: .black.opacity(0.18 + 0.24 * peek),
                         radius: 4 + 9 * peek, y: 2 + 5 * peek)
         }
+        // 불꽃은 카드 위로 튄다. 겹쳐 그리기만 하고 배치에는 끼어들지 않는다.
+        .overlay {
+            if let pop {
+                RevealPop(card: pop, width: RevealPeek.cardWidth).id(popID)
+            }
+        }
         .allowsHitTesting(interactionEnabled)
         .contentShape(Rectangle())
-        // 누르면 바로 넘어간다. 끌기에 최소 거리를 두었으므로 탭과 부딪히지 않는다.
-        .onTapGesture { advance(.tap) }
+        // 누르는 순간을 잡으려고 탭과 끌기를 거리 0 의 끌기 하나로 받는다. 누르면 다음 장의
+        // 기운이 바로 올라오고, 거의 움직이지 않고 떼면 탭으로 바로 넘어가며, 더 끌면
+        // 들추기가 된다. 희귀한 장이면 누르는 순간 알고 천천히 들출 수 있다.
         .gesture(
-            DragGesture(minimumDistance: 6)
-                .onChanged { drag = $0.translation }
+            // 화면 좌표로 잰다. 카드가 움직이는 동안 지역 좌표의 기준이 바뀌어도 이동량이 튀지 않는다.
+            DragGesture(minimumDistance: 0, coordinateSpace: .global)
+                .onChanged { value in
+                    if !pressing {
+                        pressing = true
+                        firePop()
+                    }
+                    if RevealPeek.distance(value.translation) >= Self.tapSlop {
+                        drag = value.translation
+                    }
+                }
                 .onEnded { value in
-                    if RevealPeek.advances(value.translation) {
+                    // 움직임 없는 클릭은 누르는 순간 onChanged 가 오지 않을 수 있다. 그때는 떼는 순간 터뜨린다.
+                    if !pressing { firePop() }
+                    pressing = false
+                    if RevealPeek.distance(value.translation) < Self.tapSlop {
+                        advance(.tap)
+                    } else if RevealPeek.advances(value.translation) {
                         advance(.drag)
                     } else {
                         // 덜 들췄으면 제자리로. 다음 장 빛도 함께 사그라든다.
@@ -731,6 +721,48 @@ private struct RevealStack: View {
                 }
         )
     }
+
+    /// 희귀한 장은 보이는 동안 계속 기운이 뿜어져 나온다. 기운은 카드보다 크게 퍼지므로
+    /// 배경으로만 붙인다 — 스택 안에 두면 나타나고 사라질 때마다 스택 크기가 바뀌어 카드가
+    /// 밀리고 끌기 좌표가 튀었다.
+    private var nextIsRare: Bool {
+        next.map { RevealMotionProfile.forCard($0).emphasis != .none } ?? false
+    }
+
+    @ViewBuilder
+    private var currentAura: some View {
+        if RevealMotionProfile.forCard(card).emphasis != .none {
+            // 희귀한 밑장을 누르고 있으면 그쪽 기운에 자리를 내준다.
+            RevealAura(card: card, width: RevealPeek.cardWidth)
+                .opacity((pressing && nextIsRare ? 0.3 : 1) * (1 - peek))
+                .id("aura-\(card.id)-\(card.finish.rawValue)")
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// 누르는 동안에는 밑에 깔린 다음 장의 기운이 먼저 올라와, 무엇이 오는지 느끼며
+    /// 천천히 들출 수 있다. 밑장 크기와 자리에 맞춰 그린다.
+    @ViewBuilder
+    private var nextAura: some View {
+        if let next, pressing, nextIsRare {
+            RevealAura(card: next, width: RevealPeek.cardWidth)
+                .opacity(0.65 + 0.35 * peek)
+                .scaleEffect(RevealPeek.deckScale)
+                .offset(y: RevealPeek.deckOffset)
+                .id("aura-next-\(next.id)-\(next.finish.rawValue)")
+                .allowsHitTesting(false)
+        }
+    }
+
+    /// 다음 장이 희귀하면 불꽃을 새로 터뜨린다.
+    private func firePop() {
+        guard let next, nextIsRare, !reduceMotion else { return }
+        pop = next
+        popID = UUID()
+    }
+
+    /// 이보다 덜 움직이고 떼면 탭이다. 예전 끌기의 최소 거리와 같다.
+    private static let tapSlop: CGFloat = 6
 
     private func advance(_ kind: RevealAdvanceKind) {
         drag = .zero
@@ -764,6 +796,7 @@ private struct SpotlightCard: View {
             HolographicCardView(cardID: card.id, tier: card.tier,
                                 finish: card.finish, width: RevealPeek.cardWidth,
                                 preloaded: preloaded)
+                .environment(\.valueAwareGlow, true)
             if card.isNew {
                 if showNewBadge {
                     NewBadge(text: newBadge)
@@ -900,6 +933,29 @@ enum RevealPeek {
     }
 }
 
+/// 후광 세기 배율. 개봉 연출은 1 그대로, 카드를 가만히 들여다보는 상세 화면은 낮춘다 —
+/// 230pt 카드 뒤에서 최대 세기로 번지면 카드보다 빛이 먼저 보인다.
+private struct TierGlowScaleKey: EnvironmentKey {
+    static let defaultValue: Double = 1
+}
+
+/// 공개 연출(팩, 오리파)에서만 켠다. 켜지면 후광도 아우라와 같은 기준 — 등급과 시세 중
+/// 높은 쪽 — 으로 세기와 색을 정한다. 도감과 컬렉션은 등급 그대로 둔다.
+private struct ValueAwareGlowKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var tierGlowScale: Double {
+        get { self[TierGlowScaleKey.self] }
+        set { self[TierGlowScaleKey.self] = newValue }
+    }
+    var valueAwareGlow: Bool {
+        get { self[ValueAwareGlowKey.self] }
+        set { self[ValueAwareGlowKey.self] = newValue }
+    }
+}
+
 /// 카드 뒤에서 은은하게 퍼지는 등급 후광.
 ///
 /// 등급 배지를 읽지 않아도 무엇이 나왔는지 알 수 있게 하는 장치다.
@@ -908,13 +964,21 @@ enum RevealPeek {
 struct TierGlow: View {
     let tier: CardTier
     let width: CGFloat
+    /// 주면 아우라와 같은 기준을 쓴다. 시세 덕에 등급보다 높게 뜬 카드는 금빛으로, 그 단계에
+    /// 맞는 세기로 빛난다. 등급으로 정한 세기를 낮추지는 않는다.
+    var valueCard: PulledCard? = nil
+    @Environment(\.tierGlowScale) private var scale
 
     /// 카드가 나타난 뒤 빛이 퍼지도록 한 번만 부풀린다.
     @State private var bloomed = false
 
     var body: some View {
-        let color = tierColor(tier)
-        let strength = Self.strength(for: tier)
+        let byTier = RevealMotionProfile.tierEmphasis(tier)
+        let emphasis = valueCard.map { RevealMotionProfile.forCard($0).emphasis } ?? byTier
+        let raised = emphasis > byTier
+        let color = raised ? RevealValueEmphasis.color : tierColor(tier)
+        let strength = (raised ? max(Self.strength(for: tier), Self.strength(for: emphasis))
+                               : Self.strength(for: tier)) * scale
         ZStack {
             // 바깥 — 넓게 번지는 빛
             RoundedRectangle(cornerRadius: width * 0.09)
@@ -934,6 +998,16 @@ struct TierGlow: View {
         .accessibilityHidden(true)
         .onAppear {
             withAnimation(.easeOut(duration: 0.45)) { bloomed = true }
+        }
+    }
+
+    /// 시세로 올라간 단계의 세기. 등급표의 같은 단계 대표값과 맞춘다(RR, AR, UR 근처).
+    static func strength(for emphasis: RevealEmphasis) -> Double {
+        switch emphasis {
+        case .none: return 0
+        case .rare: return 0.52
+        case .premium: return 0.76
+        case .apex: return 0.98
         }
     }
 

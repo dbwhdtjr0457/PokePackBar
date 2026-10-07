@@ -93,6 +93,8 @@ struct CardSpotlightView: View {
                                         dimmed: ownedCount == 0, preloaded: preloaded)
                 }
             }
+                // 상세 화면은 개봉 연출이 아니라 들여다보는 자리다. 후광은 절반만.
+                .environment(\.tierGlowScale, 0.5)
                 .scaleEffect(landed ? 1 : 0.9)
                 .opacity(landed ? 1 : 0)
 

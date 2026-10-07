@@ -178,6 +178,7 @@ struct PulledCardView: View {
                 // 그리면 가림막 drag 중 네 개의 대형 blur가 동시에 다시 합성된다.
                 HolographicCardView(cardID: card.id, tier: card.tier,
                                     finish: card.finish, width: Self.cardWidth)
+                    .environment(\.valueAwareGlow, true)
                     .shadow(radius: opened ? 10 : 0, y: opened ? 4 : 0)
 
                 if !opened { cover }

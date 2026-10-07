@@ -486,6 +486,7 @@ enum HoloVisualDiagnostics {
 
 @MainActor
 struct HoloCardBody: View, @MainActor Animatable {
+    @Environment(\.valueAwareGlow) private var valueAwareGlow
     let cardID: String
     let tier: CardTier
     let finish: CardFinish
@@ -513,7 +514,13 @@ struct HoloCardBody: View, @MainActor Animatable {
             nx: tilt.nx, ny: tilt.ny, tilt: profile.tilt)
 
         ZStack {
-            TierGlow(tier: tier, width: width)
+            // 아직 없는 카드는 빛나지 않는다. 회색 카드 뒤에서 등급 빛만 켜져 있으면
+            // 도감을 훑을 때 백라이트처럼 보이고, 빛이 「뽑았다」는 신호로 읽히지 않는다.
+            if !dimmed {
+                TierGlow(tier: tier, width: width,
+                         valueCard: valueAwareGlow
+                            ? PulledCard(id: cardID, tier: tier, isNew: false, finish: finish) : nil)
+            }
             CardImageView(cardID: cardID, hires: true, width: width,
                           dimmed: dimmed, preloaded: preloaded,
                           imageOverlay: { displayedImage in

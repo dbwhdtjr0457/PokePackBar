@@ -66,6 +66,10 @@ struct PackPresentation: Sendable {
     let variants: [PackVariant]
     let supplements: [PackSupplement]
     let summaryCards: [PulledCard]
+    /// Results-screen orders. The reveal itself keeps the physical pack order;
+    /// only the summary is re-sorted so the best pulls are found at a glance.
+    let summaryByPrice: [PulledCard]
+    let summaryByRarity: [PulledCard]
     let newCount: Int
     let worthUSD: Double
     let specialStarts: [Int: PackVariant]
@@ -95,10 +99,26 @@ struct PackPresentation: Sendable {
         self.specialVariants = packs.map(\.variant).filter(\.isSpecialHit)
         self.newCount = cards.filter(\.isNew).count
         let collectible = cards.filter { !$0.isSupplementalEnergy }
-        self.summaryCards = Array(collectible.reversed()) + cards.filter(\.isSupplementalEnergy)
-        self.worthUSD = collectible.reduce(0) {
-            $0 + MarketEconomy.usd(cardID: $1.id, finish: $1.finish, prices: CardPrices.shared)
+        let energy = cards.filter(\.isSupplementalEnergy)
+        self.summaryCards = Array(collectible.reversed()) + energy
+        // Price each card once here, not in the SwiftUI body: bulk openings
+        // can hold thousands of cards. Ties fall back to the other key, then
+        // to the later-revealed card first, matching the previous order.
+        let priced = collectible.enumerated().map { offset, card in
+            (card: card, offset: offset,
+             usd: MarketEconomy.usd(cardID: card.id, finish: card.finish, prices: CardPrices.shared))
         }
+        self.worthUSD = priced.reduce(0) { $0 + $1.usd }
+        self.summaryByPrice = priced.sorted { a, b in
+            if a.usd != b.usd { return a.usd > b.usd }
+            if a.card.tier.rank != b.card.tier.rank { return a.card.tier.rank > b.card.tier.rank }
+            return a.offset > b.offset
+        }.map(\.card) + energy
+        self.summaryByRarity = priced.sorted { a, b in
+            if a.card.tier.rank != b.card.tier.rank { return a.card.tier.rank > b.card.tier.rank }
+            if a.usd != b.usd { return a.usd > b.usd }
+            return a.offset > b.offset
+        }.map(\.card) + energy
     }
 
     func imageIDs(at position: Int) -> [String] {
