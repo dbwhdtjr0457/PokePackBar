@@ -5,6 +5,28 @@ import SwiftUI
 /// 저장 형식을 늘리지 않는다. 온라인 세이브는 서버 규칙과 같은 모양을 지켜야 하므로,
 /// 여기 보이는 숫자는 모두 이미 세고 있던 값이나 그 값에서 바로 나오는 것이다.
 struct CollectionStats: Equatable {
+    /// Trades, market purchases and price refreshes can change stats without an opening.
+    struct RefreshID: Equatable {
+        let cards: [String: Int]
+        let printings: [String: Int]
+        let packsOpened: Int
+        let cardsSold: Int
+        let spent: Int
+        let refunded: Int
+        let historySeeds: [String]
+        let priceDigest: String?
+
+        init(state: GameState, prices: CardPrices?) {
+            cards = state.cards
+            printings = state.printingCards
+            packsOpened = state.packsOpened
+            cardsSold = state.cardsDisenchanted
+            spent = state.spentTokens
+            refunded = state.refundedTokens
+            historySeeds = state.openingHistory.map(\.seed)
+            priceDigest = prices?.snapshotDigest
+        }
+    }
     struct Highlight: Equatable {
         let cardID: String
         let finish: CardFinish
@@ -112,7 +134,7 @@ struct StatsView: View {
             }
         }
         .frame(height: PopoverMetrics.tabHeight)
-        .task(id: wallet.state.packsOpened &+ wallet.state.cardsDisenchanted) {
+        .task(id: CollectionStats.RefreshID(state: wallet.state, prices: CardPrices.shared)) {
             stats = CollectionStats.make(state: wallet.state,
                                          catalogueSize: index?.cards.count ?? 0,
                                          prices: CardPrices.shared)
