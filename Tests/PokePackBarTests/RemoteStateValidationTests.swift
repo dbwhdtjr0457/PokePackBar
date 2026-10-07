@@ -3,6 +3,16 @@ import XCTest
 
 @MainActor
 final class RemoteStateValidationTests: XCTestCase {
+    func testOnlineTradeReplyAlsoValidatesBeforeItsAsynchronousCacheWrite() async throws {
+        let data = try JSONSerialization.data(withJSONObject: ["snapshot": [
+            "account_id": UUID().uuidString, "revision": 1, "balance": 0,
+            "state": ["cards": [:], "spentTokens": -1]
+        ]])
+        do {
+            _ = try await RemoteGameSession.decoded(RemoteGameSession.OnlineSnapshotReply.self, from: data)
+            XCTFail("Online mutations must use the same publication boundary as game commands")
+        } catch {}
+    }
     func testBackgroundSnapshotDecodeRejectsInvalidLedgerBeforePublication() async throws {
         let data = try JSONSerialization.data(withJSONObject: [
             "account_id": UUID().uuidString, "revision": 1, "balance": 0,

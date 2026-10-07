@@ -73,6 +73,7 @@ final class RemoteGameSession {
         let event_revision: Int
         let replayed: Bool
     }
+    struct OnlineSnapshotReply: Decodable, Sendable { let snapshot: Snapshot }
     struct RuleVersion: Decodable { let rules_version: String }
     struct OpeningJob: Decodable, Identifiable {
         let id: String
@@ -482,7 +483,7 @@ final class RemoteGameSession {
         try await Task.detached(priority: .userInitiated) {
             // Cache writes run later now. Preserve their strict resource checks
             // before publishing a response to the live wallet, still off-main.
-            if T.self == Snapshot.self || T.self == Response.self {
+            if T.self == Snapshot.self || T.self == Response.self || T.self == OnlineSnapshotReply.self {
                 guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
                     throw Failure(message: L.current.patchUnreadable)
                 }
@@ -610,8 +611,8 @@ final class RemoteGameSession {
         let pending = try JSONDecoder().decode(OnlinePending.self, from: Data(contentsOf: onlinePendingURL))
         do {
             let data = try await api(pending.path, method: "POST", body: pending.body)
-            struct Reply: Decodable { let snapshot: Snapshot }
-            try accept(JSONDecoder().decode(Reply.self, from: data).snapshot)
+            let reply = try await Self.decoded(OnlineSnapshotReply.self, from: data)
+            try accept(reply.snapshot)
             try FileManager.default.removeItem(at: onlinePendingURL)
             hasOnlinePending = false
             return data
