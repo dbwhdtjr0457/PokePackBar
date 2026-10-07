@@ -28,8 +28,15 @@ enum OnlineText {
     }
 
     /// 원화 입력을 서버가 받는 토큰으로. 100원 칸 단위로 맞춘다.
-    static func tokens(won: Int) -> Int {
-        max(1, (max(0, won) / MarketEconomy.wonStep) * MarketEconomy.stepTokens())
+    static let maximumListingTokens = 1_000_000_000_000
+    static var maximumListingWon: Int {
+        maximumListingTokens / MarketEconomy.stepTokens() * MarketEconomy.wonStep
+    }
+    static func tokens(won: Int) -> Int? {
+        let step = MarketEconomy.stepTokens()
+        let units = won / MarketEconomy.wonStep
+        guard won >= MarketEconomy.wonStep, units <= maximumListingTokens / step else { return nil }
+        return units * step
     }
 
     /// 참고 시세를 원화 100원 칸으로.

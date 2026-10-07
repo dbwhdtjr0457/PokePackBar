@@ -272,11 +272,13 @@ private struct SellSheet: View {
     var body: some View {
         let suggested = stock.referenceWon ?? MarketEconomy.wonStep
         let price = max(MarketEconomy.wonStep, (priceWon / MarketEconomy.wonStep) * MarketEconomy.wonStep)
+        let listingTokens = OnlineText.tokens(won: price)
         OnlineSheet(title: "카드 팔기", actionTitle: "판매 올리기",
-                    actionDisabled: !model.canWrite || priceWon < MarketEconomy.wonStep,
+                    actionDisabled: !model.canWrite || priceWon < MarketEconomy.wonStep || listingTokens == nil,
                     note: "\(quantity)장을 장당 \(OnlineText.wonText(price))에 올려요. 7일 동안 안 팔린 카드는 자동으로 돌아와요. 시세가 바뀌어도 가격은 그대로예요.",
                     action: {
-                        Task { await model.mutate("market/listings", ["action": "listing_create", "printing": stock.key, "quantity": quantity, "unit_tokens": OnlineText.tokens(won: price)]) }
+                        guard let listingTokens else { return }
+                        Task { await model.mutate("market/listings", ["action": "listing_create", "printing": stock.key, "quantity": quantity, "unit_tokens": listingTokens]) }
                     }) {
             HStack(alignment: .top, spacing: 18) {
                 CardImageView(cardID: stock.cardID, hires: true, width: 150)
@@ -299,6 +301,10 @@ private struct SellSheet: View {
                         }
                         Text(stock.referenceWon.map { "참고 시세 \(OnlineText.wonText($0)), 100원 단위로 올라가요" } ?? "참고 시세가 없어요. 100원 단위로 올라가요")
                             .font(Typography.caption).foregroundStyle(.secondary)
+                        if listingTokens == nil {
+                            Text("장당 가격은 \(OnlineText.wonText(OnlineText.maximumListingWon))까지 입력할 수 있어요.")
+                                .font(Typography.caption).foregroundStyle(.red)
+                        }
                     }
                 }
             }
