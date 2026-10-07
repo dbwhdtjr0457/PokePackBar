@@ -11,6 +11,19 @@ read_when:
 
 # 결함 대응 축적 규칙
 
+### 2026-10-07 — Validate remote state before asynchronous cache persistence
+
+- Moving online cache writes off the main actor removed a validation boundary:
+  a negative resource counter could enter the live wallet before the queued cache
+  commit rejected it. Patch decoding had the same gap. Successful-response audits
+  never exercised a malformed ledger at this publication boundary.
+- Apply `GamePersistence.decode` to full-response raw states and reconstructed
+  patches before publication, on the existing background decode task. Failed
+  patches retain the base and fetch a full snapshot; uncertain requests remain
+  recoverable until a valid state is accepted.
+- `RemoteStateValidationTests` rejects a negative ledger on both full and patch
+  paths. Both tests fail without the validation and pass with it.
+
 ### 2026-10-02 — Image-guided foil relief never prepared in the app (uncommitted foil-preparation work)
 
 - Symptom: in the app, FUR (`cel30-157`, chrome) and RGB Mew (`cel30-*_RGB`, printedRGB) lost

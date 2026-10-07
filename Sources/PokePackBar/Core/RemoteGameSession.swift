@@ -434,7 +434,7 @@ final class RemoteGameSession {
             records.append(contentsOf: history["append"] as? [Any] ?? [])
             state["openingHistory"] = records
         }
-        let decoded = try JSONDecoder().decode(GameState.self, from: JSONSerialization.data(withJSONObject: state))
+        let decoded = try GamePersistence.decode(JSONSerialization.data(withJSONObject: state))
         return Snapshot(account_id: accountID, revision: revision, balance: balance, state: decoded,
                         reserved: patch["reserved"] as? [String: Int],
                         state_digest: patch["state_digest"] as? String)
@@ -479,7 +479,23 @@ final class RemoteGameSession {
 
     /// 전체 상태(1.3MB)를 담은 응답은 해석에 20ms 가까이 걸려 메인 스레드 밖에서 읽는다.
     nonisolated static func decoded<T: Decodable & Sendable>(_ type: T.Type, from data: Data) async throws -> T {
-        try await Task.detached(priority: .userInitiated) { try JSONDecoder().decode(T.self, from: data) }.value
+        try await Task.detached(priority: .userInitiated) {
+            // Cache writes run later now. Preserve their strict resource checks
+            // before publishing a response to the live wallet, still off-main.
+            if T.self == Snapshot.self || T.self == Response.self {
+                guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                    throw Failure(message: L.current.patchUnreadable)
+                }
+                let snapshot = T.self == Snapshot.self ? object : object["snapshot"] as? [String: Any]
+                if let snapshot {
+                    guard let state = snapshot["state"] as? [String: Any] else {
+                        throw Failure(message: L.current.patchUnreadable)
+                    }
+                    _ = try GamePersistence.decode(JSONSerialization.data(withJSONObject: state))
+                }
+            }
+            return try JSONDecoder().decode(T.self, from: data)
+        }.value
     }
 
     /// 계정 창에서 같은 계정으로 다시 로그인했을 때 새 로그인 정보를 읽게 한다.
