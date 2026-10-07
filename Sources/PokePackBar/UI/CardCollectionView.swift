@@ -15,6 +15,8 @@ struct CardCollectionView: View {
     @State private var selectedCard: String?
     /// 이름(한국어, 원문)이나 카드 번호로 거른다. 세트, 등급 필터 안에서 함께 걸린다.
     @State private var query = ""
+    /// 입력이 멈춘 뒤 실제로 거르는 검색어.
+    @State private var appliedQuery = ""
     /// 한번에 판매 화면을 열었는가. 탭 안에서 화면만 바꾼다.
     @State private var bulkSelling = false
 
@@ -71,7 +73,7 @@ struct CardCollectionView: View {
         var shelf = Shelf()
         let sorted = index.currentCardsByValue
         shelf.pool.reserveCapacity(sorted.count)
-        let needle = DexCardSearch.normalized(query)
+        let needle = DexCardSearch.normalized(appliedQuery)
         var missing: [CardEntry] = []
         for entry in sorted {
             guard selectedSet == nil || entry.setID == selectedSet,
@@ -193,6 +195,7 @@ struct CardCollectionView: View {
         .onChange(of: ownedOnly) { selectedCard = nil }
         .onChange(of: sort) { selectedCard = nil }
         .onChange(of: query) { selectedCard = nil }
+        .debouncedSearch(query, into: $appliedQuery)
     }
 
     /// 검색은 한 줄을 통째로 쓴다. 보기 줄 사이에 끼워 두니 글자 두 개 폭으로 줄어

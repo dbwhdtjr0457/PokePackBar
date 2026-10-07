@@ -347,18 +347,31 @@ struct OnlineCatalogueSearch: View {
     let onPick: (_ cardID: String, _ finish: CardFinish?, _ quantity: Int) -> Void
 
     @State private var query = ""
+    /// 입력이 멈춘 뒤 실제로 거르는 검색어.
+    @State private var appliedQuery = ""
     @State private var picked: CardEntry?
     @State private var finish: CardFinish?
     @State private var quantity = 1
     @Environment(\.dismiss) private var dismiss
 
-    private var results: [CardEntry] {
-        let needle = DexCardSearch.normalized(query)
-        guard !needle.isEmpty, let index = CardIndex.shared else { return [] }
-        return Array(index.cards.lazy.filter { entry in
-            [entry.name, entry.nameKo].compactMap { $0 }
-                .contains { DexCardSearch.normalized($0).contains(needle) }
-        }.prefix(60))
+    private static let resultLimit = 200
+
+    /// 이름이 똑같은 카드, 그 말로 시작하는 카드, 포함하는 카드 순. 같은 묶음 안에서는 시세 높은 순.
+    ///
+    /// 예전에는 카드 목록 순서대로 앞 60장만 보여 줬다. 「뮤」로 찾으면 뮤츠까지 108장이 걸리는데
+    /// 목록 뒤쪽인 30주년 RGB 뮤(105~107번째)가 잘려 위시리스트에 넣을 수 없었다.
+    private var matches: (cards: [CardEntry], total: Int) {
+        let needle = DexCardSearch.normalized(appliedQuery)
+        guard !needle.isEmpty, let index = CardIndex.shared else { return ([], 0) }
+        var exact: [CardEntry] = [], prefix: [CardEntry] = [], partial: [CardEntry] = []
+        for entry in index.currentCardsByValue {
+            let names = [entry.name, entry.nameKo].compactMap { $0 }.map(DexCardSearch.normalized)
+            if names.contains(needle) { exact.append(entry) }
+            else if names.contains(where: { $0.hasPrefix(needle) }) { prefix.append(entry) }
+            else if names.contains(where: { $0.contains(needle) }) { partial.append(entry) }
+        }
+        let all = exact + prefix + partial
+        return (Array(all.prefix(Self.resultLimit)), all.count)
     }
 
     private func finishes(_ card: CardEntry) -> [CardFinish] {
@@ -397,14 +410,23 @@ struct OnlineCatalogueSearch: View {
             } else {
                 TextField("카드 이름으로 찾기 (한국어, 영어)", text: $query)
                     .textFieldStyle(.roundedBorder)
+                    .debouncedSearch(query, into: $appliedQuery)
                 ScrollView {
+                    // 1만 9천 장을 훑으므로 그리기 한 번에 한 번만 계산한다.
+                    let found = matches
                     if query.isEmpty {
                         OnlineEmptyState(icon: "magnifyingglass", title: "찾을 카드 이름을 입력하세요")
-                    } else if results.isEmpty {
-                        OnlineEmptyState(icon: "questionmark.square", title: "맞는 카드가 없어요")
+                    } else if found.cards.isEmpty {
+                        OnlineEmptyState(icon: "questionmark.square",
+                                         title: appliedQuery == query ? "맞는 카드가 없어요" : "찾는 중…")
                     } else {
+                        if found.total > found.cards.count {
+                            Text("\(found.total.formatted())장이 걸려서 \(found.cards.count)장만 보여요. 이름을 더 입력하면 좁혀져요.")
+                                .font(Typography.caption).foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
-                            ForEach(results) { card in
+                            ForEach(found.cards) { card in
                                 Button {
                                     picked = card
                                     finish = allowsAnyFinish ? nil : finishes(card).first
@@ -453,13 +475,14 @@ struct OnlineStockPicker: View {
     let onPick: (_ key: String, _ quantity: Int) -> Void
 
     @State private var query = ""
+    @State private var appliedQuery = ""
     @State private var picked: OnlineStock?
     @State private var quantity = 1
     @Environment(\.dismiss) private var dismiss
 
     private var stock: [OnlineStock] {
         let all = OnlineStock.sellable(wallet: wallet)
-        let needle = DexCardSearch.normalized(query)
+        let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return all }
         return all.filter { DexCardSearch.normalized(OnlineText.cardName($0.cardID)).contains(needle)
             || DexCardSearch.normalized(CardIndex.shared?.card($0.cardID)?.name ?? "").contains(needle) }
@@ -484,6 +507,7 @@ struct OnlineStockPicker: View {
                 }
             } else {
                 TextField("내 카드에서 찾기", text: $query).textFieldStyle(.roundedBorder)
+                    .debouncedSearch(query, into: $appliedQuery)
                 ScrollView {
                     if stock.isEmpty {
                         OnlineEmptyState(icon: "square.stack",

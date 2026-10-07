@@ -323,6 +323,7 @@ struct BinderEditorSheet: View {
     private let onSave: ([String]) -> Void
     @State private var picked: [String]
     @State private var query = ""
+    @State private var appliedQuery = ""
     @Environment(\.dismiss) private var dismiss
 
     init(wallet: WalletStore, current: [String], onSave: @escaping ([String]) -> Void) {
@@ -345,7 +346,7 @@ struct BinderEditorSheet: View {
     }
 
     private var visible: [Entry] {
-        let needle = DexCardSearch.normalized(query)
+        let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return entries }
         return entries.filter {
             DexCardSearch.normalized(OnlineText.cardName($0.cardID)).contains(needle)
@@ -388,6 +389,7 @@ struct BinderEditorSheet: View {
             }
             HStack(spacing: 10) {
                 TextField("이름으로 찾기", text: $query).textFieldStyle(.roundedBorder)
+                    .debouncedSearch(query, into: $appliedQuery)
                 Button { fillTop() } label: { Label("비싼 카드로 채우기", systemImage: "sparkles") }
                     .disabled(picked.count >= Self.capacity)
                     .help("남은 칸을 시세 높은 카드로 채워요. 같은 카드는 한 장만 넣어요.")

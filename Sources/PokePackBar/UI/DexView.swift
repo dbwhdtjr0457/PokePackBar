@@ -16,6 +16,8 @@ struct DexView: View {
     @State private var openedEra: String?
     @State private var selected: String?
     @State private var searchText = ""
+    /// 입력이 멈춘 뒤 실제로 거르는 검색어.
+    @State private var appliedSearch = ""
     /// 확정 카드로 방금 받은 것. 뒤집어 볼 때까지 이 화면이 덮는다.
     @State private var granted: PulledCard?
     /// 그 카드의 가림막이 이미 걷혔는가.
@@ -25,6 +27,7 @@ struct DexView: View {
         self.wallet = wallet
         self.index = index
         _searchText = State(initialValue: initialSearchText)
+        _appliedSearch = State(initialValue: initialSearchText)
     }
 
     private func statuses(_ dexes: [Dex]) -> [DexStatus] {
@@ -93,6 +96,7 @@ struct DexView: View {
         .padding(.horizontal, 9).padding(.vertical, 6)
         .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
         .onExitCommand { searchText = "" }
+        .debouncedSearch(searchText, into: $appliedSearch)
     }
 
     /// 조합 도감 — 예전 목록 그대로. 140개라 스크롤로 훑는다.
@@ -102,7 +106,7 @@ struct DexView: View {
         return ScrollView {
             LazyVStack(spacing: 8) {
                 header(all)
-                if visible.isEmpty, !DexCardSearch.normalized(searchText).isEmpty {
+                if visible.isEmpty, !DexCardSearch.normalized(appliedSearch).isEmpty {
                     searchEmpty
                 }
                 ForEach(visible) { status in
@@ -133,7 +137,7 @@ struct DexView: View {
     /// 세트 도감 — 시대를 한 단계 두고 그 안에서 세트를 늘어놓는다.
     @ViewBuilder
     private var setBrowser: some View {
-        if let index, !DexCardSearch.normalized(searchText).isEmpty {
+        if let index, !DexCardSearch.normalized(appliedSearch).isEmpty {
             let all = statuses(wallet.dexes.filter { $0.kind == .set })
             let visible = filtered(all)
             ScrollView {
@@ -178,22 +182,22 @@ struct DexView: View {
     }
 
     private func filtered(_ rows: [DexStatus]) -> [DexStatus] {
-        guard let index, !DexCardSearch.normalized(searchText).isEmpty else { return rows }
+        guard let index, !DexCardSearch.normalized(appliedSearch).isEmpty else { return rows }
         return rows.filter {
-            DexCardSearch.containsCard(named: searchText, in: $0.dex, index: index)
+            DexCardSearch.containsCard(named: appliedSearch, in: $0.dex, index: index)
         }
     }
 
     private func searchMatchNames(_ dex: Dex) -> [String] {
-        guard let index, !DexCardSearch.normalized(searchText).isEmpty else { return [] }
-        let matches = DexCardSearch.matches(named: searchText, in: dex, index: index, limit: 4)
+        guard let index, !DexCardSearch.normalized(appliedSearch).isEmpty else { return [] }
+        let matches = DexCardSearch.matches(named: appliedSearch, in: dex, index: index, limit: 4)
         var names = matches.prefix(3).map { $0.displayName(wallet.language) }
         if matches.count > 3 { names.append("…") }
         return names
     }
 
     private var searchEmpty: some View {
-        Text(wallet.l.dexCardSearchEmpty(searchText.trimmingCharacters(in: .whitespacesAndNewlines)))
+        Text(wallet.l.dexCardSearchEmpty(appliedSearch.trimmingCharacters(in: .whitespacesAndNewlines)))
             .font(Typography.body)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity)
