@@ -264,7 +264,7 @@ struct PopoverView: View {
             // 머리글에서는 원화만 쓴다. 달러까지 붙이면 잔액과 나란히 놓기에 너무 길다 —
             // 달러는 카드 상세에서 보면 된다.
             headerStat(l.collectionValue,
-                       WonFormatter.money(prices.krw(wallet.collectionValueUSD(prices: prices)),
+                       WonFormatter.money(prices.krw(wallet.currentCollectionValueUSD()),
                                           language: wallet.language),
                        tint: .accentColor)
                 .help(l.mixedPriceSource)

@@ -112,11 +112,13 @@ struct CardCollectionView: View {
 
     /// 이름은 한국어와 원문 모두, 번호는 "4" 나 "4/102" 처럼 친 그대로 맞춘다.
     static func matches(_ entry: CardEntry, needle: String, index: CardIndex) -> Bool {
-        if [entry.name, entry.nameKo].compactMap({ $0 })
-            .contains(where: { DexCardSearch.normalized($0).contains(needle) }) { return true }
+        if DexCardSearch.names(entry).contains(where: { $0.contains(needle) }) { return true }
+        if let number = DexCardSearch.normalizedNumbers[entry.id] {
+            return number.full == needle || number.head == needle
+        }
+        // 묶음 인덱스 밖의 카드(검사용 인덱스 등)는 그 자리에서 맞춘다.
         guard let number = index.numberLabel(entry.id) else { return false }
-        let compact = DexCardSearch.normalized(number)
-        return compact == needle
+        return DexCardSearch.normalized(number) == needle
             || DexCardSearch.normalized(String(number.split(separator: "/").first ?? "")) == needle
     }
 

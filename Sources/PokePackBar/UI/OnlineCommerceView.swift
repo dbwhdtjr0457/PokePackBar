@@ -131,8 +131,7 @@ struct OnlineMarketView: View {
         let all = OnlineStock.sellable(wallet: model.wallet)
         let needle = DexCardSearch.normalized(sellQuery)
         let stock = needle.isEmpty ? all : all.filter {
-            DexCardSearch.normalized(OnlineText.cardName($0.cardID)).contains(needle)
-                || DexCardSearch.normalized(CardIndex.shared?.card($0.cardID)?.name ?? "").contains(needle)
+            DexCardSearch.names(cardID: $0.cardID).contains { $0.contains(needle) }
         }
         return VStack(alignment: .leading, spacing: 12) {
             HStack {

@@ -373,7 +373,7 @@ struct OnlineCatalogueSearch: View {
         guard !needle.isEmpty, let index = CardIndex.shared else { return [] }
         var exact: [CardEntry] = [], prefix: [CardEntry] = [], partial: [CardEntry] = []
         for entry in index.currentCardsByValue {
-            let names = [entry.name, entry.nameKo].compactMap { $0 }.map(DexCardSearch.normalized)
+            let names = DexCardSearch.names(entry)
             if names.contains(needle) { exact.append(entry) }
             else if names.contains(where: { $0.hasPrefix(needle) }) { prefix.append(entry) }
             else if names.contains(where: { $0.contains(needle) }) { partial.append(entry) }
@@ -489,8 +489,7 @@ struct OnlineStockPicker: View {
         let all = OnlineStock.sellable(wallet: wallet)
         let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return all }
-        return all.filter { DexCardSearch.normalized(OnlineText.cardName($0.cardID)).contains(needle)
-            || DexCardSearch.normalized(CardIndex.shared?.card($0.cardID)?.name ?? "").contains(needle) }
+        return all.filter { DexCardSearch.names(cardID: $0.cardID).contains { $0.contains(needle) } }
     }
 
     var body: some View {

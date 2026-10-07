@@ -399,8 +399,7 @@ struct BinderEditorSheet: View {
         let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return entries }
         return entries.filter {
-            DexCardSearch.normalized(OnlineText.cardName($0.cardID)).contains(needle)
-                || DexCardSearch.normalized(CardIndex.shared?.card($0.cardID)?.name ?? "").contains(needle)
+            DexCardSearch.names(cardID: $0.cardID).contains { $0.contains(needle) }
         }
     }
 
