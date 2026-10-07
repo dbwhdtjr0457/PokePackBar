@@ -4,7 +4,6 @@ import SwiftUI
 /// 친구 — 내 프로필, 친구, 위시리스트, 바인더, 서버에 있는 내 카드.
 ///
 /// 서버 경로와 보내는 값은 그대로 두고, 화면만 그림과 쉬운 말로 바꿨다.
-@MainActor
 struct OnlineSocialView: View {
     @Bindable var model: OnlineHubModel
     @State private var nickname = ""
@@ -14,6 +13,7 @@ struct OnlineSocialView: View {
     @State private var binderPublic = false
     @State private var draftLoaded = false
     @State private var addingWish = false
+    @State private var editingBinder = false
     @State private var visitingFriend: String?
     @State private var preview: PrintingSelection?
     @State private var copied = false
@@ -41,6 +41,11 @@ struct OnlineSocialView: View {
         }
         .sheet(item: Binding(get: { visitingFriend.map(PrintingSelection.init) }, set: { visitingFriend = $0?.id })) { _ in
             FriendBinderSheet(model: model)
+        }
+        .sheet(isPresented: $editingBinder) {
+            BinderEditorSheet(wallet: model.wallet, current: model.profile["binder"] as? [String] ?? []) { keys in
+                act("binder", ["action": "binder", "binder": keys])
+            }
         }
     }
 
@@ -199,9 +204,14 @@ struct OnlineSocialView: View {
 
     private var binder: some View {
         let keys = model.profile["binder"] as? [String] ?? []
-        return OnlineSection(title: "내 바인더", subtitle: "친구에게 자랑할 카드를 최대 36장까지 골라 꽂아 두세요. 아래 「내 카드」에서 넣을 수 있어요.") {
+        return OnlineSection(title: "내 바인더", subtitle: "친구에게 자랑할 카드를 최대 \(BinderEditorSheet.capacity)장까지 꽂아 두세요.") {
+            Button { editingBinder = true } label: { Label("카드 고르기", systemImage: "rectangle.stack.badge.plus") }
+                .buttonStyle(.borderedProminent)
+                .disabled(!model.canWrite)
+        } content: {
             if keys.isEmpty {
-                Text("아직 꽂은 카드가 없어요.").font(Typography.label).foregroundStyle(.secondary)
+                Text("아직 꽂은 카드가 없어요. 「카드 고르기」에서 시세 높은 카드부터 골라 한 번에 꽂을 수 있어요.")
+                    .font(Typography.label).foregroundStyle(.secondary)
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 116), spacing: 14)], alignment: .leading, spacing: 16) {
                     ForEach(Array(keys.enumerated()), id: \.offset) { i, key in
@@ -250,7 +260,7 @@ struct OnlineSocialView: View {
                             } else {
                                 Button("바인더에 꽂기") { act("binder", ["action": "binder", "binder": binderKeys + [key]]) }
                                     .buttonStyle(.borderless).font(Typography.caption)
-                                    .disabled(!model.canWrite || binderKeys.count >= 36)
+                                    .disabled(!model.canWrite || binderKeys.count >= BinderEditorSheet.capacity)
                             }
                         }
                         .onTapGesture { preview = PrintingSelection(id: key) }
@@ -291,8 +301,171 @@ struct OnlineSocialView: View {
     private func act(_ route: String, _ values: [String: Any]) { Task { await model.mutate(route, values) } }
 }
 
-/// 친구의 공개 바인더, 위시리스트, 컬렉션.
+/// 바인더 고르기. 내 카드 전체를 시세 높은 순으로 보여 주고 여러 장을 골라 한 번에 저장한다.
+///
+/// 예전에는 서버의 「내 카드」 목록(이름순, 50장씩)에서 카드마다 「바인더에 꽂기」를 눌러야
+/// 해서, 좋은 카드를 찾으려면 쪽을 계속 넘겨야 했다. 가진 카드와 시세는 앱에 이미 있다.
 @MainActor
+struct BinderEditorSheet: View {
+    /// 서버가 받는 바인더 최대 장수.
+    nonisolated static let capacity = 36
+
+    private struct Entry: Identifiable {
+        let key: String
+        let cardID: String
+        let finish: CardFinish
+        let won: Int?
+        var id: String { key }
+    }
+
+    private let entries: [Entry]
+    private let initial: [String]
+    private let onSave: ([String]) -> Void
+    @State private var picked: [String]
+    @State private var query = ""
+    @Environment(\.dismiss) private var dismiss
+
+    init(wallet: WalletStore, current: [String], onSave: @escaping ([String]) -> Void) {
+        let index = CardIndex.shared
+        entries = wallet.state.printingCards.compactMap { key, count -> Entry? in
+            let printing = CardPrintingKey(storageKey: key)
+            guard count > 0, index?.card(printing.cardID) != nil else { return nil }
+            return Entry(key: key, cardID: printing.cardID, finish: printing.finish,
+                         won: OnlineText.referenceWon(key))
+        }
+        .sorted { left, right in
+            left.won != right.won ? (left.won ?? -1) > (right.won ?? -1) : left.key < right.key
+        }
+        // 이제 없는 카드는 서버가 거절하므로 담아 두지 않는다.
+        let ownedKeys = Set(entries.map(\.key))
+        let kept = current.filter(ownedKeys.contains)
+        initial = kept
+        _picked = State(initialValue: kept)
+        self.onSave = onSave
+    }
+
+    private var visible: [Entry] {
+        let needle = DexCardSearch.normalized(query)
+        guard !needle.isEmpty else { return entries }
+        return entries.filter {
+            DexCardSearch.normalized(OnlineText.cardName($0.cardID)).contains(needle)
+                || DexCardSearch.normalized(CardIndex.shared?.card($0.cardID)?.name ?? "").contains(needle)
+        }
+    }
+
+    var body: some View {
+        let chosen = Set(picked)
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("바인더 고르기").font(Typography.heading)
+                    Text("시세 높은 카드부터 보여요. 누르면 담기고, 다시 누르면 빠져요.")
+                        .font(Typography.label).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Text("\(picked.count)/\(Self.capacity)장").font(Typography.bodySemibold).monospacedDigit()
+            }
+            if !picked.isEmpty {
+                ScrollView(.horizontal) {
+                    HStack(spacing: 8) {
+                        ForEach(picked, id: \.self) { key in
+                            Button { toggle(key) } label: {
+                                CardImageView(cardID: CardPrintingKey(storageKey: key).cardID, width: 50)
+                                    .overlay(alignment: .topTrailing) {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.system(size: 15))
+                                            .foregroundStyle(.white, .black.opacity(0.55))
+                                            .padding(2)
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .help("\(OnlineText.cardName(CardPrintingKey(storageKey: key).cardID)) 빼기")
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .frame(height: 76)
+            }
+            HStack(spacing: 10) {
+                TextField("이름으로 찾기", text: $query).textFieldStyle(.roundedBorder)
+                Button { fillTop() } label: { Label("비싼 카드로 채우기", systemImage: "sparkles") }
+                    .disabled(picked.count >= Self.capacity)
+                    .help("남은 칸을 시세 높은 카드로 채워요. 같은 카드는 한 장만 넣어요.")
+                Button("모두 빼기") { picked = [] }.disabled(picked.isEmpty)
+            }
+            ScrollView {
+                if visible.isEmpty {
+                    OnlineEmptyState(icon: "rectangle.stack",
+                                     title: entries.isEmpty ? "가진 카드가 없어요" : "맞는 카드가 없어요",
+                                     message: entries.isEmpty ? "팩을 열면 여기에 나타나요." : nil)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
+                        ForEach(visible) { entry in
+                            let selected = chosen.contains(entry.key)
+                            Button { toggle(entry.key) } label: {
+                                OnlineCardTile(cardID: entry.cardID, finish: entry.finish.rawValue, width: 92) {
+                                    Text(entry.won.map(OnlineText.wonText) ?? "시세 없음")
+                                        .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit()
+                                }
+                                .padding(5)
+                                .background(selected ? Color.accentColor.opacity(0.14) : .clear,
+                                            in: RoundedRectangle(cornerRadius: 9))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 9)
+                                        .strokeBorder(Color.accentColor, lineWidth: selected ? 2 : 0)
+                                }
+                                // 카드 그림 위 글자에 묻히지 않게 흰 테두리가 있는 체크로 표시한다.
+                                .overlay(alignment: .topTrailing) {
+                                    if selected {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .font(.system(size: 22, weight: .semibold))
+                                            .foregroundStyle(.white, Color.accentColor)
+                                            .shadow(color: .black.opacity(0.35), radius: 2)
+                                            .padding(2)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!selected && picked.count >= Self.capacity)
+                            .accessibilityAddTraits(selected ? .isSelected : [])
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            .frame(height: 380)
+            HStack {
+                Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
+                Spacer()
+                Button("바인더에 저장") { dismiss(); onSave(picked) }
+                    .buttonStyle(.borderedProminent)
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(picked == initial)
+            }
+        }
+        .padding(24)
+        .frame(width: 660)
+    }
+
+    private func toggle(_ key: String) {
+        if let at = picked.firstIndex(of: key) { picked.remove(at: at) }
+        else if picked.count < Self.capacity { picked.append(key) }
+    }
+
+    /// 남은 칸을 시세 높은 카드로. 같은 카드의 다른 판형으로 칸이 채워지지 않게 카드마다 한 장.
+    private func fillTop() {
+        var next = picked
+        var cards = Set(next.map { CardPrintingKey(storageKey: $0).cardID })
+        for entry in entries where next.count < Self.capacity {
+            guard entry.won != nil, !cards.contains(entry.cardID) else { continue }
+            next.append(entry.key)
+            cards.insert(entry.cardID)
+        }
+        picked = next
+    }
+}
+
+/// 친구의 공개 바인더, 위시리스트, 컬렉션.
 private struct FriendBinderSheet: View {
     @Bindable var model: OnlineHubModel
     @State private var preview: PrintingSelection?
@@ -381,7 +554,6 @@ private struct FriendBinderSheet: View {
 
 struct PrintingSelection: Identifiable { let id: String }
 
-@MainActor
 struct OnlinePrintingArt: View {
     let printing: String
     var width: CGFloat = 180
@@ -395,7 +567,6 @@ struct OnlinePrintingArt: View {
 }
 
 /// 카드 한 장을 크게. 판형과 참고 시세를 원화로 보여 준다.
-@MainActor
 struct OnlinePrintingDetail: View {
     let printing: String
     @Environment(\.dismiss) private var dismiss
