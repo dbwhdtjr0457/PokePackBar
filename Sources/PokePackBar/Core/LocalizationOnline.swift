@@ -659,3 +659,30 @@ extension L {
     func requestNotCompleted(_ detail: String) -> String { t("요청을 완료하지 못했어요: \(detail). 새로고침한 뒤 조건을 다시 확인해 주세요.", "The request couldn’t be completed: \(detail). Refresh and check the conditions again.", "リクエストを完了できませんでした: \(detail)。更新して条件をもう一度確認してください。", "No se pudo completar la solicitud: \(detail). Actualiza y revisa las condiciones.", "La requête n’a pas abouti : \(detail). Actualisez et revérifiez les conditions.", "A solicitação não foi concluída: \(detail). Atualize e confira as condições.") }
     var recoverOtherRequestFirst: String { t("다른 요청이나 미확인 거래를 먼저 복구해 주세요.", "Recover the other request or unconfirmed trade first.", "別のリクエストか未確認の取引を先に復旧してください。", "Primero recupera la otra solicitud o el trato sin confirmar.", "Récupérez d’abord l’autre requête ou la transaction non confirmée.", "Recupere primeiro a outra solicitação ou a negociação não confirmada.") }
 }
+
+// MARK: 지갑 오류 (WalletStore)
+
+extension L {
+    var invalidOnlineConfig: String { t("온라인 연결 설정이 잘못됐어요. 설정을 고치고 앱을 다시 시작해 주세요. 로컬 세이브는 바꾸지 않았어요.", "The online connection settings are invalid. Fix them and restart the app. Your local save wasn’t changed.", "オンライン接続の設定が正しくありません。設定を直してアプリを再起動してください。ローカルセーブは変更していません。", "La configuración en línea no es válida. Corrígela y reinicia la app. Tu partida local no cambió.", "Les réglages en ligne sont invalides. Corrigez-les puis redémarrez l’app. Votre sauvegarde locale n’a pas changé.", "As configurações online são inválidas. Corrija e reinicie o app. Seu salvamento local não mudou.") }
+    var packPriceChanged: String { t("팩 가격이 바뀌었어요. 구매 수량과 금액을 다시 확인해 주세요.", "The pack price changed. Check the quantity and amount again.", "パックの価格が変わりました。購入数と金額をもう一度確認してください。", "El precio del sobre cambió. Revisa la cantidad y el importe.", "Le prix du booster a changé. Vérifiez la quantité et le montant.", "O preço do pacote mudou. Confira a quantidade e o valor.") }
+    func packsBoughtPartly(_ done: Int, of total: Int, reason: String?) -> String {
+        let reason = reason ?? t("요청 실패", "Request failed", "リクエスト失敗", "Solicitud fallida", "Échec de la requête", "Falha na solicitação")
+        return t("\(done)/\(total)팩 구매 완료. \(reason)", "Bought \(done) of \(total) packs. \(reason)", "\(total)パック中\(done)パック購入しました。\(reason)",
+                 "Comprados \(done) de \(total) sobres. \(reason)", "\(done) boosters achetés sur \(total). \(reason)", "\(done) de \(total) pacotes comprados. \(reason)")
+    }
+    var noOpeningResult: String { t("개봉 결과가 없어요.", "No opening result came back.", "開封結果がありません。", "No llegó el resultado de la apertura.", "Aucun résultat d’ouverture.", "Nenhum resultado de abertura.") }
+    func openingJobPaused(_ done: Int, of total: Int, reason: String) -> String {
+        t("\(total)팩 중 \(done)팩을 확인했어요. 온라인 창의 「대량 개봉」에서 이어 열 수 있어요. \(reason)",
+          "Confirmed \(done) of \(total) packs. Continue from Bulk opening in the online window. \(reason)",
+          "\(total)パック中\(done)パックを確認しました。オンライン画面の「大量開封」から続けられます。\(reason)",
+          "Confirmados \(done) de \(total) sobres. Sigue desde Apertura masiva en la ventana en línea. \(reason)",
+          "\(done) boosters confirmés sur \(total). Reprenez depuis Ouverture en masse dans la fenêtre en ligne. \(reason)",
+          "\(done) de \(total) pacotes confirmados. Continue em Abertura em massa na janela online. \(reason)")
+    }
+    func packsOpenedPartly(_ done: Int, of total: Int, reason: String?) -> String {
+        let reason = reason ?? t("결과 확인 실패", "Couldn’t confirm the result", "結果を確認できませんでした", "No se pudo confirmar el resultado", "Résultat non confirmé", "Não foi possível confirmar o resultado")
+        return t("\(total)팩 중 \(done)팩 개봉을 확인했어요. \(reason)", "Confirmed \(done) of \(total) packs opened. \(reason)", "\(total)パック中\(done)パックの開封を確認しました。\(reason)",
+                 "Confirmada la apertura de \(done) de \(total) sobres. \(reason)", "Ouverture de \(done) boosters sur \(total) confirmée. \(reason)", "Abertura de \(done) de \(total) pacotes confirmada. \(reason)")
+    }
+    var onlineChangesThroughServer: String { t("온라인 자원은 서버 명령으로만 바꿀 수 있어요.", "Online resources can only change through server commands.", "オンラインの資源はサーバーのコマンドでのみ変更できます。", "Los recursos en línea solo cambian con órdenes del servidor.", "Les ressources en ligne ne changent que par des commandes serveur.", "Recursos online só mudam por comandos do servidor.") }
+}

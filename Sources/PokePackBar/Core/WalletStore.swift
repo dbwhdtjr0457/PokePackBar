@@ -143,7 +143,7 @@ final class WalletStore {
         self.ladder = ladder ?? bundled?.ladder ?? []
         if invalidConnection {
             savingBlocked = true
-            persistenceError = "온라인 연결 설정이 잘못되었습니다. 설정을 수정하고 재시작하세요. 로컬 세이브는 변경하지 않았습니다."
+            persistenceError = L(AppLanguage.current).invalidOnlineConfig
         } else { load() }
         refreshPerks()
         if fileURL == nil { AppLanguage.current = language }
@@ -1447,14 +1447,14 @@ final class WalletStore {
         guard let remote else { return buyPacks(setID: setID, count: count, total: total) }
         guard count > 0 else { return false }
         guard let index = CardIndex.shared, total == packTotal(setID: setID, count: count, index: index) else {
-            persistenceError = "팩 가격이 바뀌었습니다. 구매 수량과 금액을 다시 확인하세요."
+            persistenceError = l.packPriceChanged
             return false
         }
         var remaining = count
         while remaining > 0 {
             let chunk = min(remaining, 1000)
             guard await remote.execute(.init(kind: "buy_packs", set_id: setID, count: chunk), expectedTokens: packTotal(setID: setID, count: chunk, index: index)) != nil else {
-                persistenceError = "\(count - remaining)/\(count)팩 구매 완료. \(remote.error ?? "요청 실패")"
+                persistenceError = l.packsBoughtPartly(count - remaining, of: count, reason: remote.error)
                 return false
             }
             remaining -= chunk
@@ -1530,16 +1530,16 @@ final class WalletStore {
                 do {
                     let reply = try await remote.advanceOpeningJob(job)
                     openingJob = reply.job
-                    guard let opened = reply.packs else { throw RemoteGameSession.Failure(message: "개봉 결과가 없습니다.") }
+                    guard let opened = reply.packs else { throw RemoteGameSession.Failure(message: l.noOpeningResult) }
                     batch = opened
                 } catch {
-                    persistenceError = "\(packs.count)/\(count)팩 확인. 온라인 창의 ‘작업’에서 이어갈 수 있습니다. \(error.localizedDescription)"
+                    persistenceError = l.openingJobPaused(packs.count, of: count, reason: error.localizedDescription)
                     break
                 }
             } else {
                 guard let result = await remote.execute(.init(kind: "open_packs", set_id: setID, count: chunk)),
                       let opened = result.packs else {
-                    persistenceError = "\(packs.count)/\(count)팩 개봉 확인. \(remote.error ?? "결과 확인 실패")"
+                    persistenceError = l.packsOpenedPartly(packs.count, of: count, reason: remote.error)
                     break
                 }
                 batch = opened
@@ -1700,7 +1700,7 @@ final class WalletStore {
         if isOnline {
             state = durableState
             refreshPerks()
-            persistenceError = "온라인 자원은 서버 명령으로만 변경할 수 있습니다."
+            persistenceError = l.onlineChangesThroughServer
             return false
         }
         if transactionDepth > 0 { return !savingBlocked }
