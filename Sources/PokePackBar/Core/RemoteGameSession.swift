@@ -86,6 +86,13 @@ final class RemoteGameSession {
     struct OpeningJobResult: Decodable { let job: OpeningJob; let packs: OpenedPackBatch? }
     struct OpeningJobReply: Decodable { let result: OpeningJobResult }
     struct PriceStatus: Decodable { let version: String?; let last_success: Int?; let error: String? }
+    /// 메뉴바에서 온라인 창을 열지 않아도 알 수 있게 하는 개수.
+    struct NotificationSummary: Decodable, Equatable {
+        let unread: Int
+        let incoming_trades: Int
+        let incoming_friends: Int
+        var isEmpty: Bool { unread == 0 && incoming_trades == 0 && incoming_friends == 0 }
+    }
     struct Quote: Decodable { let tokens: Int; let price_version: String?; let revision: Int }
     struct Failure: LocalizedError, ServerTraceable {
         let message: String
@@ -106,6 +113,10 @@ final class RemoteGameSession {
     private(set) var recoveredResult: ServerRulesBridge.Result?
     private(set) var priceVersion: String?
     private(set) var priceStatus: PriceStatus?
+    private(set) var notificationSummary: NotificationSummary?
+    @ObservationIgnored private var summaryCheckedAt: Date?
+    /// 요약 API 가 없는 예전 서버. 매분 404 를 로그에 남기지 않게 한 번 확인하면 더 묻지 않는다.
+    @ObservationIgnored private var summaryUnsupported = false
     private(set) var reservedPrintings: [String: Int] = [:]
     private(set) var authenticationExpired = false
     private(set) var hasOnlinePending = false
@@ -202,6 +213,9 @@ final class RemoteGameSession {
             lastFailure = nil
             failureStreak = 0
             retryAt = nil
+            if summaryCheckedAt.map({ Date().timeIntervalSince($0) >= 60 }) ?? true {
+                await refreshNotificationSummary()
+            }
         } catch {
             self.error = error.localizedDescription
             lastFailure = error
@@ -224,6 +238,18 @@ final class RemoteGameSession {
         if error is ServerUnreachable { return true }
         if let status = (error as? any ServerTraceable)?.status { return status >= 500 }
         return false
+    }
+
+    /// 받은 교환 제안, 친구 신청, 안 읽은 알림 개수. 실패해도 동기화는 실패로 치지 않는다.
+    func refreshNotificationSummary() async {
+        guard !summaryUnsupported else { return }
+        summaryCheckedAt = Date()
+        do {
+            let summary: NotificationSummary = try await get("v1/notifications/summary")
+            if summary != notificationSummary { notificationSummary = summary }
+        } catch let failure as Failure where failure.status == 404 {
+            summaryUnsupported = true
+        } catch {}
     }
 
     func execute(_ command: ServerRulesBridge.Command, expectedTokens: Int? = nil) async -> ServerRulesBridge.Result? {

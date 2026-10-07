@@ -7,9 +7,14 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
     private var window: NSWindow?
     private var model: OnlineHubModel?
 
-    func show(wallet: WalletStore) {
-        if let window { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); model?.visible = true; return }
+    /// `section` 이 있으면 그 탭으로 연다. 메뉴바의 교환 제안이나 알림 개수를 눌렀을 때 쓴다.
+    func show(wallet: WalletStore, section: String? = nil) {
+        if let window {
+            if let section, model?.section != section { model?.section = section }
+            window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); model?.visible = true; return
+        }
         let model = OnlineHubModel(wallet: wallet)
+        if let section { model.section = section }
         self.model = model
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
@@ -184,6 +189,8 @@ final class OnlineHubModel {
             message = "완료했어요."
             mutating = false
             await refresh()
+            // 수락, 거절, 읽음 처리 뒤 메뉴바 개수가 1분 동안 남아 있지 않게 바로 갱신한다.
+            await remote.refreshNotificationSummary()
             return true
         } catch {
             mutating = false
