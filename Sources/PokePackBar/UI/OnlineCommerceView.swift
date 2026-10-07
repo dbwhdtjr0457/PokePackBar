@@ -1,118 +1,526 @@
 import SwiftUI
 
-private func printingTitle(_ value: String) -> String {
-    let key = CardPrintingKey(storageKey: value)
-    return "\(CardIndex.shared?.card(key.cardID)?.displayName(.ko) ?? key.cardID) · \(key.finish.rawValue) · \(key.cardID)"
-}
+// MARK: - 마켓
 
-private func expiryText(_ item: [String: Any]) -> String {
-    Date(timeIntervalSince1970: Double(item.int("expires_at"))).formatted()
-}
-
-private struct OnlineConfirmation: Identifiable {
-    let id = UUID()
-    let title: String
-    let detail: String
-    let route: String
-    let payload: [String: Any]
-}
-
-private struct ConfirmationSheet: View {
+/// 마켓 — 사기, 팔기, 내 판매.
+///
+/// 예전 화면은 등록 폼, 검색, 장부, 글 목록을 한 화면에 쌓고, 전체 카드 목록에서 고른 뒤에야
+/// 「거래 가능 0장」을 알려 줬다. 지금은 할 일마다 화면을 나누고, 팔 수 있는 카드만 보여 준다.
+/// 서버 경로와 보내는 값은 그대로다.
+struct OnlineMarketView: View {
     @Bindable var model: OnlineHubModel
-    let value: OnlineConfirmation
-    @Environment(\.dismiss) private var dismiss
+    @State private var mode: Mode = .buy
+    @State private var buying: [String: Any]?
+    @State private var selling: OnlineStock?
+    @State private var sellQuery = ""
+    @State private var preview: PrintingSelection?
+
+    enum Mode: String, CaseIterable, Identifiable {
+        case buy = "사기", sell = "팔기", mine = "내 판매"
+        var id: String { rawValue }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text(value.title).font(.title2.bold())
-            ScrollView { Text(value.detail).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(maxHeight: 360)
-            Text("서버에서 수량과 버전을 다시 확인합니다. 조건이 달라지면 거래하지 않고 재확인을 요청합니다.").font(.caption).foregroundStyle(.secondary)
-            HStack {
-                Button("취소") { dismiss() }.keyboardShortcut(.cancelAction)
-                Spacer()
-                Button("확인 후 실행") {
-                    dismiss()
-                    Task { await model.mutate(value.route, value.payload) }
-                }.disabled(!model.canWrite)
+        VStack(alignment: .leading, spacing: 14) {
+            Picker("", selection: $mode) {
+                ForEach(Mode.allCases) { Text($0.rawValue).tag($0) }
             }
-        }.padding(24).frame(width: 560)
+            .pickerStyle(.segmented).labelsHidden().fixedSize()
+            .onChange(of: mode) {
+                model.offset = 0
+                model.ownListings = mode == .mine
+                if mode != .sell { Task { await model.refresh(full: false) } }
+            }
+
+            switch mode {
+            case .buy: buyView
+            case .sell: sellView
+            case .mine: mineView
+            }
+        }
+        .onAppear { model.ownListings = mode == .mine }
+        .sheet(item: Binding(get: { buying.map(ListingBox.init) }, set: { buying = $0?.item })) { box in
+            BuySheet(model: model, item: box.item)
+        }
+        .sheet(item: $selling) { stock in SellSheet(model: model, stock: stock) }
+        .sheet(item: $preview) { OnlinePrintingDetail(printing: $0.id) }
+    }
+
+    // MARK: 사기
+
+    private var buyView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                TextField("카드 이름으로 찾기", text: $model.search)
+                    .textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+                    .onSubmit { reload() }
+                Picker("세트", selection: $model.marketSet) {
+                    Text("모든 세트").tag("")
+                    ForEach(CardIndex.shared?.sets ?? [], id: \.id) { Text($0.name).tag($0.id) }
+                }
+                .fixedSize()
+                Picker("등급", selection: $model.marketTier) {
+                    Text("모든 등급").tag("")
+                    ForEach(CardIndex.shared?.presentTiers ?? [], id: \.self) { tier in
+                        Text("\(tier.rawValue) \(OnlineText.l.tierName(tier))").tag(tier.rawValue)
+                    }
+                }
+                .fixedSize()
+                Picker("정렬", selection: $model.marketSort) {
+                    Text("새로 올라온 순").tag("newest")
+                    Text("가격순").tag("price")
+                }
+                .fixedSize()
+            }
+            .labelsHidden()
+            .onChange(of: model.marketSet) { reload() }
+            .onChange(of: model.marketTier) { reload() }
+            .onChange(of: model.marketSort) { reload() }
+            .task(id: model.search) {
+                // 치는 대로 찾는다. 글자마다 서버에 묻지 않도록 잠깐 멈춘 뒤에만.
+                try? await Task.sleep(for: .milliseconds(450))
+                guard !Task.isCancelled else { return }
+                model.offset = 0
+                await model.refresh(full: false)
+            }
+
+            let listings = model.items("listings")
+            ScrollView {
+                if listings.isEmpty {
+                    OnlineEmptyState(icon: "bag",
+                                     title: hasFilter ? "조건에 맞는 카드가 없어요" : "아직 올라온 카드가 없어요",
+                                     message: hasFilter ? "찾는 조건을 줄여 보세요." : "다른 사람이 카드를 올리면 여기에 나타나요.")
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: 16)], alignment: .leading, spacing: 18) {
+                        ForEach(listings, id: \.onlineID) { item in
+                            let printing = CardPrintingKey(storageKey: item.string("printing"))
+                            Button { item.bool("mine") ? (preview = PrintingSelection(id: item.string("printing"))) : (buying = item) } label: {
+                                OnlineCardTile(cardID: printing.cardID, finish: printing.finish.rawValue,
+                                               badge: item.bool("mine") ? ("내 판매", .accentColor) : nil) {
+                                    Text(OnlineText.won(tokens: item.int("unit_tokens")))
+                                        .font(Typography.bodySemibold).monospacedDigit()
+                                    Text("\(item.string("nickname")), \(item.int("quantity"))장")
+                                        .font(Typography.caption).foregroundStyle(.secondary).lineLimit(1)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    OnlinePagination(model: model, key: "listings")
+                }
+            }
+        }
+    }
+
+    private var hasFilter: Bool {
+        !model.search.isEmpty || !model.marketSet.isEmpty || !model.marketTier.isEmpty || !model.marketFinish.isEmpty
+    }
+
+    // MARK: 팔기
+
+    private var sellView: some View {
+        let all = OnlineStock.sellable(wallet: model.wallet)
+        let needle = DexCardSearch.normalized(sellQuery)
+        let stock = needle.isEmpty ? all : all.filter {
+            DexCardSearch.normalized(OnlineText.cardName($0.cardID)).contains(needle)
+                || DexCardSearch.normalized(CardIndex.shared?.card($0.cardID)?.name ?? "").contains(needle)
+        }
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                TextField("내 카드에서 찾기", text: $sellQuery)
+                    .textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+                Spacer()
+                Text("같은 카드가 2장 이상일 때 남는 만큼 팔 수 있어요. 수수료는 없어요.")
+                    .font(Typography.label).foregroundStyle(.secondary)
+            }
+            ScrollView {
+                if stock.isEmpty {
+                    OnlineEmptyState(icon: "square.stack",
+                                     title: sellQuery.isEmpty ? "팔 수 있는 카드가 없어요" : "맞는 카드가 없어요",
+                                     message: sellQuery.isEmpty ? "같은 카드를 2장 이상 가지고 있으면 여기에 나타나요. 한 장은 늘 남겨 둬요." : nil)
+                } else {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: 16)], alignment: .leading, spacing: 18) {
+                        ForEach(stock) { item in
+                            Button { selling = item } label: {
+                                OnlineCardTile(cardID: item.cardID, finish: item.finish.rawValue) {
+                                    Text("\(item.available)장 팔 수 있어요")
+                                        .font(Typography.caption).foregroundStyle(.secondary)
+                                    if let won = item.referenceWon {
+                                        Text("시세 \(OnlineText.wonText(won))")
+                                            .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit()
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!model.canWrite)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    // MARK: 내 판매
+
+    private var mineView: some View {
+        let listings = model.items("listings")
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 18) {
+                Label("번 돈 \(OnlineText.won(tokens: model.wallet.state.marketEarnedTokens))", systemImage: "arrow.down.circle")
+                Label("쓴 돈 \(OnlineText.won(tokens: model.wallet.state.marketSpentTokens))", systemImage: "arrow.up.circle")
+            }
+            .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+            ScrollView {
+                if listings.isEmpty {
+                    OnlineEmptyState(icon: "tag", title: "올린 카드가 없어요",
+                                     message: "「팔기」에서 남는 카드를 올려 보세요.")
+                } else {
+                    VStack(spacing: 10) {
+                        ForEach(listings, id: \.onlineID) { item in myListing(item) }
+                    }
+                    OnlinePagination(model: model, key: "listings")
+                }
+            }
+        }
+    }
+
+    private func myListing(_ item: [String: Any]) -> some View {
+        let printing = CardPrintingKey(storageKey: item.string("printing"))
+        let status = OnlineText.listingStatus(item.string("status"))
+        return HStack(spacing: 14) {
+            CardImageView(cardID: printing.cardID, width: 54)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    Text(OnlineText.cardName(printing.cardID)).font(Typography.bodySemibold)
+                    OnlineBadge(text: status.text, color: status.color)
+                }
+                Text("\(OnlineText.l.cardFinishName(printing.finish)), 장당 \(OnlineText.won(tokens: item.int("unit_tokens"))), \(item.int("quantity"))장 남음")
+                    .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+                if item.string("status") == "active" {
+                    Text(OnlineText.remaining(until: item.int("expires_at")))
+                        .font(Typography.caption).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            if item.string("status") == "active", item.bool("mine") {
+                Button("판매 내리기") {
+                    Task { await model.mutate("market/listings", ["action": "listing_cancel", "target_id": item.string("id"), "target_version": item.int("version")]) }
+                }
+                .disabled(!model.canWrite)
+            }
+        }
+        .padding(10)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func reload() { model.offset = 0; Task { await model.refresh(full: false) } }
+}
+
+/// `[String: Any]` 를 시트에 넘기기 위한 상자.
+private struct ListingBox: Identifiable {
+    let item: [String: Any]
+    var id: String { item.onlineID }
+}
+
+private struct BuySheet: View {
+    @Bindable var model: OnlineHubModel
+    let item: [String: Any]
+    @State private var quantity = 1
+
+    var body: some View {
+        let printing = CardPrintingKey(storageKey: item.string("printing"))
+        let unit = item.int("unit_tokens")
+        let affordable = unit > 0 ? model.wallet.availableTokens / unit : 0
+        let maximum = max(1, min(item.int("quantity"), 1000, affordable))
+        let total = unit * quantity
+        let canAfford = total <= model.wallet.availableTokens
+        OnlineSheet(title: "카드 사기", actionTitle: "\(OnlineText.won(tokens: total))에 사기",
+                    actionDisabled: !model.canWrite || !canAfford || affordable < 1,
+                    note: "판매자가 그새 수량을 바꾸면 결제하지 않고 다시 확인해 달라고 알려 드려요.",
+                    action: {
+                        Task { await model.mutate("market/listings", ["action": "listing_buy", "target_id": item.string("id"), "target_version": item.int("version"), "quantity": quantity, "unit_tokens": unit]) }
+                    }) {
+            HStack(alignment: .top, spacing: 18) {
+                CardImageView(cardID: printing.cardID, hires: true, width: 150)
+                VStack(alignment: .leading, spacing: 10) {
+                    Text(OnlineText.cardName(printing.cardID)).font(Typography.title)
+                    Text("\(OnlineText.l.cardFinishName(printing.finish)), 판매자 \(item.string("nickname"))")
+                        .font(Typography.label).foregroundStyle(.secondary)
+                    Text("장당 \(OnlineText.won(tokens: unit))").font(Typography.bodySemibold).monospacedDigit()
+                    if let reference = OnlineText.referenceWon(item.string("printing")) {
+                        Text("참고 시세 \(OnlineText.wonText(reference))")
+                            .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+                    }
+                    OnlineQuantity(value: $quantity, range: 1...maximum)
+                    Text(affordable < 1 ? "잔액이 부족해요" : "사고 나면 \(OnlineText.won(tokens: max(0, model.wallet.availableTokens - total))) 남아요")
+                        .font(Typography.label).foregroundStyle(affordable < 1 ? Color.orange : Color.secondary)
+                        .monospacedDigit()
+                }
+            }
+        }
     }
 }
 
+private struct SellSheet: View {
+    @Bindable var model: OnlineHubModel
+    let stock: OnlineStock
+    @State private var quantity = 1
+    @State private var priceWon = 0
+
+    var body: some View {
+        let suggested = stock.referenceWon ?? MarketEconomy.wonStep
+        let price = max(MarketEconomy.wonStep, (priceWon / MarketEconomy.wonStep) * MarketEconomy.wonStep)
+        OnlineSheet(title: "카드 팔기", actionTitle: "판매 올리기",
+                    actionDisabled: !model.canWrite || priceWon < MarketEconomy.wonStep,
+                    note: "\(quantity)장을 장당 \(OnlineText.wonText(price))에 올려요. 7일 동안 안 팔린 카드는 자동으로 돌아와요. 시세가 바뀌어도 가격은 그대로예요.",
+                    action: {
+                        Task { await model.mutate("market/listings", ["action": "listing_create", "printing": stock.key, "quantity": quantity, "unit_tokens": OnlineText.tokens(won: price)]) }
+                    }) {
+            HStack(alignment: .top, spacing: 18) {
+                CardImageView(cardID: stock.cardID, hires: true, width: 150)
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(OnlineText.cardName(stock.cardID)).font(Typography.title)
+                    Text("\(OnlineText.l.cardFinishName(stock.finish)), \(stock.available)장 팔 수 있어요")
+                        .font(Typography.label).foregroundStyle(.secondary)
+                    OnlineQuantity(value: $quantity, range: 1...min(1000, stock.available))
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("장당 가격").font(Typography.labelSemibold)
+                        HStack(spacing: 6) {
+                            TextField("가격", value: $priceWon, format: .number)
+                                .textFieldStyle(.roundedBorder).frame(width: 120).monospacedDigit()
+                            Text("원")
+                        }
+                        HStack(spacing: 6) {
+                            priceChip("시세대로", suggested)
+                            priceChip("10% 싸게", suggested * 9 / 10)
+                            priceChip("10% 비싸게", suggested * 11 / 10)
+                        }
+                        Text(stock.referenceWon.map { "참고 시세 \(OnlineText.wonText($0)), 100원 단위로 올라가요" } ?? "참고 시세가 없어요. 100원 단위로 올라가요")
+                            .font(Typography.caption).foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .onAppear { if priceWon == 0 { priceWon = suggested } }
+    }
+
+    private func priceChip(_ title: String, _ won: Int) -> some View {
+        let rounded = max(MarketEconomy.wonStep, (won / MarketEconomy.wonStep) * MarketEconomy.wonStep)
+        return Button(title) { priceWon = rounded }
+            .buttonStyle(.bordered).controlSize(.small)
+    }
+}
+
+// MARK: - 교환
+
+/// 교환 — 친구를 고르고, 줄 카드와 받을 카드를 그림으로 담는다.
 struct OnlineTradingView: View {
     @Bindable var model: OnlineHubModel
     @State private var friend = ""
     @State private var offered: [String: Int] = [:]
     @State private var requested: [String: Int] = [:]
-    @State private var confirmation: OnlineConfirmation?
+    @State private var pickingOffer = false
+    @State private var pickingRequest = false
+    @State private var confirming = false
+    @State private var accepting: [String: Any]?
     @State private var preview: PrintingSelection?
-    private var valid: Bool {
-        !friend.isEmpty && !offered.isEmpty && !requested.isEmpty && offered.count <= 20 && requested.count <= 20
-            && offered.values.reduce(0, +) <= 1000 && requested.values.reduce(0, +) <= 1000
-            && Set(offered.keys).isDisjoint(with: requested.keys)
+
+    private var friends: [[String: Any]] { model.items("friends").filter { $0.string("status") == "accepted" } }
+
+    /// 왜 보낼 수 없는지를 한 문장으로. 버튼만 꺼 두면 무엇을 고쳐야 하는지 모른다.
+    private var blocker: String? {
+        if friend.isEmpty { return "교환할 친구를 고르세요." }
+        if offered.isEmpty { return "내가 줄 카드를 한 장 이상 담으세요." }
+        if requested.isEmpty { return "받고 싶은 카드를 한 장 이상 담으세요." }
+        if offered.count > 20 || requested.count > 20 { return "한쪽에 담을 수 있는 카드는 20종까지예요." }
+        if offered.values.reduce(0, +) > 1000 || requested.values.reduce(0, +) > 1000 { return "한쪽에 담을 수 있는 카드는 1,000장까지예요." }
+        if !Set(offered.keys).isDisjoint(with: requested.keys) { return "같은 카드를 주고받을 수는 없어요." }
+        return nil
     }
+
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                GroupBox("교환 제안 · 양쪽 각각 최대 20종 / 1,000장") {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Picker("친구", selection: $friend) {
-                            Text("친구 선택").tag("")
-                            ForEach(model.items("friends").filter { $0.string("status") == "accepted" }, id: \.onlineID) { item in
-                                Text(item.string("nickname")).tag(item.string("public_id"))
+            VStack(alignment: .leading, spacing: 26) {
+                OnlineSection(title: "새 교환 제안", subtitle: "친구가 72시간 안에 수락하면 바로 바뀌어요. 그동안 내가 줄 카드는 묶여 있어요.") {
+                    if friends.isEmpty {
+                        OnlineEmptyState(icon: "person.2", title: "아직 친구가 없어요",
+                                         message: "「친구」 탭에서 친구 코드로 신청해 보세요.")
+                    } else {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Picker("누구와", selection: $friend) {
+                                Text("친구 고르기").tag("")
+                                ForEach(friends, id: \.onlineID) { Text($0.string("nickname")).tag($0.string("public_id")) }
+                            }
+                            .fixedSize()
+                            tray("내가 줄 카드", lines: $offered) { pickingOffer = true }
+                            tray("받고 싶은 카드", lines: $requested) { pickingRequest = true }
+                            HStack {
+                                if let blocker {
+                                    Text(blocker).font(Typography.label).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button("제안 보내기") { confirming = true }
+                                    .buttonStyle(.borderedProminent)
+                                    .disabled(!model.canWrite || blocker != nil)
                             }
                         }
-                        TradeBasket(title: "내가 보낼 카드", lines: $offered, wallet: model.wallet)
-                        TradeBasket(title: "상대에게 요청할 카드", lines: $requested, wallet: nil)
-                        Text("보내는 중복 카드는 즉시 예약됩니다. 상대 카드는 수락할 때 검증하며 72시간 후 만료됩니다.").font(.caption)
-                        Button("교환안 확인") {
-                            confirmation = OnlineConfirmation(title: "교환 제안 확인", detail: "보낼 카드\n\(description(offered))\n\n받을 카드\n\(description(requested))", route: "trades", payload: ["action": "trade_create", "target_id": friend, "offered": lines(offered), "requested": lines(requested)])
-                        }.disabled(!model.canWrite || !valid)
-                    }.padding(8)
+                    }
                 }
-                ForEach(model.items("matches"), id: \.onlineID) { item in
-                    Button("\(item.string("nickname")) · 서로 필요한 카드로 교환안 작성") { loadDraft(item) }.disabled(!model.canWrite)
+
+                let matches = model.items("matches")
+                if !matches.isEmpty {
+                    OnlineSection(title: "서로 필요한 카드가 있어요", subtitle: "위시리스트를 보고 맞춰 봤어요.") {
+                        VStack(spacing: 8) {
+                            ForEach(matches, id: \.onlineID) { item in
+                                HStack {
+                                    Text(item.string("nickname")).font(Typography.bodySemibold)
+                                    Text("줄 수 있는 카드 \((item["offered"] as? [Any])?.count ?? 0)종, 받을 수 있는 카드 \((item["requested"] as? [Any])?.count ?? 0)종")
+                                        .font(Typography.label).foregroundStyle(.secondary)
+                                    Spacer()
+                                    Button("이걸로 제안 만들기") { loadDraft(item) }.disabled(!model.canWrite)
+                                }
+                            }
+                        }
+                    }
                 }
-                Text("교환 내역").font(.headline)
-                if model.items("trades").isEmpty { Text("아직 교환 내역이 없습니다.").foregroundStyle(.secondary) }
-                ForEach(model.items("trades"), id: \.onlineID) { item in trade(item) }
-                OnlinePagination(model: model, key: "trades")
+
+                let trades = model.items("trades")
+                let waiting = trades.filter { $0.string("status") == "pending" && $0.bool("incoming") }
+                if !waiting.isEmpty {
+                    OnlineSection(title: "답해야 할 제안") {
+                        VStack(spacing: 10) { ForEach(waiting, id: \.onlineID) { trade($0) } }
+                    }
+                }
+                OnlineSection(title: "교환 기록") {
+                    let rest = trades.filter { !($0.string("status") == "pending" && $0.bool("incoming")) }
+                    if rest.isEmpty {
+                        Text("아직 교환한 적이 없어요.").font(Typography.label).foregroundStyle(.secondary)
+                    } else {
+                        VStack(spacing: 10) { ForEach(rest, id: \.onlineID) { trade($0) } }
+                        OnlinePagination(model: model, key: "trades")
+                    }
+                }
             }
+            .padding(.bottom, 12)
         }
         .onAppear { if let draft = model.tradeDraft { loadDraft(draft); model.tradeDraft = nil } }
-        .sheet(item: $confirmation) { ConfirmationSheet(model: model, value: $0) }
+        .sheet(isPresented: $pickingOffer) {
+            OnlineStockPicker(wallet: model.wallet, title: "내가 줄 카드 담기", actionTitle: "담기",
+                              alreadyPicked: offered) { key, quantity in offered[key, default: 0] += quantity }
+        }
+        .sheet(isPresented: $pickingRequest) {
+            OnlineCatalogueSearch(title: "받고 싶은 카드 담기", actionTitle: "담기") { cardID, finish, quantity in
+                guard let finish else { return }
+                requested[CardPrintingKey(cardID: cardID, finish: finish).storageKey, default: 0] += quantity
+            }
+        }
+        .sheet(isPresented: $confirming) {
+            OnlineSheet(title: "이렇게 제안할까요?", actionTitle: "제안 보내기",
+                        actionDisabled: !model.canWrite || blocker != nil,
+                        note: "친구가 수락할 때 서버가 양쪽 카드를 다시 확인해요. 72시간이 지나면 제안은 사라지고 카드는 풀려요.",
+                        action: {
+                            Task { await model.mutate("trades", ["action": "trade_create", "target_id": friend, "offered": lines(offered), "requested": lines(requested)]) }
+                            offered = [:]; requested = [:]
+                        }) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("\(friendName(friend))님에게").font(Typography.bodySemibold)
+                    Text("내가 줄 카드").font(Typography.labelSemibold)
+                    OnlineCardStrip(lines: offered)
+                    Text("받을 카드").font(Typography.labelSemibold)
+                    OnlineCardStrip(lines: requested)
+                }
+            }
+        }
+        .sheet(item: Binding(get: { accepting.map(ListingBox.init) }, set: { accepting = $0?.item })) { box in
+            let item = box.item
+            OnlineSheet(title: "교환을 수락할까요?", actionTitle: "수락하기",
+                        actionDisabled: !model.canWrite,
+                        note: "수락하면 바로 카드가 바뀌어요.",
+                        action: { act("trade_accept", item) }) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("\(item.string("nickname"))님과의 교환").font(Typography.bodySemibold)
+                    Text("내가 줄 카드").font(Typography.labelSemibold)
+                    OnlineCardStrip(lines: item["requested"] as? [String: Int] ?? [:])
+                    Text("받을 카드").font(Typography.labelSemibold)
+                    OnlineCardStrip(lines: item["offered"] as? [String: Int] ?? [:])
+                }
+            }
+        }
         .sheet(item: $preview) { OnlinePrintingDetail(printing: $0.id) }
     }
 
-    private func trade(_ item: [String: Any]) -> some View {
-        GroupBox("\(item.string("nickname")) · \(item.string("status"))") {
-            VStack(alignment: .leading, spacing: 8) {
-                let give = item["offered"] as? [String: Int] ?? [:]
-                let receive = item["requested"] as? [String: Int] ?? [:]
-                Text(item.bool("incoming") ? "상대가 보내는 카드" : "내가 보내는 카드").font(.caption.bold())
-                cardLines(give)
-                Text(item.bool("incoming") ? "내가 보내야 하는 카드" : "상대에게 요청한 카드").font(.caption.bold())
-                cardLines(receive)
-                Text("만료: \(expiryText(item))").font(.caption).foregroundStyle(.secondary)
-                if item.string("status") == "pending" {
-                    HStack {
-                        if item.bool("incoming") {
-                            Button("수락 확인") {
-                                confirmation = OnlineConfirmation(title: "교환 수락", detail: "보낼 카드\n\(description(receive))\n\n받을 카드\n\(description(give))", route: "trades", payload: command("trade_accept", item))
-                            }
-                            Button("거절") { act("trade_reject", item) }
-                        } else { Button("제안 취소 · 예약 해제") { act("trade_cancel", item) } }
-                    }.disabled(!model.canWrite)
-                }
-            }.frame(maxWidth: .infinity, alignment: .leading).padding(6)
+    private func tray(_ title: String, lines: Binding<[String: Int]>, add: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title).font(Typography.labelSemibold)
+                Text("\(lines.wrappedValue.count)종, \(lines.wrappedValue.values.reduce(0, +))장")
+                    .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit()
+                Spacer()
+                Button { add() } label: { Label("카드 담기", systemImage: "plus") }
+                    .disabled(lines.wrappedValue.count >= 20)
+            }
+            if lines.wrappedValue.isEmpty {
+                Text("아직 담은 카드가 없어요.").font(Typography.label).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+            } else {
+                OnlineCardStrip(lines: lines.wrappedValue,
+                                onRemove: { lines.wrappedValue[$0] = nil },
+                                onOpen: { preview = PrintingSelection(id: $0) })
+            }
         }
+        .padding(12)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
     }
-    private func cardLines(_ values: [String: Int]) -> some View {
-        ForEach(values.keys.sorted(), id: \.self) { key in
-            Button("\(printingTitle(key)) × \(values[key] ?? 0)") { preview = PrintingSelection(id: key) }.buttonStyle(.plain)
+
+    private func trade(_ item: [String: Any]) -> some View {
+        let status = OnlineText.tradeStatus(item.string("status"))
+        let incoming = item.bool("incoming")
+        let theyGive = item["offered"] as? [String: Int] ?? [:]
+        let iGive = item["requested"] as? [String: Int] ?? [:]
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(incoming ? "\(item.string("nickname"))님이 보낸 제안" : "\(item.string("nickname"))님에게 보낸 제안")
+                    .font(Typography.bodySemibold)
+                OnlineBadge(text: status.text, color: status.color)
+                Spacer()
+                if item.string("status") == "pending" {
+                    Text(OnlineText.remaining(until: item.int("expires_at")))
+                        .font(Typography.caption).foregroundStyle(.secondary)
+                }
+            }
+            HStack(alignment: .top, spacing: 24) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("내가 줄 카드").font(Typography.caption).foregroundStyle(.secondary)
+                    OnlineCardStrip(lines: incoming ? iGive : theyGive, width: 52, onOpen: { preview = PrintingSelection(id: $0) })
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("받을 카드").font(Typography.caption).foregroundStyle(.secondary)
+                    OnlineCardStrip(lines: incoming ? theyGive : iGive, width: 52, onOpen: { preview = PrintingSelection(id: $0) })
+                }
+            }
+            if item.string("status") == "pending" {
+                HStack {
+                    Spacer()
+                    if incoming {
+                        Button("거절") { act("trade_reject", item) }
+                        Button("수락하기") { accepting = item }.buttonStyle(.borderedProminent)
+                    } else {
+                        Button("제안 취소") { act("trade_cancel", item) }
+                    }
+                }
+                .disabled(!model.canWrite)
+            }
         }
+        .padding(12)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func friendName(_ id: String) -> String {
+        friends.first { $0.string("public_id") == id }?.string("nickname") ?? "친구"
     }
     private func lines(_ values: [String: Int]) -> [[String: Any]] { values.keys.sorted().map { ["printing": $0, "quantity": values[$0] ?? 0] } }
-    private func description(_ values: [String: Int]) -> String { values.keys.sorted().map { "\(printingTitle($0)) × \(values[$0] ?? 0)" }.joined(separator: "\n") }
     private func command(_ action: String, _ item: [String: Any]) -> [String: Any] { ["action": action, "target_id": item.string("id"), "target_version": item.int("version")] }
     private func act(_ action: String, _ item: [String: Any]) { Task { await model.mutate("trades", command(action, item)) } }
     private func loadDraft(_ item: [String: Any]) {
@@ -126,125 +534,5 @@ struct OnlineTradingView: View {
             return result
         }
         offered = basket("offered"); requested = basket("requested").filter { offered[$0.key] == nil }
-    }
-}
-
-private struct TradeBasket: View {
-    let title: String
-    @Binding var lines: [String: Int]
-    let wallet: WalletStore?
-    @State private var card = ""
-    @State private var finish = ""
-    @State private var quantity = 1
-    private var key: String { "\(card)#\(finish)" }
-    private var free: Int {
-        guard let wallet else { return 1000 }
-        return max(0, wallet.ownedPrintings(cardID: card).first { $0.printing.storageKey == key }?.count ?? 0) - (wallet.remote?.reservedPrintings[key] ?? 0) - 1
-    }
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline)
-            OnlineCardPicker(cardID: $card, finish: $finish)
-            HStack {
-                TextField("장수", value: $quantity, format: .number).frame(width: 90)
-                if wallet != nil { Text("거래 가능 \(max(0, free))장").font(.caption) }
-                Button("추가 / 수량 변경") { lines[key] = quantity }
-                    .disabled(card.isEmpty || finish.isEmpty || quantity < 1 || quantity > min(1000, free) || (lines[key] == nil && lines.count >= 20) || lines.values.reduce(0, +) - (lines[key] ?? 0) + quantity > 1000)
-            }
-            ForEach(lines.keys.sorted(), id: \.self) { key in
-                HStack { Text("\(printingTitle(key)) × \(lines[key] ?? 0)"); Spacer(); Button("빼기") { lines[key] = nil } }
-            }
-        }
-    }
-}
-
-struct OnlineMarketView: View {
-    @Bindable var model: OnlineHubModel
-    @State private var card = ""
-    @State private var finish = ""
-    @State private var quantity = 1
-    @State private var unitPrice = 1
-    @State private var quantities: [String: Int] = [:]
-    @State private var confirmation: OnlineConfirmation?
-    @State private var preview: PrintingSelection?
-    private var printing: String { "\(card)#\(finish)" }
-    private var free: Int { max(0, (model.wallet.ownedPrintings(cardID: card).first { $0.printing.storageKey == printing }?.count ?? 0) - (model.remote?.reservedPrintings[printing] ?? 0) - 1) }
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                GroupBox("중복 카드 판매 등록 · 수수료 없음") {
-                    VStack(alignment: .leading, spacing: 10) {
-                        OnlineCardPicker(cardID: $card, finish: $finish)
-                        HStack {
-                            Text("수량"); TextField("수량", value: $quantity, format: .number).frame(width: 80)
-                            Text("장당 토큰"); TextField("장당 토큰", value: $unitPrice, format: .number).frame(width: 130)
-                            Text("거래 가능 \(free)장").font(.caption)
-                            Spacer()
-                            Button("등록 확인") {
-                                confirmation = OnlineConfirmation(title: "판매 등록", detail: "\(printingTitle(printing))\n\(quantity)장 · 장당 \(unitPrice) 토큰\n\(reference(printing))\n남은 수량은 7일 후 자동 해제됩니다. 가격은 시세와 무관하게 고정됩니다.", route: "market/listings", payload: ["action": "listing_create", "printing": printing, "quantity": quantity, "unit_tokens": unitPrice])
-                            }.disabled(!model.canWrite || card.isEmpty || finish.isEmpty || quantity < 1 || quantity > min(free, 1000) || unitPrice < 1 || unitPrice > 1_000_000_000_000)
-                        }
-                    }.padding(6)
-                }
-                HStack {
-                    TextField("한글·영문 카드명", text: $model.search)
-                    Toggle("내 판매 글", isOn: $model.ownListings)
-                    Picker("정렬", selection: $model.marketSort) { Text("최신순").tag("newest"); Text("가격순").tag("price") }
-                    Button("검색") { model.offset = 0; Task { await model.refresh() } }
-                }
-                HStack {
-                    Picker("세트", selection: $model.marketSet) { Text("전체").tag(""); ForEach(CardIndex.shared?.sets ?? [], id: \.id) { Text($0.name).tag($0.id) } }
-                    TextField("희귀도 (예: SAR)", text: $model.marketTier)
-                    Picker("판형", selection: $model.marketFinish) { Text("전체").tag(""); ForEach(CardFinish.allCases, id: \.rawValue) { Text($0.rawValue).tag($0.rawValue) } }
-                }
-                Text("마켓 누적 수입 \(model.wallet.state.marketEarnedTokens) / 지출 \(model.wallet.state.marketSpentTokens) 토큰 · 분해 판매·수집량과 별도 장부").font(.caption)
-                if model.items("listings").isEmpty { Text("조건에 맞는 판매 글이 없습니다.").foregroundStyle(.secondary) }
-                ForEach(model.items("listings"), id: \.onlineID) { item in listing(item) }
-                OnlinePagination(model: model, key: "listings")
-            }
-        }
-        .sheet(item: $confirmation) { ConfirmationSheet(model: model, value: $0) }
-        .sheet(item: $preview) { OnlinePrintingDetail(printing: $0.id) }
-    }
-    private func listing(_ item: [String: Any]) -> some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 8) {
-                Button(printingTitle(item.string("printing"))) { preview = PrintingSelection(id: item.string("printing")) }.font(.headline).buttonStyle(.plain)
-                Text("\(item.string("nickname")) · 남은 \(item.int("quantity"))장 · 장당 \(item.int("unit_tokens")) 토큰 · \(item.string("status"))")
-                Text(reference(item.string("printing"))).font(.caption).foregroundStyle(.secondary)
-                Text("만료: \(expiryText(item))").font(.caption)
-                if item.string("status") == "active" {
-                    if item.bool("mine") {
-                        Button("판매 취소 · 남은 예약 해제") { Task { await model.mutate("market/listings", ["action": "listing_cancel", "target_id": item.string("id"), "target_version": item.int("version")]) } }.disabled(!model.canWrite)
-                    } else {
-                        HStack {
-                            let id = item.string("id")
-                            let count = quantities[id] ?? 1
-                            TextField("구매 수량", value: Binding(get: { quantities[id] ?? 1 }, set: { quantities[id] = $0 }), format: .number).frame(width: 90)
-                            Button("구매 확인") {
-                                let total = count * item.int("unit_tokens")
-                                confirmation = OnlineConfirmation(title: "마켓 구매 확인", detail: "\(printingTitle(item.string("printing")))\n수량 \(count)장 · 장당 \(item.int("unit_tokens")) 토큰\n총액 \(total) 토큰\n\(reference(item.string("printing")))\n재고가 바뀌면 수량을 줄여 자동 결제하지 않습니다.", route: "market/listings", payload: ["action": "listing_buy", "target_id": id, "target_version": item.int("version"), "quantity": count, "unit_tokens": item.int("unit_tokens")])
-                            }.disabled(!model.canWrite || count < 1 || count > min(1000, item.int("quantity")) || (count > 0 && count <= 1000 && count * item.int("unit_tokens") > model.wallet.availableTokens))
-                        }
-                    }
-                }
-            }.frame(maxWidth: .infinity, alignment: .leading).padding(6)
-        }
-    }
-    private func reference(_ value: String) -> String {
-        let key = CardPrintingKey(storageKey: value)
-        guard let prices = CardPrices.shared, let usd = prices.price(key) else { return "참고 시세 없음" }
-        return "참고가 $\(String(format: "%.2f", usd)) · \(prices.sourceDate(cardID: key.cardID, finish: key.finish)) · 게임 토큰 판매가와 별개"
-    }
-}
-
-struct OnlinePagination: View {
-    @Bindable var model: OnlineHubModel
-    let key: String
-    var body: some View {
-        HStack {
-            Button("이전") { model.offset = max(0, model.offset - 50); Task { await model.refresh() } }.disabled(model.offset == 0 || model.loading)
-            Button("다음") { model.offset += 50; Task { await model.refresh() } }.disabled(model.documents[key]?["next_offset"] as? Int == nil || model.loading)
-        }
     }
 }

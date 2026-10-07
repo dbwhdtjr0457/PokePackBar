@@ -13,7 +13,7 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
         self.model = model
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
             styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
-        window.title = "PPB 온라인"
+        window.title = "PokePackBar 온라인"
         window.minSize = NSSize(width: 740, height: 540)
         window.contentView = NSHostingView(rootView: OnlineHubView(model: model))
         window.isReleasedWhenClosed = false
@@ -36,11 +36,14 @@ final class OnlineHubModel {
     let wallet: WalletStore
     var visible = false
     var phase: Phase = .idle
+    /// 마지막 실패 그대로. 배너가 종류와 요청 번호를 고를 때 쓴다.
+    var failure: (any Error)?
     var data: [String: Any] = [:]
     var period = 0
     var mode = ""
     var setID = ""
-    var section = "통계"
+    /// 화면 키는 서버 조회 분기와 레이아웃 감사가 쓰므로 그대로 두고, 보이는 이름만 바꾼다.
+    var section = "마켓"
     var message: String?
     var documents: [String: [String: Any]] = [:]
     var generation = 0
@@ -58,23 +61,50 @@ final class OnlineHubModel {
     var stopOpening = false
     var openingProgress: String?
     private var refreshAgain = false
+    private var refreshAgainFull = false
     init(wallet: WalletStore) { self.wallet = wallet }
     var remote: RemoteGameSession? { wallet.remote }
-    var errorText: String? { if case .failed(let text) = phase { return text }; return nil }
+    /// 다시 불러오는 동안에도 마지막 실패 안내를 그대로 둔다. 15초마다 사라졌다 다시 뜨면
+    /// 연결이 끊겼다 붙는 것처럼 보인다. 성공하면 `failure` 가 비워지며 사라진다.
+    var errorText: String? {
+        if case .failed(let text) = phase { return text }
+        if case .loading = phase, let failure { return failure.localizedDescription }
+        return nil
+    }
     var loading: Bool { if case .loading = phase { return true }; return false }
     var canWrite: Bool {
         guard case .ready = phase else { return false }
         return remote?.ready == true && !wallet.resourceActionsDisabled && !mutating
     }
 
-    func refresh() async {
-        guard !loading, !mutating else { refreshAgain = true; return }
-        guard let remote else { phase = .failed("로컬 모드입니다. 메뉴바 설정에서 로그인한 뒤 앱을 재시작하세요."); return }
+    enum Connection { case connected, checking, unreachable, serverProblem, signedOut }
+
+    /// 머리글의 연결 표시. 탭 데이터를 불러오는 중이거나 한 요청이 서버 오류로 실패했다고
+    /// 연결이 끊긴 것은 아니다. 로그인 세션과 서버에 닿았는지만 본다.
+    var connection: Connection {
+        guard let remote, !remote.authenticationExpired else { return .signedOut }
+        if failure is ServerUnreachable || remote.lastFailure is ServerUnreachable { return .unreachable }
+        if remote.ready { return .connected }
+        return remote.lastFailure == nil ? .checking : .serverProblem
+    }
+
+    /// `full` 이 아니면 지금 탭에 필요한 것만 받는다. 계정 동기화는 앱이 10초마다 따로 하므로
+    /// 탭을 옮기거나 거를 때마다 다시 할 필요가 없다. 창을 열 때, 주기 갱신, 새로고침, 거래 뒤에만
+    /// 동기화와 서버 상태, 프로필까지 함께 받는다.
+    func refresh(full: Bool = true) async {
+        guard !loading, !mutating else {
+            refreshAgain = true
+            refreshAgainFull = refreshAgainFull || full
+            return
+        }
+        guard let remote else { phase = .failed("온라인에 로그인하지 않았어요. 메뉴바 설정에서 로그인한 뒤 앱을 다시 열어 주세요."); return }
         phase = .loading
         do {
-            await remote.synchronize()
-            guard remote.ready else { throw RemoteGameSession.Failure(message: remote.error ?? "로그인이 필요합니다.") }
-            documents["server"] = try await read("v1/server/status")
+            if full || !remote.ready { await remote.synchronize() }
+            guard remote.ready else {
+                throw remote.lastFailure ?? RemoteGameSession.Failure(message: remote.error ?? "로그인이 필요합니다.")
+            }
+            if full || documents["server"] == nil { documents["server"] = try await read("v1/server/status") }
             let currentSection = section
             if currentSection == "작업" {
                 struct Jobs: Decodable { let items: [RemoteGameSession.OpeningJob] }
@@ -86,7 +116,7 @@ final class OnlineHubModel {
                 if !setID.isEmpty { query += "&set_id=\(setID)" }
                 data = try await read(query)
             } else {
-                documents["profile"] = try await read("v1/profile")
+                if full || documents["profile"] == nil { documents["profile"] = try await read("v1/profile") }
                 if currentSection == "컬렉션·친구" {
                     documents["friends"] = try await read("v1/friends?offset=\(offset)")
                     documents["inventory"] = try await read("v1/inventory?q=\(escaped(search))&offset=\(offset)")
@@ -112,11 +142,17 @@ final class OnlineHubModel {
             }
             generation += 1
             phase = .ready
+            failure = nil
         } catch {
             if remote.authenticationExpired { clearPrivateData() }
-            phase = .failed(error.localizedDescription)
+            fail(error, while: "\(section) 불러오기")
         }
-        if refreshAgain { refreshAgain = false; await refresh() }
+        if refreshAgain {
+            let again = refreshAgainFull
+            refreshAgain = false
+            refreshAgainFull = false
+            await refresh(full: again)
+        }
     }
 
     func clearPrivateData() {
@@ -138,13 +174,24 @@ final class OnlineHubModel {
         do {
             let body = values.merging(["request_id": UUID().uuidString, "expected_revision": remote.revision]) { _, right in right }
             _ = try await remote.onlineMutation(path: "v1/\(route)", body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
-            message = "처리 완료 · 서버에 저장했습니다."
+            message = "완료했어요."
             mutating = false
             await refresh()
         } catch {
             mutating = false
-            phase = .failed(error.localizedDescription)
+            fail(error, while: route)
         }
+    }
+
+    /// 서버 요청 실패는 전송 단계에서 이미 로그에 남는다. 응답은 받았지만 읽지 못한 경우
+    /// (형식이 바뀐 응답 등)는 여기서만 보이므로 따로 남긴다.
+    private func fail(_ error: any Error, while action: String) {
+        let cancelled = error is CancellationError || (error as? URLError)?.code == .cancelled
+        if !(error is any ServerTraceable), !cancelled {
+            AppLog.write("[online] \(action) failed: \(String(describing: error).prefix(400))")
+        }
+        failure = error
+        phase = .failed(error.localizedDescription)
     }
 
     func resumeOpening(_ initial: RemoteGameSession.OpeningJob) async {
@@ -153,10 +200,10 @@ final class OnlineHubModel {
         var job = initial
         do {
             while job.status == "active", visible, !stopOpening, !Task.isCancelled {
-                openingProgress = "\(job.completed.formatted()) / \(job.total.formatted())팩 완료"
+                openingProgress = "\(job.total.formatted())팩 중 \(job.completed.formatted())팩 열었어요"
                 job = try await remote.advanceOpeningJob(job).job
             }
-            message = "\(job.completed.formatted()) / \(job.total.formatted())팩 완료 · 획득 카드는 도감에서 확인하세요."
+            message = "\(job.total.formatted())팩 중 \(job.completed.formatted())팩을 열었어요. 나온 카드는 컬렉션에서 볼 수 있어요."
         } catch { message = error.localizedDescription }
         mutating = false; openingProgress = nil
         if visible { await refresh() }
@@ -165,7 +212,7 @@ final class OnlineHubModel {
     func cancelOpening(_ job: RemoteGameSession.OpeningJob) async {
         guard canWrite, let remote else { return }
         mutating = true
-        do { _ = try await remote.advanceOpeningJob(job, cancel: true); message = "남은 작업을 취소했습니다. 이미 개봉한 카드는 유지됩니다." }
+        do { _ = try await remote.advanceOpeningJob(job, cancel: true); message = "남은 팩은 열지 않기로 했어요. 이미 연 카드는 그대로 있어요." }
         catch { message = error.localizedDescription }
         mutating = false
         await refresh()
@@ -174,36 +221,36 @@ final class OnlineHubModel {
 
 struct OnlineHubView: View {
     @Bindable var model: OnlineHubModel
+
+    /// 화면 키 -> 보이는 이름. 자주 쓰는 순서로 둔다.
+    private static let sections: [(key: String, title: String)] = [
+        ("마켓", "마켓"), ("교환", "교환"), ("컬렉션·친구", "친구"),
+        ("통계", "통계"), ("작업", "대량 개봉"), ("알림", "알림"),
+    ]
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("온라인 컬렉션").font(.title2.bold())
-                Spacer()
-                Button("계정 및 서버…") { AccountWindow.shared.show(wallet: model.wallet) }
-                if model.loading { ProgressView().controlSize(.small) }
-                Button("새로고침") { Task { await model.refresh() } }.disabled(model.loading)
-            }
+        VStack(alignment: .leading, spacing: 14) {
+            header
             if let error = model.errorText {
-                Label(error, systemImage: "exclamationmark.triangle").foregroundStyle(.orange).textSelection(.enabled)
-                Text("연결 실패 중에는 마지막 조회 내용만 표시하며 거래는 실행하지 않습니다.").font(.caption)
+                OnlineFailureBanner(problem: OnlineProblem(model.failure), message: error,
+                                    loading: model.loading) { reload(full: true) }
             }
             if let jobs = model.documents["server"]?["jobs"] as? [[String: Any]],
                jobs.contains(where: { ["failed", "stale"].contains($0["state"] as? String ?? "") }) {
-                Label("자동 작업에 확인이 필요합니다. ‘계정 및 서버’에서 상태를 확인하세요.", systemImage: "exclamationmark.triangle")
-                    .font(.callout).foregroundStyle(.orange)
+                Label("서버 자동 작업에 문제가 있어요. 「계정」에서 확인해 주세요.", systemImage: "exclamationmark.triangle")
+                    .font(Typography.label).foregroundStyle(.orange)
             }
-            if let status = model.remote?.priceStatus {
-                Text(status.last_success.map { "시세 갱신: \(Date(timeIntervalSince1970: Double($0)).formatted())" }
-                    ?? "시세: 기본 스냅샷 · 자동 갱신 대기").font(.caption).foregroundStyle(.secondary)
-                if let error = status.error { Text(error).font(.caption).foregroundStyle(.orange) }
-                Text("시세 버전: \(model.remote?.priceVersion?.prefix(12) ?? "없음") · TCGplayer / TCGCSV · 항목별 날짜는 카드 상세 참조").font(.caption2).foregroundStyle(.secondary)
+            Picker("", selection: $model.section) {
+                ForEach(Self.sections, id: \.key) { Text($0.title).tag($0.key) }
             }
-            Picker("온라인 기능", selection: $model.section) {
-                ForEach(["통계", "컬렉션·친구", "교환", "마켓", "작업", "알림"], id: \.self) { Text($0).tag($0) }
-            }.pickerStyle(.segmented).onChange(of: model.section) { model.offset = 0; reload() }
-            if let message = model.message { Text(message).font(.caption).foregroundStyle(.secondary) }
+            .pickerStyle(.segmented).labelsHidden()
+            .onChange(of: model.section) { model.offset = 0; model.message = nil; reload() }
+            if let message = model.message {
+                Label(message, systemImage: "checkmark.circle").font(Typography.label).foregroundStyle(.secondary)
+            }
             if model.remote?.authenticationExpired == true {
-                ContentUnavailableView("다시 로그인하세요", systemImage: "lock", description: Text("이전 계정의 온라인 화면을 비웠습니다. 미확인 요청은 같은 계정으로 로그인하면 복구합니다."))
+                OnlineEmptyState(icon: "lock", title: "다시 로그인해 주세요",
+                                 message: "로그인이 만료돼서 이 화면을 비웠어요. 같은 계정으로 다시 로그인하면 처리 중이던 요청도 이어서 확인해요.")
             }
             else if model.section == "통계" { statistics }
             else if model.section == "컬렉션·친구" { OnlineSocialView(model: model) }
@@ -226,120 +273,240 @@ struct OnlineHubView: View {
         }
     }
 
-    private var notifications: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(model.items("notifications"), id: \.onlineID) { item in
-                    HStack {
-                        Text(item.string("kind")); Text(item.string("target")).font(.caption).foregroundStyle(.secondary)
-                        Spacer()
-                        Button(item.bool("read") ? "읽음" : "읽음으로 표시") {
-                            Task { await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")]) }
-                        }.disabled(!model.canWrite || item.bool("read"))
+    // MARK: 머리글
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("온라인").font(Typography.display)
+                HStack(spacing: 6) {
+                    Circle().fill(connectionStatus.color).frame(width: 7, height: 7)
+                    Text(connectionStatus.text)
+                    if let status = model.remote?.priceStatus, let last = status.last_success {
+                        Text("시세 \(Date(timeIntervalSince1970: Double(last)).formatted(date: .abbreviated, time: .omitted)) 기준")
+                            .padding(.leading, 6)
                     }
                 }
-                if model.items("notifications").isEmpty { Text("새 알림이 없습니다. 친구 요청이나 거래 결과가 여기에 표시됩니다.") }
-                if let next = model.documents["notifications"]?["next_after"] as? Int {
-                    Button("다음 알림") { model.offset = next; reload() }
+                .font(Typography.label).foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text("쓸 수 있는 금액 \(OnlineText.won(tokens: model.wallet.availableTokens))")
+                .font(Typography.bodySemibold).monospacedDigit()
+            if model.loading { ProgressView().controlSize(.small) }
+            Button { reload(full: true) } label: { Image(systemName: "arrow.clockwise") }
+                .help("새로고침").disabled(model.loading)
+            Button { AccountWindow.shared.show(wallet: model.wallet) } label: { Image(systemName: "person.crop.circle") }
+                .help("계정과 서버")
+        }
+    }
+
+    private var connectionStatus: (text: String, color: Color) {
+        switch model.connection {
+        case .connected:
+            let nickname = model.profile.string("nickname")
+            return (nickname.isEmpty ? "연결됨" : nickname, .green)
+        case .checking: return ("연결 확인 중", .secondary)
+        case .unreachable: return ("연결 안 됨", .orange)
+        case .serverProblem: return ("서버 오류", .orange)
+        case .signedOut: return ("로그인 필요", .secondary)
+        }
+    }
+
+    // MARK: 알림
+
+    private var notifications: some View {
+        let items = model.items("notifications")
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 8) {
+                if items.isEmpty {
+                    OnlineEmptyState(icon: "bell", title: "새 알림이 없어요",
+                                     message: "친구 신청, 교환 제안, 마켓 판매 소식이 여기에 와요.")
                 }
-                if model.offset > 0 { Button("처음으로") { model.offset = 0; reload() } }
+                ForEach(items, id: \.onlineID) { item in
+                    let info = OnlineText.notification(item.string("kind"))
+                    let unread = !item.bool("read")
+                    HStack(spacing: 12) {
+                        Image(systemName: info.icon).font(.system(size: 17))
+                            .foregroundStyle(unread ? Color.accentColor : Color.secondary).frame(width: 24)
+                        Text(info.text).font(unread ? Typography.bodySemibold : Typography.body)
+                        Spacer()
+                        if unread {
+                            Button("확인") {
+                                Task { await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")]) }
+                            }
+                            .disabled(!model.canWrite)
+                        }
+                    }
+                    .padding(.vertical, 8).padding(.horizontal, 10)
+                    .background(unread ? Color.accentColor.opacity(0.06) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                }
+                HStack {
+                    if model.offset > 0 { Button("처음으로") { model.offset = 0; reload() } }
+                    if let next = model.documents["notifications"]?["next_after"] as? Int {
+                        Button("더 보기") { model.offset = next; reload() }
+                    }
+                }
+                .frame(maxWidth: .infinity)
             }
         }
     }
 
+    // MARK: 대량 개봉
+
     private var openingWork: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                Text("대량 개봉 이어하기").font(.headline)
-                Text("1,000팩을 넘는 개봉의 진행 상황입니다. 창을 닫거나 일시정지하면 현재 묶음까지만 처리합니다. 팩을 예약하지 않으므로 다른 기기에서 소비하면 이어하기가 중단될 수 있습니다.")
-                    .font(.callout).foregroundStyle(.secondary)
+                Text("1,000팩이 넘는 개봉은 여기서 나눠서 이어 열어요. 창을 닫거나 멈추면 지금 묶음까지만 열고 멈춰요. 다른 기기에서 팩을 쓰면 이어 열기가 멈출 수 있어요.")
+                    .font(Typography.label).foregroundStyle(.secondary)
                 if let progress = model.openingProgress {
                     HStack {
                         ProgressView().controlSize(.small)
                         Text(progress).monospacedDigit()
                         Spacer()
-                        Button("다음 묶음부터 일시정지") { model.stopOpening = true }
+                        Button("이번 묶음까지만 열기") { model.stopOpening = true }
                             .disabled(model.stopOpening)
                     }
                 }
+                if model.openingJobs.isEmpty {
+                    OnlineEmptyState(icon: "shippingbox", title: "이어서 열 팩이 없어요",
+                                     message: "한 번에 1,000팩 넘게 열면 여기서 이어 열 수 있어요.")
+                }
                 ForEach(model.openingJobs) { job in
-                    GroupBox {
-                        VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(CardIndex.shared?.set(job.set_id)?.name ?? job.set_id).font(Typography.bodySemibold)
+                            OnlineBadge(text: job.status == "completed" ? "다 열었어요" : job.status == "cancelled" ? "그만둠" : "이어 열 수 있어요",
+                                        color: job.status == "active" ? .accentColor : .secondary)
+                            Spacer()
+                            Text(job.opening_mode == "game" ? "게임 모드" : "실물 모드")
+                                .font(Typography.caption).foregroundStyle(.secondary)
+                        }
+                        ProgressView(value: Double(job.completed), total: Double(job.total))
+                        Text("\(job.total.formatted())팩 중 \(job.completed.formatted())팩 열었어요")
+                            .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+                        if job.status == "active" {
                             HStack {
-                                Text(CardIndex.shared?.set(job.set_id)?.name ?? job.set_id).font(.headline)
                                 Spacer()
-                                Text(job.status == "completed" ? "완료" : job.status == "cancelled" ? "취소됨" : "이어가기 가능")
+                                Button("남은 팩 그만 열기", role: .destructive) { Task { await model.cancelOpening(job) } }
+                                Button("이어서 열기") { Task { await model.resumeOpening(job) } }
+                                    .buttonStyle(.borderedProminent)
                             }
-                            ProgressView(value: Double(job.completed), total: Double(job.total))
-                            Text("\(job.completed.formatted()) / \(job.total.formatted())팩 · \(job.opening_mode == "game" ? "게임" : "실물") 모드")
-                                .font(.caption).monospacedDigit()
-                            if job.status == "active" {
-                                HStack {
-                                    Button("남은 팩 개봉 계속") { Task { await model.resumeOpening(job) } }
-                                        .buttonStyle(.borderedProminent)
-                                    Button("남은 작업 취소", role: .destructive) { Task { await model.cancelOpening(job) } }
-                                }.disabled(!model.canWrite)
-                            }
-                        }.padding(8)
+                            .disabled(!model.canWrite)
+                        }
                     }
+                    .padding(12)
+                    .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
                 }
-                if model.openingJobs.isEmpty { Text("아직 대량 개봉 작업이 없습니다.").foregroundStyle(.secondary) }
-                HStack {
-                    Button("이전") { model.offset = max(0, model.offset - 25); reload() }.disabled(model.offset == 0 || model.mutating)
-                    Button("다음") { model.offset += 25; reload() }.disabled(model.openingJobs.count < 25 || model.mutating)
+                if model.offset > 0 || model.openingJobs.count >= 25 {
+                    HStack {
+                        Button("이전") { model.offset = max(0, model.offset - 25); reload() }.disabled(model.offset == 0 || model.mutating)
+                        Button("다음") { model.offset += 25; reload() }.disabled(model.openingJobs.count < 25 || model.mutating)
+                    }
+                    .frame(maxWidth: .infinity)
                 }
-            }.frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
+
+    // MARK: 통계
 
     private var statistics: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                Picker("기간", selection: $model.period) { Text("전체").tag(0); Text("7일").tag(7); Text("30일").tag(30) }
-                Picker("모드", selection: $model.mode) { Text("전체").tag(""); Text("게임").tag("game"); Text("실물").tag("realistic") }
-                Picker("세트", selection: $model.setID) {
-                    Text("전체 세트").tag("")
-                    ForEach(CardIndex.shared?.sets ?? [], id: \.id) { Text($0.name).tag($0.id) }
-                }
-            }.onChange(of: model.period) { reload() }.onChange(of: model.mode) { reload() }.onChange(of: model.setID) { reload() }
-            if let totals = model.data["totals"] as? [String: Any], !totals.isEmpty {
-                Grid(alignment: .leading, horizontalSpacing: 36, verticalSpacing: 12) {
-                    ForEach([("purchased", "구매 팩"), ("opened", "개봉 팩"), ("purchase_spent", "팩 구매 지출 (토큰)"),
-                             ("sale_income", "분해 판매 수입 (토큰)"), ("new", "신규 카드"), ("duplicates", "중복 카드")], id: \.0) { key, label in
-                        GridRow { Text(label); Text("\((totals[key] as? NSNumber)?.intValue ?? 0)").monospacedDigit() }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 22) {
+                HStack(spacing: 10) {
+                    Picker("기간", selection: $model.period) { Text("전체 기간").tag(0); Text("최근 7일").tag(7); Text("최근 30일").tag(30) }
+                        .pickerStyle(.segmented).frame(width: 260)
+                    Picker("모드", selection: $model.mode) { Text("모든 모드").tag(""); Text("게임 모드").tag("game"); Text("실물 모드").tag("realistic") }
+                        .fixedSize()
+                    Picker("세트", selection: $model.setID) {
+                        Text("모든 세트").tag("")
+                        ForEach(CardIndex.shared?.sets ?? [], id: \.id) { Text($0.name).tag($0.id) }
                     }
+                    .fixedSize()
                 }
-            } else { ContentUnavailableView("아직 개봉 통계가 없습니다", systemImage: "chart.bar", description: Text("온라인 계정에서 구매하거나 팩을 열면 기록됩니다.")) }
-            if let value = model.data["collection_usd"] as? Double { Text("현재 컬렉션 평가액: $\(value, specifier: "%.2f") · 실제 지출/수익과 다릅니다.") }
-            if let rate = model.data["new_rate"] as? Double {
-                Text("신규 \(rate * 100, specifier: "%.2f")% / 중복 \((1 - rate) * 100, specifier: "%.2f")%").font(.caption)
-            }
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    breakdown("tiers", "희귀도별 획득")
-                    breakdown("finishes", "판형별 획득")
-                    breakdown("variants", "팩 변형별 횟수")
-                    let rates = model.data["variant_rates"] as? [String: Double] ?? [:]
-                    ForEach(rates.keys.sorted(), id: \.self) { key in
-                        Text("\(key) 관측 비율: \((rates[key] ?? 0) * 100, specifier: "%.3f")%")
+                .labelsHidden()
+                .onChange(of: model.period) { reload() }.onChange(of: model.mode) { reload() }.onChange(of: model.setID) { reload() }
+
+                if let totals = model.data["totals"] as? [String: Any], !totals.isEmpty {
+                    let number = { (key: String) in (totals[key] as? NSNumber)?.intValue ?? 0 }
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), spacing: 12)], spacing: 12) {
+                        statTile("연 팩", number("opened").formatted() + "팩")
+                        statTile("산 팩", number("purchased").formatted() + "팩")
+                        statTile("새로 얻은 카드", number("new").formatted() + "장")
+                        statTile("겹친 카드", number("duplicates").formatted() + "장")
+                        statTile("팩 사는 데 쓴 돈", OnlineText.won(tokens: number("purchase_spent")))
+                        statTile("카드 팔아 번 돈", OnlineText.won(tokens: number("sale_income")))
                     }
-                }.frame(maxWidth: .infinity, alignment: .leading)
+                    if let value = model.data["collection_usd"] as? Double, let prices = CardPrices.shared {
+                        Text("지금 컬렉션을 시세로 치면 \(prices.formattedWithKRW(value, language: .ko))예요.")
+                            .font(Typography.body)
+                    }
+                    if let rate = model.data["new_rate"] as? Double {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("새 카드가 나온 비율 \(Int((rate * 100).rounded()))%").font(Typography.labelSemibold)
+                            ProgressView(value: rate).tint(.accentColor)
+                        }
+                    }
+                    HStack(alignment: .top, spacing: 28) {
+                        breakdown("등급별로 나온 카드", model.data["tiers"] as? [String: Int] ?? [:]) { raw in
+                            CardTier(rawValue: raw).map { "\($0.rawValue) \(OnlineText.l.tierName($0))" } ?? raw
+                        } order: { raw in -(CardTier(rawValue: raw)?.rank ?? 0) }
+                        breakdown("판형별로 나온 카드", model.data["finishes"] as? [String: Int] ?? [:]) { raw in
+                            OnlineText.finish(raw)
+                        } order: { _ in 0 }
+                        breakdown("팩 종류", model.data["variants"] as? [String: Int] ?? [:], unit: "팩") { raw in
+                            switch raw {
+                            case "standard", "celebrations": return "일반 팩"
+                            case "god": return "갓팩"
+                            case "demigod": return "준갓팩"
+                            default:
+                                guard let variant = PackVariant(rawValue: raw) else { return raw }
+                                let badge = OnlineText.l.specialPackBadge(variant)
+                                return badge.isEmpty ? "일반 팩" : badge
+                            }
+                        } order: { raw in raw == "standard" ? 0 : 1 }
+                    }
+                    Text("실제로 나온 결과예요. 앞으로의 확률을 보장하지는 않아요.\((model.data["coverage_since"] as? String).map { " \($0)부터 기록했어요." } ?? "")")
+                        .font(Typography.caption).foregroundStyle(.secondary)
+                } else {
+                    OnlineEmptyState(icon: "chart.bar", title: "아직 기록이 없어요",
+                                     message: "온라인 계정으로 팩을 사거나 열면 여기에 쌓여요.")
+                }
             }
-            Text("관측 획득률은 보장 확률이 아닙니다. 과거 자료가 없는 기간은 소급 추정하지 않습니다.").font(.caption).foregroundStyle(.secondary)
-            if let since = model.data["coverage_since"] as? String { Text("기록 시작: \(since)").font(.caption) }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    private func breakdown(_ key: String, _ title: String) -> some View {
-        VStack(alignment: .leading) {
-            Text(title).font(.headline)
-            let counts = model.data[key] as? [String: Int] ?? [:]
-            ForEach(counts.keys.sorted(), id: \.self) { name in
-                HStack { Text(name); Spacer(); Text("\(counts[name] ?? 0)").monospacedDigit() }
+    private func statTile(_ title: String, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(Typography.label).foregroundStyle(.secondary)
+            Text(value).font(Typography.heading).monospacedDigit().lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func breakdown(_ title: String, _ counts: [String: Int], unit: String = "장",
+                           label: @escaping (String) -> String, order: (String) -> Int) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title).font(Typography.labelSemibold)
+            let keys = counts.keys.sorted { (order($0), -(counts[$0] ?? 0), $0) < (order($1), -(counts[$1] ?? 0), $1) }
+            if keys.isEmpty { Text("없음").font(Typography.label).foregroundStyle(.secondary) }
+            ForEach(keys, id: \.self) { key in
+                HStack {
+                    Text(label(key)).font(Typography.label)
+                    Spacer(minLength: 12)
+                    Text("\((counts[key] ?? 0).formatted())\(unit)").font(Typography.label).monospacedDigit()
+                }
             }
         }
+        .frame(minWidth: 180, maxWidth: 260, alignment: .leading)
     }
-    private func reload() { Task { await model.refresh() } }
+
+    /// 탭 이동, 필터, 쪽 넘기기는 그 탭만. 새로고침 버튼과 다시 시도는 전체.
+    private func reload(full: Bool = false) { Task { await model.refresh(full: full) } }
 }
 
 extension Dictionary where Key == String, Value == Any {

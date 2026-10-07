@@ -314,10 +314,10 @@ struct OnlineSettingsView: View {
                 Text("토큰 적립: 클라이언트 보고 신뢰 · 실제 사용량 검증 아님")
                 ForEach(latencies.keys.sorted(), id: \.self) { key in
                     if let metric = latencies[key] {
-                        Text("\(key == "rules" ? "규칙 실행" : "DB 쓰기 대기"): P50 \(metric.p50_ms, specifier: "%.1f")ms / P95 \(metric.p95_ms, specifier: "%.1f")ms (\(metric.samples)회)")
+                        Text("\(Self.latencyName(key)): P50 \(metric.p50_ms, specifier: "%.1f")ms / P95 \(metric.p95_ms, specifier: "%.1f")ms (\(metric.samples)회)")
                     }
                 }
-                Text("시간은 응답한 서버 프로세스의 최근 200회 기준입니다. 서버 재시작 시 초기화됩니다.")
+                Text("시간은 응답한 서버 프로세스의 최근 200회 기준입니다. 서버 재시작 시 초기화됩니다. 앱에서 느끼는 시간이 이보다 훨씬 길면 서버 처리보다 전송 구간이 느린 것입니다.")
                 if let credential { Text("계정 ID: \(credential.account_id.uuidString)").textSelection(.enabled) }
                 Text(address).textSelection(.enabled)
             }.font(.caption)
@@ -523,6 +523,21 @@ struct OnlineSettingsView: View {
         wallet.remote?.invalidateAuthentication()
         // Keep online mode selected: logout must not silently switch wallets.
         message = "로그아웃했습니다. 온라인 자원은 유지되며 다시 로그인하기 전까지 변경할 수 없습니다."
+    }
+}
+
+extension OnlineSettingsView {
+    /// 서버가 재는 구간 이름. 예전에는 규칙 실행이 아니면 모두 "DB 쓰기 대기"로 적어
+    /// 명령 계산이나 저장 시간까지 잠금 대기처럼 보였다.
+    static func latencyName(_ key: String) -> String {
+        switch key {
+        case "rules": "규칙 실행"
+        case "command_prepare": "명령 준비"
+        case "rules_compute": "명령 계산"
+        case "write_lock": "DB 쓰기 대기"
+        case "write_transaction": "DB 저장"
+        default: key
+        }
     }
 }
 

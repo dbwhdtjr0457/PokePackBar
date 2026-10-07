@@ -84,9 +84,11 @@ final class RemoteGameSession {
     struct OpeningJobReply: Decodable { let result: OpeningJobResult }
     struct PriceStatus: Decodable { let version: String?; let last_success: Int?; let error: String? }
     struct Quote: Decodable { let tokens: Int; let price_version: String?; let revision: Int }
-    struct Failure: LocalizedError {
+    struct Failure: LocalizedError, ServerTraceable {
         let message: String
         var status: Int? = nil
+        /// 서버 로그의 request_id. 서버에 보내기 전에 막힌 실패면 비어 있다.
+        var requestID: String? = nil
         var errorDescription: String? { message }
     }
 
@@ -95,6 +97,8 @@ final class RemoteGameSession {
     private(set) var busy = false
     private(set) var ready = false
     private(set) var error: String?
+    /// `error` 를 만든 실패 그대로. 화면이 요청 번호와 종류를 보여 줄 때 쓴다.
+    private(set) var lastFailure: (any Error)?
     private(set) var hasPending = false
     private(set) var recoveredResult: ServerRulesBridge.Result?
     private(set) var priceVersion: String?
@@ -184,7 +188,13 @@ final class RemoteGameSession {
                 reportedTokens = total
             }
             error = nil
-        } catch { self.error = error.localizedDescription; ready = false; return }
+            lastFailure = nil
+        } catch {
+            self.error = error.localizedDescription
+            lastFailure = error
+            ready = false
+            return
+        }
     }
 
     func execute(_ command: ServerRulesBridge.Command, expectedTokens: Int? = nil) async -> ServerRulesBridge.Result? {
@@ -242,23 +252,26 @@ final class RemoteGameSession {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONEncoder().encode(body)
-        let (data, response) = try await ServerTransport.session.data(for: request)
-        guard let http = response as? HTTPURLResponse else { throw Failure(message: "잘못된 서버 응답") }
-        if http.statusCode == 401 || http.statusCode == 403 {
+        let exchange = try await ServerTransport.exchange(request)
+        let data = exchange.data, status = exchange.status
+        guard status != 0 else { throw Failure(message: "잘못된 서버 응답", requestID: exchange.requestID) }
+        if status == 401 || status == 403 {
             invalidateAuthentication()
             // Keep the durable request: after re-login it must replay the same ID.
-            throw Failure(message: ServerAuthentication.loginRequired)
+            throw Failure(message: ServerAuthentication.loginRequired, status: status, requestID: exchange.requestID)
         }
-        if http.statusCode == 409 || http.statusCode == 422 {
+        if status == 409 || status == 422 {
             let text = String(decoding: data, as: UTF8.self)
             if !text.contains("idempotency_key_reused") {
                 try clearPending()
                 ready = false
             }
-            throw Failure(message: "서버가 요청을 거절했습니다. 다른 기기에서 상태가 바뀌었거나 조건을 충족하지 않습니다. 새로고침 후 다시 시도하세요.")
+            throw Failure(message: "서버가 요청을 거절했습니다. 다른 기기에서 상태가 바뀌었거나 조건을 충족하지 않습니다. 새로고침 후 다시 시도하세요.",
+                          status: status, requestID: exchange.requestID)
         }
-        guard http.statusCode == 200 else {
-            throw Failure(message: "서버 응답 \(http.statusCode). 요청 ID를 보존했습니다. 같은 요청으로 재시도할 수 있습니다.")
+        guard status == 200 else {
+            throw Failure(message: "서버 응답 \(status). 요청 ID를 보존했습니다. 같은 요청으로 재시도할 수 있습니다.",
+                          status: status, requestID: exchange.requestID)
         }
         let reply = try JSONDecoder().decode(Response.self, from: data)
         try accept(reply.snapshot)
@@ -288,15 +301,17 @@ final class RemoteGameSession {
     private func fetchSnapshot() async throws -> Snapshot {
         var request = try urlRequest("v1/state")
         if acceptedSnapshot { request.setValue("\"\(revision)\"", forHTTPHeaderField: "If-None-Match") }
-        let (data, response) = try await ServerTransport.session.data(for: request)
-        let status = (response as? HTTPURLResponse)?.statusCode
+        let exchange = try await ServerTransport.exchange(request)
+        let status = exchange.status
         if status == 401 || status == 403 {
             invalidateAuthentication()
-            throw Failure(message: ServerAuthentication.loginRequired)
+            throw Failure(message: ServerAuthentication.loginRequired, status: status, requestID: exchange.requestID)
         }
         if status == 304, let lastSnapshot { return lastSnapshot }
-        guard status == 200 else { throw Failure(message: "서버 상태를 가져오지 못했습니다.") }
-        return try JSONDecoder().decode(Snapshot.self, from: data)
+        guard status == 200 else {
+            throw Failure(message: "서버 상태를 가져오지 못했습니다. (HTTP \(status))", status: status, requestID: exchange.requestID)
+        }
+        return try JSONDecoder().decode(Snapshot.self, from: exchange.data)
     }
 
     private func urlRequest(_ path: String) throws -> URLRequest {
@@ -323,15 +338,16 @@ final class RemoteGameSession {
     }
 
     private func get<T: Decodable>(_ path: String) async throws -> T {
-        let (data, response) = try await ServerTransport.session.data(for: urlRequest(path))
-        if let status = (response as? HTTPURLResponse)?.statusCode, status == 401 || status == 403 {
+        let exchange = try await ServerTransport.exchange(urlRequest(path))
+        let status = exchange.status
+        if status == 401 || status == 403 {
             invalidateAuthentication()
-            throw Failure(message: ServerAuthentication.loginRequired)
+            throw Failure(message: ServerAuthentication.loginRequired, status: status, requestID: exchange.requestID)
         }
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
-            throw Failure(message: "서버에 연결할 수 없습니다. 주소·실행 상태를 확인하세요.")
+        guard status == 200 else {
+            throw Failure(message: Self.describe(status: status, data: exchange.data), status: status, requestID: exchange.requestID)
         }
-        return try JSONDecoder().decode(T.self, from: data)
+        return try JSONDecoder().decode(T.self, from: exchange.data)
     }
 
     func api(_ path: String, method: String = "GET", body: Data? = nil) async throws -> Data {
@@ -344,15 +360,26 @@ final class RemoteGameSession {
         request.httpMethod = method
         request.httpBody = body
         if body != nil { request.setValue("application/json", forHTTPHeaderField: "Content-Type") }
-        let (data, response) = try await ServerTransport.session.data(for: request)
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        if status == 401 { invalidateAuthentication(); throw Failure(message: ServerAuthentication.loginRequired) }
-        guard (200..<300).contains(status) else {
-            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
-            let detail = object?["detail"] as? String ?? "HTTP \(status)"
-            throw Failure(message: "요청을 완료하지 못했습니다: \(detail). 새로고침 후 조건을 다시 확인하세요.", status: status)
+        let exchange = try await ServerTransport.exchange(request)
+        let status = exchange.status
+        if status == 401 {
+            invalidateAuthentication()
+            throw Failure(message: ServerAuthentication.loginRequired, status: status, requestID: exchange.requestID)
         }
-        return data
+        guard (200..<300).contains(status) else {
+            throw Failure(message: Self.describe(status: status, data: exchange.data), status: status, requestID: exchange.requestID)
+        }
+        return exchange.data
+    }
+
+    /// 실패 응답을 사람이 읽을 문장으로. 4xx 는 서버가 준 이유 코드를 그대로 붙인다 — 복구 판단
+    /// (`idempotency_key_reused`)이 이 문장을 본다.
+    static func describe(status: Int, data: Data) -> String {
+        let detail = ServerTransport.detail(data) ?? "HTTP \(status)"
+        if status >= 500 {
+            return "서버에서 오류가 났어요 (HTTP \(status), \(detail)). 잠시 뒤 다시 시도해 주세요."
+        }
+        return "요청을 완료하지 못했습니다: \(detail). 새로고침 후 조건을 다시 확인하세요."
     }
 
     func onlineMutation(path: String, body: Data) async throws -> Data {

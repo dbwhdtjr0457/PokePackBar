@@ -68,10 +68,7 @@ struct PopoverView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if wallet.isOnline {
-                Button("온라인 · 통계와 거래") { OnlineWindow.shared.show(wallet: wallet) }
-                    .buttonStyle(.borderless).font(.caption)
-            }
+            if wallet.isOnline { onlineEntry }
             if let remote = wallet.remote, !remote.ready || remote.error != nil {
                 Button { nav.showSettings = true } label: {
                     Label(remote.error ?? "서버 연결 중…", systemImage: "network")
@@ -132,6 +129,35 @@ struct PopoverView: View {
         .frame(width: PopoverMetrics.contentWidth, alignment: .leading)
         .padding(PopoverMetrics.padding)
         .frame(width: PopoverMetrics.width)
+    }
+
+    // MARK: 온라인 창 입구
+
+    /// 온라인 창을 여는 줄. 캡션 크기 글자만 있던 예전 버튼은 찾기도 누르기도 어려웠다.
+    /// 아이콘과 설명을 붙인 한 줄 전체를 누를 수 있게 하고, ⌘O 로도 연다.
+    private var onlineEntry: some View {
+        Button { OnlineWindow.shared.show(wallet: wallet) } label: {
+            HStack(spacing: 9) {
+                Image(systemName: "globe")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Color.accentColor)
+                Text("온라인").font(Typography.bodySemibold)
+                Text("마켓, 교환, 친구").font(Typography.label).foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text("⌘O").font(Typography.caption).foregroundStyle(.tertiary)
+                Image(systemName: "arrow.up.forward.app")
+                    .font(.system(size: 14)).foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+            .contentShape(RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(OnlineEntryButtonStyle())
+        .keyboardShortcut("o", modifiers: .command)
+        .help("온라인 창 열기")
+        .accessibilityLabel("온라인 창 열기")
+        .accessibilityHint("마켓, 교환, 친구, 통계를 새 창에서 봐요.")
     }
 
     // MARK: 상단 — 재화와 사용량
@@ -426,5 +452,18 @@ struct PopoverView: View {
         case .collection: CardCollectionView(wallet: wallet, index: Self.index)
         case .dex:        DexView(wallet: wallet, index: Self.index)
         }
+    }
+}
+
+/// 온라인 입구 줄의 바탕. 가만히 있을 때도 눌러지는 자리임이 보이고, 올리거나 누르면 짙어진다.
+private struct OnlineEntryButtonStyle: ButtonStyle {
+    @State private var hovering = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(Color.accentColor.opacity(configuration.isPressed ? 0.22 : hovering ? 0.16 : 0.10),
+                        in: RoundedRectangle(cornerRadius: 8))
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: 0.12), value: hovering)
     }
 }
