@@ -1,6 +1,6 @@
 cask "poke-pack-bar" do
-  version "0.11.12"
-  sha256 "6d8f9ec4c52ec2f4f87ab218976dc325dc1aaf9c787e3eded2e7fa7a69ad2387"
+  version "0.12.0"
+  sha256 "468a4ad59c77ef152a38f447fb95aba778bc52ca49d7ae0b886479c9dcb3499b"
 
   url "https://github.com/wonyangs/PokePackBar/releases/download/v#{version}/PokePackBar.zip"
   name "PokePackBar"

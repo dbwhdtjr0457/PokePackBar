@@ -56,6 +56,26 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.12.0", lines: [
+                t("온라인 마켓·교환·친구 창을 개편하고 요청 번호와 오류 안내를 추가했습니다. 판매 가격은 서버 상한 안에서 안전하게 변환합니다.",
+                  "Redesigned the online marketplace, trades and friends with request IDs and clearer errors. Listing prices are safely converted within server limits.",
+                  "オンラインのマーケット・交換・フレンド画面を刷新し、リクエスト番号とエラー案内を追加しました。販売価格はサーバー上限内で安全に変換します。",
+                  "Renovamos el mercado, los intercambios y los amigos con identificadores de solicitud y errores más claros. Los precios respetan los límites del servidor.",
+                  "Le marché, les échanges et les amis ont été repensés avec des identifiants de requête et des erreurs plus claires. Les prix respectent les limites du serveur.",
+                  "Reformulamos o mercado, as trocas e os amigos com IDs de solicitação e erros mais claros. Os preços respeitam os limites do servidor."),
+                t("컬렉션에서 이름·카드 번호 검색과 번호순 정렬을 사용할 수 있습니다. 새 통계 탭에서 개봉·보유·판매 기록을 확인합니다.",
+                  "Search the collection by name or card number and sort by number. The new statistics tab shows openings, ownership and sales.",
+                  "コレクションを名前・カード番号で検索し、番号順に並べ替えられます。新しい統計タブで開封・所持・売却の記録を確認できます。",
+                  "Busca por nombre o número y ordena por número. La nueva pestaña de estadísticas muestra aperturas, cartas y ventas.",
+                  "Recherchez par nom ou numéro et triez par numéro. Le nouvel onglet de statistiques affiche les ouvertures, la collection et les ventes.",
+                  "Pesquise por nome ou número e ordene por número. A nova aba de estatísticas mostra aberturas, coleção e vendas."),
+                t("개봉 결과를 가격순·레어도순으로 정렬하고 시세 기반 아우라를 추가했습니다. 카드 넘김 대기를 제거하고 30주년 에너지·ACE SPEC·리버스·금색 포일을 보완했습니다.",
+                  "Sort opening results by value or rarity with price-aware reveal auras. Removed card-advance delays and corrected anniversary Energy, ACE SPEC, reverse and gold foil.",
+                  "開封結果を価格・レア度順に並べ替え、相場に応じたオーラを追加しました。カード送りの待機を削除し、記念エネルギー・ACE SPEC・リバース・金色ホイルを修正しました。",
+                  "Ordena los resultados por valor o rareza con auras según el precio. Eliminamos las pausas al avanzar y corregimos los acabados de Energía aniversario, ACE SPEC, reverso y dorado.",
+                  "Triez les résultats par valeur ou rareté avec des auras liées au prix. Les pauses entre cartes ont été supprimées et les effets Énergie anniversaire, ACE SPEC, reverse et dorés corrigés.",
+                  "Ordene os resultados por valor ou raridade com auras baseadas no preço. Removemos pausas entre cartas e corrigimos os efeitos de Energia comemorativa, ACE SPEC, reverso e dourado.")
+            ]),
             ReleaseNote(version: "0.11.12", lines: [
                 t("온라인 계정으로 여러 Mac의 카드·팩·재화를 공유하고 친구·교환·마켓을 사용할 수 있습니다. 초대 코드로 가입하며, 기존 세이브는 운영자와 이전한 뒤 연결합니다. 에너지 이미지를 포함한 모든 카드 그림은 CDN에서 받아 캐시합니다.",
                   "Online accounts share cards, packs and currency across Macs, with friends, trades and a marketplace. Register with an invitation code; existing saves must be migrated by the operator before linking. All card artwork, including Energy, is fetched from the CDN and cached.",
