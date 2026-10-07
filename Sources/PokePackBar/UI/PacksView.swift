@@ -586,7 +586,8 @@ private struct RevealView: View {
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
-                            .controlSize(.mini)
+                            .controlSize(.regular)
+                            .font(Typography.button)
                             .fixedSize()
                         }
                     }
