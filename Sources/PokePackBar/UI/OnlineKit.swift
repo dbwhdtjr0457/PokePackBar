@@ -125,6 +125,7 @@ struct OnlineStock: Identifiable, Sendable {
 }
 
 /// 카드 그림이 먼저 보이는 칸. 이름과 판형 아래에 각 화면이 필요한 한두 줄을 붙인다.
+@MainActor
 struct OnlineCardTile<Footer: View>: View {
     let cardID: String
     let finish: String
@@ -151,6 +152,7 @@ struct OnlineCardTile<Footer: View>: View {
     }
 }
 
+@MainActor
 struct OnlineBadge: View {
     let text: String
     var color: Color = .accentColor
@@ -165,6 +167,7 @@ struct OnlineBadge: View {
 }
 
 /// 비어 있을 때 무엇을 하면 채워지는지까지 말한다.
+@MainActor
 struct OnlineEmptyState: View {
     let icon: String
     let title: String
@@ -185,6 +188,7 @@ struct OnlineEmptyState: View {
 }
 
 /// 한 덩어리의 내용. 모든 것을 상자에 넣지 않고, 제목과 여백으로 나눈다.
+@MainActor
 struct OnlineSection<Content: View, Accessory: View>: View {
     let title: String
     var subtitle: String? = nil
@@ -219,6 +223,7 @@ extension OnlineSection where Accessory == EmptyView {
 }
 
 /// 수량 고르기. 숫자 칸 대신 −/+ 로만 바꾼다 — 고를 수 없는 수는 아예 못 만든다.
+@MainActor
 struct OnlineQuantity: View {
     @Binding var value: Int
     let range: ClosedRange<Int>
@@ -241,6 +246,7 @@ struct OnlineQuantity: View {
 }
 
 /// 시트 공통 틀: 제목, 내용, 아래쪽 취소와 실행 버튼.
+@MainActor
 struct OnlineSheet<Content: View>: View {
     let title: String
     let actionTitle: String
@@ -273,6 +279,7 @@ struct OnlineSheet<Content: View>: View {
 }
 
 /// 이전/다음. 넘길 곳이 없으면 아예 보이지 않는다.
+@MainActor
 struct OnlinePagination: View {
     @Bindable var model: OnlineHubModel
     let key: String
@@ -293,6 +300,7 @@ struct OnlinePagination: View {
 }
 
 /// 카드 그림 줄. 교환처럼 여러 장을 한눈에 보여 줄 때 쓴다.
+@MainActor
 struct OnlineCardStrip: View {
     let lines: [String: Int]
     var width: CGFloat = 64
@@ -330,6 +338,7 @@ struct OnlineCardStrip: View {
 
 /// 전체 카드에서 원하는 카드를 찾아 고르는 시트. 위시리스트와 교환의 「받고 싶은 카드」에 쓴다.
 /// 판형은 그 카드에 실제로 있는 것만 고를 수 있다.
+@MainActor
 struct OnlineCatalogueSearch: View {
     let title: String
     let actionTitle: String
@@ -434,6 +443,7 @@ struct OnlineCatalogueSearch: View {
 }
 
 /// 내 카드 중 거래할 수 있는 것만 보여 주고 골라 담는 시트.
+@MainActor
 struct OnlineStockPicker: View {
     let wallet: WalletStore
     let title: String
@@ -565,6 +575,7 @@ struct OnlineProblem {
 
 /// 온라인 창 위쪽의 실패 안내. 요청 번호는 서버 로그의 request_id 와 같아서, 복사해 두면
 /// 서버에서 그 요청의 오류 기록을 바로 찾을 수 있다.
+@MainActor
 struct OnlineFailureBanner: View {
     let problem: OnlineProblem
     let message: String

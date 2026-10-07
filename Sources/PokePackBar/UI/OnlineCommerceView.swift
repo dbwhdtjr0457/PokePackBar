@@ -7,6 +7,7 @@ import SwiftUI
 /// 예전 화면은 등록 폼, 검색, 장부, 글 목록을 한 화면에 쌓고, 전체 카드 목록에서 고른 뒤에야
 /// 「거래 가능 0장」을 알려 줬다. 지금은 할 일마다 화면을 나누고, 팔 수 있는 카드만 보여 준다.
 /// 서버 경로와 보내는 값은 그대로다.
+@MainActor
 struct OnlineMarketView: View {
     @Bindable var model: OnlineHubModel
     @State private var mode: Mode = .buy
@@ -224,6 +225,7 @@ private struct ListingBox: Identifiable {
     var id: String { item.onlineID }
 }
 
+@MainActor
 private struct BuySheet: View {
     @Bindable var model: OnlineHubModel
     let item: [String: Any]
@@ -263,6 +265,7 @@ private struct BuySheet: View {
     }
 }
 
+@MainActor
 private struct SellSheet: View {
     @Bindable var model: OnlineHubModel
     let stock: OnlineStock
@@ -322,6 +325,7 @@ private struct SellSheet: View {
 // MARK: - 교환
 
 /// 교환 — 친구를 고르고, 줄 카드와 받을 카드를 그림으로 담는다.
+@MainActor
 struct OnlineTradingView: View {
     @Bindable var model: OnlineHubModel
     @State private var friend = ""

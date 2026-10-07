@@ -219,6 +219,7 @@ final class OnlineHubModel {
     }
 }
 
+@MainActor
 struct OnlineHubView: View {
     @Bindable var model: OnlineHubModel
 

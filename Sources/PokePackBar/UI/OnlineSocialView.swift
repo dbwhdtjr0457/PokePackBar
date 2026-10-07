@@ -4,6 +4,7 @@ import SwiftUI
 /// 친구 — 내 프로필, 친구, 위시리스트, 바인더, 서버에 있는 내 카드.
 ///
 /// 서버 경로와 보내는 값은 그대로 두고, 화면만 그림과 쉬운 말로 바꿨다.
+@MainActor
 struct OnlineSocialView: View {
     @Bindable var model: OnlineHubModel
     @State private var nickname = ""
@@ -291,6 +292,7 @@ struct OnlineSocialView: View {
 }
 
 /// 친구의 공개 바인더, 위시리스트, 컬렉션.
+@MainActor
 private struct FriendBinderSheet: View {
     @Bindable var model: OnlineHubModel
     @State private var preview: PrintingSelection?
@@ -379,6 +381,7 @@ private struct FriendBinderSheet: View {
 
 struct PrintingSelection: Identifiable { let id: String }
 
+@MainActor
 struct OnlinePrintingArt: View {
     let printing: String
     var width: CGFloat = 180
@@ -392,6 +395,7 @@ struct OnlinePrintingArt: View {
 }
 
 /// 카드 한 장을 크게. 판형과 참고 시세를 원화로 보여 준다.
+@MainActor
 struct OnlinePrintingDetail: View {
     let printing: String
     @Environment(\.dismiss) private var dismiss
