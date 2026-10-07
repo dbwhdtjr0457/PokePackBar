@@ -230,33 +230,47 @@ struct CardSpotlightView: View {
         if let prices = CardPrices.shared,
            let unit = displayedFinish.flatMap({ prices.price(cardID: cardID, finish: $0) })
                 ?? prices.price(cardID) {
-            // 개별 가격은 자르지 않는다. 중복 보유 총액은 별도 행을 쓴다.
-            HStack(spacing: 5) {
-                if let displayedFinish {
-                    finishPicker(l, displayedFinish)
-                    Text("·").font(Typography.label).foregroundStyle(.tertiary)
-                }
-                Text(prices.formattedWithKRW(unit, language: wallet.language))
-                    .font(Typography.bodySemibold).monospacedDigit()
-                if ownedCount <= 1 { acquiredTag(l) }
-            }
-            .lineLimit(1).minimumScaleFactor(0.75)
-            .help(l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
-            if ownedCount > 1 {
-                HStack(spacing: 5) {
-                    let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
-                        $0 + MarketEconomy.usd($1.printing, prices: prices) * Double($1.count)
+            // 값 정보는 라벨을 붙인 작은 표로 둔다. 「·」로만 이어 붙인 줄은 시세, 보유 총액,
+            // 시세의 출처가 한눈에 구분되지 않았다. 줄 수는 예전과 같아 카드 크기 계산은 그대로다.
+            Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 3) {
+                // 개별 가격은 자르지 않는다. 중복 보유 총액은 별도 행을 쓴다.
+                GridRow {
+                    infoLabel(l.marketPrice)
+                    HStack(spacing: 5) {
+                        if let displayedFinish { finishPicker(l, displayedFinish) }
+                        Text(prices.formattedWithKRW(unit, language: wallet.language))
+                            .font(Typography.bodySemibold).monospacedDigit()
+                        if ownedCount <= 1 { acquiredTag(l) }
                     }
-                    Text(l.marketHoldings).font(.system(size: 14)).foregroundStyle(.tertiary)
-                    Text(WonFormatter.money(prices.krw(total), language: wallet.language))
-                        .font(Typography.bodySemibold).monospacedDigit()
-                        .foregroundStyle(Color.accentColor)
-                    acquiredTag(l)
+                    .lineLimit(1).minimumScaleFactor(0.75)
+                    .help(l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
                 }
-                .lineLimit(1).minimumScaleFactor(0.75)
+                if ownedCount > 1 {
+                    GridRow {
+                        infoLabel(l.marketHoldings)
+                        HStack(spacing: 5) {
+                            let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
+                                $0 + MarketEconomy.usd($1.printing, prices: prices) * Double($1.count)
+                            }
+                            Text(WonFormatter.money(prices.krw(total), language: wallet.language))
+                                .font(Typography.bodySemibold).monospacedDigit()
+                                .foregroundStyle(Color.accentColor)
+                            acquiredTag(l)
+                        }
+                        .lineLimit(1).minimumScaleFactor(0.75)
+                    }
+                }
+                GridRow {
+                    infoLabel(l.priceBasis)
+                    priceBasisLabel(l, prices).lineLimit(1).minimumScaleFactor(0.8)
+                }
             }
-            priceBasisLabel(l, prices)
         }
+    }
+
+    private func infoLabel(_ text: String) -> some View {
+        Text(text).font(.system(size: 14)).foregroundStyle(.tertiary)
+            .gridColumnAlignment(.trailing)
     }
 
     private func priceBasisLabel(_ l: L, _ prices: CardPrices) -> some View {

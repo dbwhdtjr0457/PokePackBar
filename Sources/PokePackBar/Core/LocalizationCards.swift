@@ -21,6 +21,8 @@ extension L {
     var collectionValue: String { t("컬렉션 가치", "Collection value", "コレクション価値",
                                     "Valor de la colección", "Valeur de la collection",
                                     "Valor da coleção") }
+    /// 카드 상세 값 표에서 시세의 출처 줄 라벨.
+    var priceBasis: String { t("기준", "Basis", "基準", "Base", "Base", "Base") }
     var marketHoldings: String { t("보유", "Holdings", "保有", "En posesión", "En stock", "Em posse") }
     func cardFinishName(_ finish: CardFinish) -> String {
         switch finish {
