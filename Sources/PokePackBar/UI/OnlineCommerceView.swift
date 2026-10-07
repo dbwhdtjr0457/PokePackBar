@@ -242,7 +242,9 @@ private struct BuySheet: View {
                     actionDisabled: !model.canWrite || !canAfford || affordable < 1,
                     note: "판매자가 그새 수량을 바꾸면 결제하지 않고 다시 확인해 달라고 알려 드려요.",
                     action: {
-                        Task { await model.mutate("market/listings", ["action": "listing_buy", "target_id": item.string("id"), "target_version": item.int("version"), "quantity": quantity, "unit_tokens": unit]) }
+                        // 보낼 값은 누르는 순간 정한다. Task 본문은 시트가 닫힌 뒤에 돈다.
+                        let values: [String: Any] = ["action": "listing_buy", "target_id": item.string("id"), "target_version": item.int("version"), "quantity": quantity, "unit_tokens": unit]
+                        Task { await model.mutate("market/listings", values) }
                     }) {
             HStack(alignment: .top, spacing: 18) {
                 CardImageView(cardID: printing.cardID, hires: true, width: 150)
@@ -281,7 +283,8 @@ private struct SellSheet: View {
                     note: "\(quantity)장을 장당 \(OnlineText.wonText(price))에 올려요. 7일 동안 안 팔린 카드는 자동으로 돌아와요. 시세가 바뀌어도 가격은 그대로예요.",
                     action: {
                         guard let listingTokens else { return }
-                        Task { await model.mutate("market/listings", ["action": "listing_create", "printing": stock.key, "quantity": quantity, "unit_tokens": listingTokens]) }
+                        let values: [String: Any] = ["action": "listing_create", "printing": stock.key, "quantity": quantity, "unit_tokens": listingTokens]
+                        Task { await model.mutate("market/listings", values) }
                     }) {
             HStack(alignment: .top, spacing: 18) {
                 CardImageView(cardID: stock.cardID, hires: true, width: 150)
@@ -431,8 +434,11 @@ struct OnlineTradingView: View {
                         actionDisabled: !model.canWrite || blocker != nil,
                         note: "친구가 수락할 때 서버가 양쪽 카드를 다시 확인해요. 72시간이 지나면 제안은 사라지고 카드는 풀려요.",
                         action: {
-                            Task { await model.mutate("trades", ["action": "trade_create", "target_id": friend, "offered": lines(offered), "requested": lines(requested)]) }
-                            offered = [:]; requested = [:]
+                            // 보낼 카드는 누르는 순간 정한다. Task 본문은 이 블록이 끝난 뒤에 돌아서,
+                            // 그 안에서 바구니를 읽으면 이미 비운 빈 바구니가 나가 서버가
+                            // both_sides_required 로 거절했다. 바구니는 성공했을 때만 비운다.
+                            let values: [String: Any] = ["action": "trade_create", "target_id": friend, "offered": lines(offered), "requested": lines(requested)]
+                            Task { if await model.mutate("trades", values) { offered = [:]; requested = [:] } }
                         }) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("\(friendName(friend))님에게").font(Typography.bodySemibold)

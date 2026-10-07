@@ -168,8 +168,10 @@ final class OnlineHubModel {
     func items(_ key: String) -> [[String: Any]] { documents[key]?["items"] as? [[String: Any]] ?? [] }
     var profile: [String: Any] { documents["profile"]?["profile"] as? [String: Any] ?? [:] }
 
-    func mutate(_ route: String, _ values: [String: Any]) async {
-        guard canWrite, let remote else { return }
+    /// 성공하면 true. 화면은 성공했을 때만 입력(교환 바구니 등)을 비운다.
+    @discardableResult
+    func mutate(_ route: String, _ values: [String: Any]) async -> Bool {
+        guard canWrite, let remote else { return false }
         mutating = true
         do {
             let body = values.merging(["request_id": UUID().uuidString, "expected_revision": remote.revision]) { _, right in right }
@@ -177,9 +179,11 @@ final class OnlineHubModel {
             message = "완료했어요."
             mutating = false
             await refresh()
+            return true
         } catch {
             mutating = false
             fail(error, while: route)
+            return false
         }
     }
 
