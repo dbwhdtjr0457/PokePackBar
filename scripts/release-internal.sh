@@ -37,6 +37,17 @@ if [[ -z "$REPO" ]]; then
   exit 1
 fi
 
+# 배포본은 고정 서명이어야 한다. ad-hoc 으로 서명하면 릴리스마다 cdhash 가 바뀌어 테스터의
+# 키체인이 저장된 로그인 정보를 새 앱에 내주지 않고, 업데이트 직후 허용 창이 떠서 앱이 멈춘 것처럼
+# 보인다. 테스트와 버전 범프 전에 먼저 확인해 반쯤 진행된 릴리스를 남기지 않는다.
+SIGN_IDENTITY="${CODESIGN_IDENTITY:-PokePackBar Local}"
+if ! security find-identity -p codesigning | grep -F "\"$SIGN_IDENTITY\"" >/dev/null; then
+  echo "✗ '$SIGN_IDENTITY' 서명 인증서가 없다. 배포본은 ad-hoc 으로 서명하지 않는다." >&2
+  echo "  ./scripts/create-signing-cert.sh 를 한 번 실행한 뒤 다시 시도하세요." >&2
+  echo "  같은 인증서로 계속 서명해야 테스터의 키체인 허용이 유지된다. 인증서를 지우거나 바꾸지 마세요." >&2
+  exit 1
+fi
+
 echo "=== $APP_NAME 내부 릴리스 $PREV → $VERSION ==="
 echo "    저장소 $REPO"
 
@@ -49,7 +60,7 @@ sed -i '' "s/^VERSION=\"$PREV\"/VERSION=\"$VERSION\"/" scripts/build-app.sh
 grep -q "VERSION=\"$VERSION\"" scripts/build-app.sh || { echo "✗ 범프 실패" >&2; exit 1; }
 
 echo "▶ 3/5 빌드"
-./scripts/build-app.sh >/dev/null
+PTB_REQUIRE_STABLE_SIGN=1 ./scripts/build-app.sh >/dev/null
 echo "  ✓ /Applications 에 설치됨"
 
 echo "▶ 4/5 zip + 체크섬"
