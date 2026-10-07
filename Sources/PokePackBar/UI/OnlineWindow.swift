@@ -235,7 +235,7 @@ struct OnlineHubView: View {
     /// 화면 키 -> 보이는 이름. 자주 쓰는 순서로 둔다.
     private static let sections: [(key: String, title: String)] = [
         ("마켓", "마켓"), ("교환", "교환"), ("컬렉션·친구", "친구"),
-        ("통계", "통계"), ("작업", "대량 개봉"), ("알림", "알림"),
+        ("통계", "개봉 분석"), ("작업", "대량 개봉"), ("알림", "알림"),
     ]
 
     var body: some View {
@@ -430,9 +430,13 @@ struct OnlineHubView: View {
     private var statistics: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 22) {
+                // 메뉴바의 「통계」 탭(이 계정 전체 요약)과 이름이 같아 무엇이 다른지 헷갈렸다.
+                Text("서버에 기록된 개봉 결과를 기간, 모드, 세트별로 나눠 봐요. 보유 카드와 컬렉션 전체 요약은 메뉴바의 「통계」 탭에 있어요.")
+                    .font(Typography.label).foregroundStyle(.secondary)
                 HStack(spacing: 10) {
+                    // 고정 폭을 주면 세그먼트가 그 안 가운데로 가서 다른 줄과 왼쪽 선이 어긋났다.
                     Picker("기간", selection: $model.period) { Text("전체 기간").tag(0); Text("최근 7일").tag(7); Text("최근 30일").tag(30) }
-                        .pickerStyle(.segmented).frame(width: 260)
+                        .pickerStyle(.segmented).fixedSize()
                     Picker("모드", selection: $model.mode) { Text("모든 모드").tag(""); Text("게임 모드").tag("game"); Text("실물 모드").tag("realistic") }
                         .fixedSize()
                     Picker("세트", selection: $model.setID) {
@@ -446,7 +450,8 @@ struct OnlineHubView: View {
 
                 if let totals = model.data["totals"] as? [String: Any], !totals.isEmpty {
                     let number = { (key: String) in (totals[key] as? NSNumber)?.intValue ?? 0 }
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 170), spacing: 12)], spacing: 12) {
+                    // 여섯 칸을 3칸씩 두 줄로. 폭에 맞춰 늘리면 넓은 창에서 5칸과 1칸으로 갈라졌다.
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                         statTile("연 팩", number("opened").formatted() + "팩")
                         statTile("산 팩", number("purchased").formatted() + "팩")
                         statTile("새로 얻은 카드", number("new").formatted() + "장")
