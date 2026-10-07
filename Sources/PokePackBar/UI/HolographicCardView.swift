@@ -1472,6 +1472,21 @@ private struct FinishPatternLayer: View {
                         .mask { motifIllumination }
                 }
                 .blendMode(blendMode)
+                if pattern == .mirror || pattern == .stampedMirror || pattern == .subjectStamp {
+                    // Bulbapedia "Holofoil" calls these reverses a flat/plain
+                    // holographic finish: no motif, but the smooth sheet still
+                    // splits light into a rainbow that slides with the tilt.
+                    // Only the SWSH/SV tile reverses are colourless mirror foil.
+                    // Normal blending: a screen tint vanishes on white card bodies.
+                    // Faint everywhere, vivid where the light lands.
+                    ZStack {
+                        plainHolographicSpectrum
+                            .opacity(0.22)
+                        plainHolographicSpectrum
+                            .mask { plainHolographicLightBand }
+                    }
+                    .opacity(0.55 + 0.45 * tilt.magnitude)
+                }
                 if pattern == .crosshatch {
                     RadialGradient(stops: [
                         .init(color: Color(red: 0.70, green: 0.98, blue: 1.0)
@@ -1547,6 +1562,29 @@ private struct FinishPatternLayer: View {
               prefix.hasPrefix("ex"),
               let number = Int(prefix.dropFirst(2)) else { return false }
         return (5...16).contains(number)
+    }
+
+    /// Two smooth rainbow cycles across the sheet. The highlight position
+    /// moves them, so the colours travel instead of being printed in place.
+    private var plainHolographicSpectrum: some View {
+        let shift = (Double(highlight.x) - 0.5) * 1.1 + (Double(highlight.y) - 0.5) * 0.7
+        let hues: [Double] = [0.0, 0.09, 0.17, 0.33, 0.50, 0.60, 0.75, 0.88]
+        return LinearGradient(
+            colors: (hues + hues).map {
+                Color(hue: $0, saturation: 0.72, brightness: 1)
+            },
+            startPoint: UnitPoint(x: -0.9 - shift, y: -0.3 - shift * 0.4),
+            endPoint: UnitPoint(x: 1.9 - shift, y: 1.3 - shift * 0.4))
+    }
+
+    /// The broad diagonal band where the light currently lands.
+    private var plainHolographicLightBand: some View {
+        let center = min(0.95, max(0.05, Double(highlight.x + highlight.y) / 2))
+        return LinearGradient(stops: [
+            .init(color: .clear, location: max(0, center - 0.34)),
+            .init(color: .white.opacity(0.72), location: center),
+            .init(color: .clear, location: min(1, center + 0.34)),
+        ], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 
     @ViewBuilder

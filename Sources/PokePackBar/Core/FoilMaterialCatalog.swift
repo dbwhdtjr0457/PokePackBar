@@ -36,6 +36,13 @@ enum FoilMaterialCatalog {
 
         switch finish {
         case .holo:
+            // 팩에 끼워 주는 holo 기본 에너지(30주년, BW/WF 갓팩)는 카드 목록에 없는 ID라
+            // 세트가 "supplement" 로 읽혀 Cosmos(그림 창) 기본값에 떨어졌다. 에너지 카드에는
+            // 그림 창이 없고, 실물 30주년 에너지는 카드 전체가 포일이다. 스캔 분석이 필요 없는
+            // 전면 가로 홀로라 공개 순간 바로 그려진다.
+            if cardID.hasPrefix(SupplementalEnergyCard.idPrefix) {
+                return foil(.fullCard, .mirage, .none, .silver, 0.50)
+            }
             return standardHolo(cardID: cardID, setID: setID, rarity: rarity)
         case .reverseHolo:
             return reverseHolo(cardID: cardID, setID: setID, rarity: rarity)
@@ -490,7 +497,9 @@ enum FoilMaterialCatalog {
         if setID.hasPrefix("bw") {
             return foil(.fullCard, .tinsel, .none, .paper, 0.56)
         }
-        return foil(.outsideArt, .aceDiamond, .embossed, .magenta, 0.57)
+        // Scarlet & Violet ACE SPEC cards carry a full-card holofoil treatment
+        // (ComicBook/PokéBeach, Temporal Forces reveal); the art box is foiled too.
+        return foil(.fullCard, .aceDiamond, .embossed, .magenta, 0.57)
     }
 
     private static func blackWhite(cardID: String) -> FoilSpec {

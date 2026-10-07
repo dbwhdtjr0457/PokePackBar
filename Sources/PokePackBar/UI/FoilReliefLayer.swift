@@ -271,6 +271,16 @@ enum FoilReliefMaterial: Equatable {
         return false
     }
 
+    /// Sun & Moon and Sword & Shield gold secret rares draw the illustration
+    /// in golden lines that "sparkle with a rainbow prism" when hit by light
+    /// (Bleeding Cool, Gold Secret Rares). Other gold families stay warm metal.
+    var hasPrismLinework: Bool {
+        if case .gold(let pattern) = self {
+            return pattern == .sunMoonGold || pattern == .swordShieldGold
+        }
+        return false
+    }
+
     /// Correlation scale is material-specific; gold keeps a finer metallic grain
     /// while illustration etching reveals small connected patches of relief.
     var lightNeighbourhoodColumns: Double? {
@@ -325,6 +335,7 @@ struct FoilReliefLayer: View {
     var coatingScale: Double = 1
 
     private static let lightLevels = 8
+    private static let prismHues = 6
     private static let shadowLevels = 4
 
     var body: some View {
@@ -344,6 +355,7 @@ struct FoilReliefLayer: View {
                                     count: colors.count * Self.lightLevels)
             var shadows = Array(repeating: Path(), count: Self.shadowLevels)
             var peaks = Path()
+            var prisms = Array(repeating: Path(), count: Self.prismHues)
             let pitch = size.width / CGFloat(material.columns)
             let angleCos = cos(angle)
             let angleSin = sin(angle)
@@ -381,6 +393,14 @@ struct FoilReliefLayer: View {
                     let index = colorIndex * Self.lightLevels + level
                     reflections[index].move(to: start)
                     reflections[index].addLine(to: end)
+                    if facet.prism && reflected > 0.22 {
+                        // Hue follows position along the line and the viewing
+                        // angle, so the prism colours travel as the card tilts.
+                        let hue = facet.colorPhase * 2.3 + facet.x * 1.7 + facet.y * 0.9 + angle * 0.42
+                        let bucket = Int((hue - floor(hue)) * Double(Self.prismHues)) % Self.prismHues
+                        prisms[bucket].move(to: start)
+                        prisms[bucket].addLine(to: end)
+                    }
                     if reflected > 0.72 && facet.glint {
                         peaks.addEllipse(in: CGRect(x: center.x - pitch * 0.25,
                                                     y: center.y - pitch * 0.20,
@@ -416,6 +436,16 @@ struct FoilReliefLayer: View {
                 }
             }
             context.fill(peaks, with: .color(colors[0].opacity(min(1, 0.92 * highlightGain))))
+            if material.hasPrismLinework {
+                for bucket in 0..<Self.prismHues {
+                    context.stroke(prisms[bucket],
+                                   with: .color(Color(hue: Double(bucket) / Double(Self.prismHues),
+                                                      saturation: 0.78, brightness: 1)
+                                       .opacity(min(1, 0.85 * highlightGain) * coatingGain)),
+                                   style: StrokeStyle(lineWidth: pitch * material.ridgeWidth * 1.25,
+                                                      lineCap: .round))
+                }
+            }
         }
     }
 }
@@ -437,6 +467,8 @@ private enum FoilReliefCache {
         let lightPhase: Double
         let glint: Bool
         let responseWeight: Double
+        /// On a golden illustration line of a prism-linework gold card.
+        let prism: Bool
     }
 
     private final class Surface {
@@ -487,6 +519,7 @@ private enum FoilReliefCache {
                         row: row, column: column, phase: phase, underlying: geometry.normal)
                 }
                 var responseWeight = 1.0
+                var prism = false
                 if material.followsArtwork, let imageField {
                     let sample = imageField.sample(x: x, y: y)
                     if material.isMicroEtched {
@@ -509,6 +542,9 @@ private enum FoilReliefCache {
                         geometry.direction = FoilReliefMaterial.blendRidgeDirection(
                             geometry.direction, sample.direction, weight: sample.edge * 0.16)
                         if sample.light < 0.20 && sample.edge > 0.40 { responseWeight = 0.24 }
+                        // Only part of each line, so it sparkles rather than
+                        // outlining every ink edge in rainbow.
+                        if material.hasPrismLinework && sample.edge > 0.36 && grain > 0.30 { prism = true }
                     } else {
                         let weight = material == .chrome || material == .printedRGB ? 1 : 0.40 + sample.edge * 0.50
                         geometry.direction = geometry.direction * (1 - weight) + sample.direction * weight
@@ -539,7 +575,8 @@ private enum FoilReliefCache {
                                     colorPhase: geometry.color + grain * 0.065,
                                     lightPhase: lightPhase,
                                     glint: grain > (material.isIllustrationEtch ? 0.93 : 0.98),
-                                    responseWeight: responseWeight))
+                                    responseWeight: responseWeight,
+                                    prism: prism))
             }
         }
         cache.setObject(Surface(facets), forKey: key)
