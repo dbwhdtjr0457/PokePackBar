@@ -11,6 +11,9 @@ struct SettingsView: View {
     /// 패치 노트로 넘어가기. 설정을 열어 둔 채 덮어 씌우므로 닫으면 여기로 돌아온다.
     var onOpenReleaseNotes: () -> Void = {}
     @State private var launchAtLogin = LoginItem.isEnabled
+    @AppStorage(SoundEffects.defaultsKey) private var soundEffects = false
+    @AppStorage(PackTearView.manualTearKey) private var manualTear = true
+    @AppStorage(PopoverSize.defaultsKey) private var popoverSize = PopoverSize.regular
     @State private var launchAtLoginError: String?
     @State private var reportError: String?
     @State private var advancedExpanded = false
@@ -186,6 +189,51 @@ struct SettingsView: View {
                         }
                     }
             }
+            Divider()
+            groupRow {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l.soundEffects)
+                    Text(l.soundEffectsHint).font(Typography.label).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Toggle("", isOn: $soundEffects)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                    // 켜는 순간 어떤 소리인지 들려준다.
+                    .onChange(of: soundEffects) { _, on in
+                        if on { SoundEffects.play(.chime(3), force: true) }
+                    }
+            }
+            Divider()
+            groupRow {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l.manualTear)
+                    Text(l.manualTearHint).font(Typography.label).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Toggle("", isOn: $manualTear)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+            }
+            Divider()
+            groupRow {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l.popoverSize)
+                    Text(l.popoverSizeHint).font(Typography.label).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    // 치수는 켤 때 정해진다. 바꿨으면 그 자리에서 다시 켤 수 있게 한다.
+                    if popoverSize != PopoverSize.launch {
+                        Button(l.restartNow) { AppRelauncher.relaunch() }
+                            .buttonStyle(.link).font(Typography.labelSemibold)
+                    }
+                }
+                Spacer()
+                Picker("", selection: $popoverSize) {
+                    Text(l.popoverSizeRegular).tag(PopoverSize.regular)
+                    Text(l.popoverSizeLarge).tag(PopoverSize.large)
+                }
+                .labelsHidden().pickerStyle(.segmented).fixedSize()
+            }
         }
     }
 
@@ -194,19 +242,35 @@ struct SettingsView: View {
     /// **얻었는데 고를 데가 없으면 보상이 아니다.** 칭호는 도감 탭 머리에 붙는다.
     /// 하나도 없으면 이 묶음을 아예 두지 않는다 — 빈 선택기는 「무엇을 해야 열리는지」를
     /// 말해 주지 않으므로 도움이 안 된다.
+    /// 칭호 선택기에서 레벨 칭호를 도감 칭호와 가르는 번호. 도감 칭호는 완성 수(수백)를 쓴다.
+    private static let levelTitleTag = 100_000
+
     @ViewBuilder
     private var collectorGroup: some View {
-        if !wallet.titles.isEmpty {
+        if !wallet.titles.isEmpty || !wallet.levelTitles.isEmpty {
             settingsSection(l.titleSectionLabel) {
                 groupRow {
                     Text(l.titleSectionLabel)
                     Spacer()
+                    // 도감 칭호와 레벨 칭호를 한 선택기에서 고른다. 레벨 칭호는 큰 번호로 구분한다.
                     Picker("", selection: Binding(
-                        get: { wallet.stateTitleChoice ?? -1 },
-                        set: { wallet.setTitle($0 < 0 ? nil : $0) })) {
+                        get: { wallet.levelTitleChoice.map { Self.levelTitleTag + $0 } ?? wallet.stateTitleChoice ?? -1 },
+                        set: { value in
+                            if value < 0 {
+                                wallet.setTitle(nil)
+                                wallet.setLevelTitle(nil)
+                            } else if value >= Self.levelTitleTag {
+                                wallet.setLevelTitle(value - Self.levelTitleTag)
+                            } else {
+                                wallet.setTitle(value)
+                            }
+                        })) {
                         Text(l.titleNone).tag(-1)
                         ForEach(wallet.titles) { step in
                             Text(step.title.text(wallet.language)).tag(step.completed)
+                        }
+                        ForEach(wallet.levelTitles, id: \.self) { level in
+                            Text(l.levelTitleOption(level)).tag(Self.levelTitleTag + level)
                         }
                     }
                     .labelsHidden().frame(width: 180)

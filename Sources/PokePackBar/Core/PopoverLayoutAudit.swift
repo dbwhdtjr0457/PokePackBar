@@ -71,6 +71,15 @@ enum PopoverLayoutAudit {
             try await capture("tab-\(tab)", view: AnyView(PopoverView()
                 .environment(usage).environment(wallet).environment(updater).environment(nav)))
         }
+        // 처음 연 사람의 화면. 카드가 한 장도 없어야 안내 카드가 뜬다. 폴더를 따로 둔다 — 같은
+        // 폴더에 두면 위 지갑의 백업을 찾아 복구해 버린다.
+        let firstRunFolder = fixture.appendingPathComponent("first-run", isDirectory: true)
+        try files.createDirectory(at: firstRunFolder, withIntermediateDirectories: true)
+        let firstRun = WalletStore(fileURL: firstRunFolder.appendingPathComponent("game-state.json"))
+        firstRun.setLanguage(LayoutAuditOptions.language)
+        try await capture("first-run", view: AnyView(PopoverView()
+            .defaultAppStorage(defaults)
+            .environment(usage).environment(firstRun).environment(updater).environment(PopoverNavigation())))
         defaults.set(true, forKey: "bulkSaleAllPrices")
         try await capture("bulk-sale-all-prices", view: AnyView(
             BulkSaleView(wallet: wallet, pool: Array(index.cards.prefix(40)), onClose: {})
@@ -114,6 +123,27 @@ enum PopoverLayoutAudit {
                     fixedHeight: PopoverMetrics.tabHeight-36+PopoverMetrics.padding*2)
             }
         }
+        // 팩 뜯기 화면과 그다음 첫 장 화면. 두 화면은 같은 골격이라 카드 자리가 겹쳐야 한다.
+        let tearCards = index.cards(inSet: "cel30").prefix(3).compactMap(index.card).map {
+            PulledCard(id: $0.id, tier: $0.tier, isNew: false, finish: .normal)
+        }
+        let tearPresentation = PackPresentation(packs: [OpenedCards(
+            slotResults: tearCards.map { PackSlotResult(card: $0, finishHint: .defaultForCard) },
+            variant: .standard)], setID: "cel30", era: index.era("cel30"))
+        try await capture("pack-tear", view: AnyView(
+            PackTearView(wallet: wallet, setID: "cel30", setName: index.set("cel30")?.name ?? "cel30",
+                         packCount: 1, pending: nil, onCancel: {}, onReady: { _ in })
+                .environment(nav)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
+        try await capture("pack-reveal-first", view: AnyView(
+            PacksView.auditPresentation(wallet: wallet, index: index, presentation: tearPresentation,
+                                        summary: false)
+                .environment(nav)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         let picking = OripaPickingScreen(wallet: wallet, index: index, box: wallet.oripaBox(index: index),
                                         picked: .constant(3), onBack: {}, onPull: {})
             .frame(width: PopoverMetrics.contentWidth)
@@ -124,6 +154,30 @@ enum PopoverLayoutAudit {
         try await capture("oripa-picking", view: AnyView(picking
             .frame(height: PopoverMetrics.tabHeight-36).padding(PopoverMetrics.padding)),
             fixedHeight: PopoverMetrics.tabHeight-36+PopoverMetrics.padding*2)
+        // 팩 이름 검색: 결과, 결과 없음(영어 이름 안내), 종류가 많은 팩 탭.
+        for (name, query) in [("shop-search", "evol"), ("shop-search-empty", "스칼렛")] {
+            try await capture(name, view: AnyView(
+                CardShopView(wallet: wallet, index: index, initialPackQuery: query)
+                    .environment(nav)
+                    .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                    .padding(PopoverMetrics.padding)),
+                fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
+        }
+        // 로테이션 마켓 — 오늘의 8장.
+        try await capture("shop-rotation", view: AnyView(
+            CardShopView(wallet: wallet, index: index, initialSection: .rotation)
+                .environment(nav)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
+        // 맨 위 줄(cel30)은 두 개다. 여러 개 가진 줄에만 수량 칸과 「최대」 가 붙는다.
+        for setID in ["cel30", "sv1", "sv2", "sv3", "sv3pt5", "sv4", "swsh1"] { wallet.addPack(setID: setID) }
+        try await capture("packs-search", view: AnyView(
+            PacksView(wallet: wallet, index: index)
+                .environment(nav)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         let report: [String: Any] = ["popoverWidth": PopoverMetrics.width, "tabHeight": PopoverMetrics.tabHeight,
                                     "oripaMinimumHeight": minimum.height, "screens": measurements,
                                     "usesLiveWallet": false, "pollsProviders": false]

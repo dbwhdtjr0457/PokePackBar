@@ -68,6 +68,13 @@ enum FoilGeometry {
         contourPath(entries[cardID]?.accents ?? [], in: size)
     }
 
+    /// Prism Star text-box diamond traced from the original scan. It stops
+    /// where a Supporter/Stadium box or the panel foot covers the tip.
+    static func prismStarPath(cardID: String, in size: CGSize) -> Path {
+        guard let entry = entries[cardID], entry.profile.hasPrefix("sm-prism") else { return Path() }
+        return contourPath(entry.accents, in: size)
+    }
+
     /// Reverse-only stamps are not in the regular source scan. Keep this
     /// approximation in the measured lower panel, with one shared anchor for
     /// both the stamp and its coverage mask (never two independent constants).
@@ -137,5 +144,11 @@ enum FoilGeometry {
             && entries["cel25c-15_A3"]?.profile == "vintage", "Classic duplicate-number frames confused")
         try LocalAudit.require(!nameAccentPath(cardID: "ex7-1", in: CGSize(width: 1, height: 1)).isEmpty,
                                "EX header ink contours missing")
+        for card in index.cards where card.rarity == "Rare Prism Star" {
+            let art = entries[card.id]?.illustration
+            let diamond = prismStarPath(cardID: card.id, in: CGSize(width: 1, height: 1)).boundingRect
+            try LocalAudit.require(art != nil && diamond.width > 0.3 && diamond.minY > (art?.maxY ?? 1),
+                                   "Prism Star art window or diamond missing: \(card.id)")
+        }
     }
 }

@@ -18,6 +18,8 @@ struct SegmentedTabs<Value: Hashable>: View {
 
     let items: [Item]
     @Binding var selection: Value
+    /// 선택 표시는 칸 사이를 미끄러져 옮겨 간다. 칸마다 따로 칠하면 자리가 순간 이동한다.
+    @Namespace private var pill
 
     /// 칸 하나의 세로 여백. 줄 전체가 28pt 가 되도록 잡았다 —
     /// 바깥 여백 2×2 + 이 값 2×4 + 13pt 글자 높이 16 = 28.
@@ -40,17 +42,26 @@ struct SegmentedTabs<Value: Hashable>: View {
                         .font(picked ? pickedFont : font)
                         .foregroundStyle(picked ? Color.white : Color.primary)
                         .lineLimit(1).minimumScaleFactor(0.8)
+                        // 글자는 움직이지 않는다. 선택이 바뀔 때 굵기와 색이 애니메이션을 타면
+                        // 글자 모양이 일그러지며 바뀌어 보였다. 즉시 바뀌고, 배경만 미끄러진다.
+                        .transaction { $0.animation = nil }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, verticalPadding)
-                        .background(picked ? AnyShapeStyle(Color.accentColor)
-                                           : AnyShapeStyle(Color.clear),
-                                    in: RoundedRectangle(cornerRadius: radius - 2))
+                        .background {
+                            if picked {
+                                RoundedRectangle(cornerRadius: radius - 2)
+                                    .fill(Color.accentColor)
+                                    .matchedGeometryEffect(id: "pill", in: pill)
+                            }
+                        }
                         .contentShape(RoundedRectangle(cornerRadius: radius - 2))
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(picked ? [.isSelected, .isButton] : .isButton)
             }
         }
+        // 선택 표시만 칸 사이를 미끄러진다. 탭 내용 전환까지 애니메이션에 싣지 않는다.
+        .animation(Motion.shift, value: selection)
         .padding(2)
         .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: radius))
         .frame(maxWidth: .infinity)

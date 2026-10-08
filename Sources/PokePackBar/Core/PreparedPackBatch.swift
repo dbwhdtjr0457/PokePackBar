@@ -2,6 +2,12 @@ import Foundation
 
 /// Pure preparation: no wallet writes. Safe to discard on cancellation/conflict.
 struct PreparedPackBatch: Sendable {
+    /// 그리다 멈춘 이유. 팩은 하나도 소비되지 않았다.
+    enum Failure: LocalizedError {
+        case incompleteCatalogue
+        var errorDescription: String? { L.current.packCatalogueIncomplete }
+    }
+
     let packs: [OpenedCards]
     let printings: [CardPrintingKey]
     let records: [OpeningRecord]
@@ -34,7 +40,7 @@ struct PreparedPackBatch: Sendable {
                 alreadyOwned: alreadyOwned, perks: perks, pity: &currentPity,
                 mode: mode, using: &generator)
             guard opened.cards.count == expectedCards else {
-                throw LocalAudit.Failure(description: "Incomplete pack catalogue. No packs were consumed.")
+                throw Failure.incompleteCatalogue
             }
             let packPrintings = opened.cards.map { CardPrintingKey(cardID: $0.id, finish: $0.finish) }
             // Preserve the existing history limit without allocating records we will discard.

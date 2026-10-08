@@ -98,6 +98,21 @@ struct GameState: Codable, Sendable {
     /// 고른 칭호의 완성 수 계단 번호. 없으면 칭호를 달지 않는다.
     var title: Int? = nil
 
+    // MARK: 트레이너 레벨
+
+    /// 보상을 받은 레벨. **영구 기록이다** — 같은 레벨 보상을 두 번 주지 않는 근거다.
+    /// 레벨 자체는 저장하지 않는다. 연 팩 수(`packsOpened`)에서 매번 계산한다.
+    var claimedLevels: [Int] = []
+
+    /// 고른 레벨 칭호(그 칭호가 열리는 레벨). 도감 칭호(`title`)와 둘 중 하나만 단다.
+    var levelTitle: Int? = nil
+
+    // MARK: 로테이션 마켓
+
+    /// 로테이션 마켓에서 산 카드 — `날짜|카드 ID`. 진열마다 한 장씩만 살 수 있게 하는 근거다.
+    /// 지난 진열의 기록은 살 때마다 걷어 낸다.
+    var rotationPurchases: [String] = []
+
     /// 오리파 박스. 남은 슬롯이 곧 재고라 반드시 영속이어야 한다 —
     /// 재시작마다 새로 채워지면 UR 이 남을 때까지 앱을 껐다 켜는 것이 최적 전략이 된다.
     var oripa: OripaBox? = nil
@@ -197,6 +212,9 @@ struct GameState: Codable, Sendable {
         oripa = try? c.decodeIfPresent(OripaBox.self, forKey: .oripa)
         coupons = value(.coupons, [PackCoupon]())
         title = try? c.decodeIfPresent(Int.self, forKey: .title)
+        claimedLevels = value(.claimedLevels, [Int]())
+        levelTitle = try? c.decodeIfPresent(Int.self, forKey: .levelTitle)
+        rotationPurchases = value(.rotationPurchases, [String]())
         packGrantTier = value(.packGrantTier, [:])
         packGrantedInstances = value(.packGrantedInstances, [:])
         packGrantSeeded = value(.packGrantSeeded, false)

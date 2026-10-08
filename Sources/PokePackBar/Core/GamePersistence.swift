@@ -42,9 +42,9 @@ struct GamePersistence {
         case invalidSave, unrecoverable, newerVersion
         var errorDescription: String? {
             switch self {
-            case .invalidSave: "Invalid game save. The original file was preserved."
-            case .unrecoverable: "Cannot read the save or recover a valid backup. Saving is disabled to protect the original."
-            case .newerVersion: "This save belongs to a newer app version. Saving and automatic recovery are disabled to protect it."
+            case .invalidSave: L.current.saveInvalid
+            case .unrecoverable: L.current.saveUnrecoverable
+            case .newerVersion: L.current.saveNewerVersion
             }
         }
     }

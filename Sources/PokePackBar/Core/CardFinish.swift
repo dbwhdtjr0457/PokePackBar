@@ -85,7 +85,7 @@ enum CardFinish: String, Codable, Sendable, CaseIterable {
             return FoilSpec(coverage: .fullCard, pattern: .satin, texture: .none,
                             border: .holo, intensity: 0.50)
         case .prism:
-            return FoilSpec(coverage: .fullCard, pattern: .prism, texture: .none,
+            return FoilSpec(coverage: .artWindowAndPrismStar, pattern: .waterWeb, texture: .none,
                             border: .blackWhite, intensity: 0.58)
         case .breakFoil:
             return FoilSpec(coverage: .fullCard, pattern: .breakGrid,
@@ -138,6 +138,9 @@ enum FoilCoverage: String, Codable, Sendable, CaseIterable {
     /// EX Hidden Legends / FireRed & LeafGreen rare parallels: art foil plus
     /// one type or Poké Ball impression in the lower attack box.
     case artWindowAndMark
+    /// Prism Star: art foil plus the diamond printed in the text box. Text,
+    /// rule box and the black border stay matte.
+    case artWindowAndPrismStar
     case artAndBorder
     case artBackground
     case artSubject
@@ -223,7 +226,6 @@ enum FoilPattern: String, Codable, Sendable, CaseIterable {
     case pokeBall
     case masterBall
     case confetti
-    case prism
     case breakGrid
     case megaGold
     case monochrome

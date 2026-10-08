@@ -45,6 +45,14 @@ def profile(card, rarities):
         return "ancient-trait", (.07, .17, .93, .71)
     if cid == "cel25-25" or (sid == "g1" and cid in {"g1-25", "g1-29"}):
         return "full", None
+    if rarity == "rare prism star":
+        # Framed illustration above the Prism Star rule box, energies included.
+        # The diamond in the text box is measured separately (prism_diamond).
+        if kind.startswith("e"):
+            return "sm-prism-energy", (.083, .137, .91, .576)
+        if kind == "t":
+            return "sm-prism-trainer", (.075, .137, .92, .452)
+        return "sm-prism", (.075, .106, .92, .435)
     if kind.startswith("e"):
         return "energy", None
     # Reprints retain their original frame, NOT their expansion's release year.
@@ -175,6 +183,10 @@ def analyze(args):
         lettering = lettering_contours(np.asarray(rgb), LETTERING[cid]) if cid in LETTERING else []
         has_name_foil = (cid.split("-")[0].startswith("ex") and card[2] in {"R", "RR"}) or rarities[card[3]].lower() == "rare prime"
         accents = name_contours(np.asarray(rgb), rect) if has_name_foil else []
+        if family.startswith("sm-prism"):
+            diamond, support = prism_diamond(np.asarray(rgb), rect)
+            assert diamond and support >= .6, f"Prism Star diamond not found: {cid} ({support})"
+            accents = [diamond]
     return cid, dict(sha256=entry["sha256"], width=w, height=h, art=rect,
                     profile=family, confidence=confidence, method=method,
                     outline=outline, lettering=lettering, accents=accents)
@@ -206,6 +218,115 @@ def name_contours(rgb, rect):
     contours, _ = cv2.findContours(valid[labels], cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     return [[[round(float(x) / w, 6), round(float(y) / h, 6)] for x, y in cv2.approxPolyDP(c, .65, True)[:, 0]]
             for c in contours if cv2.contourArea(c) >= 3]
+
+
+PRISM_SLOPE = np.tan(np.radians(55))
+
+
+def prism_diamond(rgb, rect):
+    """Trace the printed Prism Star diamond below the rule box.
+
+    Its sides are straight 55/125 degree print edges on every scan, so the
+    shape is an axis-aligned rhombus. Text often hides one side; the visible
+    opposite pair gives the half-height and one side of the other pair is
+    enough. Supporter/Stadium boxes and the panel foot cover the lower tip,
+    so the polygon stops where the lower sides stop being visible.
+    """
+    h, w = rgb.shape[:2]
+    gray = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY)
+    edges = cv2.Canny(cv2.GaussianBlur(gray, (3, 3), 0), 40, 110)
+    edges[:round((rect[3] + .02) * h)] = 0
+    edges[:, :round(.05 * w)] = 0
+    edges[:, round(.95 * w):] = 0
+    found = cv2.HoughLinesP(edges, 1, np.pi / 360, 60, minLineLength=round(.07 * h), maxLineGap=10)
+    segments = []
+    for x1, y1, x2, y2 in (found.reshape(-1, 4) if found is not None else []):
+        angle = (np.degrees(np.arctan2(y2 - y1, x2 - x1)) + 180) % 180
+        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+        if abs(angle - 55) < 3:
+            segments.append(("rising", my - PRISM_SLOPE * mx))
+        elif abs(angle - 125) < 3:
+            segments.append(("falling", my + PRISM_SLOPE * mx))
+    near = cv2.dilate(edges, np.ones((3, 3), np.uint8)) > 0
+
+    def corners(cx, cy, b):
+        a = b / PRISM_SLOPE
+        return [(cx, cy - b), (cx + a, cy), (cx, cy + b), (cx - a, cy)]
+
+    def support(cx, cy, b):
+        t = np.linspace(.04, .96, 60)
+        points = corners(cx, cy, b)
+        hits = 0
+        for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1]):
+            xs = np.rint(x0 + (x1 - x0) * t).astype(int)
+            ys = np.rint(y0 + (y1 - y0) * t).astype(int)
+            inside = (xs >= 0) & (xs < w) & (ys >= 0) & (ys < h)
+            hits += int(near[ys[inside], xs[inside]].sum())
+        return hits / (4 * len(t))
+
+    def clusters(kind):
+        groups = []
+        for value in sorted(c for k, c in segments if k == kind):
+            if groups and value - groups[-1][-1] < 6:
+                groups[-1].append(value)
+            else:
+                groups.append([value])
+        return [float(np.mean(group)) for group in groups]
+
+    rising, falling = clusters("rising"), clusters("falling")
+    candidates = []
+    for pair, other, pair_is_rising in ((rising, falling, True), (falling, rising, False)):
+        for i, low in enumerate(pair):
+            for high in pair[i + 1:]:
+                b = (high - low) / 2
+                if not .14 * h < b < .30 * h:
+                    continue
+                for side in other:
+                    for other_mid in (side + b, side - b):
+                        m1, m2 = ((low + high) / 2, other_mid) if pair_is_rising else (other_mid, (low + high) / 2)
+                        candidates.append(((m2 - m1) / (2 * PRISM_SLOPE), (m1 + m2) / 2, b))
+    if not candidates:
+        return None, 0.0
+    cx, cy, b = max(candidates, key=lambda c: support(*c))
+    for step in (2, 1):
+        improved = True
+        while improved:
+            improved = False
+            for dx, dy, db in ((step, 0, 0), (-step, 0, 0), (0, step, 0), (0, -step, 0), (0, 0, step), (0, 0, -step)):
+                if support(cx + dx, cy + dy, b + db) > support(cx, cy, b):
+                    cx, cy, b = cx + dx, cy + dy, b + db
+                    improved = True
+    score = support(cx, cy, b)
+    top, right, bottom, left = corners(cx, cy, b)
+    # Walk down both lower sides comparing ink just inside and just outside
+    # each side. A Supporter/Stadium box or the panel foot has the same ink
+    # on both sides; the Pokemon weakness bar only interrupts a long run.
+    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB).astype(np.float32)
+    a = b / PRISM_SLOPE
+    rows = np.arange(round(cy), min(h, round(cy + b)))
+    contrast = np.zeros(len(rows))
+    for i, y in enumerate(rows):
+        spread = a * (1 - (y - cy) / b)
+        for side, inward in ((cx - spread, 1), (cx + spread, -1)):
+            inner = [lab[y, round(side + inward * d)] for d in range(3, 9) if 0 <= side + inward * d < w - .5]
+            outer = [lab[y, round(side - inward * d)] for d in range(3, 9) if 0 <= side - inward * d < w - .5]
+            if inner and outer:
+                contrast[i] = max(contrast[i], np.linalg.norm(np.median(inner, 0) - np.median(outer, 0)))
+    visible = np.array([np.median(contrast[max(0, i - 6):i + 7]) > 18 for i in range(len(rows))])
+    foot, start = cy, None
+    for i, shown in enumerate(np.append(visible, False)):
+        if shown and start is None:
+            start = i
+        elif not shown and start is not None:
+            if i - start >= .2 * b:
+                foot = rows[i - 1]
+            start = None
+    if foot < cy + .92 * b:
+        spread = a * (1 - (foot - cy) / b)
+        polygon = [top, right, (cx + spread, foot), (cx - spread, foot), left]
+    else:
+        polygon = [top, right, bottom, left]
+    return [[round(min(max(x / w, 0), 1), 6), round(min(max(y / h, 0), 1), 6)] for x, y in polygon], round(score, 3)
 
 
 def ecard_outline(rgb, rect):

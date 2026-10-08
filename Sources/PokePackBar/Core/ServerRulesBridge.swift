@@ -24,6 +24,10 @@ enum ServerRulesBridge {
         var add: [String: Int]?
         var market_credit: Int?
         var market_debit: Int?
+        /// 로테이션 마켓 진열의 날짜(UTC `yyyy-MM-dd`).
+        var date: String?
+        /// 고른 레벨 칭호. 도감 칭호(`title`)와 둘 중 하나만 단다.
+        var level_title: Int?
     }
     struct Window: Codable, Sendable {
         let key: String
@@ -42,6 +46,10 @@ enum ServerRulesBridge {
         var oripa: OripaResult?
         var bulk: WalletStore.BulkSale?
         var value_usd: Double?
+        /// 이번에 받은 레벨 보상의 레벨들.
+        var levels: [Int]?
+        /// 로테이션 마켓에서 산 카드.
+        var rotation: PulledCard?
     }
     struct Output: Encodable {
         let state: GameState
@@ -111,6 +119,11 @@ enum ServerRulesBridge {
             case "sell_bulk": result.tokens = (command.card_ids ?? []).reduce(0) { $0 + wallet.spareSaleValue(cardID: $1) }
             case "pull_oripa": result.tokens = wallet.oripaPrice(index: index)
             case "refresh_oripa": result.tokens = 0
+            case "rotation_buy":
+                guard let id = command.card_id, index.card(id) != nil else {
+                    throw LocalAudit.Failure(description: "Invalid quote")
+                }
+                result.tokens = wallet.rotationPrice(id, index: index)
             default: throw LocalAudit.Failure(description: "Invalid quote kind")
             }
         case "apply_tokens":
@@ -158,6 +171,16 @@ enum ServerRulesBridge {
         case "claim_dex":
             result.dex = wallet.claim(command.dex_id ?? "", step: command.step ?? 0, index: index)
             try require(result.dex != nil)
+        case "claim_levels":
+            let rewards = wallet.claimLevels()
+            try require(!rewards.isEmpty)
+            result.levels = rewards.map(\.level)
+        case "rotation_buy":
+            guard let id = command.card_id, let date = command.date,
+                  let card = wallet.buyRotation(cardID: id, index: index, date: date) else {
+                throw LocalAudit.Failure(description: "Rotation card unavailable or insufficient balance")
+            }
+            result.rotation = card
         case "claim_gift":
             let gifts = [WalletStore.apologyGift, WalletStore.patchGift,
                          WalletStore.oripaUpdateGift, WalletStore.dexUpdateGift]
@@ -175,12 +198,15 @@ enum ServerRulesBridge {
         case "set_preferences":
             guard let mode = OpeningMode(rawValue: command.opening_mode ?? ""),
                   command.favorite_card_id.map({ wallet.cardCount($0) > 0 }) ?? true,
-                  command.title.map({ value in wallet.titles.contains { $0.completed == value } }) ?? true else {
+                  command.title.map({ value in wallet.titles.contains { $0.completed == value } }) ?? true,
+                  command.level_title.map({ wallet.levelTitles.contains($0) }) ?? true,
+                  command.title == nil || command.level_title == nil else {
                 throw LocalAudit.Failure(description: "Unavailable preference")
             }
             wallet.setOpeningMode(mode)
             wallet.setFavorite(command.favorite_card_id)
             wallet.setTitle(command.title)
+            wallet.setLevelTitle(command.level_title)
         case "report_bonus":
             let windows = (command.windows ?? []).map {
                 BonusWindow(key: $0.key, name: $0.name,

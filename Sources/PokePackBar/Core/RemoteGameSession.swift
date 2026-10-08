@@ -100,6 +100,8 @@ final class RemoteGameSession {
         var status: Int? = nil
         /// 서버 로그의 request_id. 서버에 보내기 전에 막힌 실패면 비어 있다.
         var requestID: String? = nil
+        /// 서버가 준 이유 코드(`friend_not_found` 등). 화면 문장은 바뀔 수 있으니 판단은 이 값으로 한다.
+        var code: String? = nil
         var errorDescription: String? { message }
     }
 
@@ -303,7 +305,7 @@ final class RemoteGameSession {
     private func perform(_ command: ServerRulesBridge.Command, expectedTokens: Int? = nil) async throws -> ServerRulesBridge.Result {
         var request = Request(request_id: UUID(), expected_revision: revision, command: command,
                               rules_version: ServerRulesBridge.version, price_version: priceVersion)
-        if ["buy_packs", "sell_spares", "sell_bulk", "pull_oripa", "refresh_oripa"].contains(command.kind) {
+        if ["buy_packs", "sell_spares", "sell_bulk", "pull_oripa", "refresh_oripa", "rotation_buy"].contains(command.kind) {
             let data = try await api("v1/quotes", method: "POST", body: JSONEncoder().encode(request))
             let quote = try JSONDecoder().decode(Quote.self, from: data)
             guard quote.price_version == priceVersion, quote.revision == revision else {
@@ -544,7 +546,8 @@ final class RemoteGameSession {
             throw Failure(message: ServerAuthentication.loginRequired, status: status, requestID: exchange.requestID)
         }
         guard status == 200 else {
-            throw Failure(message: Self.describe(status: status, data: exchange.data), status: status, requestID: exchange.requestID)
+            throw Failure(message: Self.describe(status: status, data: exchange.data), status: status,
+                          requestID: exchange.requestID, code: ServerTransport.detail(exchange.data))
         }
         return try JSONDecoder().decode(T.self, from: exchange.data)
     }
@@ -566,15 +569,18 @@ final class RemoteGameSession {
             throw Failure(message: ServerAuthentication.loginRequired, status: status, requestID: exchange.requestID)
         }
         guard (200..<300).contains(status) else {
-            throw Failure(message: Self.describe(status: status, data: exchange.data), status: status, requestID: exchange.requestID)
+            throw Failure(message: Self.describe(status: status, data: exchange.data), status: status,
+                          requestID: exchange.requestID, code: ServerTransport.detail(exchange.data))
         }
         return exchange.data
     }
 
-    /// 실패 응답을 사람이 읽을 문장으로. 4xx 는 서버가 준 이유 코드를 그대로 붙인다 — 복구 판단
-    /// (`idempotency_key_reused`)이 이 문장을 본다.
+    /// 실패 응답을 사람이 읽을 문장으로. 아는 이유 코드는 문장으로 바꾸고, 모르는 코드는 그대로
+    /// 붙인다 — 복구 판단(`idempotency_key_reused`)이 이 문장을 보므로 그 코드는 바꾸지 않는다.
     static func describe(status: Int, data: Data) -> String {
         let detail = ServerTransport.detail(data) ?? "HTTP \(status)"
+        if detail == "requested_cards_unavailable" { return L.current.requestedCardsUnavailable }
+        if let reason = L.current.serverReason(detail) { return reason }
         if status >= 500 {
             return L.current.serverFailure(status, detail)
         }

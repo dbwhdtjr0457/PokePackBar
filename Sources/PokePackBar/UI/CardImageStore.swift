@@ -346,9 +346,18 @@ struct CardImageView: View {
                 image = cached; imageKey = wanted
                 if !hires || CardArtLibrary.isHighResolution(cached) { return }
             }
+            // 아무것도 없던 자리에 늦게 도착한 그림만 짧게 떠오른다. 처음부터 있던 그림(미리
+            // 받은 것)은 첫 프레임에 그대로 그린다 — 거기까지 흐리면 개봉 화면이 깜빡인다.
+            let hadImage = CardImageLoader.displayed(image, loadedKey: imageKey, key: wanted,
+                                                     preloaded: preloaded) != nil
             let fetched = await CardImageLoader.image(cardID: cardID, hires: hires)
             guard !Task.isCancelled, wanted == key else { return }
-            if let fetched { image = fetched; imageKey = wanted }
+            guard let fetched else { return }
+            if hadImage {
+                image = fetched; imageKey = wanted
+            } else {
+                withAnimation(.easeOut(duration: 0.2)) { image = fetched; imageKey = wanted }
+            }
         }
     }
 }
@@ -398,7 +407,9 @@ struct PackImageView: View {
         .clipShape(RoundedRectangle(cornerRadius: width * 0.06))
         .task(id: setID) {
             guard image == nil else { return }   // 번들·미리 받기로 이미 채워졌다
-            image = await CardImageLoader.packImage(setID: setID)
+            let fetched = await CardImageLoader.packImage(setID: setID)
+            // 빈 상자 자리에 늦게 온 팩 그림은 짧게 떠오른다.
+            withAnimation(.easeOut(duration: 0.2)) { image = fetched }
         }
     }
 }

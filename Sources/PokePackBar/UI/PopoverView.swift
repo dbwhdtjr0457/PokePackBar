@@ -5,22 +5,44 @@ import SwiftUI
 /// 잔액과 사용량은 탭이 아니라 상단 고정 영역이 맡는다.
 enum PopoverTab: CaseIterable { case shop, packs, collection, dex, stats }
 
+/// 팝오버 크기. 설정에서 고르고, 앱을 다시 켤 때 적용된다.
+///
+/// 큰 화면에서는 카드가 작아 그림을 보려면 매번 상세를 열어야 했다. 글자는 그대로 두고
+/// 창과 카드 격자만 키운다.
+enum PopoverSize: String, CaseIterable, Sendable {
+    case regular, large
+
+    static let defaultsKey = "popoverSize"
+
+    /// 이번 실행의 크기. 치수가 화면 곳곳의 정적 값이라 실행 중에는 바꾸지 않는다.
+    /// `--popover-size large` 는 레이아웃 감사가 큰 창을 따로 재 볼 때 쓴다.
+    static let launch: PopoverSize = {
+        let arguments = CommandLine.arguments
+        let forced = arguments.firstIndex(of: "--popover-size")
+            .flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
+        let stored = UserDefaults.standard.string(forKey: defaultsKey)
+        return PopoverSize(rawValue: forced ?? stored ?? "") ?? .regular
+    }()
+}
+
 /// 팝오버 치수의 단일 소스. 자식이 쓸 수 있는 폭을 알아야 할 때 이 값을 쓴다 — 넘치는 자식이
 /// 부모 폭을 부풀리므로 GeometryReader 로 재면 순환한다.
 enum PopoverMetrics {
-    /// 글자 크기는 유지하고 창과 카드 격자만 약 10% 줄인 기본 크기.
-    static let width: CGFloat = 400
+    private static let large = PopoverSize.launch == .large
+
+    /// 글자 크기는 유지하고 창과 카드 격자만 약 10% 줄인 기본 크기. 크게 고르면 15% 넓다.
+    static let width: CGFloat = large ? 460 : 400
     static let padding: CGFloat = 14
     /// 이 폭을 넘는 자식은 팝오버 창에 좌우로 잘린다.
     static let contentWidth: CGFloat = width - padding * 2
 
     /// 탭 하나가 쓰는 세로 길이.
-    static let tabHeight: CGFloat = 480
+    static let tabHeight: CGFloat = large ? 580 : 480
 
     /// 개봉 화면의 이름·가격·이동 버튼·밑장 여백을 먼저 확보한다.
-    static let revealCardWidth = min(260, ((tabHeight - 170) * 0.717).rounded(.down))
+    static let revealCardWidth = min(large ? 300 : 260, ((tabHeight - 170) * 0.717).rounded(.down))
     /// 오리파는 상점 갈래 선택과 NEW 배지 자리가 추가로 필요하다.
-    static let pulledCardWidth = min(240, ((tabHeight - 190) * 0.717).rounded(.down))
+    static let pulledCardWidth = min(large ? 276 : 240, ((tabHeight - 190) * 0.717).rounded(.down))
 }
 
 /// 팝오버 내부 내비게이션 상태.
@@ -51,6 +73,48 @@ final class PopoverNavigation {
     /// 도감 탭을 이 검색어로 연다. 카드 상세에서 보이지 않는 나머지 도감(「+N」)을 볼 때 쓴다.
     var dexSearch: String?
 
+    /// 상점에서 팩 탭으로 날아가는 중인 팩 그림.
+    var packFlights: [PackFlight] = []
+    /// 팩 탭이 열리면 그 줄로 옮겨 가 한 번 빛낼 세트. 상점의 「팩 탭에서 열기」 가 채운다.
+    var packHighlight: String?
+    /// 방금 받은 도감 보상 알림. 잠깐 띄웠다가 걷는다.
+    var rewardNotice: RewardNotice?
+    /// 지금 터지고 있는 반짝임.
+    var sparks: [SparkEvent] = []
+
+    /// 화면에 떠 있는 뒤로 버튼들. 버튼이 나타날 때 스스로 올리고 사라질 때 내린다.
+    ///
+    /// 가장 나중에 올라온 것이 가장 깊은 화면이다. 깊이를 따로 적어 두지 않아도 한 단계씩
+    /// 들어갈 때마다 새 화면의 버튼이 위에 쌓인다. 그리는 데 쓰는 값이 아니라 지켜보지 않는다.
+    @ObservationIgnored private var backHandlers: [PopoverBackHandler] = []
+
+    func registerBack(_ handler: PopoverBackHandler) {
+        backHandlers.removeAll { $0 === handler }
+        backHandlers.append(handler)
+    }
+
+    func unregisterBack(_ handler: PopoverBackHandler) {
+        backHandlers.removeAll { $0 === handler }
+    }
+
+    /// Esc. 한 단계 뒤로 간다. 돌아갈 곳이 없으면(탭의 첫 화면) `false` 라서 팝오버가 닫힌다.
+    ///
+    /// 예전에는 어느 화면에서든 Esc 가 팝오버를 통째로 닫았다. 팩 상세나 카드 상세에서
+    /// 목록으로 돌아가려고 누르면 창이 사라져, 다시 열고 뒤로 버튼을 눌러야 했다.
+    ///
+    /// 가장 깊은 화면에 지금 할 일이 없으면(`action` 이 비어 있으면) 그 아래 화면으로 내려가지
+    /// 않고 `false` 다. 아래 화면의 뒤로 가기가 위 화면을 둔 채 불리면 엉뚱한 곳으로 간다.
+    func goBack() -> Bool {
+        guard let action = backHandlers.last?.action else { return false }
+        action()
+        return true
+    }
+}
+
+/// 화면 하나가 Esc 에 맡기는 동작. 화면이 다시 그려질 때마다 최신 동작으로 바꿔 끼운다.
+@MainActor
+final class PopoverBackHandler {
+    var action: (() -> Void)?
 }
 
 @MainActor
@@ -102,10 +166,27 @@ struct PopoverView: View {
                              onOpenReleaseNotes: { nav.showReleaseNotes = true })
             } else {
                 walletHeader
-                giftToast
-                bonusToast
+                // 선물과 보너스 팩 알림은 위에서 내려오고, 닫으면 걷혀 올라간다. 툭 나타나면
+                // 아래 화면이 한 번에 밀려 무엇이 생겼는지보다 덜컹거림이 먼저 보인다.
+                Group {
+                    giftToast
+                    bonusToast
+                }
+                .animation(.snappy(duration: 0.3), value: wallet.lastGift != nil)
+                .animation(.snappy(duration: 0.3), value: wallet.lastGrant != nil)
                 releaseNotesToast
+                onboardingCard
                 tabPicker
+                    // 산 팩이 날아가 내려앉을 자리. 탭 줄의 「팩」 칸 가운데다.
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear
+                                .onAppear { tabBarFrame = proxy.frame(in: .named(PackFlight.space)) }
+                                .onChange(of: proxy.frame(in: .named(PackFlight.space))) {
+                                    tabBarFrame = proxy.frame(in: .named(PackFlight.space))
+                                }
+                        }
+                    }
                 tabContent
             }
 
@@ -119,6 +200,14 @@ struct PopoverView: View {
                 }
                 .buttonStyle(.borderless)
                 .keyboardShortcut("q", modifiers: .command)
+            }
+        }
+        .coordinateSpace(.named(PackFlight.space))
+        .environment(\.popoverShown, nav.isShown)
+        .overlay { CelebrationLayer(wallet: wallet) }
+        .overlay {
+            PackFlightLayer(flights: nav.packFlights, target: packsTabCenter) { flight in
+                nav.packFlights.removeAll { $0.id == flight.id }
             }
         }
         .id(priceRevision)
@@ -238,6 +327,9 @@ struct PopoverView: View {
                         Text("·")
                         Text("\(top.name) \(Int(top.utilization.rounded()))%").monospacedDigit()
                     }
+                    Spacer(minLength: 4)
+                    // 레벨은 사용량 줄 끝에 둔다. 윗줄은 업데이트 버튼이 뜨면 자리가 없다.
+                    LevelChip(wallet: wallet)
                 }
                 .font(Typography.label).foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -394,6 +486,7 @@ struct PopoverView: View {
             .padding(8)
             .background(Color.orange.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -421,6 +514,7 @@ struct PopoverView: View {
             .padding(8)
             .background(Color.green.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -451,10 +545,61 @@ struct PopoverView: View {
         }
     }
 
+    // MARK: 첫 실행 안내
+
+    /// 닫았는가. 한 번 닫으면 다시 띄우지 않는다.
+    @AppStorage("onboardingDismissed") private var onboardingDismissed = false
+
+    /// 처음 연 사람에게 이 앱이 무엇을 하는지 세 줄로 알린다.
+    ///
+    /// 예전에는 잔액과 탭만 보여서, 토큰이 어디서 생기고 무엇에 쓰는지 직접 눌러 보며
+    /// 알아내야 했다. 카드를 한 장이라도 모았으면 이미 아는 사람이라 띄우지 않는다 —
+    /// 업데이트로 이 안내가 생겨도 쓰던 사람에게는 나타나지 않는다.
+    @ViewBuilder
+    private var onboardingCard: some View {
+        if !onboardingDismissed, wallet.distinctCardCount == 0 {
+            VStack(alignment: .leading, spacing: 7) {
+                Text(l.onboardingTitle).font(Typography.bodySemibold)
+                onboardingStep("bolt.fill", l.onboardingEarn)
+                onboardingStep("cart.fill", l.onboardingBuy)
+                onboardingStep("rectangle.stack.fill", l.onboardingOpen)
+                Button(l.onboardingStart) { onboardingDismissed = true }
+                    .buttonStyle(.borderedProminent)
+                    .font(Typography.button)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .padding(10)
+            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private func onboardingStep(_ symbol: String, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 18)
+            Text(text)
+                .font(Typography.label)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     // MARK: 탭
 
     /// 탭 줄. `SegmentedTabs` 로 직접 그린다 — 기본 세그먼트 컨트롤은 OS 판에 따라 제 내용
     /// 크기로 줄어들고, macOS 26 에서 네 탭이 창 한가운데로 몰렸다.
+    /// 탭 줄의 자리. 산 팩이 날아갈 곳을 여기서 셈한다.
+    @State private var tabBarFrame: CGRect = .zero
+
+    /// 「팩」 칸의 가운데. 칸은 폭을 똑같이 나눠 가지므로 순서로 셈한다.
+    private var packsTabCenter: CGPoint {
+        let tabs = Double(PopoverTab.allCases.count)
+        let position = Double(PopoverTab.allCases.firstIndex(of: .packs) ?? 1) + 0.5
+        return CGPoint(x: tabBarFrame.minX + tabBarFrame.width * position / tabs,
+                       y: tabBarFrame.midY)
+    }
+
     private var tabPicker: some View {
         @Bindable var nav = nav
         return SegmentedTabs(items: [

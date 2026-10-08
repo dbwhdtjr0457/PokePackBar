@@ -12,6 +12,9 @@ struct OnlineSocialView: View {
     @State private var collectionPublic = false
     @State private var wishlistPublic = false
     @State private var binderPublic = false
+    /// 친구가 교환 바인더로 볼 수 있는 남는 카드. 이 설정을 아는 서버에서만 보이고 보낸다.
+    @State private var tradeListPublic = true
+    @State private var tradeListSupported = false
     @State private var draftLoaded = false
     @State private var addingWish = false
     @State private var editingBinder = false
@@ -92,14 +95,11 @@ struct OnlineSocialView: View {
                 }
                 HStack(spacing: 10) {
                     Text(OnlineText.l.friendCodeLabel).font(Typography.labelSemibold).frame(width: 64, alignment: .leading)
-                    Text(model.profile.string("friend_code"))
+                    Text(OnlineText.groupedFriendCode(myFriendCode))
                         .font(.system(size: 15, weight: .medium, design: .monospaced)).textSelection(.enabled)
-                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction) {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(model.profile.string("friend_code"), forType: .string)
-                        copied = true
-                    }
-                    .disabled(model.profile.string("friend_code").isEmpty)
+                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction, action: copyFriendCode)
+                        .disabled(myFriendCode.isEmpty)
+                    shareFriendCode
                     Button(OnlineText.l.newFriendCode) { act("profile", ["action": "rotate_code"]) }
                         .buttonStyle(.borderless).disabled(!model.canWrite)
                         .help(OnlineText.l.newFriendCodeHelp)
@@ -109,10 +109,14 @@ struct OnlineSocialView: View {
                     Toggle(OnlineText.l.myCollectionToggle, isOn: $collectionPublic)
                     Toggle(OnlineText.l.wishlistTitle, isOn: $wishlistPublic)
                     Toggle(OnlineText.l.binderTitle, isOn: $binderPublic)
+                    if tradeListSupported {
+                        Toggle(OnlineText.l.tradeListToggle, isOn: $tradeListPublic)
+                    }
                 }
                 .onChange(of: collectionPublic) { if draftLoaded { saveProfile() } }
                 .onChange(of: wishlistPublic) { if draftLoaded { saveProfile() } }
                 .onChange(of: binderPublic) { if draftLoaded { saveProfile() } }
+                .onChange(of: tradeListPublic) { if draftLoaded { saveProfile() } }
             }
         }
     }
@@ -126,22 +130,36 @@ struct OnlineSocialView: View {
         let accepted = items.filter { $0.string("status") == "accepted" }
         return OnlineSection(title: OnlineText.l.friendsTitle) {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    TextField(OnlineText.l.enterFriendCode, text: $code).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
-                        .onSubmit(sendRequest)
-                    Button(OnlineText.l.sendFriendRequest, action: sendRequest).disabled(!model.canWrite || code.isEmpty)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 10) {
+                        TextField(OnlineText.l.enterFriendCode, text: $code).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
+                            .font(.system(size: 14, weight: .medium, design: .monospaced))
+                            .onSubmit(sendRequest)
+                        // 받은 코드는 대개 메신저에 있다. 칸을 눌러 붙여 넣는 수고를 줄인다.
+                        Button(OnlineText.l.pasteAction) {
+                            guard let text = NSPasteboard.general.string(forType: .string) else { return }
+                            code = OnlineText.groupedFriendCode(OnlineText.normalizedFriendCode(text))
+                        }
+                        Button(OnlineText.l.sendFriendRequest, action: sendRequest)
+                            .disabled(!model.canWrite || OnlineText.normalizedFriendCode(code).count < 8)
+                    }
+                    // 자리 수가 맞지 않으면 보내기 전에 알려 준다. 서버까지 갔다가 「찾지 못했어요」 를
+                    // 듣는 것보다 빠르다.
+                    if !code.isEmpty, OnlineText.normalizedFriendCode(code).count != 16 {
+                        Text(OnlineText.l.friendCodeFormatHint)
+                            .font(Typography.label).foregroundStyle(.secondary)
+                    }
                 }
                 // 친구를 맺으려면 내 코드도 건네야 한다. 프로필 탭까지 가지 않게 여기에도 둔다.
                 HStack(spacing: 8) {
                     Text(OnlineText.l.myFriendCode).font(Typography.label).foregroundStyle(.secondary)
-                    Text(model.profile.string("friend_code"))
+                    Text(OnlineText.groupedFriendCode(myFriendCode))
                         .font(.system(size: 14, weight: .medium, design: .monospaced)).textSelection(.enabled)
-                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction) {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(model.profile.string("friend_code"), forType: .string)
-                        copied = true
-                    }
-                    .buttonStyle(.link).font(Typography.label)
+                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction, action: copyFriendCode)
+                        .buttonStyle(.link).font(Typography.label)
+                        .disabled(myFriendCode.isEmpty)
+                    shareFriendCode
+                        .buttonStyle(.link).font(Typography.label)
                 }
                 ForEach(incoming, id: \.onlineID) { item in
                     friendRow(item, note: OnlineText.l.sentYouRequest) {
@@ -196,7 +214,16 @@ struct OnlineSocialView: View {
         HStack(spacing: 10) {
             Image(systemName: "person.crop.circle").font(.system(size: 22)).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 1) {
-                Text(item.string("nickname")).font(Typography.bodySemibold)
+                HStack(spacing: 6) {
+                    Text(item.string("nickname")).font(Typography.bodySemibold)
+                    // 레벨을 모르는 예전 서버는 값을 보내지 않는다. 그때는 적지 않는다.
+                    if item["level"] != nil {
+                        Text(OnlineText.l.levelShort(item.int("level")))
+                            .font(Typography.caption).foregroundStyle(.secondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(Color.secondary.opacity(0.12), in: Capsule())
+                    }
+                }
                 if let note { Text(note).font(Typography.caption).foregroundStyle(.secondary) }
             }
             Spacer()
@@ -322,14 +349,37 @@ struct OnlineSocialView: View {
     // MARK: 동작
 
     private func sendRequest() {
-        guard !code.isEmpty else { return }
-        act("friends", ["action": "friend_request", "friend_code": code])
+        let normalized = OnlineText.normalizedFriendCode(code)
+        guard normalized.count >= 8 else { return }
+        act("friends", ["action": "friend_request", "friend_code": normalized])
         code = ""
     }
 
+    private var myFriendCode: String { model.profile.string("friend_code") }
+
+    /// 복사는 끊지 않은 원래 코드로 한다. 예전 앱은 띄어쓰기를 빼지 않고 그대로 보낸다.
+    private func copyFriendCode() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(myFriendCode, forType: .string)
+        copied = true
+    }
+
+    /// 메시지, 메일, 메모로 바로 보낸다. 복사해 다른 앱을 열고 붙여 넣는 세 단계를 하나로 줄인다.
+    @ViewBuilder
+    private var shareFriendCode: some View {
+        if !myFriendCode.isEmpty {
+            ShareLink(item: OnlineText.l.friendCodeShareText(OnlineText.groupedFriendCode(myFriendCode))) {
+                Text(OnlineText.l.shareAction)
+            }
+        }
+    }
+
     private func saveProfile() {
-        act("profile", ["action": "profile", "nickname": nickname.isEmpty ? model.profile.string("nickname") : nickname,
-                        "collection_public": collectionPublic, "wishlist_public": wishlistPublic, "binder_public": binderPublic])
+        var values: [String: Any] = ["action": "profile", "nickname": nickname.isEmpty ? model.profile.string("nickname") : nickname,
+                                     "collection_public": collectionPublic, "wishlist_public": wishlistPublic, "binder_public": binderPublic]
+        // 이 설정을 모르는 옛 서버는 모르는 값이 오면 요청 전체를 거절한다.
+        if tradeListSupported { values["trade_list_public"] = tradeListPublic }
+        act("profile", values)
     }
 
     private func loadDraft() {
@@ -338,6 +388,8 @@ struct OnlineSocialView: View {
         collectionPublic = model.profile.bool("collection_public")
         wishlistPublic = model.profile.bool("wishlist_public")
         binderPublic = model.profile.bool("binder_public")
+        tradeListSupported = model.profile["trade_list_public"] != nil
+        tradeListPublic = tradeListSupported ? model.profile.bool("trade_list_public") : true
         // 토글의 onChange 가 불러오기를 저장으로 착각하지 않게 다음 틱에 연다.
         Task { @MainActor in draftLoaded = true }
     }
@@ -539,6 +591,17 @@ private struct FriendBinderSheet: View {
             HStack {
                 Text(friend.isEmpty ? OnlineText.l.loading : OnlineText.l.friendsCards(friend.string("nickname"))).font(Typography.heading)
                 Spacer()
+                if !friend.isEmpty {
+                    // 교환 탭의 만들기 칸에 이 친구를 골라 둔다. 받고 싶은 카드는 거기서 친구의
+                    // 교환 바인더를 열어 담는다.
+                    Button(OnlineText.l.tradeWithFriend) {
+                        model.tradeDraft = ["public_id": friend.string("public_id")]
+                        model.selectedFriend = ""; model.documents["friend"] = nil; model.documents["friendInventory"] = nil
+                        model.section = .trades
+                        dismiss()
+                    }
+                    .disabled(!model.canWrite)
+                }
                 Button(OnlineText.l.close) {
                     model.selectedFriend = ""; model.documents["friend"] = nil; model.documents["friendInventory"] = nil
                     dismiss()
@@ -609,7 +672,7 @@ private struct FriendBinderSheet: View {
     private func load(offset: Int) {
         Task {
             do { model.documents["friendInventory"] = try await model.read("v1/inventory?target=\(model.selectedFriend)&offset=\(offset)") }
-            catch { model.message = error.localizedDescription }
+            catch { model.message = OnlineText.message(for: error) }
         }
     }
 }

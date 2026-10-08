@@ -13,6 +13,10 @@ struct CardCollectionView: View {
     @State private var selectedSet: String?
     @State private var selectedTier: CardTier?
     @State private var selectedCard: String?
+    /// 카드를 연 자리. 상세가 그 칸에서 커져 열리고 닫으면 그 자리로 줄어든다.
+    @State private var zoomOrigin = ZoomOrigin()
+    private static let space = "collection"
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// 이름(한국어, 원문)이나 카드 번호로 거른다. 세트, 등급 필터 안에서 함께 걸린다.
     @State private var query = ""
     /// 입력이 멈춘 뒤 실제로 거르는 검색어.
@@ -172,57 +176,50 @@ struct CardCollectionView: View {
             } else if bulkSelling {
                 // 지금 목록에 걸린 카드만 넘긴다 — 화면에 안 보이는 카드가 팔리면 안 된다.
                 BulkSaleView(wallet: wallet, pool: shelf.pool) { bulkSelling = false }
-            } else if let selectedCard, let entry = index?.card(selectedCard) {
-                // 하단에 작게 붙이면 카드를 제대로 볼 수 없다. 화면을 통째로 내준다.
-                CardSpotlightView(wallet: wallet, cardID: entry.id,
-                                  name: entry.displayName(wallet.language),
-                                  tier: entry.tier, setID: entry.setID,
-                                  setName: index?.set(entry.setID)?.name ?? entry.setID,
-                                  rarity: entry.rarity,
-                                  ownedCount: wallet.cardCount(entry.id)) {
-                    self.selectedCard = nil
-                }
             } else {
-                // 카드가 없어도 격자를 보여준다. 무엇을 모을 수 있는지 알아야
-                // 어느 팩을 살지 정할 수 있다 — 빈 화면은 그 판단을 막는다.
-                searchField
-                filterBar(shelf)
-                viewOptions(shelf)
-                if showTiers { tierSummary }
-                if shelf.visible.isEmpty { emptyHint }
-                grid(shelf)
+                // 상세를 열어도 격자는 뒤에 그대로 둔다. 빼 버리면 닫았을 때 스크롤이
+                // 맨 위로 돌아가 보던 자리를 다시 찾아야 했다.
+                ZStack {
+                    VStack(spacing: 4) {
+                        // 카드가 없어도 격자를 보여준다. 무엇을 모을 수 있는지 알아야
+                        // 어느 팩을 살지 정할 수 있다 — 빈 화면은 그 판단을 막는다.
+                        searchField
+                        filterBar(shelf)
+                        viewOptions(shelf)
+                        if showTiers { tierSummary }
+                        if shelf.visible.isEmpty { emptyHint }
+                        grid(shelf)
+                    }
+                    .opacity(selectedCard == nil ? 1 : 0)
+                    .allowsHitTesting(selectedCard == nil)
+                    .accessibilityHidden(selectedCard != nil)
+
+                    if let selectedCard, let entry = index?.card(selectedCard) {
+                        // 하단에 작게 붙이면 카드를 제대로 볼 수 없다. 화면을 통째로 내준다.
+                        CardSpotlightView(wallet: wallet, cardID: entry.id,
+                                          name: entry.displayName(wallet.language),
+                                          tier: entry.tier, setID: entry.setID,
+                                          setName: index?.set(entry.setID)?.name ?? entry.setID,
+                                          rarity: entry.rarity,
+                                          ownedCount: wallet.cardCount(entry.id)) {
+                            withAnimation(.snappy(duration: 0.26)) { self.selectedCard = nil }
+                        }
+                        .transition(.zoom(from: zoomOrigin.anchor, reduceMotion: reduceMotion))
+                    }
+                }
             }
         }
         .frame(height: PopoverMetrics.tabHeight)
+        .coordinateSpace(.named(Self.space))
         .onChange(of: ownedOnly) { selectedCard = nil }
         .onChange(of: sort) { selectedCard = nil }
         .onChange(of: query) { selectedCard = nil }
         .debouncedSearch(query, into: $appliedQuery)
     }
 
-    /// 검색은 한 줄을 통째로 쓴다. 보기 줄 사이에 끼워 두니 글자 두 개 폭으로 줄어
-    /// 무엇을 쳤는지도 보이지 않았다. 모양은 도감 탭 검색창과 같다.
     private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            TextField(wallet.l.collectionSearchPlaceholder, text: $query)
-                .textFieldStyle(.plain)
-                .font(Typography.body)
-                .accessibilityLabel(wallet.l.searchCards)
-            if !query.isEmpty {
-                Button { query = "" } label: {
-                    Image(systemName: "multiply.circle.fill").foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(wallet.l.dexCardSearchClear)
-            }
-        }
-        .padding(.horizontal, 9).padding(.vertical, 6)
-        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .onExitCommand { query = "" }
+        SearchField(placeholder: wallet.l.collectionSearchPlaceholder, label: wallet.l.searchCards,
+                    clearLabel: wallet.l.dexCardSearchClear, text: $query)
     }
 
     /// 보이는 카드가 없을 때의 안내. 격자 자리는 그대로 두고 위에 한 줄만 얹는다.
@@ -417,6 +414,14 @@ struct CardCollectionView: View {
         selectedCard = nil
     }
 
+    /// 카드 상세를 연다. 같은 클릭의 위치 기록이 끝난 뒤 그 자리에서 커지게 한 박자 늦춘다.
+    private func open(_ cardID: String) {
+        Task { @MainActor in
+            zoomOrigin.consume(in: CGSize(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight))
+            withAnimation(.snappy(duration: 0.32)) { selectedCard = cardID }
+        }
+    }
+
     private func grid(_ shelf: Shelf) -> some View {
         ScrollView {
             // 칸을 고정한다. 유연 칸에 고정 폭 카드를 넣으면 칸은 넓어지고 카드만 작게
@@ -426,7 +431,7 @@ struct CardCollectionView: View {
                 ForEach(shelf.visible) { entry in
                     let count = wallet.cardCount(entry.id)
                     Button {
-                        selectedCard = entry.id
+                        open(entry.id)
                     } label: {
                         ZStack(alignment: .bottomTrailing) {
                             CardImageView(cardID: entry.id, width: CardGrid.collection.width, dimmed: count == 0)
@@ -449,8 +454,11 @@ struct CardCollectionView: View {
                                     .padding(2)
                             }
                         }
+                        // 등급과 장수 배지도 카드와 함께 떠오른다.
+                        .hoverLift(scale: 1.05)
                     }
                     .buttonStyle(.plain)
+                    .recordsClick(in: Self.space, into: $zoomOrigin)
                 }
             }
             .padding(.horizontal, 1)
