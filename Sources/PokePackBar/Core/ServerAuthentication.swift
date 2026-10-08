@@ -232,6 +232,7 @@ enum ServerAuthentication {
             case "login_required": message = loginRequired
             case "link_code_invalid": message = L.current.linkCodeInvalid
             case "registration_unavailable": message = L.current.registrationUnavailable
+            case "registration_requires_link_code": message = L.current.registrationNeedsCode
             case "too_many_attempts": message = L.current.tooManyAttempts
             default:
                 message = status == 422 ? L.current.checkEmailAndLength(ServerPasswordPolicy.lengthDescription)
