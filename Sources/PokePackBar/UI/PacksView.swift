@@ -358,6 +358,8 @@ private struct RevealView: View {
     @FocusState private var focused: Bool
     /// 결과 화면 정렬. 다음 개봉에도 같은 기준으로 보이게 기억한다.
     @AppStorage("packSummarySort") private var summarySort = SummarySort.price
+    /// 결과 화면이 뜬 때. 좋은 카드의 빛은 이 직후에만 스친다(`PulledCardCell.Shine`).
+    @State private var summaryShownAt = Date.distantPast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     enum SummarySort: String { case price, rarity }
@@ -369,6 +371,7 @@ private struct RevealView: View {
         self.opened = opened
         self.onDone = onDone
         _position = State(initialValue: initialPosition)
+        if initialPosition >= opened.cards.count { _summaryShownAt = State(initialValue: Date()) }
     }
 
     private var isSummary: Bool { position >= opened.cards.count }
@@ -463,6 +466,7 @@ private struct RevealView: View {
         }
         if position + 1 >= opened.cards.count {
             if !opened.isPreview { wallet.markAllRevealed() }
+            summaryShownAt = Date()
             withAnimation(.easeOut(duration: 0.22)) { position += 1 }
         } else {
             // 넘기는 것은 즉시. 등급 신호는 카드를 누르는 순간 RevealStack 이 터뜨린다 —
@@ -482,6 +486,7 @@ private struct RevealView: View {
         guard !isAdvancing else { return }
         // 요약이 열 장을 한꺼번에 보여 주므로 값도 한꺼번에 올린다.
         if !opened.isPreview { wallet.markAllRevealed() }
+        summaryShownAt = Date()
         withAnimation(.easeOut(duration: 0.22)) { position = opened.cards.count }
     }
 
@@ -571,12 +576,29 @@ private struct RevealView: View {
 
     // MARK: 요약
 
-    /// 이번 개봉에서 가장 비싼 카드. 결과 칸에 빛이 한 번 스친다. 평범한 카드뿐이면 없다 —
-    /// 커먼에 빛을 주면 무엇이 좋은 것인지 오히려 흐려진다.
+    /// 이번 개봉에서 가장 비싼 카드. 평범한 카드뿐이면 없다.
     private var bestPull: PulledCard? {
         guard let best = opened.presentation.summaryByPrice.first,
               RevealMotionProfile.forCard(best).emphasis != .none else { return nil }
         return best
+    }
+
+    /// 결과 칸마다 스칠 빛. **좋은 카드는 모두** 놓인 순서대로 한 번씩, 최고 카드는 더 밝게.
+    ///
+    /// 처음에는 최고 카드 한 장에만 빛을 줬다. 그 한 장이 왜 빛나는지 알 수 없어 어색했고,
+    /// 다른 좋은 카드가 몇 장 나왔는지는 배지를 하나씩 읽어야 알 수 있었다. 커먼과 언커먼에는
+    /// 주지 않는다 — 다 빛나면 무엇이 좋은 것인지 오히려 흐려진다.
+    private func shines(in order: [PulledCard]) -> [PulledCardCell.Shine?] {
+        let best = bestPull
+        var next = 0
+        return order.map { card in
+            guard !card.isSupplementalEnergy,
+                  RevealMotionProfile.forCard(card).emphasis != .none else { return nil }
+            defer { next += 1 }
+            return PulledCardCell.Shine(order: next,
+                                        best: card.id == best?.id && card.finish == best?.finish,
+                                        until: summaryShownAt.addingTimeInterval(2))
+        }
     }
 
     /// 이 팩에 맞춘 요약 격자. 1999년 팩은 11장이라 열이 하나 더 필요하다.
@@ -596,11 +618,12 @@ private struct RevealView: View {
 
     @ViewBuilder
     private var summaryCards: some View {
+        let order = summaryCardOrder
+        let shineByOffset = shines(in: order)
         let cards = LazyVGrid(columns: summaryGrid.items, spacing: summaryGrid.spacing) {
             // 요약은 희귀한 것부터 — 무엇을 건졌는지 먼저 보인다.
-            ForEach(summaryCardOrder.indices, id: \.self) { offset in
-                let card = summaryCardOrder[offset]
-                let shines = card.id == bestPull?.id && card.finish == bestPull?.finish
+            ForEach(order.indices, id: \.self) { offset in
+                let card = order[offset]
                 if card.isSupplementalEnergy {
                     PulledCardCell(wallet: wallet, card: card,
                                    width: summaryGrid.width,
@@ -618,7 +641,7 @@ private struct RevealView: View {
                                        width: summaryGrid.width,
                                        preloaded: opened.thumbs[card.id],
                                        appearanceIndex: offset,
-                                       shines: shines)
+                                       shine: shineByOffset[offset])
                             .hoverLift(scale: 1.05)
                     }
                     .recordsClick(in: Self.space, into: $zoomOrigin)
@@ -1150,8 +1173,24 @@ private struct PulledCardCell: View {
     let width: CGFloat
     var preloaded: NSImage?
     let appearanceIndex: Int
-    /// 이번 개봉의 간판 카드. 나타난 뒤 빛이 한 번 스친다.
-    var shines = false
+    /// 나타난 뒤 한 번 스치는 빛. 좋은 카드에만 있다.
+    var shine: Shine?
+
+    struct Shine: Equatable {
+        /// 빛이 스치는 차례(0부터). 앞 카드의 빛이 지나가며 이어지게 조금씩 늦춘다.
+        let order: Int
+        /// 이번 개봉의 최고 카드. 더 밝고 넓은 빛이 조금 더 천천히 지나간다.
+        let best: Bool
+        /// 이때가 지나서 나타난 칸은 빛을 주지 않는다. 여러 팩 결과를 내려 볼 때마다 칸이
+        /// 새로 만들어지며 다시 반짝이면 어수선하다.
+        let until: Date
+    }
+
+    /// 칸이 다 자리 잡을 때까지 기다리는 시간과 차례 사이 간격(ms). 열 장 넘게 이어지면
+    /// 끝이 너무 늦어지므로 여덟 번째부터는 같이 스친다.
+    private static let shineStart = 460
+    private static let shineStagger = 140
+    private static let staggeredShines = 8
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appeared = false
@@ -1163,13 +1202,13 @@ private struct PulledCardCell: View {
             ZStack(alignment: .topTrailing) {
                 CardImageView(cardID: card.id, width: width, preloaded: preloaded)
                     .overlay {
-                        if shines {
+                        if let shine {
                             LinearGradient(stops: [
                                 .init(color: .clear, location: 0),
-                                .init(color: .white.opacity(0.75), location: 0.5),
+                                .init(color: .white.opacity(shine.best ? 0.85 : 0.45), location: 0.5),
                                 .init(color: .clear, location: 1),
                             ], startPoint: .leading, endPoint: .trailing)
-                            .frame(width: width * 0.45)
+                            .frame(width: width * (shine.best ? 0.5 : 0.36))
                             .rotationEffect(.degrees(20))
                             .offset(x: glint * width)
                             .blendMode(.plusLighter)
@@ -1211,11 +1250,13 @@ private struct PulledCardCell: View {
             } else {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.76)) { appeared = true }
             }
-            // 칸이 다 자리 잡은 뒤 간판 카드에 빛이 한 번 스친다.
-            guard shines, !reduceMotion else { return }
-            try? await Task.sleep(for: .milliseconds(420))
+            // 칸이 다 자리 잡은 뒤 좋은 카드마다 차례로 빛이 한 번 스친다.
+            guard let shine, !reduceMotion, Date() < shine.until else { return }
+            let waited = min(appearanceIndex, 10) * 38
+            let start = Self.shineStart + min(shine.order, Self.staggeredShines) * Self.shineStagger
+            try? await Task.sleep(for: .milliseconds(max(0, start - waited)))
             guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: 0.75)) { glint = 2 }
+            withAnimation(.easeInOut(duration: shine.best ? 0.8 : 0.6)) { glint = 2 }
         }
     }
 }
