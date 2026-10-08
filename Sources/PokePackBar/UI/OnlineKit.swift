@@ -57,6 +57,27 @@ enum OnlineText {
 
     static func wonText(_ won: Int) -> String { WonFormatter.exact(won, language: language) }
 
+    /// 교환 한쪽의 참고 시세 합계(원)와 시세가 없어 빠진 장수.
+    static func referenceTotal(_ lines: [String: Int]) -> (won: Int, unpriced: Int) {
+        lines.reduce(into: (won: 0, unpriced: 0)) { total, line in
+            if let won = referenceWon(line.key) { total.won += won * line.value } else { total.unpriced += line.value }
+        }
+    }
+
+    /// 담은 카드 줄 요약: 종수, 장수, 시세 합계.
+    static func traySummary(_ lines: [String: Int]) -> String {
+        let total = referenceTotal(lines)
+        let priced = lines.values.reduce(0, +) > total.unpriced
+        return l.traySummary(kinds: lines.count, cards: lines.values.reduce(0, +),
+                             won: priced ? wonText(total.won) : nil, unpriced: total.unpriced)
+    }
+
+    /// 주고받는 양쪽 시세를 한 문장으로 비교한다.
+    static func valueBalance(give: [String: Int], get: [String: Int]) -> String {
+        let gave = referenceTotal(give).won, got = referenceTotal(get).won
+        return l.valueBalance(give: wonText(gave), get: wonText(got), difference: got - gave, gap: wonText(abs(got - gave)))
+    }
+
     static func listingStatus(_ raw: String) -> (text: String, color: Color) {
         switch raw {
         case "active": return (OnlineText.l.listingActive, .green)
@@ -73,6 +94,7 @@ enum OnlineText {
         case "accepted": return (OnlineText.l.tradeAccepted, .green)
         case "rejected": return (OnlineText.l.tradeRejected, .secondary)
         case "cancelled": return (OnlineText.l.tradeCancelled, .secondary)
+        case "countered": return (OnlineText.l.tradeCountered, .secondary)
         case "expired": return (OnlineText.l.expiredLabel, .secondary)
         default: return (raw, .secondary)
         }
@@ -84,6 +106,7 @@ enum OnlineText {
         case "trade_accepted": return (OnlineText.l.noteTradeAccepted, "checkmark.circle")
         case "trade_rejected": return (OnlineText.l.noteTradeRejected, "hand.raised")
         case "trade_cancelled": return (OnlineText.l.noteTradeCancelled, "arrow.uturn.backward.circle")
+        case "trade_countered": return (OnlineText.l.noteTradeCountered, "arrow.triangle.2.circlepath")
         case "trade_expired": return (OnlineText.l.noteTradeExpired, "clock")
         case "listing_sold": return (OnlineText.l.noteListingSold, "wonsign.circle")
         case "listing_bought": return (OnlineText.l.noteListingBought, "bag")
@@ -478,6 +501,11 @@ struct OnlineStockPicker: View {
     let actionTitle: String
     /// 이미 담은 장수. 남은 수량을 넘겨 담지 않게 한다.
     var alreadyPicked: [String: Int] = [:]
+    /// 고를 카드. 없으면 내 남는 카드다. 친구의 교환 바인더를 넘길 때 쓴다.
+    var source: [OnlineStock]? = nil
+    var searchPlaceholder: String? = nil
+    var emptyTitle: String? = nil
+    var emptyMessage: String? = nil
     let onPick: (_ key: String, _ quantity: Int) -> Void
 
     @State private var query = ""
@@ -487,7 +515,7 @@ struct OnlineStockPicker: View {
     @Environment(\.dismiss) private var dismiss
 
     private var stock: [OnlineStock] {
-        let all = OnlineStock.sellable(wallet: wallet)
+        let all = source ?? OnlineStock.sellable(wallet: wallet)
         let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return all }
         return all.filter { DexCardSearch.names(cardID: $0.cardID).contains { $0.contains(needle) } }
@@ -511,13 +539,13 @@ struct OnlineStockPicker: View {
                     }
                 }
             } else {
-                TextField(OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
+                TextField(searchPlaceholder ?? OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
                     .debouncedSearch(query, into: $appliedQuery)
                 ScrollView {
                     if stock.isEmpty {
                         OnlineEmptyState(icon: "square.stack",
-                                         title: query.isEmpty ? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
-                                         message: query.isEmpty ? OnlineText.l.spareCardsHint : nil)
+                                         title: query.isEmpty ? emptyTitle ?? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
+                                         message: query.isEmpty ? emptyMessage ?? OnlineText.l.spareCardsHint : nil)
                     } else {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
                             ForEach(stock) { item in

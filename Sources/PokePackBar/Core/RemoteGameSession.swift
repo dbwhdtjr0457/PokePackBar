@@ -575,6 +575,7 @@ final class RemoteGameSession {
     /// (`idempotency_key_reused`)이 이 문장을 본다.
     static func describe(status: Int, data: Data) -> String {
         let detail = ServerTransport.detail(data) ?? "HTTP \(status)"
+        if detail == "requested_cards_unavailable" { return L.current.requestedCardsUnavailable }
         if status >= 500 {
             return L.current.serverFailure(status, detail)
         }

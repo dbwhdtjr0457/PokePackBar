@@ -125,6 +125,46 @@ enum OnlineGameAudit {
         print("PASS native operations: device/status decoding, 1001-pack job, chunk replay after lost response, durable progress")
     }
 
+    /// 친구의 교환 바인더가 그 친구의 남는 카드와 같은지, 역제안이 원래 제안을 닫고 반대로 돌아오는지.
+    /// 이 기능이 없는 옛 서버(경로 404)에서는 건너뛴다.
+    private static func binderAndCounter(
+        first: RemoteGameSession, buyer: RemoteGameSession, friend: String,
+        read: (RemoteGameSession, String) async throws -> [String: Any],
+        mutate: (RemoteGameSession, String, [String: Any]) async throws -> [String: Any]
+    ) async throws -> Bool {
+        let binder: [String: Any]
+        do { binder = try await read(first, "friends/\(friend)/tradeable") }
+        catch let failure as RemoteGameSession.Failure where failure.status == 404 { return false }
+        let spares = binder["items"] as? [String: Any] ?? [:]
+        let buyerStock = try await read(buyer, "inventory?limit=100")["items"] as? [[String: Any]] ?? []
+        let firstStock = try await read(first, "inventory?limit=100")["items"] as? [[String: Any]] ?? []
+        guard let wanted = buyerStock.first(where: { $0.int("available") >= 2 }),
+              let given = firstStock.first(where: { $0.int("available") >= 1 && $0.string("printing") != wanted.string("printing") }) else {
+            throw LocalAudit.Failure(description: "Missing spare printings for the counter-offer check")
+        }
+        let want = wanted.string("printing"), give = given.string("printing")
+        try LocalAudit.require((spares[want] as? NSNumber)?.intValue == wanted.int("available"),
+                               "Trade binder does not match the friend's spare cards")
+        let proposal = try await mutate(first, "trades", ["action": "trade_create", "target_id": friend,
+            "offered": [["printing": give, "quantity": 1]], "requested": [["printing": want, "quantity": 1]]])
+        let proposalID = (proposal["result"] as? [String: Any])?.string("id") ?? ""
+        let counter = try await mutate(buyer, "trades", ["action": "trade_counter", "target_id": proposalID, "target_version": 0,
+            "offered": [["printing": want, "quantity": 2]], "requested": [["printing": give, "quantity": 1]]])
+        let counterID = (counter["result"] as? [String: Any])?.string("id") ?? ""
+        let trades = try await read(first, "trades")["items"] as? [[String: Any]] ?? []
+        try LocalAudit.require(trades.first { $0.string("id") == proposalID }?.string("status") == "countered",
+                               "Countered offer was not closed")
+        let answer = trades.first { $0.string("id") == counterID }
+        try LocalAudit.require(answer?.string("counter_of") == proposalID && answer?.bool("incoming") == true,
+                               "Counter-offer did not come back to the original sender")
+        await first.synchronize()
+        try LocalAudit.require(first.reservedPrintings[give] == nil, "Countered offer kept its held cards")
+        _ = try await mutate(first, "trades", ["action": "trade_accept", "target_id": counterID, "target_version": 0])
+        await buyer.synchronize()
+        try LocalAudit.require(buyer.reservedPrintings.isEmpty, "Accepted counter-offer kept its held cards")
+        return true
+    }
+
     private static func commerce(address: URL, first: RemoteGameSession, root: URL) async throws {
         let login = try await ServerAuthentication.login(url: address, email: "buyer-\(UUID())@example.com",
             password: UUID().uuidString + UUID().uuidString, register: true, deviceID: UUID())
@@ -174,6 +214,8 @@ enum OnlineGameAudit {
         }
         await first.synchronize()
         try LocalAudit.require(first.reservedPrintings.isEmpty, "Completed trade retained reservation")
+        let binderChecked = try await binderAndCounter(first: first, buyer: buyer, friend: profile.string("public_id"),
+                                                       read: read, mutate: mutate)
         let listing = try await mutate(buyer, "market/listings", ["action": "listing_create", "printing": offered, "quantity": 1, "unit_tokens": 123])
         let listingID = (listing["result"] as? [String: Any])?.string("id") ?? ""
         await first.synchronize()
@@ -190,6 +232,7 @@ enum OnlineGameAudit {
         try LocalAudit.require(repeated.bool("replayed") && !first.hasOnlinePending, "Marketplace lost-response replay failed")
         let final = try await read(first, "state")["state"] as? [String: Any] ?? [:]
         try LocalAudit.require(final.int("marketSpentTokens") == 123, "Marketplace debit duplicated")
-        print("PASS native commerce: friend approval, printing reservations, trade acceptance, marketplace purchase, durable receipt replay, no double debit")
+        let binderNote = binderChecked ? "trade binder, counter-offer" : "trade binder and counter-offer skipped (server without them)"
+        print("PASS native commerce: friend approval, printing reservations, trade acceptance, \(binderNote), marketplace purchase, durable receipt replay, no double debit")
     }
 }

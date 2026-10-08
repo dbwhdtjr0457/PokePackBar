@@ -686,3 +686,45 @@ extension L {
     }
     var onlineChangesThroughServer: String { t("온라인 자원은 서버 명령으로만 바꿀 수 있어요.", "Online resources can only change through server commands.", "オンラインの資源はサーバーのコマンドでのみ変更できます。", "Los recursos en línea solo cambian con órdenes del servidor.", "Les ressources en ligne ne changent que par des commandes serveur.", "Recursos online só mudam por comandos do servidor.") }
 }
+
+// MARK: 교환 바인더와 역제안
+
+extension L {
+    var friendBinderTitle: String { t("친구의 교환 바인더", "Friend’s trade binder", "フレンドの交換バインダー", "Carpeta de intercambio del amigo", "Classeur d’échange de l’ami", "Fichário de troca do amigo") }
+    var searchFriendCards: String { t("친구 카드에서 찾기", "Search friend’s cards", "フレンドのカードから探す", "Buscar en las cartas del amigo", "Chercher dans les cartes de l’ami", "Buscar nas cartas do amigo") }
+    var friendBinderEmpty: String { t("친구가 내놓을 수 있는 카드가 없어요", "Your friend has no cards to trade", "フレンドが出せるカードはありません", "Tu amigo no tiene cartas para intercambiar", "Votre ami n’a aucune carte à échanger", "Seu amigo não tem cartas para trocar") }
+    var friendBinderEmptyHint: String { t("친구가 같은 카드를 2장 이상 가지고 있어야 교환에 내놓을 수 있어요.", "A friend can trade a card once they own two or more of it.", "フレンドが同じカードを2枚以上持っていると交換に出せます。", "Tu amigo puede intercambiar una carta cuando tiene dos o más.", "Votre ami peut échanger une carte dès qu’il en possède deux ou plus.", "Seu amigo pode trocar uma carta quando tem duas ou mais.") }
+    var friendBinderPrivate: String { t("친구가 교환용 카드를 공개하지 않았어요", "Your friend keeps their trade cards private", "フレンドは交換用カードを公開していません", "Tu amigo no comparte sus cartas de intercambio", "Votre ami ne partage pas ses cartes d’échange", "Seu amigo não compartilha as cartas de troca") }
+    var friendBinderUnsupported: String { t("이 서버는 아직 교환 바인더를 지원하지 않아요", "This server doesn’t support trade binders yet", "このサーバーはまだ交換バインダーに対応していません", "Este servidor aún no admite carpetas de intercambio", "Ce serveur ne gère pas encore les classeurs d’échange", "Este servidor ainda não suporta fichários de troca") }
+    var friendBinderFallbackHint: String { t("전체 카드에서 고를 수 있지만, 친구가 그 카드를 가지고 있는지는 알 수 없어요. 없는 카드면 친구가 수락할 수 없어요.", "You can pick from all cards, but you can’t tell whether your friend owns them. They can’t accept cards they don’t have.", "すべてのカードから選べますが、フレンドが持っているかはわかりません。持っていないカードだと承認できません。", "Puedes elegir entre todas las cartas, pero no sabrás si tu amigo las tiene. No podrá aceptar cartas que no tenga.", "Vous pouvez choisir parmi toutes les cartes, sans savoir si votre ami les possède. Il ne pourra pas accepter des cartes qu’il n’a pas.", "Você pode escolher entre todas as cartas, mas não sabe se seu amigo as tem. Ele não poderá aceitar cartas que não tem.") }
+    var searchAllCards: String { t("전체 카드에서 찾기", "Search all cards", "すべてのカードから探す", "Buscar en todas las cartas", "Chercher dans toutes les cartes", "Buscar em todas as cartas") }
+    func traySummary(kinds: Int, cards: Int, won: String?, unpriced: Int) -> String {
+        var text = "\(kindsCount(kinds)), \(cardsCount(cards))"
+        if let won { text += ", " + marketQuote(won) }
+        if unpriced > 0 {
+            text += " " + t("(시세 없는 카드 \(unpriced)장 제외)", "(\(unpriced) without a price)", "（相場なし\(unpriced)枚を除く）", "(\(unpriced) sin precio)", "(\(unpriced) sans cote)", "(\(unpriced) sem preço)")
+        }
+        return text
+    }
+    /// 양쪽 시세 합계의 차이. 받는 쪽 기준으로 말한다.
+    func valueBalance(give: String, get: String, difference: Int, gap: String) -> String {
+        let head = t("시세로 줄 카드 \(give), 받을 카드 \(get).", "By market value you give \(give) and get \(get).", "相場で渡すカード\(give)、受け取るカード\(get)。", "A precio de mercado das \(give) y recibes \(get).", "À la cote, vous donnez \(give) et recevez \(get).", "Pelo preço de mercado você dá \(give) e recebe \(get).")
+        if difference == 0 { return head + " " + t("같아요.", "They match.", "同じです。", "Están igualados.", "C’est équilibré.", "Está equilibrado.") }
+        return head + " " + (difference > 0
+            ? t("받는 쪽이 \(gap) 더 많아요.", "You get \(gap) more.", "受け取る側が\(gap)多いです。", "Recibes \(gap) más.", "Vous recevez \(gap) de plus.", "Você recebe \(gap) a mais.")
+            : t("주는 쪽이 \(gap) 더 많아요.", "You give \(gap) more.", "渡す側が\(gap)多いです。", "Das \(gap) más.", "Vous donnez \(gap) de plus.", "Você dá \(gap) a mais."))
+    }
+    var counterAction: String { t("역제안", "Counter", "逆提案", "Contraoferta", "Contre-offre", "Contraproposta") }
+    func counteringBanner(_ name: String) -> String { t("\(name)님의 제안을 바꿔서 보내요. 보내면 원래 제안은 닫혀요.", "You’re changing \(name)’s offer. Sending it closes the original.", "\(name)さんの提案を変えて送ります。送ると元の提案は閉じます。", "Estás cambiando la oferta de \(name). Al enviarla se cierra la original.", "Vous modifiez l’offre de \(name). L’envoyer ferme l’originale.", "Você está mudando a proposta de \(name). Ao enviar, a original é fechada.") }
+    var stopCountering: String { t("역제안 그만두기", "Stop countering", "逆提案をやめる", "Dejar la contraoferta", "Abandonner la contre-offre", "Desistir da contraproposta") }
+    var sendCounter: String { t("역제안 보내기", "Send counter", "逆提案を送る", "Enviar contraoferta", "Envoyer la contre-offre", "Enviar contraproposta") }
+    var confirmCounter: String { t("이렇게 역제안할까요?", "Send this counter-offer?", "この内容で逆提案しますか？", "¿Enviar esta contraoferta?", "Envoyer cette contre-offre ?", "Enviar esta contraproposta?") }
+    var confirmCounterNote: String { t("원래 제안은 닫히고 친구 카드의 잠금도 풀려요. 친구가 72시간 안에 수락하면 바로 바뀌어요.", "The original offer closes and your friend’s cards are released. If they accept within 72 hours, the cards swap right away.", "元の提案は閉じ、フレンドのカードの確保も解除されます。72時間以内に承認されるとすぐに交換されます。", "La oferta original se cierra y se liberan las cartas de tu amigo. Si acepta en 72 horas, se intercambian al momento.", "L’offre d’origine est fermée et les cartes de votre ami sont libérées. S’il accepte sous 72 heures, l’échange est immédiat.", "A proposta original é fechada e as cartas do seu amigo são liberadas. Se ele aceitar em 72 horas, a troca é imediata.") }
+    var tradeCountered: String { t("역제안함", "Countered", "逆提案済み", "Contraofertado", "Contre-offre faite", "Contraproposto") }
+    func counterFrom(_ name: String) -> String { t("\(name)님의 역제안", "Counter-offer from \(name)", "\(name)さんの逆提案", "Contraoferta de \(name)", "Contre-offre de \(name)", "Contraproposta de \(name)") }
+    func counterTo(_ name: String) -> String { t("\(name)님에게 보낸 역제안", "Counter-offer to \(name)", "\(name)さんへの逆提案", "Contraoferta para \(name)", "Contre-offre à \(name)", "Contraproposta para \(name)") }
+    var noteTradeCountered: String { t("교환 제안에 역제안이 왔어요", "Your trade offer got a counter-offer", "交換の提案に逆提案が届きました", "Tu oferta recibió una contraoferta", "Votre offre a reçu une contre-offre", "Sua proposta recebeu uma contraproposta") }
+    var tradeListToggle: String { t("교환용 카드 (2장 이상인 카드)", "Trade cards (two or more copies)", "交換用カード（2枚以上のカード）", "Cartas de intercambio (dos o más copias)", "Cartes d’échange (deux exemplaires ou plus)", "Cartas de troca (duas ou mais cópias)") }
+    var tradeWithFriend: String { t("이 친구와 교환하기", "Trade with this friend", "このフレンドと交換する", "Intercambiar con este amigo", "Échanger avec cet ami", "Trocar com este amigo") }
+    var requestedCardsUnavailable: String { t("친구가 그 카드를 지금은 내놓을 수 없어요. 친구의 교환 바인더를 다시 확인해 주세요.", "Your friend can’t spare those cards right now. Check their trade binder again.", "フレンドはそのカードを今は出せません。交換バインダーをもう一度確認してください。", "Tu amigo no puede dar esas cartas ahora. Revisa de nuevo su carpeta de intercambio.", "Votre ami ne peut pas céder ces cartes pour l’instant. Revoyez son classeur d’échange.", "Seu amigo não pode dar essas cartas agora. Confira de novo o fichário de troca dele.") }
+}
