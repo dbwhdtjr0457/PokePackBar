@@ -18,6 +18,8 @@ enum SoundEffects {
         case coin
         /// 좋은 것이 나왔을 때의 종소리. 음 수가 많을수록 귀하다(1~4).
         case chime(Int)
+        /// 정말 드문 카드. 종소리보다 길게, 두 옥타브를 올라가 맨 위에서 화음으로 울린다.
+        case fanfare
     }
 
     static var enabled: Bool { UserDefaults.standard.bool(forKey: defaultsKey) }
@@ -70,6 +72,7 @@ enum SoundEffects {
         case .pop: pop()
         case .coin: coin()
         case .chime(let notes): chime(notes: max(1, min(4, notes)))
+        case .fanfare: fanfare()
         }
         guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(samples.count)),
               let channel = buffer.floatChannelData?[0] else { return nil }
@@ -98,6 +101,31 @@ enum SoundEffects {
                     + 0.07 * sin(2 * .pi * frequency * 3.01 * t)
                 samples[start + frame] += Float(0.16 * envelope * tone)
             }
+        }
+        return samples
+    }
+
+    /// 팡파르. 장3화음을 두 옥타브에 걸쳐 빠르게 오른 뒤, 맨 위에서 화음 셋이 함께 길게 울린다.
+    private static func fanfare() -> [Float] {
+        let run: [Double] = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568.0, 2093.0]
+        let final: [Double] = [1046.5, 1318.5, 1568.0, 2093.0]
+        let spacing = 0.055, ring = 0.55, hold = 1.4
+        let holdStart = spacing * Double(run.count)
+        var samples = [Float](repeating: 0, count: Int((holdStart + hold) * sampleRate))
+        func strike(_ frequency: Double, at start: Double, length: Double, decay: Double, gain: Double) {
+            let first = Int(start * sampleRate)
+            for frame in 0..<Int(length * sampleRate) where first + frame < samples.count {
+                let t = Double(frame) / sampleRate
+                let envelope = min(1, t / 0.004) * exp(-t * decay)
+                let tone = sin(2 * .pi * frequency * t) + 0.22 * sin(2 * .pi * frequency * 2 * t)
+                samples[first + frame] += Float(gain * envelope * tone)
+            }
+        }
+        for (index, frequency) in run.enumerated() {
+            strike(frequency, at: Double(index) * spacing, length: ring, decay: 7, gain: 0.11)
+        }
+        for frequency in final {
+            strike(frequency, at: holdStart, length: hold, decay: 2.6, gain: 0.07)
         }
         return samples
     }

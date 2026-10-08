@@ -3,12 +3,18 @@ import SwiftUI
 /// 카드 공개 연출의 한 가지 기준점.
 ///
 /// 화면마다 임의로 지연과 빛의 세기를 정하면 같은 카드가 팩에서는 평범하고 오리파에서는
-/// 과장되어 보인다. 등급을 네 단계로만 압축해 모든 공개 화면이 같은 신호를 사용하게 한다.
+/// 과장되어 보인다. 다섯 단계로만 압축해 모든 공개 화면이 같은 신호를 사용하게 한다.
+///
+/// 단계는 **그 팩에서 얼마나 드물게 나오는가**로 정한다(`PullRarity`). 등급 이름으로 정하면
+/// 거의 매 팩 나오는 R 에도 불꽃이 터진다.
 enum RevealEmphasis: Int, Comparable, Sendable {
     case none
     case rare
     case premium
     case apex
+    /// 150팩에 한 번보다 드문 카드. 빛이 무지개로 돌고 소리도 따로 난다 — 아래 단계와
+    /// 세기만 다르면 「정말 귀한 것」이 「꽤 좋은 것」과 구분되지 않는다.
+    case mythic
 
     static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
 }
@@ -26,13 +32,25 @@ struct RevealMotionProfile: Equatable, Sendable {
         case .rare: (clickLeadMilliseconds, burstStrength) = (90, 0.42)
         case .premium: (clickLeadMilliseconds, burstStrength) = (135, 0.68)
         case .apex: (clickLeadMilliseconds, burstStrength) = (190, 1)
+        case .mythic: (clickLeadMilliseconds, burstStrength) = (260, 1)
         }
     }
 
-    /// 등급과 시세 중 높은 쪽. 등급으로 정한 연출을 시세가 낮추지는 않는다.
+    /// 드묾과 시세 중 높은 쪽. 드묾으로 정한 연출을 시세가 낮추지는 않는다.
     @MainActor
     static func forCard(_ card: PulledCard) -> Self {
-        Self(emphasis: max(tierEmphasis(card.tier), RevealValueEmphasis.emphasis(for: card)))
+        Self(emphasis: max(rarityEmphasis(card), RevealValueEmphasis.emphasis(for: card)))
+    }
+
+    /// 그 카드의 등급이 제 세트 팩에서 몇 팩에 한 번 나오는가로 정한 단계.
+    /// 팩에서 나오지 않는 등급(프로모 등)은 등급 이름으로 정하되 가장 높은 단계는 주지 않는다.
+    static func rarityEmphasis(_ card: PulledCard) -> RevealEmphasis {
+        guard card.tier != .energy, !card.isSupplementalEnergy else { return .none }
+        let setID = CardIndex.shared?.card(card.id)?.setID ?? String(card.id.prefix { $0 != "-" })
+        if let packs = PullRarity.packsPerPull(setID: setID, tier: card.tier) {
+            return PullRarity.emphasis(packsPerPull: packs)
+        }
+        return tierEmphasis(card.tier)
     }
 
     static func tierEmphasis(_ tier: CardTier) -> RevealEmphasis {
@@ -52,14 +70,27 @@ struct RevealMotionProfile: Equatable, Sendable {
 }
 
 extension RevealEmphasis {
-    /// 이 단계에서 울리는 종소리의 음 수. 평범한 카드는 소리가 없다.
-    var chimeNotes: Int? {
+    /// 이 단계에서 나는 소리. 평범한 카드는 소리가 없고, 가장 높은 단계는 종소리 대신
+    /// 두 옥타브를 오르는 팡파르를 낸다.
+    @MainActor
+    var sound: SoundEffects.Effect? {
         switch self {
         case .none: nil
-        case .rare: 1
-        case .premium: 2
-        case .apex: 4
+        case .rare: .chime(1)
+        case .premium: .chime(2)
+        case .apex: .chime(4)
+        case .mythic: .fanfare
         }
+    }
+
+    /// 가장 높은 단계는 한 가지 등급 색 대신 무지개로 돈다.
+    var isPrismatic: Bool { self == .mythic }
+
+    /// 무지개 단계에서 각도(0~1)마다 쓰는 색. 시간이 흐르면 색이 돌아간다.
+    static func prismColor(_ position: Double, time: Double = 0) -> Color {
+        var hue = position + time * 0.12
+        hue -= floor(hue)
+        return Color(hue: hue, saturation: 0.62, brightness: 1)
     }
 }
 
@@ -67,15 +98,17 @@ extension RevealEmphasis {
 /// 최신 SAR 보다 훨씬 높다. 시세(인기의 대리 지표)와 그 팩 안에서의 순위로 연출을 끌어올린다.
 @MainActor
 enum RevealValueEmphasis {
-    static let apexUSD = 100.0
-    static let premiumUSD = 25.0
-    static let rareUSD = 6.0
+    // 문턱을 높게 둔다. 낮으면 흔한 카드가 시세 몇 달러로 불꽃을 터뜨려, 드묾으로 나눈 단계가
+    // 다시 흐려진다. 가장 높은 단계(무지개)는 시세로는 주지 않는다 — 그것은 드묾의 몫이다.
+    static let apexUSD = 150.0
+    static let premiumUSD = 40.0
+    static let rareUSD = 12.0
     /// 세트 안 시세 상위 2%(최소 1장)는 그 팩의 간판 카드로 본다. 값이 너무 낮은 세트의
     /// 간판까지 띄우지 않도록 바닥 시세를 둔다.
     static let chaseShare = 0.02
     /// 시세 덕에 등급보다 높게 뜬 카드의 빛. 후광과 아우라가 같은 색을 쓴다.
     static let color = Color(red: 1.0, green: 0.80, blue: 0.32)
-    static let chaseFloorUSD = 3.0
+    static let chaseFloorUSD = 12.0
     private static var chaseThresholds: [String: Double] = [:]
     private static var chasePriceDigest: String?
 
@@ -136,19 +169,29 @@ struct RevealBurst: View {
         case .rare: return 8
         case .premium: return 12
         case .apex: return 16
+        case .mythic: return 28
         }
+    }
+    private func rayColor(_ ray: Int) -> Color {
+        profile.emphasis.isPrismatic
+            ? RevealEmphasis.prismColor(Double(ray) / Double(max(1, rayCount)))
+            : color
     }
 
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: width * 0.075)
-                .stroke(color.opacity(0.78), lineWidth: max(2, width * 0.018))
+                .stroke(profile.emphasis.isPrismatic
+                            ? AnyShapeStyle(AngularGradient(colors: (0...6).map { RevealEmphasis.prismColor(Double($0) / 6) },
+                                                            center: .center))
+                            : AnyShapeStyle(color.opacity(0.78)),
+                        lineWidth: max(2, width * 0.018))
                 .blur(radius: width * 0.055)
                 .scaleEffect(expanded ? 1.08 : 0.96)
 
             ForEach(0..<rayCount, id: \.self) { ray in
                 Capsule()
-                    .fill(color.opacity(ray.isMultiple(of: 2) ? 0.9 : 0.55))
+                    .fill(rayColor(ray).opacity(ray.isMultiple(of: 2) ? 0.9 : 0.55))
                     .frame(width: max(2, width * 0.012),
                            height: width * (ray.isMultiple(of: 3) ? 0.20 : 0.13))
                     .offset(y: -height * 0.59)
@@ -194,9 +237,9 @@ struct RevealAura: View {
         self.clock = clock
         let emphasis = RevealMotionProfile.forCard(card).emphasis
         self.emphasis = emphasis
-        // 시세 덕에 등급보다 높게 뜬 카드는 금빛으로 뿜는다. 등급 색 그대로면 옛 RR 홀로가
+        // 시세 덕에 드묾보다 높게 뜬 카드는 금빛으로 뿜는다. 등급 색 그대로면 옛 RR 홀로가
         // 평범한 레어처럼 보인다.
-        self.color = emphasis > RevealMotionProfile.tierEmphasis(card.tier)
+        self.color = emphasis > RevealMotionProfile.rarityEmphasis(card)
             ? RevealValueEmphasis.color
             : tierColor(card.tier)
     }
@@ -209,7 +252,7 @@ struct RevealAura: View {
         case .none: return 0
         case .rare: return 0.45
         case .premium: return 0.72
-        case .apex: return 1
+        case .apex, .mythic: return 1
         }
     }
     /// 파동 하나가 퍼져 사라지는 시간. 귀할수록 빠르게 뿜는다.
@@ -218,9 +261,16 @@ struct RevealAura: View {
         case .none, .rare: return 1.7
         case .premium: return 1.35
         case .apex: return 1.05
+        case .mythic: return 0.9
         }
     }
-    private var waveCount: Int { emphasis == .apex ? 3 : 2 }
+    private var waveCount: Int {
+        switch emphasis {
+        case .apex: return 3
+        case .mythic: return 4
+        default: return 2
+        }
+    }
 
     var body: some View {
         Group {
@@ -249,7 +299,7 @@ struct RevealAura: View {
 
     private func draw(_ context: GraphicsContext, size: CGSize, time: Double) {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
-        if emphasis == .apex { drawBeams(context, center: center, time: time) }
+        if emphasis >= .apex { drawBeams(context, center: center, time: time) }
         for wave in 0..<waveCount {
             var phase = time / period + Double(wave) / Double(waveCount)
             phase -= floor(phase)
@@ -259,7 +309,11 @@ struct RevealAura: View {
                               width: width * grow, height: height * grow)
             let path = Path(roundedRect: rect, cornerRadius: width * 0.06 * grow)
             let fade = pow(1 - phase, 1.6)
-            context.stroke(path, with: .color(color.opacity(strength * 0.85 * fade)),
+            // 무지개 단계는 파동마다 색이 달라, 퍼져 나가며 색이 바뀌어 보인다.
+            let waveColor = emphasis.isPrismatic
+                ? RevealEmphasis.prismColor(Double(wave) / Double(waveCount), time: time)
+                : color
+            context.stroke(path, with: .color(waveColor.opacity(strength * 0.85 * fade)),
                            lineWidth: max(1.5, width * (0.032 - 0.02 * phase)))
         }
     }
@@ -267,8 +321,9 @@ struct RevealAura: View {
     /// 최상위 등급: 카드 뒤에서 뻗어 나오는 빛기둥이 천천히 돌며 숨쉰다. 끝으로 갈수록
     /// 가늘고 옅어져, 짧은 선이 흩어진 것처럼 보이지 않는다. 카드에 가려지는 안쪽은 그리지 않는다.
     private func drawBeams(_ context: GraphicsContext, center: CGPoint, time: Double) {
-        let beams = 12
-        let spin = time * 0.22
+        // 무지개 단계는 빛기둥이 더 많고 더 빨리 돌며, 기둥마다 색이 다르다.
+        let beams = emphasis.isPrismatic ? 18 : 12
+        let spin = time * (emphasis.isPrismatic ? 0.34 : 0.22)
         let reach = max(width, height) * 0.74
         let start = min(width, height) * 0.42
         for beam in 0..<beams {
@@ -287,12 +342,15 @@ struct RevealAura: View {
             wedge.addLine(to: point(start, spread * 0.35))
             wedge.closeSubpath()
             let fadeIn = start / outer
+            let beamColor = emphasis.isPrismatic
+                ? RevealEmphasis.prismColor(Double(beam) / Double(beams), time: time)
+                : color
             context.fill(wedge, with: .radialGradient(
                 Gradient(stops: [
-                    .init(color: color.opacity(0), location: 0),
-                    .init(color: color.opacity(0.42 * breath), location: fadeIn + 0.08),
-                    .init(color: color.opacity(0.16 * breath), location: 0.72),
-                    .init(color: color.opacity(0), location: 1),
+                    .init(color: beamColor.opacity(0), location: 0),
+                    .init(color: beamColor.opacity(0.42 * breath), location: fadeIn + 0.08),
+                    .init(color: beamColor.opacity(0.16 * breath), location: 0.72),
+                    .init(color: beamColor.opacity(0), location: 1),
                 ]),
                 center: center, startRadius: 0, endRadius: outer))
         }
@@ -317,7 +375,7 @@ struct RevealPop: View {
         self.width = width
         let emphasis = RevealMotionProfile.forCard(card).emphasis
         self.emphasis = emphasis
-        self.color = emphasis > RevealMotionProfile.tierEmphasis(card.tier)
+        self.color = emphasis > RevealMotionProfile.rarityEmphasis(card)
             ? RevealValueEmphasis.color
             : tierColor(card.tier)
     }
@@ -329,6 +387,7 @@ struct RevealPop: View {
         case .rare: return 10
         case .premium: return 16
         case .apex: return 24
+        case .mythic: return 40
         }
     }
 
@@ -336,7 +395,7 @@ struct RevealPop: View {
         // Canvas 안에서만 쓰는 값은 SwiftUI 가 보간하지 않는다 — withAnimation 이 0 에서 곧장
         // 1(다 사라진 상태)로 건너뛰어 앱에서는 아무것도 안 보였다. 보간되는 뷰에 진행도를 넘긴다.
         RevealPopCanvas(progress: progress, seedSource: card.id, width: width, height: height,
-                        sparkCount: sparkCount, color: color)
+                        sparkCount: sparkCount, color: color, prismatic: emphasis.isPrismatic)
             .frame(width: width * 1.9, height: height * 1.6)
             .allowsHitTesting(false)
             .accessibilityHidden(true)
@@ -353,6 +412,8 @@ private struct RevealPopCanvas: View, @MainActor Animatable {
     let height: CGFloat
     let sparkCount: Int
     let color: Color
+    /// 가장 높은 단계는 불꽃마다 색이 다르다.
+    var prismatic = false
 
     var animatableData: Double {
         get { progress }
@@ -369,7 +430,11 @@ private struct RevealPopCanvas: View, @MainActor Animatable {
             let rect = CGRect(x: center.x - width * ring / 2, y: center.y - height * ring / 2,
                               width: width * ring, height: height * ring)
             context.stroke(Path(roundedRect: rect, cornerRadius: width * 0.06 * ring),
-                           with: .color(color.opacity(0.9 * pow(fade, 2))),
+                           with: prismatic
+                               ? .conicGradient(Gradient(colors: (0...6).map { RevealEmphasis.prismColor(Double($0) / 6) }
+                                                            .map { $0.opacity(0.9 * pow(fade, 2)) }),
+                                                center: center)
+                               : .color(color.opacity(0.9 * pow(fade, 2))),
                            lineWidth: max(2, width * 0.022))
             var seed = UInt64(truncatingIfNeeded: seedSource.hashValue) | 1
             func random() -> Double {
@@ -385,8 +450,11 @@ private struct RevealPopCanvas: View, @MainActor Animatable {
                 let point = CGPoint(x: center.x + dx * (edge + travel), y: center.y + dy * (edge + travel))
                 let radius = max(1.5, width * (0.012 + random() * 0.014)) * (0.6 + 0.4 * fade)
                 // 보상과 판매의 반짝임과 같은 네 갈래 별. 가운데는 하얗게 빛난다.
+                let sparkColor = prismatic
+                    ? RevealEmphasis.prismColor(Double(spark) / Double(max(1, sparkCount)))
+                    : color
                 context.fill(SparkShape.star(at: point, size: radius * 1.9),
-                             with: .color(color.opacity(fade)))
+                             with: .color(sparkColor.opacity(fade)))
                 context.fill(SparkShape.star(at: point, size: radius * 0.95),
                              with: .color(.white.opacity(0.9 * fade)))
             }

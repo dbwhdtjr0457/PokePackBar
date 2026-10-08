@@ -925,8 +925,8 @@ private struct SpotlightCard: View {
                 return
             }
             withAnimation(.spring(response: 0.34, dampingFraction: 0.7)) { landed = true }
-            if let notes = RevealMotionProfile.forCard(card).emphasis.chimeNotes {
-                SoundEffects.play(.chime(notes))
+            if let sound = RevealMotionProfile.forCard(card).emphasis.sound {
+                SoundEffects.play(sound)
             }
             guard card.isNew else { return }
             Task { @MainActor in
@@ -1078,8 +1078,9 @@ extension EnvironmentValues {
 struct TierGlow: View {
     let tier: CardTier
     let width: CGFloat
-    /// 주면 아우라와 같은 기준을 쓴다. 시세 덕에 등급보다 높게 뜬 카드는 금빛으로, 그 단계에
-    /// 맞는 세기로 빛난다. 등급으로 정한 세기를 낮추지는 않는다.
+    /// 주면 아우라와 같은 기준을 쓴다. 세기는 그 팩에서 얼마나 드문가(와 시세)로 정해서,
+    /// 거의 매 팩 나오는 등급은 빛나지 않는다. 시세 덕에 드묾보다 높게 뜬 카드는 금빛이고,
+    /// 가장 높은 단계는 무지개로 빛난다.
     var valueCard: PulledCard? = nil
     @Environment(\.tierGlowScale) private var scale
 
@@ -1089,16 +1090,22 @@ struct TierGlow: View {
     var startBloomed = false
 
     var body: some View {
-        let byTier = RevealMotionProfile.tierEmphasis(tier)
-        let emphasis = valueCard.map { RevealMotionProfile.forCard($0).emphasis } ?? byTier
-        let raised = emphasis > byTier
+        let base = valueCard.map(RevealMotionProfile.rarityEmphasis(_:))
+        let emphasis = valueCard.map { RevealMotionProfile.forCard($0).emphasis }
+        let raised: Bool = {
+            guard let base, let emphasis else { return false }
+            return emphasis > base
+        }()
         let color = raised ? RevealValueEmphasis.color : tierColor(tier)
-        let strength = (raised ? max(Self.strength(for: tier), Self.strength(for: emphasis))
-                               : Self.strength(for: tier)) * scale
+        let strength = (emphasis.map(Self.strength(for:)) ?? Self.strength(for: tier)) * scale
+        let prismatic = emphasis?.isPrismatic == true
         ZStack {
-            // 바깥 — 넓게 번지는 빛
+            // 바깥 — 넓게 번지는 빛. 가장 높은 단계는 무지개로 번진다.
             RoundedRectangle(cornerRadius: width * 0.09)
-                .fill(color)
+                .fill(prismatic
+                      ? AnyShapeStyle(AngularGradient(colors: (0...6).map { RevealEmphasis.prismColor(Double($0) / 6) },
+                                                      center: .center))
+                      : AnyShapeStyle(color))
                 .blur(radius: width * 0.20)
                 .opacity(strength * 0.55)
                 .scaleEffect(bloomed ? 1.16 : 0.97)
@@ -1133,6 +1140,7 @@ struct TierGlow: View {
         case .rare: return 0.52
         case .premium: return 0.76
         case .apex: return 0.98
+        case .mythic: return 1.0
         }
     }
 
