@@ -8,7 +8,7 @@ struct RemoteGameConfiguration: Codable, Sendable {
     let deviceID: UUID
 
     @MainActor static var requested: Bool {
-        ProcessInfo.processInfo.environment["PPB_SERVER_URL"] != nil
+        AppEnv.value("PPB_SERVER_URL") != nil
             || UserDefaults.standard.bool(forKey: "ppb.server.enabled")
     }
 
@@ -530,7 +530,7 @@ final class RemoteGameSession {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue(configuration.accountID.uuidString.lowercased(), forHTTPHeaderField: "X-PPB-Account-ID")
         request.setValue(configuration.deviceID.uuidString.lowercased(), forHTTPHeaderField: "X-PPB-Device-ID")
-        if let key = ProcessInfo.processInfo.environment["PPB_GATEWAY_KEY"], !key.isEmpty {
+        if let key = AppEnv.value("PPB_GATEWAY_KEY"), !key.isEmpty {
             request.setValue(key, forHTTPHeaderField: "X-PPB-Gateway-Key")
         }
         return request

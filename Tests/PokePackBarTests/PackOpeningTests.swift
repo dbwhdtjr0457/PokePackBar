@@ -1574,15 +1574,42 @@ final class CardSaleTests: XCTestCase {
     }
 
     /// 밀봉 시세가 없는 폴백 경로의 회수율은 `1/packMargin` 이어야 한다.
+    ///
+    /// 실제 뽑기로 연 팩을 **판형 시세로** 판 평균으로 잰다. 등급 평균(`sellBackRatio`)은
+    /// 리버스 홀로처럼 판형마다 값이 다른 카드를 대표 시세로 세는데, 팩값은 판형까지 보정해
+    /// 매긴다. 그래서 리버스 홀로 시세가 높은 e카드, ex 시리즈에서 회수율이 20%대 초반으로
+    /// 낮게 나왔다. 실제로 열고 파는 값은 설계대로다.
+    ///
+    /// 전 세트를 뽑아 보면 디버그 빌드에서 10분이 넘게 걸린다. 시대마다 판 구성이 다른 세트를
+    /// 골라 잰다(WotC, e카드, EX, XY, 소드실드, 프리즘 병렬, 스칼렛바이올렛, 30주년). 허용
+    /// 오차 3%p 는 5,000팩 표본 오차를 덮는 폭이다. 전 세트가 팔아서 손해인지는
+    /// `testGrindingAPackNeverPaysForItself` 가 따로 지킨다.
     func testGrindRatioMatchesTheMargin() throws {
         let index = try XCTUnwrap(CardIndex.loadBundled())
         let prices = try XCTUnwrap(CardPrices.loadBundled())
         let want = 1 / MarketEconomy.packMargin
-        for set in index.sets {
-            let ratio = Self.sellBackRatio(set.id, index: index, prices: prices,
-                                           perks: .none, marketPrices: nil)
-            XCTAssertEqual(ratio, want, accuracy: 0.02, "\(set.id) 회수율이 설계와 다르다")
+        for setID in ["base1", "ecard1", "ex1", "xy1", "swsh1", "sv8pt5", "sv10", "cel30"] {
+            XCTAssertNotNil(index.set(setID), "\(setID) 가 카탈로그에서 빠졌다")
+            let ratio = Self.simulatedSellBackRatio(setID, index: index, prices: prices, packs: 5_000)
+            XCTAssertEqual(ratio, want, accuracy: 0.03, "\(setID) 회수율이 설계와 다르다")
         }
+    }
+
+    /// 실제 뽑기로 연 팩을 판형 시세로 전부 판 평균을 팩값(밀봉 시세 없음)으로 나눈 비율.
+    /// 시드를 고정해 매번 같은 값이 나온다.
+    static func simulatedSellBackRatio(_ setID: String, index: CardIndex, prices: CardPrices,
+                                       packs: Int) -> Double {
+        var generator = SeededGenerator(seed: 7)
+        var total = 0.0
+        for _ in 0..<packs {
+            for card in PackOpening.draw(setID: setID, index: index, alreadyOwned: [], using: &generator)
+            where !card.isSupplementalEnergy {
+                total += Double(CardSale.price(cardID: card.id, finish: card.finish, prices: prices))
+            }
+        }
+        let price = PackPricing.price(setID: setID, index: index, prices: prices,
+                                      marketPrices: nil, perks: .none)
+        return total / Double(packs) / Double(price)
     }
 
     /// 팩 하나를 사서 전부 갈았을 때 돌아오는 비율.

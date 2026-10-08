@@ -49,7 +49,9 @@ struct PackMarketPrices: Sendable {
               payload.version > 0,
               !payload.asOf.isEmpty,
               payload.currency == "USD",
-              payload.packs.values.allSatisfy({ $0.usd.isFinite && $0.usd > 0 && $0.usd < 10_000_000 }) else {
+              // 0 은 「아직 시세 없음」이라 그 팩만 기대값으로 넘어간다(`entry`). 음수나 터무니없는
+              // 값은 파일이 망가진 것이라 통째로 버린다.
+              payload.packs.values.allSatisfy({ $0.usd.isFinite && $0.usd >= 0 && $0.usd < 10_000_000 }) else {
             AppLog.write("pack prices decode failed; using expected card value")
             return nil
         }

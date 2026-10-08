@@ -138,33 +138,6 @@ extension L {
         return parts.joined(separator: " + ")
     }
 
-    func sealedPackMarketSource(_ date: String) -> String {
-        t("밀봉 팩 TCGplayer 시장가 · \(date) 기준",
-          "Sealed pack TCGplayer market, as of \(date)",
-          "未開封パック TCGplayer 市場価格・\(date) 時点",
-          "Mercado TCGplayer del sobre sellado, a \(date)",
-          "Marché TCGplayer du booster scellé, au \(date)",
-          "Mercado TCGplayer do pacote lacrado, em \(date)")
-    }
-
-    func sealedPackSafetyFloorSource(_ quote: String, _ date: String) -> String {
-        t("밀봉 시세 \(quote) (\(date)) · 카드 기대값 안전 하한 적용",
-          "Sealed quote \(quote) (\(date)) · expected-value safety floor applied",
-          "未開封相場 \(quote)（\(date)）・期待値の安全下限を適用",
-          "Cotización sellada \(quote) (\(date)) · mínimo seguro por valor esperado",
-          "Cote scellée \(quote) (\(date)) · plancher de sécurité appliqué",
-          "Cotação lacrada \(quote) (\(date)) · piso seguro por valor esperado")
-    }
-
-    var estimatedPackValueSource: String {
-        t("밀봉 시세 없음 · 카드 기대값으로 계산",
-          "No sealed quote · priced from expected card value",
-          "未開封相場なし・カード期待値から算出",
-          "Sin cotización sellada · valor esperado de las cartas",
-          "Pas de cote scellée · valeur attendue des cartes",
-          "Sem cotação lacrada · valor esperado das cartas")
-    }
-
     var observedPrismaticParallelRates: String {
         t("병렬판형 관측치: 몬스터볼 33.10% · 마스터볼 4.92% (TCGplayer 1,200팩 이상, 공식 확률 아님)",
           "Observed parallels: Poké Ball 33.10% · Master Ball 4.92% (1,200+ TCGplayer packs; not official)",
@@ -261,7 +234,9 @@ extension L {
         case "Special Illustration Rare":   return t("SAR", "Special Illustration Rare", "SAR", "SAR", "SAR", "SAR")
         case "Rare Ultra":                  return t("SR (풀아트)", "Full Art SR", "SR", "SR", "SR", "SR")
         case "Ultra Rare":                  return t("SR", "Ultra Rare", "SR", "SR", "SR", "SR")
-        case "Shiny Rare":                  return t("S (샤이니)", "Shiny Rare", "S", "Shiny", "Shiny", "Shiny")
+        // 샤이닝 페이트와 히든 페이트의 샤이니 볼트는 같은 등급을 옛 이름(Rare Shiny)으로 적는다.
+        case "Shiny Rare", "Rare Shiny":    return t("S (샤이니)", "Shiny Rare", "S", "Shiny", "Shiny", "Shiny")
+        case "Rare Shiny GX":               return t("SSR (샤이니 GX)", "Shiny GX", "SSR", "Shiny GX", "Shiny GX", "Shiny GX")
         case "Shiny Ultra Rare":            return t("SSR (샤이니)", "Shiny Ultra Rare", "SSR", "SSR", "SSR", "SSR")
         case "Rare Secret":                 return t("UR (시크릿)", "Secret Rare", "UR", "UR", "UR", "UR")
         case "Rare Rainbow":                return t("UR (레인보우)", "Rainbow Rare", "UR", "UR", "UR", "UR")
@@ -272,6 +247,12 @@ extension L {
         case "Rare Shining":                return t("빛나는", "Shining", "光り", "Shining", "Shining", "Shining")
         case "LEGEND":                      return t("LEGEND", "LEGEND", "LEGEND", "LEGEND", "LEGEND", "LEGEND")
         case "Promo":                       return t("P (프로모)", "Promo", "P", "Promo", "Promo", "Promo")
+        case "Trainer Gallery Rare Holo":   return t("CHR (갤러리)", "Trainer Gallery", "CHR", "Galería", "Galerie", "Galeria")
+        case "Classic Collection":          return t("CC (클래식)", "Classic Collection", "CC", "Classic", "Classic", "Classic")
+        case "Mega Attack Rare":            return t("MA (메가어택)", "Mega Attack Rare", "MA", "MA", "MA", "MA")
+        case "Futuristic Rare":             return t("FUR (퓨처리스틱)", "Futuristic Rare", "FUR", "FUR", "FUR", "FUR")
+        case "RBG Rare":                    return t("RBG", "RBG Rare", "RBG", "RBG", "RBG", "RBG")
+        case "Pikachu Rare":                return t("피카츄 레어", "Pikachu Rare", "ピカチュウレア", "Pikachu", "Pikachu", "Pikachu")
         default:                            return nil
         }
     }
@@ -414,20 +395,6 @@ extension L {
         t("\(count)팩 개봉 결과", "\(count)-pack results", "\(count)パックの開封結果",
           "Resultado de \(count) sobres", "Résultat de \(count) boosters",
           "Resultado de \(count) pacotes")
-    }
-    func specialPacksFound(_ count: Int) -> String {
-        t("특수팩 \(count)개!", "\(count) special pack\(count == 1 ? "" : "s")!",
-          "スペシャルパック\(count)個！", "¡\(count) sobres especiales!",
-          "\(count) booster\(count == 1 ? "" : "s") spécial\(count == 1 ? "" : "aux") !",
-          "\(count) pacote\(count == 1 ? "" : "s") especial\(count == 1 ? "" : "is")!")
-    }
-    func packBatchSupplement(energy: Int, holoEnergy: Int, code: Int) -> String {
-        t("별도 기본 에너지 \(energy)장 (홀로 \(holoEnergy)장) · 코드 \(code)장 · 도감 제외",
-          "Plus \(energy) Basic Energy (\(holoEnergy) holo) + \(code) code cards · not in the collection",
-          "別枠エネルギー\(energy)枚（ホロ\(holoEnergy)枚）・コード\(code)枚・図鑑対象外",
-          "+ \(energy) Energías (\(holoEnergy) holo) + \(code) códigos · fuera de colección",
-          "+ \(energy) Énergies (\(holoEnergy) holo) + \(code) codes · hors collection",
-          "+ \(energy) Energias (\(holoEnergy) holo) + \(code) códigos · fora da coleção")
     }
     var packOpened: String { t("개봉 결과", "Pack results", "開封結果",
                                  "Resultado", "Résultat", "Resultado") }
@@ -730,11 +697,6 @@ extension L {
                                    "Você esvaziou a caixa. Chegou uma nova.") }
 
     // MARK: 갓팩
-    var godPackTitle: String { t("갓팩!", "God Pack!", "神引き！", "¡Sobre dorado!",
-                                  "Booster divin !", "Pacote divino!") }
-    var godPackHint: String { t("이 팩은 전부 레어 이상이에요.", "Every card in this pack is rare or better.",
-                                 "このパックは全てレア以上です。", "Todas las cartas son raras o mejores.",
-                                 "Toutes les cartes sont rares ou mieux.", "Todas as cartas são raras ou melhores.") }
     var godPackBadge: String { t("갓팩", "God Pack", "神引き", "Dorado", "Divin", "Divino") }
     var godPackPreviewButton: String {
         t("갓팩 연출 테스트", "Test God Pack", "神パック演出テスト", "Probar God Pack",
@@ -755,60 +717,6 @@ extension L {
           "Vista previa · no consume sobre ni entrega cartas",
           "Aperçu · aucun booster consommé, aucune carte ajoutée",
           "Prévia · nenhum pacote consumido ou carta concedida")
-    }
-
-    func specialPackTitle(_ variant: PackVariant) -> String {
-        switch variant {
-        case .prismaticEvolutionsDemigod: return prismaticDemiTitle
-        case .scarletViolet151Demigod:
-            return t("진화라인 특수팩!", "Evolution-line special pack!", "進化ライン特別パック！",
-                     "¡Sobre especial de evolución!", "Booster spécial évolution !",
-                     "Pacote especial de evolução!")
-        case .prismaticEvolutionsGod:
-            return godPackTitle
-        case .blackBoltWhiteFlareGod:
-            return godPackTitle
-        case .ascendedHeroesGod:
-            return godPackTitle
-        case .standard, .celebrations:
-            return packOpened
-        }
-    }
-
-    func specialPackHint(_ variant: PackVariant) -> String {
-        switch variant {
-        case .prismaticEvolutionsDemigod: return prismaticDemiHint
-        case .scarletViolet151Demigod:
-            return t("스타팅 포켓몬 한 계열의 AR 2장과 SAR 1장이 함께 들어 있어요.",
-                     "One starter evolution line appears together: two IRs and one SIR.",
-                     "御三家1系統のAR2枚とSAR1枚が一緒に入っています。",
-                     "Una línea inicial completa: dos IR y una SIR.",
-                     "Une lignée de starter complète : deux IR et une SIR.",
-                     "Uma linha inicial completa: duas IR e uma SIR.")
-        case .prismaticEvolutionsGod:
-            return t("마스터볼 이브이와 이브이 진화형 SIR 9장이 들어 있어요.",
-                     "Master Ball Eevee plus all nine Eeveelution SIR cards.",
-                     "マスターボール柄イーブイと進化形SIR9枚入りです。",
-                     "Eevee Master Ball y las nueve SIR de sus evoluciones.",
-                     "Évoli Master Ball et les neuf SIR de ses évolutions.",
-                     "Eevee Master Ball e as nove SIR de suas evoluções.")
-        case .blackBoltWhiteFlareGod:
-            return t("일러스트레이션 레어 9장과 스페셜 일러스트레이션 레어 1장이 들어 있어요.",
-                     "Nine Illustration Rares plus one Special Illustration Rare.",
-                     "イラストレア9枚とスペシャルイラストレア1枚入りです。",
-                     "Nueve cartas de Ilustración Rara y una Ilustración Especial Rara.",
-                     "Neuf Illustration Rares et une Illustration Spéciale Rare.",
-                     "Nove Raras de Ilustração e uma Rara de Ilustração Especial.")
-        case .ascendedHeroesGod:
-            return t("메가어택 레어 3장과 스페셜 일러스트레이션 레어 7장이 들어 있어요.",
-                     "Three Mega Attack Rares plus seven Special Illustration Rares.",
-                     "メガアタックレア3枚とスペシャルアートレア7枚入りです。",
-                     "Tres Mega Attack Rares y siete Special Illustration Rares.",
-                     "Trois Mega Attack Rares et sept Special Illustration Rares.",
-                     "Três Mega Attack Rares e sete Special Illustration Rares.")
-        case .standard, .celebrations:
-            return ""
-        }
     }
 
     func specialPackBadge(_ variant: PackVariant) -> String {

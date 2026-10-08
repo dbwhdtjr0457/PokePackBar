@@ -19,6 +19,15 @@ enum AppEnv {
     /// 등록 여부는 LaunchServices 에 직접 물어본다. 번들 ID 로 앱을 찾지 못하면
     /// 알림 API 를 건드리지 않는다. 새로 복사한 앱이 아직 등록되기 전이거나,
     /// 서명이 불안정해 등록이 거부된 경우가 여기 해당한다.
+    /// 개발, QA, 서버 규칙 실행에서만 쓰는 `PPB_*` 설정값(서버 주소, 게이트웨이 키, 그림 폴더 등).
+    ///
+    /// 사용자가 셸에 export 해 두는 사용량 위치가 아니라 프로세스를 띄우는 쪽이 넘기는 값이라
+    /// `UsageEnvironment` 의 셸 조회를 거치지 않는다. 직접 읽는 곳을 여기 하나로 모아,
+    /// 사용량 위치를 직접 읽는 실수만 테스트가 잡게 한다.
+    static func value(_ name: String) -> String? {
+        ProcessInfo.processInfo.environment[name]
+    }
+
     static var canUseNotifications: Bool {
         guard isBundledApp, let bundleID = Bundle.main.bundleIdentifier else { return false }
         return NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) != nil

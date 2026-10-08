@@ -196,8 +196,15 @@ final class UnusedCopyTests: XCTestCase {
             .joined()
 
         // 표 안에서 다른 문구를 조립하는 데 쓰이는 것도 있다(혜택 이름 등). 그쪽은 점 없이
-        // 그냥 이름으로 부르므로 정의줄을 뺀 나머지에서 찾는다.
-        let tableBody = table.split(separator: "\n")
+        // 그냥 이름으로 부르므로 정의줄을 뺀 나머지에서 찾는다. 다른 문구 파일이 조립에 쓰는
+        // 것(시세 출처 등)도 같은 방식으로 센다.
+        let otherTables = try (FileManager.default.contentsOfDirectory(
+            at: root.appendingPathComponent("Sources/PokePackBar/Core"),
+            includingPropertiesForKeys: nil))
+            .filter { $0.lastPathComponent.hasPrefix("Localization") && $0.lastPathComponent != "LocalizationCards.swift" }
+            .map { try String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+        let tableBody = (table + "\n" + otherTables).split(separator: "\n")
             .filter { !$0.contains("    var ") && !$0.contains("    func ") }
             .joined(separator: "\n")
 

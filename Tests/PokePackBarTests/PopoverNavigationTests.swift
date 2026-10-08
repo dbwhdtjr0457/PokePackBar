@@ -92,7 +92,8 @@ final class PopoverNavigationTests: XCTestCase {
             .appendingPathComponent("Sources/PokePackBar/UI/CardShopView.swift"), encoding: .utf8)
         XCTAssertTrue(shop.contains("browsingCards = true"), "카드 목록으로 들어갈 길이 없다")
         // 못 얻은 카드도 보여야 한다. 가진 것만 보여 주면 무엇을 노리고 사는지 알 수 없다.
-        XCTAssertTrue(shop.contains("index.cardsByValue.filter { $0.setID == set.id }"),
+        // 실행 중 갱신된 시세까지 반영한 값순(`currentCardsByValue`)을 세트로 거른다.
+        XCTAssertTrue(shop.contains("index.currentCardsByValue.filter { $0.setID == set.id }"),
                       "목록이 세트 전체가 아니거나 값순이 아니다")
     }
 
