@@ -66,7 +66,9 @@ enum FoilMaterialCatalog {
         case .radiantCollection:
             return radiantCollection(cardID: cardID, setID: setID)
         case .prism:
-            return foil(.fullCard, .prism, .none, .blackWhite, 0.58)
+            // Prism Stars are SM holo rares: the set's water-web sheet shows
+            // through the art window and the large diamond in the text box.
+            return foil(.artWindowAndPrismStar, .waterWeb, .none, .blackWhite, 0.58)
         case .breakFoil:
             return foil(.fullCard, .breakGrid, .fineLines, .gold, 0.58)
         case .blackWhite:
