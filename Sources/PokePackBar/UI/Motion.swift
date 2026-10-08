@@ -3,17 +3,15 @@ import SwiftUI
 /// 화면 전체가 같은 박자로 움직이게 하는 공용 동작.
 ///
 /// 화면마다 임의로 시간과 곡선을 정하면 같은 종류의 움직임이 곳마다 다르게 느껴진다.
-/// 자주 쓰는 곳(호버, 탭, 숫자)은 짧게, 가끔 있는 순간(구매, 보상)만 길게 둔다.
+/// 자주 쓰는 곳(호버, 탭)은 짧게, 가끔 있는 순간(구매, 보상)만 길게 둔다.
+/// **글자에는 애니메이션을 걸지 않는다.** 숫자가 굴러가거나 굵기가 바뀌며 움직이면
+/// 글자 모양이 일그러져 보인다. 글자는 늘 즉시 바뀐다.
 /// 동작 줄이기가 켜져 있으면 위치와 크기는 움직이지 않고 투명도만 바뀐다.
 enum Motion {
     /// 호버와 누름처럼 손에 바로 붙어야 하는 반응.
     static let hover = Animation.easeOut(duration: 0.12)
-    /// 숫자가 굴러가며 바뀌는 속도. 매분 바뀌는 잔액도 거슬리지 않을 만큼 짧다.
-    static let number = Animation.snappy(duration: 0.35)
     /// 한 화면 안에서 자리가 옮겨 가는 것(탭 선택 표시, 화면 이동).
     static let shift = Animation.snappy(duration: 0.22)
-    /// 숫자 배지가 톡 튀는 것. 아주 조금만 넘친다.
-    static let bump = Animation.spring(response: 0.28, dampingFraction: 0.55)
 }
 
 // MARK: - 호버
@@ -55,46 +53,6 @@ private struct HoverHighlight: ViewModifier {
     }
 }
 
-// MARK: - 숫자
-
-/// 숫자가 바뀌면 한 번 톡 튄다. 팩 수나 알림 수처럼 「늘었다」 는 것을 알아채야 하는 배지에 쓴다.
-@MainActor
-private struct BumpOnChange<Value: Equatable>: ViewModifier {
-    let value: Value
-    @State private var bumped = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(bumped ? 1.18 : 1)
-            .onChange(of: value) {
-                guard !reduceMotion else { return }
-                withAnimation(Motion.bump) { bumped = true }
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(140))
-                    withAnimation(Motion.bump) { bumped = false }
-                }
-            }
-    }
-}
-
-/// 값이 처음부터 세어 올라가며 그려지는 글자. 결과 화면의 총 가치처럼 「얼마가 나왔나」 를
-/// 기다리게 하는 자리에서만 쓴다. 자주 바뀌는 숫자는 `rollingNumber` 를 쓴다.
-@MainActor
-struct CountingText: View, @MainActor Animatable {
-    var value: Double
-    let format: (Double) -> String
-
-    var animatableData: Double {
-        get { value }
-        set { value = newValue }
-    }
-
-    var body: some View {
-        Text(format(value))
-    }
-}
-
 extension View {
     func hoverLift(scale: CGFloat = 1.03) -> some View {
         modifier(HoverLift(scale: scale))
@@ -104,15 +62,6 @@ extension View {
         modifier(HoverHighlight(cornerRadius: cornerRadius))
     }
 
-    /// 숫자 글자가 바뀔 때 자릿수가 굴러가며 바뀐다.
-    func rollingNumber<Value: Equatable>(_ value: Value) -> some View {
-        contentTransition(.numericText())
-            .animation(Motion.number, value: value)
-    }
-
-    func bumpOnChange<Value: Equatable>(_ value: Value) -> some View {
-        modifier(BumpOnChange(value: value))
-    }
 }
 
 // MARK: - 화면 이동

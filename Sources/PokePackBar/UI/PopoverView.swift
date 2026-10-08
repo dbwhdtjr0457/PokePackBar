@@ -53,8 +53,6 @@ final class PopoverNavigation {
 
     /// 상점에서 팩 탭으로 날아가는 중인 팩 그림.
     var packFlights: [PackFlight] = []
-    /// 날아간 팩이 탭에 내려앉은 횟수. 늘 때마다 「팩」 칸이 톡 튄다.
-    var packArrivals = 0
     /// 팩 탭이 열리면 그 줄로 옮겨 가 한 번 빛낼 세트. 상점의 「팩 탭에서 열기」 가 채운다.
     var packHighlight: String?
     /// 방금 받은 도감 보상 알림. 잠깐 띄웠다가 걷는다.
@@ -154,7 +152,6 @@ struct PopoverView: View {
         .overlay {
             PackFlightLayer(flights: nav.packFlights, target: packsTabCenter) { flight in
                 nav.packFlights.removeAll { $0.id == flight.id }
-                nav.packArrivals += 1
             }
         }
         .id(priceRevision)
@@ -346,9 +343,6 @@ struct PopoverView: View {
                 .font(Typography.amount).monospacedDigit()
                 .foregroundStyle(tint ?? .primary)
                 .lineLimit(1).minimumScaleFactor(0.6)
-                // 잔액과 컬렉션 가치가 바뀌면 자릿수가 굴러가며 바뀐다. 순간 교체되면
-                // 얼마가 늘고 줄었는지 눈으로 따라갈 수 없다.
-                .rollingNumber(value)
         }
         .frame(width: Self.statWidth, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
@@ -511,7 +505,7 @@ struct PopoverView: View {
         @Bindable var nav = nav
         return SegmentedTabs(items: [
             .init(value: PopoverTab.shop, label: l.shop),
-            .init(value: PopoverTab.packs, label: packsLabel, bump: nav.packArrivals),
+            .init(value: PopoverTab.packs, label: packsLabel),
             .init(value: PopoverTab.collection, label: l.collection),
             .init(value: PopoverTab.dex, label: l.dexTab),
             .init(value: PopoverTab.stats, label: l.statsTab),

@@ -272,11 +272,7 @@ struct OnlineHubView: View {
             .pickerStyle(.segmented).labelsHidden().frame(maxWidth: .infinity, alignment: .leading)
             .onChange(of: model.section) { model.offset = 0; model.message = nil; reload() }
             if let message = model.message {
-                // 끝났다는 표시가 조용히 바뀌면 눌렀는지조차 헷갈린다. 위에서 내려오며 표시가 한 번 튄다.
-                Label(message, systemImage: "checkmark.circle")
-                    .font(Typography.label).foregroundStyle(.secondary)
-                    .symbolEffect(.bounce, value: message)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                Label(message, systemImage: "checkmark.circle").font(Typography.label).foregroundStyle(.secondary)
             }
             if model.remote?.authenticationExpired == true {
                 VStack(spacing: 12) {
@@ -295,7 +291,6 @@ struct OnlineHubView: View {
             else { notifications }
         }
         .padding(22)
-        .animation(.snappy(duration: 0.3), value: model.message)
         .overlay {
             if let celebration = model.celebration {
                 TradeSwapBanner(celebration: celebration)

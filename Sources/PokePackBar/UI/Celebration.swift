@@ -151,11 +151,7 @@ extension PopoverNavigation {
         if !reduceMotion {
             sparks.append(SparkEvent(center: CGPoint(x: origin.midX, y: origin.midY), color: .yellow))
         }
-        guard claim.reward.packs > 0 else { return }
-        if reduceMotion {
-            packArrivals += 1
-            return
-        }
+        guard claim.reward.packs > 0, !reduceMotion else { return }
         let art = CGRect(x: origin.midX - 17, y: origin.midY - 31, width: 34, height: 62)
         packFlights += (0..<min(claim.reward.packs, PackFlight.maximumShown)).map {
             PackFlight(setID: claim.dex.homeSet, origin: art, delay: 0.15 + Double($0) * 0.09)

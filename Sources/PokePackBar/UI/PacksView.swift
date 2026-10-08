@@ -342,8 +342,6 @@ private struct RevealView: View {
     @State private var spotlight: PulledCard?
     /// 결과 카드를 연 자리. 상세가 그 칸에서 커져 열린다.
     @State private var zoomOrigin = ZoomOrigin()
-    /// 결과 화면에서 세어 올라가는 총 가치(USD).
-    @State private var countedWorth = 0.0
     private static let space = "reveal"
     @State private var isAdvancing = false
     @State private var advanceTask: Task<Void, Never>?
@@ -630,16 +628,9 @@ private struct RevealView: View {
                     // 정렬 전환은 총 가치와 같은 줄에 둔다. 한 팩 요약은 두 줄 격자가
                     // 꽉 차게 맞춰져 있어 줄을 하나 더 쓰면 카드가 밀린다.
                     HStack(spacing: 8) {
-                        // 총 가치는 0 에서부터 세어 올라간다. 「얼마가 나왔나」 가 이 화면의 답이다.
-                        CountingText(value: countedWorth) {
-                            l.packTotalValue(prices.formattedWithKRW($0, language: wallet.language))
-                        }
+                        Text(l.packTotalValue(prices.formattedWithKRW(worth,
+                                                                      language: wallet.language)))
                             .font(Typography.amount).monospacedDigit()
-                            .onAppear {
-                                guard !reduceMotion else { countedWorth = worth; return }
-                                countedWorth = 0
-                                withAnimation(.easeOut(duration: 0.9).delay(0.15)) { countedWorth = worth }
-                            }
                             .foregroundStyle(Color.accentColor)
                             .lineLimit(1).minimumScaleFactor(0.8)
                         if opened.cards.count > 1 {

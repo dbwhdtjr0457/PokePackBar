@@ -390,11 +390,9 @@ private struct PackGridCell: View {
                 if owned > 0 {
                     Text("×\(owned)")
                         .font(.system(size: 14, weight: .heavy))
-                        .rollingNumber(owned)
                         .padding(.horizontal, 4).padding(.vertical, 1.5)
                         .background(Color.accentColor, in: Capsule())
                         .foregroundStyle(.white)
-                        .bumpOnChange(owned)
                         .padding(3)
                 }
             }
@@ -680,7 +678,6 @@ private struct PackDetailView: View {
                             .foregroundStyle(.tertiary).strikethrough()
                         Text(MarketEconomy.money(tokens: total, language: wallet.language))
                             .font(Typography.amount).monospacedDigit()
-                            .rollingNumber(total)
                             .foregroundStyle(canBuy ? AnyShapeStyle(Color.accentColor)
                                                     : AnyShapeStyle(.secondary))
                     }
@@ -688,7 +685,6 @@ private struct PackDetailView: View {
                 } else {
                     Text(MarketEconomy.money(tokens: total, language: wallet.language))
                         .font(Typography.amount).monospacedDigit()
-                        .rollingNumber(total)
                         .lineLimit(1).minimumScaleFactor(0.75)
                         .foregroundStyle(canBuy ? .primary : .secondary)
                 }
@@ -730,10 +726,7 @@ private struct PackDetailView: View {
 
     /// 산 팩 그림을 팩 탭으로 날린다. 여러 개를 샀으면 세 장까지 차례로 날린다.
     private func launchFlights(count: Int) {
-        guard !reduceMotion, artFrame != .zero else {
-            nav.packArrivals += 1
-            return
-        }
+        guard !reduceMotion, artFrame != .zero else { return }
         let shown = min(count, PackFlight.maximumShown)
         nav.packFlights += (0..<shown).map {
             PackFlight(setID: set.id, origin: artFrame, delay: Double($0) * 0.09)
@@ -746,7 +739,6 @@ private struct PackDetailView: View {
             Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
             Text(l.packBought(count))
                 .font(Typography.bodySemibold)
-                .rollingNumber(count)
             Spacer(minLength: 4)
             Button {
                 nav.packHighlight = set.id

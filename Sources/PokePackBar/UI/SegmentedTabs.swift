@@ -13,8 +13,6 @@ struct SegmentedTabs<Value: Hashable>: View {
     struct Item: Identifiable {
         let value: Value
         let label: String
-        /// 늘 때마다 그 칸이 톡 튄다(산 팩이 「팩」 칸에 내려앉을 때).
-        var bump = 0
         var id: Value { value }
     }
 
@@ -38,15 +36,15 @@ struct SegmentedTabs<Value: Hashable>: View {
             ForEach(items) { item in
                 let picked = item.value == selection
                 Button {
-                    withAnimation(Motion.shift) { selection = item.value }
+                    selection = item.value
                 } label: {
                     Text(item.label)
                         .font(picked ? pickedFont : font)
                         .foregroundStyle(picked ? Color.white : Color.primary)
                         .lineLimit(1).minimumScaleFactor(0.8)
-                        // 「팩 3」 처럼 수가 붙은 이름은 수가 굴러가며 바뀐다.
-                        .rollingNumber(item.label)
-                        .bumpOnChange(item.bump)
+                        // 글자는 움직이지 않는다. 선택이 바뀔 때 굵기와 색이 애니메이션을 타면
+                        // 글자 모양이 일그러지며 바뀌어 보였다. 즉시 바뀌고, 배경만 미끄러진다.
+                        .transaction { $0.animation = nil }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, verticalPadding)
                         .background {
@@ -62,6 +60,8 @@ struct SegmentedTabs<Value: Hashable>: View {
                 .accessibilityAddTraits(picked ? [.isSelected, .isButton] : .isButton)
             }
         }
+        // 선택 표시만 칸 사이를 미끄러진다. 탭 내용 전환까지 애니메이션에 싣지 않는다.
+        .animation(Motion.shift, value: selection)
         .padding(2)
         .background(Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: radius))
         .frame(maxWidth: .infinity)
