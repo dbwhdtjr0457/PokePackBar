@@ -220,6 +220,8 @@ struct OripaView: View {
                                         .padding(2)
                                 }
                             }
+                            // 이미 뽑은 봉투는 누를 이유가 적어 떠오르지 않는다.
+                            .hoverLift(scale: drawn ? 1 : 1.05)
                         if let entry = index.card(id) {
                             Text(l.tierBadge(entry.tier))
                                 .font(.system(size: 13, weight: .heavy))

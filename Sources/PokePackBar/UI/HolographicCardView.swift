@@ -24,8 +24,7 @@ struct HoloProfile: Equatable {
         let response = opticalResponse(for: spec.pattern)
         let sparkle: Double = switch spec.pattern {
         case .starlight, .cosmos, .fireworks, .pokeBallStars, .crackedIce,
-             .refractor, .celebrationSheen, .starSheen, .starfield,
-             .prism:
+             .refractor, .celebrationSheen, .starSheen, .starfield:
             0.16 + intensity * 0.24
         case .masterBall, .scarletVioletTiles, .futuristic:
             0.12 + intensity * 0.18
@@ -108,7 +107,7 @@ struct HoloProfile: Equatable {
              .breakGrid, .futuristic:
             return OpticalResponse(patternGain: 1.04, specularGain: 0.78, glareGain: 0.56)
         case .starlight, .cosmos, .fireworks, .pokeBallStars, .starfield,
-             .pokeBall, .masterBall, .confetti, .prism:
+             .pokeBall, .masterBall, .confetti:
             return OpticalResponse(patternGain: 1.0, specularGain: 0.84, glareGain: 0.58)
         case .spectrum, .rainbowSplash, .rainbow, .magenta, .comicBurst:
             return OpticalResponse(patternGain: 0.94, specularGain: 0.70, glareGain: 0.44)
@@ -779,7 +778,7 @@ struct HoloCardBody: View, @MainActor Animatable {
             0.88
         case .satin, .line:
             0.76
-        case .breakGrid, .prism, .teraSheen:
+        case .breakGrid, .teraSheen:
             0.98
         case .refractor, .prime, .legend:
             0.78
@@ -887,7 +886,7 @@ struct HoloCardBody: View, @MainActor Animatable {
             pearlBand(center: center, width: 0.105)
         case .monochrome, .blackEtched, .whiteEtched:
             monochromeBand(center: center, width: 0.10)
-        case .crackedIce, .refractor, .prism, .breakGrid, .teraSheen, .futuristic:
+        case .crackedIce, .refractor, .breakGrid, .teraSheen, .futuristic:
             AngularGradient(colors: [
                 .clear, .white.opacity(0.34), Color.cyan.opacity(0.15),
                 .clear, Color.pink.opacity(0.12), .white.opacity(0.28), .clear,
@@ -1098,6 +1097,11 @@ struct FoilCoverageMask: View {
                              with: .color(.white))
                 context.fill(Path(ellipseIn: FoilGeometry.parallelMarkRect(cardID: cardID, in: size)),
                     with: .color(.white))
+            case .artWindowAndPrismStar:
+                context.fill(artwork,
+                             with: .color(.white))
+                context.fill(FoilGeometry.prismStarPath(cardID: cardID, in: size),
+                             with: .color(.white))
             case .artAndBorder:
                 context.fill(artwork,
                              with: .color(.white))
@@ -1188,7 +1192,7 @@ private struct LocalizedPatternFlash: View {
         ZStack {
             if [.sunMoonSymbols, .energySetStamp, .breakGrid, .typeSymbols,
                 .swordShieldTiles, .splitTypeSymbols, .energySymbols, .pokeBallStars,
-                .pokeBall, .prism, .teraSheen, .starlight].contains(pattern) {
+                .pokeBall, .teraSheen, .starlight].contains(pattern) {
                 // Sparse impressions need their own angular contrast. Screen
                 // blending alone cannot reveal a silver motif over white ink.
                 // This never extends the motif or its outer coverage mask.
@@ -1198,7 +1202,7 @@ private struct LocalizedPatternFlash: View {
                 case .breakGrid: 0.38
                 case .starlight: 0.50
                 case .energySetStamp: 0.78
-                case .teraSheen, .prism: 0.65
+                case .teraSheen: 0.65
                 case .pokeBall, .pokeBallStars: 0.70
                 case .typeSymbols, .swordShieldTiles, .splitTypeSymbols, .energySymbols: 0.86
                 default: 1.0
@@ -1286,7 +1290,7 @@ private struct LocalizedPatternFlash: View {
         switch pattern {
         case .sunMoonSymbols: 7.0
         case .typeSymbols, .swordShieldTiles, .splitTypeSymbols, .energySymbols,
-             .pokeBallStars, .pokeBall, .teraSheen, .prism: 6.5
+             .pokeBallStars, .pokeBall, .teraSheen: 6.5
         case .energySetStamp: 6.4
         default: 5.0
         }
@@ -1871,13 +1875,6 @@ private struct FinishPatternLayer: View {
             ], startPoint: .topLeading, endPoint: .bottomTrailing)
         case .confetti:
             Color.clear
-        case .prism:
-            AngularGradient(colors: [
-                Color(white: 0.08), Color.purple.opacity(0.54),
-                Color.blue.opacity(0.48), Color.cyan.opacity(0.38),
-                Color(white: 0.12), Color.pink.opacity(0.46), Color(white: 0.08),
-            ],
-                            center: center)
         case .breakGrid:
             LinearGradient(colors: [
                 Color(red: 0.98, green: 0.76, blue: 0.18).opacity(0.40),
@@ -1931,7 +1928,7 @@ private struct FinishPatternLayer: View {
         switch pattern {
         case .starSheen:
             (highlight.x - 0.5) * 150 + (highlight.y - 0.5) * 90
-        case .spectrum, .line, .prism, .futuristic:
+        case .spectrum, .line, .futuristic:
             (highlight.x - 0.5) * 34 + (highlight.y - 0.5) * 16
         case .specialIllustration:
             0
@@ -1991,7 +1988,7 @@ private struct FinishPatternLayer: View {
              .scarletVioletGold, .teraGold, .starfield, .shinyGX, .shinyV,
              .shinyVMAX, .shinyEx, .teraShinyEx,
              .magenta, .pokeBall, .masterBall,
-             .prism, .monochrome, .blackEtched,
+             .monochrome, .blackEtched,
              .whiteEtched, .comicBurst, .futuristic:
             .softLight
         }
@@ -2272,8 +2269,6 @@ struct FinishPatternCanvas: View {
                 drawBallPattern(context: &context, size: size, master: true)
             case .confetti:
                 drawConfetti(context: &context, size: size)
-            case .prism:
-                drawPrisms(context: &context, size: size)
             case .breakGrid:
                 drawBreakGrid(context: &context, size: size)
             case .megaGold:
@@ -3744,28 +3739,6 @@ struct FinishPatternCanvas: View {
                               y: random.next() * size.height,
                               width: side, height: side)
             context.fill(Path(rect), with: .color(.white.opacity(0.18)))
-        }
-    }
-
-    private func drawPrisms(context: inout GraphicsContext, size: CGSize) {
-        // Prism Star has a glossy, watery crystal sheen rather than literal
-        // random triangle shards.
-        for row in 0..<18 {
-            let baseline = CGFloat(row) / 17 * size.height
-            var wave = Path()
-            wave.move(to: CGPoint(x: 0, y: baseline))
-            for column in 1...30 {
-                let progress = CGFloat(column) / 30
-                let x = progress * size.width
-                let y = baseline
-                    + sin(progress * .pi * 5.2 + CGFloat(row) * 0.63) * 4.2
-                    + sin(progress * .pi * 13.0) * 1.2
-                wave.addLine(to: CGPoint(x: x, y: y))
-            }
-            context.stroke(wave,
-                           with: .color(.white.opacity(row.isMultiple(of: 4)
-                                ? 0.31 : 0.16)),
-                           lineWidth: row.isMultiple(of: 4) ? 0.75 : 0.38)
         }
     }
 

@@ -52,6 +52,8 @@ final class OnlineHubModel {
     enum Tab: String, CaseIterable, Sendable { case market, trades, social, stats, jobs, alerts }
     var section: Tab = .market
     var message: String?
+    /// 교환이 성사된 순간. 창 가운데에 잠깐 띄운다.
+    var celebration: OnlineCelebration?
     var documents: [String: [String: Any]] = [:]
     var generation = 0
     var offset = 0
@@ -63,6 +65,8 @@ final class OnlineHubModel {
     var marketFinish = ""
     var marketSort = "newest"
     var ownListings = false
+    /// 마켓 탭이 열릴 때 「내 판매」 부터 보여 줄지. 판매 알림을 누르면 켠다.
+    var opensMyListings = false
     var tradeDraft: [String: Any]?
     var openingJobs: [RemoteGameSession.OpeningJob] = []
     var stopOpening = false
@@ -75,7 +79,7 @@ final class OnlineHubModel {
     /// 연결이 끊겼다 붙는 것처럼 보인다. 성공하면 `failure` 가 비워지며 사라진다.
     var errorText: String? {
         if case .failed(let text) = phase { return text }
-        if case .loading = phase, let failure { return failure.localizedDescription }
+        if case .loading = phase, let failure { return OnlineText.message(for: failure) }
         return nil
     }
     var loading: Bool { if case .loading = phase { return true }; return false }
@@ -182,13 +186,34 @@ final class OnlineHubModel {
 
     /// 성공하면 true. 화면은 성공했을 때만 입력(교환 바구니 등)을 비운다.
     @discardableResult
-    func mutate(_ route: String, _ values: [String: Any]) async -> Bool {
+    /// `quiet` 는 「완료」 줄을 띄우지 않는다. 알림을 눌러 다른 탭으로 옮겨 가며 읽음으로 바꿀 때
+    /// 옮겨 간 탭에 뜬금없는 완료 표시가 남지 않게 한다.
+    func mutate(_ route: String, _ values: [String: Any], quiet: Bool = false) async -> Bool {
         guard canWrite, let remote else { return false }
         mutating = true
+        // 축하에 쓸 카드는 새로 고치기 전에 읽어 둔다. 성사되면 목록에서 상태가 바뀌거나 빠진다.
+        let action = values["action"] as? String
+        let accepted = action == "trade_accept"
+            ? items("trades").first { $0.string("id") == values["target_id"] as? String } : nil
+        let boughtListing = action == "listing_buy"
+            ? items("listings").first { $0.string("id") == values["target_id"] as? String } : nil
         do {
             let body = values.merging(["request_id": UUID().uuidString, "expected_revision": remote.revision]) { _, right in right }
             _ = try await remote.onlineMutation(path: "v1/\(route)", body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
-            message = OnlineText.l.actionDone
+            if !quiet { message = OnlineText.l.actionDone }
+            if let accepted {
+                // 받은 제안을 수락했다: 나는 요청받은 카드를 주고 제안된 카드를 받는다.
+                func first(_ key: String) -> String? { (accepted[key] as? [String: Int])?.keys.sorted().first }
+                celebration = OnlineCelebration(kind: .trade(gave: first("requested"), got: first("offered")))
+                SoundEffects.play(.chime(3))
+            } else if let boughtListing {
+                celebration = OnlineCelebration(kind: .bought(printing: boughtListing.string("printing"),
+                                                              quantity: values["quantity"] as? Int ?? 1))
+                SoundEffects.play(.pop)
+            } else if action == "listing_create", let printing = values["printing"] as? String {
+                celebration = OnlineCelebration(kind: .listed(printing: printing))
+                SoundEffects.play(.pop)
+            }
             mutating = false
             await refresh()
             // 수락, 거절, 읽음 처리 뒤 메뉴바 개수가 1분 동안 남아 있지 않게 바로 갱신한다.
@@ -209,7 +234,7 @@ final class OnlineHubModel {
             AppLog.write("[online] \(action) failed: \(String(describing: error).prefix(400))")
         }
         failure = error
-        phase = .failed(error.localizedDescription)
+        phase = .failed(OnlineText.message(for: error))
     }
 
     func resumeOpening(_ initial: RemoteGameSession.OpeningJob) async {
@@ -222,7 +247,7 @@ final class OnlineHubModel {
                 job = try await remote.advanceOpeningJob(job).job
             }
             message = OnlineText.l.jobFinished(total: job.total, completed: job.completed)
-        } catch { message = error.localizedDescription }
+        } catch { message = OnlineText.message(for: error) }
         mutating = false; openingProgress = nil
         if visible { await refresh() }
     }
@@ -231,7 +256,7 @@ final class OnlineHubModel {
         guard canWrite, let remote else { return }
         mutating = true
         do { _ = try await remote.advanceOpeningJob(job, cancel: true); message = OnlineText.l.jobCancelled }
-        catch { message = error.localizedDescription }
+        catch { message = OnlineText.message(for: error) }
         mutating = false
         await refresh()
     }
@@ -263,23 +288,45 @@ struct OnlineHubView: View {
             if let message = model.message {
                 Label(message, systemImage: "checkmark.circle").font(Typography.label).foregroundStyle(.secondary)
             }
-            if model.remote?.authenticationExpired == true {
-                VStack(spacing: 12) {
-                    OnlineEmptyState(icon: "lock", title: OnlineText.l.signInAgain,
-                                     message: OnlineText.l.sessionExpiredMessage)
-                    Button(OnlineText.l.signIn) { AccountWindow.shared.show(wallet: model.wallet) }
-                        .buttonStyle(.borderedProminent)
+            ZStack(alignment: .topLeading) {
+                Group {
+                    if model.remote?.authenticationExpired == true {
+                        VStack(spacing: 12) {
+                            OnlineEmptyState(icon: "lock", title: OnlineText.l.signInAgain,
+                                             message: OnlineText.l.sessionExpiredMessage)
+                            Button(OnlineText.l.signIn) { AccountWindow.shared.show(wallet: model.wallet) }
+                                .buttonStyle(.borderedProminent)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    else if model.section == .stats { statistics }
+                    else if model.section == .social { OnlineSocialView(model: model) }
+                    else if model.section == .trades { OnlineTradingView(model: model) }
+                    else if model.section == .market { OnlineMarketView(model: model) }
+                    else if model.section == .jobs { openingWork }
+                    else { notifications }
                 }
-                .frame(maxWidth: .infinity)
+                // 섹션을 바꾸면 새 내용만 짧게 떠오른다. 이전 내용은 바로 빠진다 —
+                // 둘이 겹쳐 흐려지면 글자가 겹쳐 보인다.
+                .id(model.section)
+                .transition(.asymmetric(insertion: .opacity, removal: .identity))
             }
-            else if model.section == .stats { statistics }
-            else if model.section == .social { OnlineSocialView(model: model) }
-            else if model.section == .trades { OnlineTradingView(model: model) }
-            else if model.section == .market { OnlineMarketView(model: model) }
-            else if model.section == .jobs { openingWork }
-            else { notifications }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .animation(.easeOut(duration: 0.16), value: model.section)
         }
         .padding(22)
+        .overlay {
+            if let celebration = model.celebration {
+                OnlineCelebrationView(celebration: celebration)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(2.6))
+                        guard model.celebration?.id == celebration.id else { return }
+                        withAnimation(.snappy(duration: 0.3)) { model.celebration = nil }
+                    }
+            }
+        }
+        .animation(.snappy(duration: 0.3), value: model.celebration)
         .onChange(of: model.remote?.authenticationExpired) {
             if model.remote?.authenticationExpired == true { model.clearPrivateData() }
         }
@@ -334,6 +381,59 @@ struct OnlineHubView: View {
 
     // MARK: 알림
 
+    /// 알림 한 줄. 누르면 그 일을 처리할 탭으로 옮겨 가고 읽음으로 바꾼다.
+    @ViewBuilder
+    private func notificationRow(_ item: [String: Any]) -> some View {
+        let kind = item.string("kind")
+        let info = OnlineText.notification(kind)
+        let unread = !item.bool("read")
+        let destination = OnlineText.destination(kind)
+        let row = HStack(spacing: 12) {
+            Image(systemName: info.icon).font(.system(size: 17))
+                .foregroundStyle(unread ? Color.accentColor : Color.secondary).frame(width: 24)
+            Text(info.text).font(unread ? Typography.bodySemibold : Typography.body)
+            Spacer()
+            if unread {
+                Button(OnlineText.l.markRead) {
+                    Task { await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")]) }
+                }
+                .disabled(!model.canWrite)
+            }
+            if destination != nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.vertical, 8).padding(.horizontal, 10)
+        .background(unread ? Color.accentColor.opacity(0.06) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .animation(.easeOut(duration: 0.2), value: unread)
+        if let destination {
+            row
+                .contentShape(RoundedRectangle(cornerRadius: 8))
+                .hoverHighlight(cornerRadius: 8)
+                .onTapGesture { open(item, in: destination) }
+                .help(OnlineText.l.openNotification)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction(named: OnlineText.l.openNotification) { open(item, in: destination) }
+        } else {
+            row
+        }
+    }
+
+    private func open(_ item: [String: Any], in destination: OnlineHubModel.Tab) {
+        if !item.bool("read"), model.canWrite {
+            Task {
+                await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")],
+                                   quiet: true)
+            }
+        }
+        // 팔렸거나 기한이 지난 내 판매는 「내 판매」 에서 확인한다. 사기 화면부터 열면 다시 찾아가야 한다.
+        if ["listing_sold", "listing_expired"].contains(item.string("kind")) { model.opensMyListings = true }
+        model.section = destination
+    }
+
     private var notifications: some View {
         let items = model.items("notifications")
         return ScrollView {
@@ -343,22 +443,7 @@ struct OnlineHubView: View {
                                      message: OnlineText.l.alertsEmptyHint)
                 }
                 ForEach(items, id: \.onlineID) { item in
-                    let info = OnlineText.notification(item.string("kind"))
-                    let unread = !item.bool("read")
-                    HStack(spacing: 12) {
-                        Image(systemName: info.icon).font(.system(size: 17))
-                            .foregroundStyle(unread ? Color.accentColor : Color.secondary).frame(width: 24)
-                        Text(info.text).font(unread ? Typography.bodySemibold : Typography.body)
-                        Spacer()
-                        if unread {
-                            Button(OnlineText.l.markRead) {
-                                Task { await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")]) }
-                            }
-                            .disabled(!model.canWrite)
-                        }
-                    }
-                    .padding(.vertical, 8).padding(.horizontal, 10)
-                    .background(unread ? Color.accentColor.opacity(0.06) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                    notificationRow(item)
                 }
                 HStack {
                     if model.offset > 0 { Button(OnlineText.l.backToStart) { model.offset = 0; reload() } }
@@ -368,6 +453,8 @@ struct OnlineHubView: View {
                 }
                 .frame(maxWidth: .infinity)
             }
+            // 새 알림은 위에서 밀려 들어온다. 15초마다 새로 고칠 때 줄이 툭 끼어들지 않게 한다.
+            .animation(.snappy(duration: 0.3), value: items.map(\.onlineID))
         }
     }
 

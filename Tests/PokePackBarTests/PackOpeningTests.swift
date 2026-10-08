@@ -1235,17 +1235,14 @@ final class RevealPeekTests: XCTestCase {
 }
 
 final class GodPackRevealTimingTests: XCTestCase {
-    /// 카드 이미지가 뜨기 전 준비 화면은 갓팩 여부를 절대 읽지 않는다.
-    func testPreparingViewDoesNotSpoilSpecialPack() throws {
+    /// 카드 이미지가 뜨기 전 팩 뜯기 화면은 갓팩 여부를 절대 읽지 않는다.
+    func testPackTearViewDoesNotSpoilSpecialPack() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
-        let source = try String(contentsOf: root.appendingPathComponent(
-            "Sources/PokePackBar/UI/PacksView.swift"), encoding: .utf8)
-        let start = try XCTUnwrap(source.range(of: "private struct PreparingView"))
-        let end = try XCTUnwrap(source.range(of: "private struct OwnedPackRow"))
-        let preparing = source[start.lowerBound..<end.lowerBound]
+        let preparing = try String(contentsOf: root.appendingPathComponent(
+            "Sources/PokePackBar/UI/PackTearView.swift"), encoding: .utf8)
 
-        XCTAssertFalse(preparing.contains("pending.specialVariants"),
+        XCTAssertFalse(preparing.contains("specialVariants"),
                        "카드를 보기 전에 갓팩 여부를 읽어 스포일러하고 있다")
         XCTAssertFalse(preparing.contains("specialPackTitle"),
                        "준비 화면이 갓팩 제목을 먼저 표시하고 있다")

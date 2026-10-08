@@ -370,7 +370,7 @@ struct OnlineSettingsView: View {
                 }
                 statusLoaded = true; message = nil
             } catch {
-                devices = []; jobs = []; message = error.localizedDescription
+                devices = []; jobs = []; message = OnlineText.message(for: error)
                 if error.localizedDescription == ServerAuthentication.loginRequired { self.credential = nil; clearSecrets() }
             }
         }
@@ -394,7 +394,7 @@ struct OnlineSettingsView: View {
             do {
                 _ = try await ServerAuthentication.request(url: validatedURL(), path: path, body: body, credential: credential)
                 busy = false; refreshAccount()
-            } catch { busy = false; message = error.localizedDescription }
+            } catch { busy = false; message = OnlineText.message(for: error) }
         }
     }
 
@@ -407,7 +407,7 @@ struct OnlineSettingsView: View {
                 let data = try await ServerAuthentication.request(url: validatedURL(), path: "auth/recovery", body: ["password": password], credential: credential)
                 recoveryCode = try JSONDecoder().decode(AccountIssuedRecovery.self, from: data).code
                 recoveryActive = true; message = OnlineText.l.recoveryIssued
-            } catch { message = OnlineText.l.recoveryIssueFailed(error.localizedDescription) }
+            } catch { message = OnlineText.l.recoveryIssueFailed(OnlineText.message(for: error)) }
         }
     }
 
@@ -422,7 +422,7 @@ struct OnlineSettingsView: View {
                 let data = try await ServerAuthentication.request(url: validatedURL(), path: "auth/token-policy", body: body, credential: credential)
                 tokenPolicy = try JSONDecoder().decode(AccountTokenPolicy.self, from: data)
                 message = OnlineText.l.tokenPolicyChanged
-            } catch { message = OnlineText.l.tokenPolicyFailed(error.localizedDescription) }
+            } catch { message = OnlineText.l.tokenPolicyFailed(OnlineText.message(for: error)) }
         }
     }
 
@@ -440,7 +440,7 @@ struct OnlineSettingsView: View {
                 _ = try await ServerAuthentication.request(url: validatedURL(), path: "auth/recover",
                     body: ["email": email, "code": recoveryInput, "new_password": newPassword])
                 section = .connection; message = OnlineText.l.passwordResetDone
-            } catch { message = OnlineText.l.passwordResetFailed(error.localizedDescription) }
+            } catch { message = OnlineText.l.passwordResetFailed(OnlineText.message(for: error)) }
         }
     }
 
@@ -507,7 +507,7 @@ struct OnlineSettingsView: View {
                     message = OnlineText.l.signedInRestart
                     needsRestart = true
                 }
-            } catch { message = error.localizedDescription }
+            } catch { message = OnlineText.message(for: error) }
         }
     }
 
@@ -519,7 +519,7 @@ struct OnlineSettingsView: View {
             do {
                 try await ServerAuthentication.logout(configuration: configuration(for: credential), credential: credential, all: all)
                 finishLogout()
-            } catch { message = error.localizedDescription }
+            } catch { message = OnlineText.message(for: error) }
         }
     }
 
@@ -536,7 +536,7 @@ struct OnlineSettingsView: View {
                     current: password, new: newPassword)
                 finishLogout()
                 message = OnlineText.l.passwordChangedSignedOut
-            } catch { message = error.localizedDescription }
+            } catch { message = OnlineText.message(for: error) }
         }
     }
 

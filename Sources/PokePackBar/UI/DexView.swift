@@ -23,6 +23,9 @@ struct DexView: View {
     /// 그 카드의 가림막이 이미 걷혔는가.
     @State private var revealed = false
     @Environment(PopoverNavigation.self) private var nav
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 한 단계 들어가는 중인가. 상점과 같이 들어갈 때는 오른쪽에서, 나올 때는 왼쪽에서 온다.
+    @State private var navForward = true
 
     init(wallet: WalletStore, index: CardIndex?, initialSearchText: String = "") {
         self.wallet = wallet
@@ -51,7 +54,8 @@ struct DexView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let selected, let dex = wallet.dexes.first(where: { $0.id == selected }) {
                 DexDetailView(wallet: wallet, index: index, dex: dex,
-                              onGranted: show) { self.selected = nil }
+                              onGranted: show) { leave { self.selected = nil } }
+                    .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
             } else {
                 VStack(spacing: 8) {
                     sectionPicker
@@ -61,6 +65,7 @@ struct DexView: View {
                     case .set:   setBrowser
                     }
                 }
+                .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
             }
         }
         .frame(height: PopoverMetrics.tabHeight)
@@ -69,6 +74,18 @@ struct DexView: View {
         .onAppear(perform: consumeNavigation)
         .onChange(of: nav.dexID) { consumeNavigation() }
         .onChange(of: nav.dexSearch) { consumeNavigation() }
+    }
+
+    /// 한 단계 들어간다. 방향을 먼저 정해야 새 화면이 오른쪽에서 들어온다.
+    private func enter(_ change: () -> Void) {
+        navForward = true
+        withAnimation(Motion.shift) { change() }
+    }
+
+    /// 한 단계 나온다.
+    private func leave(_ change: () -> Void) {
+        navForward = false
+        withAnimation(Motion.shift) { change() }
     }
 
     private func consumeNavigation() {
@@ -95,30 +112,9 @@ struct DexView: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            TextField(wallet.l.dexCardSearchPlaceholder, text: $searchText)
-                .textFieldStyle(.plain)
-                .font(Typography.body)
-                .accessibilityLabel(wallet.l.dexCardSearchLabel)
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "multiply.circle.fill")
-                        .foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(wallet.l.dexCardSearchClear)
-            }
-        }
-        .padding(.horizontal, 9).padding(.vertical, 6)
-        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .onExitCommand { searchText = "" }
-        .debouncedSearch(searchText, into: $appliedSearch)
+        SearchField(placeholder: wallet.l.dexCardSearchPlaceholder, label: wallet.l.dexCardSearchLabel,
+                    clearLabel: wallet.l.dexCardSearchClear, text: $searchText)
+            .debouncedSearch(searchText, into: $appliedSearch)
     }
 
     /// 조합 도감 — 예전 목록 그대로. 140개라 스크롤로 훑는다.
@@ -138,7 +134,7 @@ struct DexView: View {
                            searchMatches: searchMatchNames(status.dex),
                            onGranted: show)
                         .contentShape(Rectangle())
-                        .onTapGesture { selected = status.id }
+                        .onTapGesture { enter { selected = status.id } }
                 }
             }
         }
@@ -171,7 +167,7 @@ struct DexView: View {
                                searchMatches: searchMatchNames(status.dex),
                                onGranted: show)
                             .contentShape(Rectangle())
-                            .onTapGesture { selected = status.id }
+                            .onTapGesture { enter { selected = status.id } }
                     }
                 }
             }
@@ -181,7 +177,7 @@ struct DexView: View {
             let rows = statuses(wallet.dexes.filter { $0.kind == .set && ids.contains($0.homeSet) })
             VStack(spacing: 6) {
                 HStack(spacing: 6) {
-                    BackButton(action: { self.openedEra = nil })
+                    BackButton(action: { leave { self.openedEra = nil } })
                     Text(era.name).font(Typography.bodySemibold)
                     Spacer(minLength: 0)
                     Text(wallet.l.dexCountSummary(rows.filter(\.claimed).count, rows.count))
@@ -193,13 +189,15 @@ struct DexView: View {
                             DexRow(wallet: wallet, index: index, status: status,
                                    onGranted: show)
                                 .contentShape(Rectangle())
-                                .onTapGesture { selected = status.id }
+                                .onTapGesture { enter { selected = status.id } }
                         }
                     }
                 }
             }
+            .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
         } else if let index {
             eraList(index)
+                .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
         }
     }
 
@@ -240,7 +238,7 @@ struct DexView: View {
                     if !rows.isEmpty {
                         eraRow(era.name, rows)
                             .contentShape(Rectangle())
-                            .onTapGesture { openedEra = era.name }
+                            .onTapGesture { enter { openedEra = era.name } }
                     }
                 }
             }
@@ -266,6 +264,7 @@ struct DexView: View {
         .padding(.vertical, 9).padding(.horizontal, CardGrid.dexRowPadding)
         .background(claimable ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.07),
                     in: RoundedRectangle(cornerRadius: 9))
+        .hoverHighlight(cornerRadius: 9)
     }
 
     /// 누적 혜택도 목록과 함께 스크롤한다.
@@ -380,6 +379,7 @@ private struct DexRow: View {
         }
         .padding(.vertical, 8).padding(.horizontal, CardGrid.dexRowPadding)
         .background(background, in: RoundedRectangle(cornerRadius: 9))
+        .hoverHighlight(cornerRadius: 9)
         .overlay {
             RoundedRectangle(cornerRadius: 9)
                 .stroke(status.isClaimable ? Color.accentColor.opacity(0.6) : .clear, lineWidth: 1)
@@ -538,6 +538,10 @@ private struct DexClaimAction: View {
     let status: DexStatus
     /// 확정 카드를 받았을 때 알린다. 화면이 그 카드를 뒤집어 보여 준다.
     var onGranted: ((DexClaim) -> Void)? = nil
+    @Environment(PopoverNavigation.self) private var nav
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 버튼 자리(팝오버 좌표). 받은 순간 여기서 반짝이고 팩이 날아간다.
+    @State private var buttonFrame: CGRect = .zero
 
     var body: some View {
         let l = wallet.l
@@ -546,13 +550,22 @@ private struct DexClaimAction: View {
                 // 확정 카드를 받았으면 무엇이 나왔는지 보여 준다. 조용히 컬렉션에 넣으면
                 // 「MUR 이상 1장」이라 적어 놓고 무엇을 줬는지 알 길이 없다.
                 Task {
-                    if let claim = await wallet.claimDexOnlineAware(status.dex.id, step: step), claim.card != nil {
-                        onGranted?(claim)
-                    }
+                    guard let claim = await wallet.claimDexOnlineAware(status.dex.id, step: step) else { return }
+                    nav.celebrate(claim, from: buttonFrame, reduceMotion: reduceMotion)
+                    if claim.card != nil { onGranted?(claim) }
                 }
             }
             .buttonStyle(.borderedProminent).font(Typography.button)
             .disabled(wallet.resourceActionsDisabled)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { buttonFrame = proxy.frame(in: .named(PackFlight.space)) }
+                        .onChange(of: proxy.frame(in: .named(PackFlight.space))) {
+                            buttonFrame = proxy.frame(in: .named(PackFlight.space))
+                        }
+                }
+            }
         } else if status.claimed {
             Label(l.dexClaimed, systemImage: "checkmark.circle.fill")
                 .font(Typography.label).foregroundStyle(.green)
@@ -578,7 +591,7 @@ private struct DexCardStrip: View {
                          spacing: CardGrid.dexStrip.spacing) {
             ForEach(shown, id: \.self) { cardID in
                 if let onTap {
-                    Button { onTap(cardID) } label: { member(cardID) }
+                    Button { onTap(cardID) } label: { member(cardID).hoverLift(scale: 1.05) }
                         .buttonStyle(.plain)
                 } else {
                     member(cardID)

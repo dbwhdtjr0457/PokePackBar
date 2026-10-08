@@ -18,7 +18,10 @@ python3 -m unittest discover -s scripts -p 'test_offline_art_snapshot.py'
 python3 scripts/update_korean_card_names.py --verify
 # Multi-gigabyte original scans are an explicit research/audit input, not an
 # application packaging dependency. Runtime artwork is served by CloudFront.
-swift build -c release
+# Swift 6.4 부터 기본 빌드 시스템(swiftbuild)은 결과물을 .build/out/Products 아래에 두고 리소스
+# 번들도 Contents/Resources 구조로 만든다. 아래 복사와 확인 단계는 예전 평평한 번들을 전제하므로
+# 예전 빌드 시스템을 명시한다.
+swift build -c release --build-system native
 
 echo "==> $APP 조립"
 rm -rf "$APP"

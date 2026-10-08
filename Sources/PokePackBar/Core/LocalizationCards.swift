@@ -383,6 +383,16 @@ extension L {
     func buyCount(_ n: Int) -> String {
         t("\(n)개 구매", "Buy \(n)", "\(n)個 購入", "Comprar \(n)", "Acheter \(n)", "Comprar \(n)")
     }
+    func packBought(_ n: Int) -> String {
+        t("\(n)팩을 샀어요", n == 1 ? "Bought 1 pack" : "Bought \(n) packs", "\(n)パック購入しました",
+          n == 1 ? "Compraste 1 sobre" : "Compraste \(n) sobres",
+          n == 1 ? "1 booster acheté" : "\(n) boosters achetés",
+          n == 1 ? "1 pacote comprado" : "\(n) pacotes comprados")
+    }
+    var dexRewardReceived: String { t("보상을 받았어요", "Reward received", "報酬を受け取りました",
+                                        "Recompensa recibida", "Récompense reçue", "Recompensa recebida") }
+    var packOpenInPacksTab: String { t("팩 탭에서 열기", "Open in Packs", "パックタブで開ける",
+                                         "Abrir en Sobres", "Ouvrir dans Boosters", "Abrir em Pacotes") }
 
     // MARK: 팩
     var packsEmptyTitle: String { t("가진 팩이 없어요", "No packs yet", "パックがありません",
@@ -395,6 +405,16 @@ extension L {
                                      "Compre na loja ou atinja um limite para um pacote bônus.") }
     var packPreparing: String { t("카드를 꺼내는 중…", "Getting the cards ready…", "カードを準備中…",
                                     "Preparando las cartas…", "Préparation des cartes…", "Preparando as cartas…") }
+    var packTearTitle: String { t("밀어서 뜯기", "Swipe to tear open", "スワイプして開封",
+                                    "Desliza para abrir", "Glisse pour ouvrir", "Deslize para abrir") }
+    var packTearHint: String { t("윗부분을 옆으로 밀거나, 팩을 눌러 열어요",
+                                   "Swipe across the top, or click the pack",
+                                   "上の部分を横になぞるか、パックをクリック",
+                                   "Desliza por arriba o haz clic en el sobre",
+                                   "Glisse le long du haut ou clique sur le booster",
+                                   "Deslize pelo topo ou clique no pacote") }
+    var packTearAction: String { t("팩 뜯기", "Tear open the pack", "パックを開封",
+                                     "Abrir el sobre", "Ouvrir le booster", "Abrir o pacote") }
     var openPack: String { t("뜯기", "Open", "開ける", "Abrir", "Ouvrir", "Abrir") }
     func openPackCount(_ count: Int) -> String {
         guard count > 1 else { return openPack }
@@ -663,6 +683,24 @@ extension L {
     /// 시대에 든 세트 수. 「18개」처럼 읽힌다.
     func shopPackCount(_ count: Int) -> String {
         t("\(count)개", "\(count)", "\(count)個", "\(count)", "\(count)", "\(count)")
+    }
+    var packSearchPlaceholder: String { t("팩 이름으로 찾기", "Search pack names", "パック名で検索",
+                                            "Buscar sobres por nombre", "Chercher un booster",
+                                            "Buscar pacotes pelo nome") }
+    func packSearchEmpty(_ query: String) -> String {
+        t("‘\(query)’ 이름의 팩이 없어요.", "No pack matches ‘\(query)’.",
+          "「\(query)」に一致するパックはありません。",
+          "Ningún sobre coincide con ‘\(query)’.",
+          "Aucun booster ne correspond à « \(query) ».",
+          "Nenhum pacote corresponde a ‘\(query)’.")
+    }
+    var packSearchEnglishHint: String {
+        t("팩 이름은 영어로 적혀 있어요. 예: 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon",
+          "Pack names are in English, e.g. 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon",
+          "パック名は英語表記です。例：151、Obsidian、Sun\u{00A0}&\u{00A0}Moon",
+          "Los nombres están en inglés, p. ej. 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon",
+          "Les noms sont en anglais, p. ex. 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon",
+          "Os nomes estão em inglês, ex.: 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon")
     }
     var shopPacksSection: String { t("일반 팩", "Packs", "通常パック",
                                       "Sobres", "Boosters", "Pacotes") }

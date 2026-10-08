@@ -57,6 +57,27 @@ enum OnlineText {
 
     static func wonText(_ won: Int) -> String { WonFormatter.exact(won, language: language) }
 
+    /// 교환 한쪽의 참고 시세 합계(원)와 시세가 없어 빠진 장수.
+    static func referenceTotal(_ lines: [String: Int]) -> (won: Int, unpriced: Int) {
+        lines.reduce(into: (won: 0, unpriced: 0)) { total, line in
+            if let won = referenceWon(line.key) { total.won += won * line.value } else { total.unpriced += line.value }
+        }
+    }
+
+    /// 담은 카드 줄 요약: 종수, 장수, 시세 합계.
+    static func traySummary(_ lines: [String: Int]) -> String {
+        let total = referenceTotal(lines)
+        let priced = lines.values.reduce(0, +) > total.unpriced
+        return l.traySummary(kinds: lines.count, cards: lines.values.reduce(0, +),
+                             won: priced ? wonText(total.won) : nil, unpriced: total.unpriced)
+    }
+
+    /// 주고받는 양쪽 시세를 한 문장으로 비교한다.
+    static func valueBalance(give: [String: Int], get: [String: Int]) -> String {
+        let gave = referenceTotal(give).won, got = referenceTotal(get).won
+        return l.valueBalance(give: wonText(gave), get: wonText(got), difference: got - gave, gap: wonText(abs(got - gave)))
+    }
+
     static func listingStatus(_ raw: String) -> (text: String, color: Color) {
         switch raw {
         case "active": return (OnlineText.l.listingActive, .green)
@@ -73,6 +94,7 @@ enum OnlineText {
         case "accepted": return (OnlineText.l.tradeAccepted, .green)
         case "rejected": return (OnlineText.l.tradeRejected, .secondary)
         case "cancelled": return (OnlineText.l.tradeCancelled, .secondary)
+        case "countered": return (OnlineText.l.tradeCountered, .secondary)
         case "expired": return (OnlineText.l.expiredLabel, .secondary)
         default: return (raw, .secondary)
         }
@@ -84,6 +106,7 @@ enum OnlineText {
         case "trade_accepted": return (OnlineText.l.noteTradeAccepted, "checkmark.circle")
         case "trade_rejected": return (OnlineText.l.noteTradeRejected, "hand.raised")
         case "trade_cancelled": return (OnlineText.l.noteTradeCancelled, "arrow.uturn.backward.circle")
+        case "trade_countered": return (OnlineText.l.noteTradeCountered, "arrow.triangle.2.circlepath")
         case "trade_expired": return (OnlineText.l.noteTradeExpired, "clock")
         case "listing_sold": return (OnlineText.l.noteListingSold, "wonsign.circle")
         case "listing_bought": return (OnlineText.l.noteListingBought, "bag")
@@ -95,6 +118,40 @@ enum OnlineText {
         case "friend_expired": return (OnlineText.l.noteFriendExpired, "clock")
         default: return (kind, "bell")
         }
+    }
+
+    /// 알림을 눌렀을 때 열 탭. 알림은 「무엇이 있었다」 만 말해서, 예전에는 읽고 나서
+    /// 그 일을 처리할 탭을 직접 찾아가야 했다.
+    static func destination(_ kind: String) -> OnlineHubModel.Tab? {
+        if kind.hasPrefix("trade_") { return .trades }
+        if kind.hasPrefix("friend_") { return .social }
+        if kind.hasPrefix("listing_") || kind == "wishlist_listing" { return .market }
+        return nil
+    }
+
+    /// 친구 코드를 서버가 받는 꼴로. 보기 좋게 끊어 쓴 띄어쓰기나 줄표를 빼고 대문자로 바꾼다.
+    /// 공유 문장(「친구 코드: ABCD …」)을 통째로 붙여 넣어도 코드만 골라낸다.
+    nonisolated static func normalizedFriendCode(_ text: String) -> String {
+        let pattern = "[0-9A-Fa-f]{4}[ -]?[0-9A-Fa-f]{4}[ -]?[0-9A-Fa-f]{4}[ -]?[0-9A-Fa-f]{4}"
+        if let match = text.range(of: pattern, options: .regularExpression) {
+            return text[match].filter(\.isHexDigit).uppercased()
+        }
+        return text.filter { !$0.isWhitespace && $0 != "-" }.uppercased()
+    }
+
+    /// 네 자씩 끊어 보인다. 16자를 한 덩어리로 두면 불러 주거나 옮겨 적다 자리를 놓친다.
+    nonisolated static func groupedFriendCode(_ code: String) -> String {
+        let characters = Array(code)
+        return stride(from: 0, to: characters.count, by: 4)
+            .map { String(characters[$0..<min($0 + 4, characters.count)]) }
+            .joined(separator: " ")
+    }
+
+    /// 실패를 화면에 띄울 한 줄로. 우리가 만든 실패는 이미 읽을 문장이다. 응답 해석 실패처럼
+    /// 시스템이 만든 문장(「데이터가 올바른 형식이 아니므로…」)은 무엇을 하라는 말이 없어
+    /// 짧은 안내로 바꾸고, 원문은 로그에 남긴다.
+    nonisolated static func message(for error: any Error) -> String {
+        ProblemText.message(for: error)
     }
 
     /// "6일 남음" 처럼 남은 시간만 말한다. 날짜와 시각을 통째로 보여 주면 계산을 떠넘긴다.
@@ -144,17 +201,18 @@ struct OnlineCardTile<Footer: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            ZStack(alignment: .topTrailing) {
-                CardImageView(cardID: cardID, width: width)
-                if let badge {
-                    OnlineBadge(text: badge.text, color: badge.color).padding(4)
-                }
-            }
+            // 상태(내 판매, 다 모았어요)는 카드 그림 위에 얹지 않는다. 옅은 바탕의 글자가 그림 위에
+            // 떠서 카드에 인쇄된 이름과 HP 위에 글자만 쓰인 것처럼 보였다. 맨 아래에 두면 같은 줄의
+            // 다른 카드와 이름, 가격 줄도 어긋나지 않는다.
+            CardImageView(cardID: cardID, width: width)
             Text(OnlineText.cardName(cardID))
                 .font(Typography.labelSemibold).lineLimit(1)
             Text(OnlineText.finish(finish))
                 .font(Typography.caption).foregroundStyle(.secondary).lineLimit(1)
             footer
+            if let badge {
+                OnlineBadge(text: badge.text, color: badge.color)
+            }
         }
         .frame(width: width, alignment: .leading)
         .contentShape(Rectangle())
@@ -477,6 +535,11 @@ struct OnlineStockPicker: View {
     let actionTitle: String
     /// 이미 담은 장수. 남은 수량을 넘겨 담지 않게 한다.
     var alreadyPicked: [String: Int] = [:]
+    /// 고를 카드. 없으면 내 남는 카드다. 친구의 교환 바인더를 넘길 때 쓴다.
+    var source: [OnlineStock]? = nil
+    var searchPlaceholder: String? = nil
+    var emptyTitle: String? = nil
+    var emptyMessage: String? = nil
     let onPick: (_ key: String, _ quantity: Int) -> Void
 
     @State private var query = ""
@@ -486,7 +549,7 @@ struct OnlineStockPicker: View {
     @Environment(\.dismiss) private var dismiss
 
     private var stock: [OnlineStock] {
-        let all = OnlineStock.sellable(wallet: wallet)
+        let all = source ?? OnlineStock.sellable(wallet: wallet)
         let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return all }
         return all.filter { DexCardSearch.names(cardID: $0.cardID).contains { $0.contains(needle) } }
@@ -510,13 +573,13 @@ struct OnlineStockPicker: View {
                     }
                 }
             } else {
-                TextField(OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
+                TextField(searchPlaceholder ?? OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
                     .debouncedSearch(query, into: $appliedQuery)
                 ScrollView {
                     if stock.isEmpty {
                         OnlineEmptyState(icon: "square.stack",
-                                         title: query.isEmpty ? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
-                                         message: query.isEmpty ? OnlineText.l.spareCardsHint : nil)
+                                         title: query.isEmpty ? emptyTitle ?? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
+                                         message: query.isEmpty ? emptyMessage ?? OnlineText.l.spareCardsHint : nil)
                     } else {
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
                             ForEach(stock) { item in

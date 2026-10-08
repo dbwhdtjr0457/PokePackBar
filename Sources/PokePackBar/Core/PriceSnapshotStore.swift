@@ -56,7 +56,8 @@ final class PriceSnapshotStore: @unchecked Sendable {
 
     enum SnapshotError: LocalizedError {
         case invalid
-        var errorDescription: String? { "Invalid price snapshot. Expected schemaVersion 1, USD cardPrices and packPrices; previous prices were kept." }
+        // 로그에는 원인을 남긴다: schemaVersion 1, USD cardPrices 와 packPrices 를 기대한다.
+        var errorDescription: String? { L.current.priceSnapshotInvalid }
     }
 
     static func validate(_ data: Data) throws -> Snapshot {

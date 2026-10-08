@@ -46,6 +46,7 @@ struct BulkSaleView: View {
             header(l)
             if let sold {
                 result(l, sold)
+                    .transition(.scale(scale: 0.92).combined(with: .opacity))
             } else {
                 picker(l)
                 summary(l, sale)
@@ -162,7 +163,8 @@ struct BulkSaleView: View {
                         Task {
                             let got = await wallet.sellBulkOnlineAware(ids)
                             confirming = false
-                            sold = got.isEmpty ? nil : got
+                            if !got.isEmpty { SoundEffects.play(.coin) }
+                            withAnimation(.snappy(duration: 0.3)) { sold = got.isEmpty ? nil : got }
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -186,6 +188,8 @@ struct BulkSaleView: View {
             Spacer(minLength: 0)
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 40)).foregroundStyle(.green)
+                .symbolEffect(.bounce, value: sale.copies)
+                .background { SparkBurst(color: .green, radius: 52) }
             Text(l.bulkSellDone(sale.copies,
                                 MarketEconomy.money(tokens: sale.tokens,
                                                     language: wallet.language)))
