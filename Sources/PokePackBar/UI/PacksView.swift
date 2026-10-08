@@ -358,7 +358,7 @@ private struct RevealView: View {
     @FocusState private var focused: Bool
     /// 결과 화면 정렬. 다음 개봉에도 같은 기준으로 보이게 기억한다.
     @AppStorage("packSummarySort") private var summarySort = SummarySort.price
-    /// 결과 화면이 뜬 때. 좋은 카드의 빛은 이 직후에만 스친다(`PulledCardCell.Shine`).
+    /// 결과 화면이 뜬 때. 좋은 카드의 빛은 이때부터 차례로 스친다(`PulledCardCell.Shine`).
     @State private var summaryShownAt = Date.distantPast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -598,9 +598,8 @@ private struct RevealView: View {
             guard !card.isSupplementalEnergy,
                   RevealMotionProfile.forCard(card).emphasis != .none else { return nil }
             defer { next += 1 }
-            return PulledCardCell.Shine(order: next,
-                                        best: card.id == best?.id && card.finish == best?.finish,
-                                        until: summaryShownAt.addingTimeInterval(2))
+            return PulledCardCell.Shine(best: card.id == best?.id && card.finish == best?.finish,
+                                        at: PulledCardCell.Shine.start(order: next, after: summaryShownAt))
         }
     }
 
@@ -1180,20 +1179,17 @@ private struct PulledCardCell: View {
     var shine: Shine?
 
     struct Shine: Equatable {
-        /// 빛이 스치는 차례(0부터). 앞 카드의 빛이 지나가며 이어지게 조금씩 늦춘다.
-        let order: Int
         /// 이번 개봉의 최고 카드. 더 밝고 넓은 빛이 조금 더 천천히 지나간다.
         let best: Bool
-        /// 이때가 지나서 나타난 칸은 빛을 주지 않는다. 여러 팩 결과를 내려 볼 때마다 칸이
-        /// 새로 만들어지며 다시 반짝이면 어수선하다.
-        let until: Date
-    }
+        /// 이 칸에 빛이 스치기 시작할 때.
+        let at: Date
 
-    /// 칸이 다 자리 잡을 때까지 기다리는 시간과 차례 사이 간격(ms). 열 장 넘게 이어지면
-    /// 끝이 너무 늦어지므로 여덟 번째부터는 같이 스친다.
-    private static let shineStart = 460
-    private static let shineStagger = 140
-    private static let staggeredShines = 8
+        /// 결과가 뜬 뒤 칸이 다 자리 잡을 때까지 기다렸다가, 첫 칸부터 일정한 간격으로 이어
+        /// 스친다. 장수가 많아도 몰아서 끝내지 않는다 — 빛이 한 줄로 미끄러져 가야 순서가 읽힌다.
+        static func start(order: Int, after shown: Date) -> Date {
+            shown.addingTimeInterval(0.46 + Double(order) * 0.14)
+        }
+    }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appeared = false
@@ -1253,11 +1249,12 @@ private struct PulledCardCell: View {
             } else {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.76)) { appeared = true }
             }
-            // 칸이 다 자리 잡은 뒤 좋은 카드마다 차례로 빛이 한 번 스친다.
-            guard let shine, !reduceMotion, Date() < shine.until else { return }
-            let waited = min(appearanceIndex, 10) * 38
-            let start = Self.shineStart + min(shine.order, Self.staggeredShines) * Self.shineStagger
-            try? await Task.sleep(for: .milliseconds(max(0, start - waited)))
+            // 좋은 카드마다 제 차례에 빛이 한 번 스친다. 여러 팩 결과를 내려 볼 때 새로
+            // 나타난 칸은 차례가 이미 지났으면 빛을 주지 않는다 — 내릴 때마다 다시 반짝이면 어수선하다.
+            guard let shine, !reduceMotion else { return }
+            let wait = shine.at.timeIntervalSinceNow
+            guard wait > -0.1 else { return }
+            try? await Task.sleep(for: .seconds(max(0, wait)))
             guard !Task.isCancelled else { return }
             withAnimation(.easeInOut(duration: shine.best ? 0.8 : 0.6)) { glint = 2 }
         }

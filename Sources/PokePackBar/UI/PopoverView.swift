@@ -15,9 +15,11 @@ enum PopoverSize: String, CaseIterable, Sendable {
     static let defaultsKey = "popoverSize"
 
     /// 이번 실행의 크기. 치수가 화면 곳곳의 정적 값이라 실행 중에는 바꾸지 않는다.
-    /// `PPB_POPOVER_SIZE` 는 레이아웃 감사가 큰 창을 따로 재 볼 때 쓴다.
+    /// `--popover-size large` 는 레이아웃 감사가 큰 창을 따로 재 볼 때 쓴다.
     static let launch: PopoverSize = {
-        let forced = ProcessInfo.processInfo.environment["PPB_POPOVER_SIZE"]
+        let arguments = CommandLine.arguments
+        let forced = arguments.firstIndex(of: "--popover-size")
+            .flatMap { arguments.indices.contains($0 + 1) ? arguments[$0 + 1] : nil }
         let stored = UserDefaults.standard.string(forKey: defaultsKey)
         return PopoverSize(rawValue: forced ?? stored ?? "") ?? .regular
     }()
