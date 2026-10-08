@@ -473,14 +473,16 @@ struct OnlineSettingsView: View {
             message = OnlineText.l.passwordTwice(ServerPasswordPolicy.lengthDescription)
             return
         }
-        if registering && linking && linkCode.isEmpty { message = OnlineText.l.linkCodeRequired; return }
+        // 복사하며 붙은 앞뒤 공백 때문에 맞는 코드가 "만료됐거나 이미 쓴 코드" 로 거절되지 않게 한다.
+        let code = linkCode.trimmingCharacters(in: .whitespacesAndNewlines)
+        if registering && linking && code.isEmpty { message = OnlineText.l.linkCodeRequired; return }
         busy = true
         Task {
             defer { busy = false; password = ""; confirmation = ""; linkCode = "" }
             do {
                 let url = try validatedURL()
                 let result = try await ServerAuthentication.login(url: url, email: email, password: password,
-                    register: registering, linkCode: registering && linking ? linkCode : "",
+                    register: registering, linkCode: registering && linking ? code : "",
                     deviceID: ServerAuthentication.deviceID())
                 let config = RemoteGameConfiguration(baseURL: url, accountID: result.account_id, deviceID: result.device_id)
                 if let remote = wallet.remote, unconfirmed,
