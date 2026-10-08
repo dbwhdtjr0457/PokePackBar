@@ -242,19 +242,35 @@ struct SettingsView: View {
     /// **얻었는데 고를 데가 없으면 보상이 아니다.** 칭호는 도감 탭 머리에 붙는다.
     /// 하나도 없으면 이 묶음을 아예 두지 않는다 — 빈 선택기는 「무엇을 해야 열리는지」를
     /// 말해 주지 않으므로 도움이 안 된다.
+    /// 칭호 선택기에서 레벨 칭호를 도감 칭호와 가르는 번호. 도감 칭호는 완성 수(수백)를 쓴다.
+    private static let levelTitleTag = 100_000
+
     @ViewBuilder
     private var collectorGroup: some View {
-        if !wallet.titles.isEmpty {
+        if !wallet.titles.isEmpty || !wallet.levelTitles.isEmpty {
             settingsSection(l.titleSectionLabel) {
                 groupRow {
                     Text(l.titleSectionLabel)
                     Spacer()
+                    // 도감 칭호와 레벨 칭호를 한 선택기에서 고른다. 레벨 칭호는 큰 번호로 구분한다.
                     Picker("", selection: Binding(
-                        get: { wallet.stateTitleChoice ?? -1 },
-                        set: { wallet.setTitle($0 < 0 ? nil : $0) })) {
+                        get: { wallet.levelTitleChoice.map { Self.levelTitleTag + $0 } ?? wallet.stateTitleChoice ?? -1 },
+                        set: { value in
+                            if value < 0 {
+                                wallet.setTitle(nil)
+                                wallet.setLevelTitle(nil)
+                            } else if value >= Self.levelTitleTag {
+                                wallet.setLevelTitle(value - Self.levelTitleTag)
+                            } else {
+                                wallet.setTitle(value)
+                            }
+                        })) {
                         Text(l.titleNone).tag(-1)
                         ForEach(wallet.titles) { step in
                             Text(step.title.text(wallet.language)).tag(step.completed)
+                        }
+                        ForEach(wallet.levelTitles, id: \.self) { level in
+                            Text(l.levelTitleOption(level)).tag(Self.levelTitleTag + level)
                         }
                     }
                     .labelsHidden().frame(width: 180)

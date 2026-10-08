@@ -16,7 +16,7 @@ struct CardShopView: View {
     /// 나눠 가지므로 갈래가 둘에서 셋으로 오갈 때마다 옆 칸의 폭과 자리가 함께 움직였다 —
     /// 마지막 쿠폰을 쓰는 순간 탭 줄이 덜컹거린다. 쿠폰을 받기 전에 그런 것이 있는 줄
     /// 모른다는 문제도 있었다.
-    enum Section: CaseIterable { case packs, oripa, coupons }
+    enum Section: CaseIterable { case packs, oripa, rotation, coupons }
 
     /// 상세를 보고 있는 세트. nil 이면 목록.
     @State private var selectedSet: String?
@@ -34,11 +34,13 @@ struct CardShopView: View {
 
     @Environment(PopoverNavigation.self) private var nav
 
-    /// `initialPackQuery` 는 레이아웃 진단이 검색 결과 화면을 찍을 때 쓴다.
-    init(wallet: WalletStore, index: CardIndex?, initialPackQuery: String = "") {
+    /// `initialPackQuery` 와 `initialSection` 은 레이아웃 진단이 검색 결과나 다른 갈래를 찍을 때 쓴다.
+    init(wallet: WalletStore, index: CardIndex?, initialPackQuery: String = "",
+         initialSection: Section = .packs) {
         self.wallet = wallet
         self.index = index
         _packQuery = State(initialValue: initialPackQuery)
+        _section = State(initialValue: initialSection)
     }
 
     var body: some View {
@@ -59,7 +61,14 @@ struct CardShopView: View {
                         sectionPicker
                         switch section {
                         case .packs: packsHome(index)
-                        case .oripa: OripaView(wallet: wallet, index: index)
+                        case .oripa:
+                            // 처음 시작한 사람에게는 팩을 몇 번 열어 본 뒤에 연다.
+                            if wallet.level < LevelRules.oripaLevel {
+                                lockedOripa
+                            } else {
+                                OripaView(wallet: wallet, index: index)
+                            }
+                        case .rotation: RotationMarketView(wallet: wallet, index: index)
                         case .coupons: couponBox(index)
                         }
                     }
@@ -95,8 +104,24 @@ struct CardShopView: View {
         return SegmentedTabs(items: [
             .init(value: Section.packs, label: wallet.l.shopPacksSection),
             .init(value: Section.oripa, label: wallet.l.oripaTitle),
+            .init(value: Section.rotation, label: wallet.l.rotationSection),
             .init(value: Section.coupons, label: wallet.l.shopCouponsSection(total)),
         ], selection: $section)
+    }
+
+    /// 오리파가 아직 잠긴 화면. 무엇을 하면 열리는지를 적는다.
+    private var lockedOripa: some View {
+        let need = LevelRules.packsRequired(for: LevelRules.oripaLevel) - wallet.packsOpenedTotal
+        return VStack(spacing: 8) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 30, weight: .light)).foregroundStyle(.tertiary)
+            Text(wallet.l.levelOripaLocked(LevelRules.oripaLevel, packsLeft: max(1, need)))
+                .font(Typography.body).foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 24)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     /// 쿠폰함 — 갖고 있는 쿠폰을 세트별로 늘어놓는다.
