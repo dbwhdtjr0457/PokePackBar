@@ -1034,9 +1034,148 @@ final class WalletStore {
     /// 고른 칭호의 계단 번호. 안 골랐으면 nil — 화면의 선택기가 이 값을 쓴다.
     var stateTitleChoice: Int? { state.title }
 
+    /// 도감 칭호를 고른다. 레벨 칭호는 내려놓는다 — 칭호는 하나만 단다.
     func setTitle(_ completed: Int?) {
-        if isOnline { updateRemotePreferences(title: .some(completed)); return }
-        state.title = completed; save()
+        if isOnline {
+            updateRemotePreferences(title: .some(completed),
+                                    levelTitle: completed == nil ? .some(state.levelTitle) : .some(nil))
+            return
+        }
+        state.title = completed
+        if completed != nil { state.levelTitle = nil }
+        save()
+    }
+
+    // MARK: 트레이너 레벨
+
+    /// 지금 레벨. 연 팩 수에서 계산한다.
+    var level: Int { LevelRules.level(forPacksOpened: state.packsOpened) }
+    var packsOpenedTotal: Int { state.packsOpened }
+
+    /// 아직 받지 않은 레벨 보상. 2레벨부터 지금 레벨까지다.
+    var claimableLevels: [Int] {
+        let current = level
+        guard current >= 2 else { return [] }
+        let claimed = Set(state.claimedLevels)
+        return (2...current).filter { !claimed.contains($0) }
+    }
+
+    /// 받을 수 있는 레벨 보상을 한꺼번에 받는다. 받은 보상 목록을 돌려준다.
+    @discardableResult
+    func claimLevels() -> [LevelRules.Reward] {
+        transaction(failure: []) { claimLevelsTransaction() }
+    }
+
+    private func claimLevelsTransaction() -> [LevelRules.Reward] {
+        var rewards: [LevelRules.Reward] = []
+        for level in claimableLevels {
+            let reward = LevelRules.reward(for: level)
+            state.packs[reward.setID, default: 0] += reward.packs
+            if reward.couponCount > 0 {
+                if let i = state.coupons.firstIndex(where: { $0.setID == reward.setID
+                                                             && $0.value == reward.couponValue }) {
+                    state.coupons[i].left += reward.couponCount
+                } else {
+                    state.coupons.append(PackCoupon(setID: reward.setID, value: reward.couponValue,
+                                                    left: reward.couponCount))
+                }
+            }
+            state.claimedLevels.append(level)
+            rewards.append(reward)
+        }
+        if !rewards.isEmpty {
+            AppLog.write("levels claimed \(rewards.map(\.level)) packs=\(rewards.reduce(0) { $0 + $1.packs })")
+        }
+        return rewards
+    }
+
+    func claimLevelsOnlineAware() async -> [LevelRules.Reward]? {
+        guard let remote else { return claimLevels() }
+        let pending = claimableLevels
+        guard !pending.isEmpty else { return [] }
+        let result = await remote.execute(.init(kind: "claim_levels"))
+        persistenceError = remote.error
+        guard result != nil else { return nil }
+        return pending.map(LevelRules.reward(for:))
+    }
+
+    /// 열린 레벨 칭호. 그 레벨에 닿으면 열린다.
+    var levelTitles: [Int] { LevelRules.titleLevels.filter { level >= $0 } }
+    var levelTitleChoice: Int? { state.levelTitle }
+
+    /// 레벨 칭호를 고른다. 도감 칭호는 내려놓는다.
+    func setLevelTitle(_ level: Int?) {
+        if isOnline {
+            updateRemotePreferences(title: level == nil ? .some(state.title) : .some(nil),
+                                    levelTitle: .some(level))
+            return
+        }
+        state.levelTitle = level
+        if level != nil { state.title = nil }
+        save()
+    }
+
+    /// 화면에 다는 칭호. 레벨 칭호를 골랐으면 그것, 아니면 도감 칭호다.
+    func displayTitle(_ l: L) -> String? {
+        if let picked = state.levelTitle, levelTitles.contains(picked) { return l.levelTitle(picked) }
+        return title?.text(language)
+    }
+
+    // MARK: 로테이션 마켓
+
+    /// 오늘의 진열.
+    func rotationLineup(index: CardIndex, date: String = RotationMarket.dateKey()) -> [String] {
+        RotationMarket.lineup(date: date, index: index)
+    }
+
+    /// 진열 카드가 들어올 판형. 단일 카드 보상과 같은 규칙으로 정한다.
+    func rotationPrinting(_ cardID: String, index: CardIndex) -> CardPrintingKey {
+        inferredPrinting(cardID: cardID, entry: index.card(cardID))
+    }
+
+    func rotationPrice(_ cardID: String, index: CardIndex) -> Int {
+        RotationMarket.price(cardID: cardID, finish: rotationPrinting(cardID, index: index).finish)
+    }
+
+    func rotationBought(_ cardID: String, date: String = RotationMarket.dateKey()) -> Bool {
+        state.rotationPurchases.contains(RotationMarket.purchaseKey(date: date, cardID: cardID))
+    }
+
+    /// 진열 카드 한 장을 산다. 오늘 진열이 아니거나, 이미 샀거나, 잔액이 모자라면 nil.
+    @discardableResult
+    func buyRotation(cardID: String, index: CardIndex,
+                     date: String = RotationMarket.dateKey()) -> PulledCard? {
+        transaction(failure: Optional<PulledCard>.none) {
+            buyRotationTransaction(cardID: cardID, index: index, date: date)
+        }
+    }
+
+    private func buyRotationTransaction(cardID: String, index: CardIndex, date: String) -> PulledCard? {
+        guard date == RotationMarket.dateKey(), rotationLineup(index: index, date: date).contains(cardID),
+              !rotationBought(cardID, date: date) else { return nil }
+        let price = rotationPrice(cardID, index: index)
+        guard price > 0, availableTokens >= price, let entry = index.card(cardID) else { return nil }
+        let isNew = cardCount(cardID) == 0
+        state.marketSpentTokens += price
+        // 지난 진열의 기록은 남길 이유가 없다. 오늘 것만 둔다.
+        state.rotationPurchases.removeAll { !$0.hasPrefix("\(date)|") }
+        state.rotationPurchases.append(RotationMarket.purchaseKey(date: date, cardID: cardID))
+        let printing = rotationPrinting(cardID, index: index)
+        _ = collect([printing])
+        AppLog.write("rotation bought \(cardID) for \(price)")
+        return PulledCard(id: cardID, tier: entry.tier, isNew: isNew, finish: printing.finish)
+    }
+
+    func buyRotationOnlineAware(cardID: String, index: CardIndex) async -> PulledCard? {
+        guard let remote else { return buyRotation(cardID: cardID, index: index) }
+        let date = RotationMarket.dateKey()
+        let isNew = cardCount(cardID) == 0
+        let result = await remote.execute(.init(kind: "rotation_buy", card_id: cardID, date: date),
+                                          expectedTokens: rotationPrice(cardID, index: index))
+        persistenceError = remote.error
+        guard result != nil, let entry = index.card(cardID) else { return nil }
+        return PulledCard(id: cardID, tier: entry.tier, isNew: isNew,
+                          finish: rotationPrinting(cardID, index: index).finish)
     }
 
     /// 갖고 있는 쿠폰 — 남은 장수가 있는 것만, **세트와 할인율이 같으면 한 줄로 묶는다.**
@@ -1434,12 +1573,14 @@ final class WalletStore {
     }
 
     private func updateRemotePreferences(mode: OpeningMode? = nil,
-                                         favorite: String?? = nil, title: Int?? = nil) {
+                                         favorite: String?? = nil, title: Int?? = nil,
+                                         levelTitle: Int?? = nil) {
         guard let remote else { return }
         let command = ServerRulesBridge.Command(kind: "set_preferences",
             opening_mode: (mode ?? state.openingMode).rawValue,
             favorite_card_id: favorite ?? state.favoriteCardID,
-            title: title ?? state.title)
+            title: title ?? state.title,
+            level_title: levelTitle ?? state.levelTitle)
         Task { _ = await remote.execute(command); persistenceError = remote.error }
     }
 

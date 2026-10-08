@@ -327,6 +327,9 @@ struct PopoverView: View {
                         Text("·")
                         Text("\(top.name) \(Int(top.utilization.rounded()))%").monospacedDigit()
                     }
+                    Spacer(minLength: 4)
+                    // 레벨은 사용량 줄 끝에 둔다. 윗줄은 업데이트 버튼이 뜨면 자리가 없다.
+                    LevelChip(wallet: wallet)
                 }
                 .font(Typography.label).foregroundStyle(.secondary)
                 .lineLimit(1)

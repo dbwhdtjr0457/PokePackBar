@@ -279,8 +279,8 @@ struct DexView: View {
             HStack(spacing: 6) {
                 Text(l.dexPerksHeader).font(Typography.bodySemibold)
                 // 칭호가 여기 붙는다. 얻었는데 보여 줄 자리가 없으면 보상이 아니다.
-                if let title = wallet.title {
-                    Text(title.text(wallet.language))
+                if let title = wallet.displayTitle(wallet.l) {
+                    Text(title)
                         .font(Typography.labelSemibold)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5).padding(.vertical, 1)

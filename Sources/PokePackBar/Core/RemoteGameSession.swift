@@ -305,7 +305,7 @@ final class RemoteGameSession {
     private func perform(_ command: ServerRulesBridge.Command, expectedTokens: Int? = nil) async throws -> ServerRulesBridge.Result {
         var request = Request(request_id: UUID(), expected_revision: revision, command: command,
                               rules_version: ServerRulesBridge.version, price_version: priceVersion)
-        if ["buy_packs", "sell_spares", "sell_bulk", "pull_oripa", "refresh_oripa"].contains(command.kind) {
+        if ["buy_packs", "sell_spares", "sell_bulk", "pull_oripa", "refresh_oripa", "rotation_buy"].contains(command.kind) {
             let data = try await api("v1/quotes", method: "POST", body: JSONEncoder().encode(request))
             let quote = try JSONDecoder().decode(Quote.self, from: data)
             guard quote.price_version == priceVersion, quote.revision == revision else {

@@ -163,6 +163,13 @@ enum PopoverLayoutAudit {
                     .padding(PopoverMetrics.padding)),
                 fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         }
+        // 로테이션 마켓 — 오늘의 8장.
+        try await capture("shop-rotation", view: AnyView(
+            CardShopView(wallet: wallet, index: index, initialSection: .rotation)
+                .environment(nav)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         // 맨 위 줄(cel30)은 두 개다. 여러 개 가진 줄에만 수량 칸과 「최대」 가 붙는다.
         for setID in ["cel30", "sv1", "sv2", "sv3", "sv3pt5", "sv4", "swsh1"] { wallet.addPack(setID: setID) }
         try await capture("packs-search", view: AnyView(

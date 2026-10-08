@@ -100,6 +100,11 @@ struct StatsView: View {
         ScrollView {
             if let stats {
                 VStack(alignment: .leading, spacing: 12) {
+                    // 레벨은 연 팩 수에서 나오므로 기록의 맨 앞에 둔다.
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(l.levelHeader).font(Typography.labelSemibold).foregroundStyle(.secondary)
+                        LevelCard(wallet: wallet)
+                    }
                     section(l.statsOpening) {
                         row(l.statsPacksOpened, count(stats.packsOpened))
                         row(l.statsCardsPulled, count(stats.cardsPulled))

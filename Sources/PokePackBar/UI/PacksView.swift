@@ -272,8 +272,9 @@ private struct OwnedPackRow: View {
 
     @State private var quantity = 1
 
-    /// 개봉 상한은 없다. 실제로 가진 팩 수만 자연스러운 상한이다.
-    private var maximumQuantity: Int { max(1, count) }
+    /// 가진 팩 수가 상한이다. 처음 시작한 사람은 레벨에 따라 한 번에 여는 수가 정해져 있다.
+    private var openLimit: Int? { LevelRules.openLimit(level: wallet.level) }
+    private var maximumQuantity: Int { max(1, min(count, openLimit ?? .max)) }
 
     var body: some View {
         let l = wallet.l
@@ -301,6 +302,11 @@ private struct OwnedPackRow: View {
                                             accessibilityLabel: l.packOpenQuantity(quantity), l: l)
                         .font(Typography.bodySemibold)
                         .fixedSize()
+                    }
+                    if let limit = openLimit, count > limit,
+                       let next = LevelRules.nextUnlock(after: wallet.level) {
+                        Text(l.levelOpenLimit(limit, nextLevel: next))
+                            .font(Typography.caption).foregroundStyle(.secondary)
                     }
                 }
                 Button(l.openPackCount(quantity)) { onOpen(quantity) }
