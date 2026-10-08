@@ -674,6 +674,24 @@ extension L {
     func shopPackCount(_ count: Int) -> String {
         t("\(count)개", "\(count)", "\(count)個", "\(count)", "\(count)", "\(count)")
     }
+    var packSearchPlaceholder: String { t("팩 이름으로 찾기", "Search pack names", "パック名で検索",
+                                            "Buscar sobres por nombre", "Chercher un booster",
+                                            "Buscar pacotes pelo nome") }
+    func packSearchEmpty(_ query: String) -> String {
+        t("‘\(query)’ 이름의 팩이 없어요.", "No pack matches ‘\(query)’.",
+          "「\(query)」に一致するパックはありません。",
+          "Ningún sobre coincide con ‘\(query)’.",
+          "Aucun booster ne correspond à « \(query) ».",
+          "Nenhum pacote corresponde a ‘\(query)’.")
+    }
+    var packSearchEnglishHint: String {
+        t("팩 이름은 영어로 적혀 있어요. 예: 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon",
+          "Pack names are in English, e.g. 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon",
+          "パック名は英語表記です。例：151、Obsidian、Sun\u{00A0}&\u{00A0}Moon",
+          "Los nombres están en inglés, p. ej. 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon",
+          "Les noms sont en anglais, p. ex. 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon",
+          "Os nomes estão em inglês, ex.: 151, Obsidian, Sun\u{00A0}&\u{00A0}Moon")
+    }
     var shopPacksSection: String { t("일반 팩", "Packs", "通常パック",
                                       "Sobres", "Boosters", "Pacotes") }
 

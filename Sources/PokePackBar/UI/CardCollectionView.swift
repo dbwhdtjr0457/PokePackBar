@@ -200,29 +200,9 @@ struct CardCollectionView: View {
         .debouncedSearch(query, into: $appliedQuery)
     }
 
-    /// 검색은 한 줄을 통째로 쓴다. 보기 줄 사이에 끼워 두니 글자 두 개 폭으로 줄어
-    /// 무엇을 쳤는지도 보이지 않았다. 모양은 도감 탭 검색창과 같다.
     private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            TextField(wallet.l.collectionSearchPlaceholder, text: $query)
-                .textFieldStyle(.plain)
-                .font(Typography.body)
-                .accessibilityLabel(wallet.l.searchCards)
-            if !query.isEmpty {
-                Button { query = "" } label: {
-                    Image(systemName: "multiply.circle.fill").foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(wallet.l.dexCardSearchClear)
-            }
-        }
-        .padding(.horizontal, 9).padding(.vertical, 6)
-        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .onExitCommand { query = "" }
+        SearchField(placeholder: wallet.l.collectionSearchPlaceholder, label: wallet.l.searchCards,
+                    clearLabel: wallet.l.dexCardSearchClear, text: $query)
     }
 
     /// 보이는 카드가 없을 때의 안내. 격자 자리는 그대로 두고 위에 한 줄만 얹는다.

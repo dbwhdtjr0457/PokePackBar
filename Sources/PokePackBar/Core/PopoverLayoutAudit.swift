@@ -145,6 +145,22 @@ enum PopoverLayoutAudit {
         try await capture("oripa-picking", view: AnyView(picking
             .frame(height: PopoverMetrics.tabHeight-36).padding(PopoverMetrics.padding)),
             fixedHeight: PopoverMetrics.tabHeight-36+PopoverMetrics.padding*2)
+        // 팩 이름 검색: 결과, 결과 없음(영어 이름 안내), 종류가 많은 팩 탭.
+        for (name, query) in [("shop-search", "evol"), ("shop-search-empty", "스칼렛")] {
+            try await capture(name, view: AnyView(
+                CardShopView(wallet: wallet, index: index, initialPackQuery: query)
+                    .environment(nav)
+                    .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                    .padding(PopoverMetrics.padding)),
+                fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
+        }
+        for setID in ["sv1", "sv2", "sv3", "sv3pt5", "sv4", "swsh1"] { wallet.addPack(setID: setID) }
+        try await capture("packs-search", view: AnyView(
+            PacksView(wallet: wallet, index: index)
+                .environment(nav)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         let report: [String: Any] = ["popoverWidth": PopoverMetrics.width, "tabHeight": PopoverMetrics.tabHeight,
                                     "oripaMinimumHeight": minimum.height, "screens": measurements,
                                     "usesLiveWallet": false, "pollsProviders": false]

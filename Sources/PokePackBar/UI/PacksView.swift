@@ -86,7 +86,7 @@ struct PacksView: View {
             } else if owned.isEmpty {
                 emptyState
             } else {
-                packList
+                packShelf
             }
         }
         .frame(height: PopoverMetrics.tabHeight)
@@ -138,10 +138,45 @@ struct PacksView: View {
             .sorted { $0.set.released > $1.set.released }
     }
 
+    /// 팩 이름 검색어. 가진 팩 종류가 많을 때만 검색창을 띄운다.
+    @State private var packQuery = ""
+    /// 이만큼 종류가 쌓이면 검색창을 띄운다. 몇 줄뿐인 목록에 검색창은 자리만 차지한다.
+    private static let searchThreshold = 6
+
+    private var visibleOwned: [(set: CardSet, count: Int)] {
+        packQuery.isEmpty ? owned : owned.filter { PackSearch.matches($0.set, query: packQuery) }
+    }
+
+    /// 가진 팩 목록과 그 위의 검색창.
+    private var packShelf: some View {
+        VStack(spacing: 8) {
+            // 검색어가 남아 있으면 종류가 줄어도 검색창을 지킨다 — 지울 곳이 사라지면 안 된다.
+            if owned.count >= Self.searchThreshold || !packQuery.isEmpty {
+                SearchField(placeholder: wallet.l.packSearchPlaceholder, label: wallet.l.packSearchPlaceholder,
+                            clearLabel: wallet.l.dexCardSearchClear, text: $packQuery)
+            }
+            if visibleOwned.isEmpty {
+                VStack(spacing: 4) {
+                    Text(wallet.l.packSearchEmpty(packQuery))
+                        .font(Typography.body).foregroundStyle(.secondary)
+                    if PackSearch.hasNonLatinLetters(packQuery) {
+                        Text(wallet.l.packSearchEnglishHint)
+                            .font(Typography.label).foregroundStyle(.secondary)
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                packList
+            }
+        }
+    }
+
     private var packList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                ForEach(owned, id: \.set.id) { entry in
+                ForEach(visibleOwned, id: \.set.id) { entry in
                     if let index {
                         OwnedPackRow(wallet: wallet, index: index, set: entry.set,
                                      count: entry.count) { count in

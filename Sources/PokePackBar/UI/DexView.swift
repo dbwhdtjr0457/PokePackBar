@@ -95,30 +95,9 @@ struct DexView: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            TextField(wallet.l.dexCardSearchPlaceholder, text: $searchText)
-                .textFieldStyle(.plain)
-                .font(Typography.body)
-                .accessibilityLabel(wallet.l.dexCardSearchLabel)
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "multiply.circle.fill")
-                        .foregroundStyle(.tertiary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(wallet.l.dexCardSearchClear)
-            }
-        }
-        .padding(.horizontal, 9).padding(.vertical, 6)
-        .background(Color.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 8))
-        .onExitCommand { searchText = "" }
-        .debouncedSearch(searchText, into: $appliedSearch)
+        SearchField(placeholder: wallet.l.dexCardSearchPlaceholder, label: wallet.l.dexCardSearchLabel,
+                    clearLabel: wallet.l.dexCardSearchClear, text: $searchText)
+            .debouncedSearch(searchText, into: $appliedSearch)
     }
 
     /// 조합 도감 — 예전 목록 그대로. 140개라 스크롤로 훑는다.

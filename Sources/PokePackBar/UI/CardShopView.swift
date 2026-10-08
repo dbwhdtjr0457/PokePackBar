@@ -26,8 +26,17 @@ struct CardShopView: View {
     /// 첫 화면이 17줄로 끝나고, 찾는 팩이 어느 시대인지는 대개 알고 있다.
     @State private var openedEra: String?
     @State private var section: Section = .packs
+    /// 팩 이름 검색어. 상세에 들어갔다 나와도 남아 있어 결과로 돌아온다.
+    @State private var packQuery: String
 
     @Environment(PopoverNavigation.self) private var nav
+
+    /// `initialPackQuery` 는 레이아웃 진단이 검색 결과 화면을 찍을 때 쓴다.
+    init(wallet: WalletStore, index: CardIndex?, initialPackQuery: String = "") {
+        self.wallet = wallet
+        self.index = index
+        _packQuery = State(initialValue: initialPackQuery)
+    }
 
     var body: some View {
         Group {
@@ -44,7 +53,7 @@ struct CardShopView: View {
                     VStack(spacing: 8) {
                         sectionPicker
                         switch section {
-                        case .packs: eraList(index)
+                        case .packs: packsHome(index)
                         case .oripa: OripaView(wallet: wallet, index: index)
                         case .coupons: couponBox(index)
                         }
@@ -172,6 +181,63 @@ struct CardShopView: View {
         openedEra = index.eras.first { $0.sets.contains { $0.id == requested } }?.name
         selectedSet = requested
         nav.shopSet = nil
+    }
+
+    /// 팩 갈래의 첫 화면. 검색어가 없으면 시대 목록, 있으면 모든 시대에서 찾은 팩 격자다.
+    ///
+    /// 시대로 한 단계를 두니 첫 화면은 짧아졌지만, 이름을 아는 팩도 어느 시대인지 모르면
+    /// 시대를 하나씩 열어 봐야 했다.
+    private func packsHome(_ index: CardIndex) -> some View {
+        VStack(spacing: 8) {
+            SearchField(placeholder: wallet.l.packSearchPlaceholder, label: wallet.l.packSearchPlaceholder,
+                        clearLabel: wallet.l.dexCardSearchClear, text: $packQuery)
+            if packQuery.trimmingCharacters(in: .whitespaces).isEmpty {
+                eraList(index)
+            } else {
+                packResults(index, sets: PackSearch.results(packQuery, in: index.eras.flatMap(\.sets)))
+            }
+        }
+    }
+
+    /// 찾은 팩. 시대 안 격자와 같은 칸을 쓴다 — 같은 팩이 화면마다 다르게 보이면 헷갈린다.
+    @ViewBuilder
+    private func packResults(_ index: CardIndex, sets: [CardSet]) -> some View {
+        if sets.isEmpty {
+            VStack(spacing: 6) {
+                Image(systemName: "shippingbox")
+                    .font(.system(size: 34, weight: .light))
+                    .foregroundStyle(.tertiary)
+                Text(wallet.l.packSearchEmpty(packQuery))
+                    .font(Typography.body).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                // 세트 이름은 어느 언어에서나 영어 원문이다. 한글로 치면 아무것도 안 나오는
+                // 까닭을 그 자리에서 알려 준다.
+                if PackSearch.hasNonLatinLetters(packQuery) {
+                    Text(wallet.l.packSearchEnglishHint)
+                        .font(Typography.label).foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.horizontal, 16)
+        } else {
+            ScrollView {
+                LazyVGrid(columns: CardGrid.packShelf.items,
+                          spacing: CardGrid.packShelf.spacing) {
+                    ForEach(sets) { set in
+                        Button { selectedSet = set.id } label: {
+                            PackGridCell(wallet: wallet, index: index, set: set)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 1)
+            }
+            // 시대 목록은 대표 그림만 미리 받아 둔다. 찾은 팩은 첫 화면에 보일 만큼 받는다.
+            .task(id: sets.map(\.id)) {
+                await CardImageLoader.prefetchPacks(setIDs: sets.prefix(12).map(\.id))
+            }
+        }
     }
 
     /// 시대 목록. 상점의 첫 화면이다.
