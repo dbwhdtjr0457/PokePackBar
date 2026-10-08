@@ -526,12 +526,16 @@ final class DexPerkEffectTests: XCTestCase {
                        "혜택이 없으면 정가 그대로여야 한다")
     }
 
-    func testDustBonusRaisesRefund() {
-        let card = "sv10-1"
+    func testDustBonusRaisesRefund() throws {
+        let step = MarketEconomy.stepTokens()
+        // 100원 한 칸짜리 카드에 30%를 얹으면 반 칸이 안 되어 같은 칸으로 반올림된다. 시세가
+        // 바뀌면 고정해 둔 카드(sv10-1)가 그렇게 최저가로 내려앉았다. 열 칸 이상인 카드로 잰다.
+        let card = try XCTUnwrap(CardIndex.shared?.cards.first {
+            CardSale.price(cardID: $0.id) >= 10 * step
+        }?.id)
         let base = CardSale.price(cardID: card)
         let boosted = CardSale.price(cardID: card, perks: DexPerks(dustBonus: 0.3))
         // 추가금이 붙은 값도 100원 칸 위에 있어야 한다.
-        let step = MarketEconomy.stepTokens()
         XCTAssertEqual(Double(boosted), Double(base) * 1.3, accuracy: Double(step))
         XCTAssertEqual(boosted % step, 0, "판매가가 100원 칸에서 벗어났다")
         XCTAssertGreaterThan(boosted, base)
@@ -1235,6 +1239,9 @@ final class CardRarityTests: XCTestCase {
         let l = L(.ko)
         var perTier: [CardTier: Set<String>] = [:]
         for card in index.cards {
+            // 갤러리와 볼트 같은 서브셋은 팩 안의 자리가 등급을 정한다. 트레이너 갤러리 한 칸에서
+            // V, VMAX, 풀아트, 시크릿이 다 나오므로 원본 등급은 그 안의 카드 종류일 뿐이다.
+            guard card.id.prefix(while: { $0 != "-" }) == card.setID else { continue }
             guard let rarity = card.rarity, let label = l.rarityLabel(rarity) else { continue }
             perTier[card.tier, default: []].insert(label)
         }

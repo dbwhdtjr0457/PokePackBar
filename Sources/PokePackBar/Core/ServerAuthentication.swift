@@ -217,7 +217,7 @@ enum ServerAuthentication {
             request.setValue("Bearer \(credential.access_token)", forHTTPHeaderField: "Authorization")
             request.setValue(credential.device_id.uuidString, forHTTPHeaderField: "X-PPB-Device-ID")
         }
-        if let gateway = ProcessInfo.processInfo.environment["PPB_GATEWAY_KEY"], !gateway.isEmpty {
+        if let gateway = AppEnv.value("PPB_GATEWAY_KEY"), !gateway.isEmpty {
             request.setValue(gateway, forHTTPHeaderField: "X-PPB-Gateway-Key")
         }
         let reply = try await ServerTransport.exchange(request)

@@ -3,7 +3,18 @@ import XCTest
 
 @MainActor
 final class LocalReliabilityTests: XCTestCase {
+    /// 보조 에너지 원본 그림은 앱에 넣지 않는 감사 입력이다. 빌드 스크립트처럼 저장소의
+    /// 원본 폴더를 넘겨 준다 — 넘기지 않으면 그림이 없다며 감사가 멈춘다.
     func testReleaseAuditAlsoRunsUnderXCTest() throws {
+        let art = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources/PokePackBar/Resources/supplement-energy")
+        let key = "PPB_SUPPLEMENT_ART_DIR"
+        let previous = ProcessInfo.processInfo.environment[key]
+        setenv(key, art.path, 1)
+        defer {
+            if let previous { setenv(key, previous, 1) } else { unsetenv(key) }
+        }
         try LocalAudit.audit(XCTUnwrap(CardIndex.shared))
     }
 

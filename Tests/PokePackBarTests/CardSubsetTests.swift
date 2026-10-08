@@ -113,7 +113,9 @@ final class CardSubsetTests: XCTestCase {
 
         func finish(_ cardID: String) throws -> CardFinish {
             let card = try XCTUnwrap(index.card(cardID))
+            // 비밀 레어는 카드 번호로 판형을 가른다(금색 VSTAR 와 금색 아이템 등). 앱처럼 ID 를 넘긴다.
             return CardFinishResolver.resolve(
+                cardID: cardID,
                 setID: card.setID,
                 originalRarity: card.rarity,
                 tier: card.tier
