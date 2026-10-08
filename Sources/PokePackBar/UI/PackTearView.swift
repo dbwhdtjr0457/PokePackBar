@@ -44,6 +44,10 @@ struct PackTearView: View {
     @GestureState private var touching = false
     @State private var clock = PackTearClock()
     @FocusState private var focused: Bool
+    /// 꺼 두면 팩이 저절로 뜯긴다. 하루에 수십 팩을 여는 사람에게 매번 찢는 손짓은 일이 된다.
+    @AppStorage(PackTearView.manualTearKey) private var manualTear = true
+
+    static let manualTearKey = "packManualTear"
 
     @Environment(PopoverNavigation.self) private var nav
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -124,6 +128,13 @@ struct PackTearView: View {
             packImage = await CardImageLoader.packImage(setID: setID)
         }
         .task(id: pending?.id) { await prepare() }
+        // 직접 뜯기를 껐으면 팩이 한 번 보인 뒤 저절로 뜯긴다. 바로 뜯으면 무슨 팩인지도 못 본다.
+        .task {
+            guard !manualTear else { return }
+            try? await Task.sleep(for: .milliseconds(280))
+            guard !Task.isCancelled, phase == .sealed else { return }
+            autoTear()
+        }
         .onChange(of: loaded?.id) {
             if phase == .torn { extract() }
         }

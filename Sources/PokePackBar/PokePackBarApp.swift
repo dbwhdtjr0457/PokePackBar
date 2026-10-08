@@ -19,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     private var outsideClickMonitor = OutsideClickMonitor()
+    /// 팝오버가 열려 있는 동안 Esc 를 먼저 받아 한 단계 뒤로 보낸다.
+    private var backKeyMonitor = OutsideClickMonitor()
     private var store: UsageStore!
     private var wallet: WalletStore!
     private var updater: UpdateChecker!
@@ -494,6 +496,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     /// overwrite a live token (#168). `start` is also idempotent if `didShow` fires twice.
     func popoverDidShow(_ notification: Notification) {
         startOutsideClickMonitor()
+        startBackKeyMonitor()
         navigation.isShown = true
     }
 
@@ -508,6 +511,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     /// 카드 상세·필터가 닫았다 열어도 그대로 남는다.
     func popoverDidClose(_ notification: Notification) {
         stopOutsideClickMonitor()
+        stopBackKeyMonitor()
         navigation.isShown = false
     }
 
@@ -535,6 +539,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     private func stopOutsideClickMonitor() {
         outsideClickMonitor.stop { NSEvent.removeMonitor($0) }
+    }
+
+    /// `.transient` 팝오버는 Esc 를 받으면 통째로 닫힌다. 그 전에 가로채 화면을 한 단계 되돌리고,
+    /// 돌아갈 곳이 없을 때만 그대로 흘려보내 닫히게 한다.
+    private func startBackKeyMonitor() {
+        backKeyMonitor.start {
+            NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                let keyCode = event.keyCode
+                let modifiers = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+                let window = event.windowNumber
+                let handled = MainActor.assumeIsolated {
+                    self?.handleBackKey(keyCode: keyCode, modifiers: modifiers, window: window) ?? false
+                }
+                return handled ? nil : event
+            }
+        }
+    }
+
+    private func stopBackKeyMonitor() {
+        backKeyMonitor.stop { NSEvent.removeMonitor($0) }
+    }
+
+    private func handleBackKey(keyCode: UInt16, modifiers: NSEvent.ModifierFlags, window: Int) -> Bool {
+        // 53 은 Esc. 팝오버 창에 온 것만 본다 — 알림 창이나 다른 창의 Esc 는 그 창의 몫이다.
+        guard keyCode == 53, modifiers.isDisjoint(with: [.command, .option, .control, .shift]),
+              popover.isShown,
+              let popoverWindow = popover.contentViewController?.view.window,
+              popoverWindow.windowNumber == window else { return false }
+        // 검색창에 글자가 있으면 Esc 는 먼저 글자를 지운다(SearchField). 비어 있을 때 뒤로 간다.
+        if let editor = popoverWindow.firstResponder as? NSTextView, editor.isFieldEditor,
+           !editor.string.isEmpty {
+            return false
+        }
+        return navigation.goBack()
     }
 
 }

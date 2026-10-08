@@ -12,6 +12,8 @@ struct SettingsView: View {
     var onOpenReleaseNotes: () -> Void = {}
     @State private var launchAtLogin = LoginItem.isEnabled
     @AppStorage(SoundEffects.defaultsKey) private var soundEffects = false
+    @AppStorage(PackTearView.manualTearKey) private var manualTear = true
+    @AppStorage(PopoverSize.defaultsKey) private var popoverSize = PopoverSize.regular
     @State private var launchAtLoginError: String?
     @State private var reportError: String?
     @State private var advancedExpanded = false
@@ -201,6 +203,36 @@ struct SettingsView: View {
                     .onChange(of: soundEffects) { _, on in
                         if on { SoundEffects.play(.chime(3), force: true) }
                     }
+            }
+            Divider()
+            groupRow {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l.manualTear)
+                    Text(l.manualTearHint).font(Typography.label).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Toggle("", isOn: $manualTear)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+            }
+            Divider()
+            groupRow {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l.popoverSize)
+                    Text(l.popoverSizeHint).font(Typography.label).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    // 치수는 켤 때 정해진다. 바꿨으면 그 자리에서 다시 켤 수 있게 한다.
+                    if popoverSize != PopoverSize.launch {
+                        Button(l.restartNow) { AppRelauncher.relaunch() }
+                            .buttonStyle(.link).font(Typography.labelSemibold)
+                    }
+                }
+                Spacer()
+                Picker("", selection: $popoverSize) {
+                    Text(l.popoverSizeRegular).tag(PopoverSize.regular)
+                    Text(l.popoverSizeLarge).tag(PopoverSize.large)
+                }
+                .labelsHidden().pickerStyle(.segmented).fixedSize()
             }
         }
     }

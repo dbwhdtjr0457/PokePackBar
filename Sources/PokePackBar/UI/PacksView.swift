@@ -290,11 +290,18 @@ private struct OwnedPackRow: View {
             Spacer(minLength: 0)
             VStack(alignment: .trailing, spacing: 5) {
                 if count > 1 {
-                    PackQuantityStepper(quantity: $quantity, maximum: maximumQuantity,
-                                        showsMultiplier: true,
-                                        accessibilityLabel: l.packOpenQuantity(quantity), l: l)
-                    .font(Typography.bodySemibold)
-                    .fixedSize()
+                    HStack(spacing: 6) {
+                        // 가진 팩을 다 열 때 수량 칸에 숫자를 쳐 넣지 않아도 되게 한다.
+                        Button(l.maxQuantity) { quantity = maximumQuantity }
+                            .buttonStyle(.borderless)
+                            .font(Typography.labelSemibold)
+                            .disabled(quantity == maximumQuantity)
+                        PackQuantityStepper(quantity: $quantity, maximum: maximumQuantity,
+                                            showsMultiplier: true,
+                                            accessibilityLabel: l.packOpenQuantity(quantity), l: l)
+                        .font(Typography.bodySemibold)
+                        .fixedSize()
+                    }
                 }
                 Button(l.openPackCount(quantity)) { onOpen(quantity) }
                     .buttonStyle(.borderedProminent).font(Typography.button)
@@ -346,6 +353,9 @@ private struct RevealView: View {
     @State private var isAdvancing = false
     @State private var advanceTask: Task<Void, Never>?
     @State private var upcomingImages: [String: NSImage] = [:]
+    /// 키보드로 넘긴 횟수. 올라갈 때마다 카드 자리가 누른 것처럼 넘긴다.
+    @State private var keyAdvance = 0
+    @FocusState private var focused: Bool
     /// 결과 화면 정렬. 다음 개봉에도 같은 기준으로 보이게 기억한다.
     @AppStorage("packSummarySort") private var summarySort = SummarySort.price
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -401,6 +411,17 @@ private struct RevealView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .coordinateSpace(.named(Self.space))
+        // 스페이스와 오른쪽 화살표로도 넘긴다. 열 장, 백 장을 넘길 때 같은 자리를 계속
+        // 클릭하는 것보다 손이 덜 간다. 결과 화면에서는 키를 버튼들에 넘긴다.
+        .focusable()
+        .focusEffectDisabled()
+        .focused($focused)
+        .onKeyPress(keys: [.space, .rightArrow]) { _ in
+            guard !isSummary, !isAdvancing else { return .ignored }
+            keyAdvance += 1
+            return .handled
+        }
+        .onAppear { focused = true }
         .onChange(of: opened.id) {
             advanceTask?.cancel()
             advanceTask = nil
@@ -522,7 +543,9 @@ private struct RevealView: View {
                         preloaded: revealImage(card.id),
                         nextPreloaded: nextCard.flatMap { revealImage($0.id) },
                         interactionEnabled: !isAdvancing,
+                        keyAdvance: keyAdvance,
                         onAdvance: advance)
+                .help(l.revealKeyboardHint)
 
             revealInfo(l, card: card)
 
@@ -667,6 +690,7 @@ private struct RevealView: View {
 
             Button(l.done, action: onDone)
                 .buttonStyle(.borderedProminent).font(Typography.button)
+                .keyboardShortcut(.defaultAction)
                 .padding(.bottom, 2)
         }
     }
@@ -690,6 +714,8 @@ private struct RevealStack: View {
     /// 다음 장의 그림. 개봉 준비 단계에서 이미 받아 둔 것이라 들출 때 기다릴 것이 없다.
     let nextPreloaded: NSImage?
     let interactionEnabled: Bool
+    /// 키보드로 넘긴 횟수. 바뀌면 눌러서 넘긴 것과 같게 불꽃을 터뜨리고 넘긴다.
+    var keyAdvance = 0
     let onAdvance: (RevealAdvanceKind) -> Void
 
     @State private var drag: CGSize = .zero
@@ -775,6 +801,11 @@ private struct RevealStack: View {
                     }
                 }
         )
+        .onChange(of: keyAdvance) {
+            guard interactionEnabled else { return }
+            firePop()
+            advance(.tap)
+        }
     }
 
     /// 희귀한 장은 보이는 동안 계속 기운이 뿜어져 나온다. 기운은 카드보다 크게 퍼지므로

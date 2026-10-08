@@ -120,6 +120,44 @@ enum OnlineText {
         }
     }
 
+    /// 알림을 눌렀을 때 열 탭. 알림은 「무엇이 있었다」 만 말해서, 예전에는 읽고 나서
+    /// 그 일을 처리할 탭을 직접 찾아가야 했다.
+    static func destination(_ kind: String) -> OnlineHubModel.Tab? {
+        if kind.hasPrefix("trade_") { return .trades }
+        if kind.hasPrefix("friend_") { return .social }
+        if kind.hasPrefix("listing_") || kind == "wishlist_listing" { return .market }
+        return nil
+    }
+
+    /// 친구 코드를 서버가 받는 꼴로. 보기 좋게 끊어 쓴 띄어쓰기나 줄표를 빼고 대문자로 바꾼다.
+    /// 공유 문장(「친구 코드: ABCD …」)을 통째로 붙여 넣어도 코드만 골라낸다.
+    nonisolated static func normalizedFriendCode(_ text: String) -> String {
+        let pattern = "[0-9A-Fa-f]{4}[ -]?[0-9A-Fa-f]{4}[ -]?[0-9A-Fa-f]{4}[ -]?[0-9A-Fa-f]{4}"
+        if let match = text.range(of: pattern, options: .regularExpression) {
+            return text[match].filter(\.isHexDigit).uppercased()
+        }
+        return text.filter { !$0.isWhitespace && $0 != "-" }.uppercased()
+    }
+
+    /// 네 자씩 끊어 보인다. 16자를 한 덩어리로 두면 불러 주거나 옮겨 적다 자리를 놓친다.
+    nonisolated static func groupedFriendCode(_ code: String) -> String {
+        let characters = Array(code)
+        return stride(from: 0, to: characters.count, by: 4)
+            .map { String(characters[$0..<min($0 + 4, characters.count)]) }
+            .joined(separator: " ")
+    }
+
+    /// 실패를 화면에 띄울 한 줄로. 우리가 만든 실패는 이미 읽을 문장이다. 응답 해석 실패처럼
+    /// 시스템이 만든 문장(「데이터가 올바른 형식이 아니므로…」)은 무엇을 하라는 말이 없어
+    /// 짧은 안내로 바꾸고, 원문은 로그에 남긴다.
+    nonisolated static func message(for error: any Error) -> String {
+        if error is DecodingError || (error as NSError).domain == NSCocoaErrorDomain {
+            AppLog.write("[online] unexpected failure: \(String(describing: error).prefix(300))")
+            return L.current.unexpectedProblem
+        }
+        return error.localizedDescription
+    }
+
     /// "6일 남음" 처럼 남은 시간만 말한다. 날짜와 시각을 통째로 보여 주면 계산을 떠넘긴다.
     static func remaining(until timestamp: Int) -> String {
         let seconds = Double(timestamp) - Date().timeIntervalSince1970

@@ -5,22 +5,42 @@ import SwiftUI
 /// 잔액과 사용량은 탭이 아니라 상단 고정 영역이 맡는다.
 enum PopoverTab: CaseIterable { case shop, packs, collection, dex, stats }
 
+/// 팝오버 크기. 설정에서 고르고, 앱을 다시 켤 때 적용된다.
+///
+/// 큰 화면에서는 카드가 작아 그림을 보려면 매번 상세를 열어야 했다. 글자는 그대로 두고
+/// 창과 카드 격자만 키운다.
+enum PopoverSize: String, CaseIterable, Sendable {
+    case regular, large
+
+    static let defaultsKey = "popoverSize"
+
+    /// 이번 실행의 크기. 치수가 화면 곳곳의 정적 값이라 실행 중에는 바꾸지 않는다.
+    /// `PPB_POPOVER_SIZE` 는 레이아웃 감사가 큰 창을 따로 재 볼 때 쓴다.
+    static let launch: PopoverSize = {
+        let forced = ProcessInfo.processInfo.environment["PPB_POPOVER_SIZE"]
+        let stored = UserDefaults.standard.string(forKey: defaultsKey)
+        return PopoverSize(rawValue: forced ?? stored ?? "") ?? .regular
+    }()
+}
+
 /// 팝오버 치수의 단일 소스. 자식이 쓸 수 있는 폭을 알아야 할 때 이 값을 쓴다 — 넘치는 자식이
 /// 부모 폭을 부풀리므로 GeometryReader 로 재면 순환한다.
 enum PopoverMetrics {
-    /// 글자 크기는 유지하고 창과 카드 격자만 약 10% 줄인 기본 크기.
-    static let width: CGFloat = 400
+    private static let large = PopoverSize.launch == .large
+
+    /// 글자 크기는 유지하고 창과 카드 격자만 약 10% 줄인 기본 크기. 크게 고르면 15% 넓다.
+    static let width: CGFloat = large ? 460 : 400
     static let padding: CGFloat = 14
     /// 이 폭을 넘는 자식은 팝오버 창에 좌우로 잘린다.
     static let contentWidth: CGFloat = width - padding * 2
 
     /// 탭 하나가 쓰는 세로 길이.
-    static let tabHeight: CGFloat = 480
+    static let tabHeight: CGFloat = large ? 580 : 480
 
     /// 개봉 화면의 이름·가격·이동 버튼·밑장 여백을 먼저 확보한다.
-    static let revealCardWidth = min(260, ((tabHeight - 170) * 0.717).rounded(.down))
+    static let revealCardWidth = min(large ? 300 : 260, ((tabHeight - 170) * 0.717).rounded(.down))
     /// 오리파는 상점 갈래 선택과 NEW 배지 자리가 추가로 필요하다.
-    static let pulledCardWidth = min(240, ((tabHeight - 190) * 0.717).rounded(.down))
+    static let pulledCardWidth = min(large ? 276 : 240, ((tabHeight - 190) * 0.717).rounded(.down))
 }
 
 /// 팝오버 내부 내비게이션 상태.
@@ -60,6 +80,36 @@ final class PopoverNavigation {
     /// 지금 터지고 있는 반짝임.
     var sparks: [SparkEvent] = []
 
+    /// 화면에 떠 있는 뒤로 버튼들. 버튼이 나타날 때 스스로 올리고 사라질 때 내린다.
+    ///
+    /// 가장 나중에 올라온 것이 가장 깊은 화면이다. 깊이를 따로 적어 두지 않아도 한 단계씩
+    /// 들어갈 때마다 새 화면의 버튼이 위에 쌓인다. 그리는 데 쓰는 값이 아니라 지켜보지 않는다.
+    @ObservationIgnored private var backHandlers: [PopoverBackHandler] = []
+
+    func registerBack(_ handler: PopoverBackHandler) {
+        backHandlers.removeAll { $0 === handler }
+        backHandlers.append(handler)
+    }
+
+    func unregisterBack(_ handler: PopoverBackHandler) {
+        backHandlers.removeAll { $0 === handler }
+    }
+
+    /// Esc. 한 단계 뒤로 간다. 돌아갈 곳이 없으면(탭의 첫 화면) `false` 라서 팝오버가 닫힌다.
+    ///
+    /// 예전에는 어느 화면에서든 Esc 가 팝오버를 통째로 닫았다. 팩 상세나 카드 상세에서
+    /// 목록으로 돌아가려고 누르면 창이 사라져, 다시 열고 뒤로 버튼을 눌러야 했다.
+    func goBack() -> Bool {
+        guard let handler = backHandlers.last else { return false }
+        handler.action()
+        return true
+    }
+}
+
+/// 뒤로 버튼 하나가 Esc 에 맡기는 동작. 버튼이 다시 그려질 때마다 최신 동작으로 바꿔 끼운다.
+@MainActor
+final class PopoverBackHandler {
+    var action: () -> Void = {}
 }
 
 @MainActor
@@ -120,6 +170,7 @@ struct PopoverView: View {
                 .animation(.snappy(duration: 0.3), value: wallet.lastGift != nil)
                 .animation(.snappy(duration: 0.3), value: wallet.lastGrant != nil)
                 releaseNotesToast
+                onboardingCard
                 tabPicker
                     // 산 팩이 날아가 내려앉을 자리. 탭 줄의 「팩」 칸 가운데다.
                     .background {
@@ -483,6 +534,46 @@ struct PopoverView: View {
             .padding(8)
             .background(Color.accentColor.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+        }
+    }
+
+    // MARK: 첫 실행 안내
+
+    /// 닫았는가. 한 번 닫으면 다시 띄우지 않는다.
+    @AppStorage("onboardingDismissed") private var onboardingDismissed = false
+
+    /// 처음 연 사람에게 이 앱이 무엇을 하는지 세 줄로 알린다.
+    ///
+    /// 예전에는 잔액과 탭만 보여서, 토큰이 어디서 생기고 무엇에 쓰는지 직접 눌러 보며
+    /// 알아내야 했다. 카드를 한 장이라도 모았으면 이미 아는 사람이라 띄우지 않는다 —
+    /// 업데이트로 이 안내가 생겨도 쓰던 사람에게는 나타나지 않는다.
+    @ViewBuilder
+    private var onboardingCard: some View {
+        if !onboardingDismissed, wallet.distinctCardCount == 0 {
+            VStack(alignment: .leading, spacing: 7) {
+                Text(l.onboardingTitle).font(Typography.bodySemibold)
+                onboardingStep("bolt.fill", l.onboardingEarn)
+                onboardingStep("cart.fill", l.onboardingBuy)
+                onboardingStep("rectangle.stack.fill", l.onboardingOpen)
+                Button(l.onboardingStart) { onboardingDismissed = true }
+                    .buttonStyle(.borderedProminent)
+                    .font(Typography.button)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .padding(10)
+            .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+        }
+    }
+
+    private func onboardingStep(_ symbol: String, _ text: String) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Image(systemName: symbol)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 18)
+            Text(text)
+                .font(Typography.label)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

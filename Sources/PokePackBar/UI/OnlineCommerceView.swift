@@ -728,11 +728,11 @@ private struct FriendTradeBinderPicker: View {
             switch failure.status {
             case 403: load = .hidden
             // 친구가 아니게 된 경우의 404 는 그대로 알리고, 경로가 없는 옛 서버만 지원 안 함으로 본다.
-            case 404 where !failure.message.contains("friend_not_found"): load = .unsupported
+            case 404 where failure.code != "friend_not_found": load = .unsupported
             default: load = .failed(failure.localizedDescription)
             }
         } catch {
-            load = .failed(error.localizedDescription)
+            load = .failed(OnlineText.message(for: error))
         }
     }
 }

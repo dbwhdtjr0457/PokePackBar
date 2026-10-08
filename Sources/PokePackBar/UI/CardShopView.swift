@@ -463,6 +463,19 @@ private struct PackDetailView: View {
     private var total: Int { wallet.packTotal(setID: set.id, count: quantity, index: index) }
     private var canBuy: Bool { wallet.availableTokens >= total }
 
+    /// 한 번 더 묻는 중인가.
+    @State private var confirmingPurchase = false
+    /// 여러 팩을 사면서 잔액의 절반 이상을 쓰면 한 번 더 묻는다. 수량 칸을 잘못 건드려
+    /// 잔액이 통째로 빠지면 되돌릴 수 없다. 한 팩은 묻지 않는다 — 잔액이 적은 사람은 팩
+    /// 하나에도 절반을 쓰는데, 그때마다 묻는 것은 확인이 아니라 방해다.
+    private var needsConfirmation: Bool {
+        quantity > 1 && wallet.availableTokens > 0
+            && Double(total) >= Double(wallet.availableTokens) * 0.5
+    }
+    private var spendPercent: Int {
+        Int((Double(total) / Double(max(1, wallet.availableTokens)) * 100).rounded())
+    }
+
     var body: some View {
         if let spotlight, let entry = index.card(spotlight) {
             // 목록을 통째로 내준다. 아래에 작게 붙이면 카드를 제대로 볼 수 없다.
@@ -698,12 +711,37 @@ private struct PackDetailView: View {
                     Spacer(minLength: 0)
                 }
             }
-            Button(canBuy ? l.buyCount(quantity) : l.notEnoughTokens) { buy() }
+            if confirmingPurchase {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.orange)
+                    Text(l.purchaseConfirmPrompt(spendPercent))
+                        .font(Typography.bodySemibold)
+                        .lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 4)
+                    Button(l.cancel) { confirmingPurchase = false }
+                        .font(Typography.button)
+                    Button(l.purchaseConfirmAction) {
+                        confirmingPurchase = false
+                        buy()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .font(Typography.button)
+                    .disabled(!canBuy || wallet.resourceActionsDisabled)
+                }
+                .padding(.horizontal, 9).padding(.vertical, 6)
+                .background(Color.orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+            } else {
+                Button(canBuy ? l.buyCount(quantity) : l.notEnoughTokens) {
+                    if needsConfirmation { confirmingPurchase = true } else { buy() }
+                }
                 .buttonStyle(.borderedProminent)
                 .font(Typography.button)
                 .disabled(!canBuy || wallet.resourceActionsDisabled)
                 .frame(maxWidth: .infinity)
+            }
         }
+        // 수량이 바뀌면 물었던 금액도 바뀐다. 새 금액으로 다시 누르게 한다.
+        .onChange(of: quantity) { confirmingPurchase = false }
         // 잔액이 줄면 살 수 있는 수량도 줄어든다. 남은 수량이 한도를 넘으면 끌어내린다.
         .onChange(of: wallet.availableTokens) {
             if quantity > maxQuantity { quantity = maxQuantity }

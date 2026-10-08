@@ -71,6 +71,15 @@ enum PopoverLayoutAudit {
             try await capture("tab-\(tab)", view: AnyView(PopoverView()
                 .environment(usage).environment(wallet).environment(updater).environment(nav)))
         }
+        // 처음 연 사람의 화면. 카드가 한 장도 없어야 안내 카드가 뜬다. 폴더를 따로 둔다 — 같은
+        // 폴더에 두면 위 지갑의 백업을 찾아 복구해 버린다.
+        let firstRunFolder = fixture.appendingPathComponent("first-run", isDirectory: true)
+        try files.createDirectory(at: firstRunFolder, withIntermediateDirectories: true)
+        let firstRun = WalletStore(fileURL: firstRunFolder.appendingPathComponent("game-state.json"))
+        firstRun.setLanguage(LayoutAuditOptions.language)
+        try await capture("first-run", view: AnyView(PopoverView()
+            .defaultAppStorage(defaults)
+            .environment(usage).environment(firstRun).environment(updater).environment(PopoverNavigation())))
         defaults.set(true, forKey: "bulkSaleAllPrices")
         try await capture("bulk-sale-all-prices", view: AnyView(
             BulkSaleView(wallet: wallet, pool: Array(index.cards.prefix(40)), onClose: {})
@@ -154,7 +163,8 @@ enum PopoverLayoutAudit {
                     .padding(PopoverMetrics.padding)),
                 fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         }
-        for setID in ["sv1", "sv2", "sv3", "sv3pt5", "sv4", "swsh1"] { wallet.addPack(setID: setID) }
+        // 맨 위 줄(cel30)은 두 개다. 여러 개 가진 줄에만 수량 칸과 「최대」 가 붙는다.
+        for setID in ["cel30", "sv1", "sv2", "sv3", "sv3pt5", "sv4", "swsh1"] { wallet.addPack(setID: setID) }
         try await capture("packs-search", view: AnyView(
             PacksView(wallet: wallet, index: index)
                 .environment(nav)

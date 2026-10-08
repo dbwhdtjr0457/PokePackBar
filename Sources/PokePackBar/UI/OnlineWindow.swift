@@ -77,7 +77,7 @@ final class OnlineHubModel {
     /// 연결이 끊겼다 붙는 것처럼 보인다. 성공하면 `failure` 가 비워지며 사라진다.
     var errorText: String? {
         if case .failed(let text) = phase { return text }
-        if case .loading = phase, let failure { return failure.localizedDescription }
+        if case .loading = phase, let failure { return OnlineText.message(for: failure) }
         return nil
     }
     var loading: Bool { if case .loading = phase { return true }; return false }
@@ -184,7 +184,9 @@ final class OnlineHubModel {
 
     /// 성공하면 true. 화면은 성공했을 때만 입력(교환 바구니 등)을 비운다.
     @discardableResult
-    func mutate(_ route: String, _ values: [String: Any]) async -> Bool {
+    /// `quiet` 는 「완료」 줄을 띄우지 않는다. 알림을 눌러 다른 탭으로 옮겨 가며 읽음으로 바꿀 때
+    /// 옮겨 간 탭에 뜬금없는 완료 표시가 남지 않게 한다.
+    func mutate(_ route: String, _ values: [String: Any], quiet: Bool = false) async -> Bool {
         guard canWrite, let remote else { return false }
         mutating = true
         // 축하에 쓸 카드는 새로 고치기 전에 읽어 둔다. 성사되면 목록에서 상태가 바뀌거나 빠진다.
@@ -196,7 +198,7 @@ final class OnlineHubModel {
         do {
             let body = values.merging(["request_id": UUID().uuidString, "expected_revision": remote.revision]) { _, right in right }
             _ = try await remote.onlineMutation(path: "v1/\(route)", body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
-            message = OnlineText.l.actionDone
+            if !quiet { message = OnlineText.l.actionDone }
             if let accepted {
                 // 받은 제안을 수락했다: 나는 요청받은 카드를 주고 제안된 카드를 받는다.
                 func first(_ key: String) -> String? { (accepted[key] as? [String: Int])?.keys.sorted().first }
@@ -230,7 +232,7 @@ final class OnlineHubModel {
             AppLog.write("[online] \(action) failed: \(String(describing: error).prefix(400))")
         }
         failure = error
-        phase = .failed(error.localizedDescription)
+        phase = .failed(OnlineText.message(for: error))
     }
 
     func resumeOpening(_ initial: RemoteGameSession.OpeningJob) async {
@@ -243,7 +245,7 @@ final class OnlineHubModel {
                 job = try await remote.advanceOpeningJob(job).job
             }
             message = OnlineText.l.jobFinished(total: job.total, completed: job.completed)
-        } catch { message = error.localizedDescription }
+        } catch { message = OnlineText.message(for: error) }
         mutating = false; openingProgress = nil
         if visible { await refresh() }
     }
@@ -252,7 +254,7 @@ final class OnlineHubModel {
         guard canWrite, let remote else { return }
         mutating = true
         do { _ = try await remote.advanceOpeningJob(job, cancel: true); message = OnlineText.l.jobCancelled }
-        catch { message = error.localizedDescription }
+        catch { message = OnlineText.message(for: error) }
         mutating = false
         await refresh()
     }
@@ -377,6 +379,57 @@ struct OnlineHubView: View {
 
     // MARK: 알림
 
+    /// 알림 한 줄. 누르면 그 일을 처리할 탭으로 옮겨 가고 읽음으로 바꾼다.
+    @ViewBuilder
+    private func notificationRow(_ item: [String: Any]) -> some View {
+        let kind = item.string("kind")
+        let info = OnlineText.notification(kind)
+        let unread = !item.bool("read")
+        let destination = OnlineText.destination(kind)
+        let row = HStack(spacing: 12) {
+            Image(systemName: info.icon).font(.system(size: 17))
+                .foregroundStyle(unread ? Color.accentColor : Color.secondary).frame(width: 24)
+            Text(info.text).font(unread ? Typography.bodySemibold : Typography.body)
+            Spacer()
+            if unread {
+                Button(OnlineText.l.markRead) {
+                    Task { await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")]) }
+                }
+                .disabled(!model.canWrite)
+            }
+            if destination != nil {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .padding(.vertical, 8).padding(.horizontal, 10)
+        .background(unread ? Color.accentColor.opacity(0.06) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .animation(.easeOut(duration: 0.2), value: unread)
+        if let destination {
+            row
+                .contentShape(RoundedRectangle(cornerRadius: 8))
+                .hoverHighlight(cornerRadius: 8)
+                .onTapGesture { open(item, in: destination) }
+                .help(OnlineText.l.openNotification)
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction(named: OnlineText.l.openNotification) { open(item, in: destination) }
+        } else {
+            row
+        }
+    }
+
+    private func open(_ item: [String: Any], in destination: OnlineHubModel.Tab) {
+        if !item.bool("read"), model.canWrite {
+            Task {
+                await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")],
+                                   quiet: true)
+            }
+        }
+        model.section = destination
+    }
+
     private var notifications: some View {
         let items = model.items("notifications")
         return ScrollView {
@@ -386,24 +439,7 @@ struct OnlineHubView: View {
                                      message: OnlineText.l.alertsEmptyHint)
                 }
                 ForEach(items, id: \.onlineID) { item in
-                    let info = OnlineText.notification(item.string("kind"))
-                    let unread = !item.bool("read")
-                    HStack(spacing: 12) {
-                        Image(systemName: info.icon).font(.system(size: 17))
-                            .foregroundStyle(unread ? Color.accentColor : Color.secondary).frame(width: 24)
-                        Text(info.text).font(unread ? Typography.bodySemibold : Typography.body)
-                        Spacer()
-                        if unread {
-                            Button(OnlineText.l.markRead) {
-                                Task { await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")]) }
-                            }
-                            .disabled(!model.canWrite)
-                        }
-                    }
-                    .padding(.vertical, 8).padding(.horizontal, 10)
-                    .background(unread ? Color.accentColor.opacity(0.06) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .animation(.easeOut(duration: 0.2), value: unread)
+                    notificationRow(item)
                 }
                 HStack {
                     if model.offset > 0 { Button(OnlineText.l.backToStart) { model.offset = 0; reload() } }

@@ -95,14 +95,11 @@ struct OnlineSocialView: View {
                 }
                 HStack(spacing: 10) {
                     Text(OnlineText.l.friendCodeLabel).font(Typography.labelSemibold).frame(width: 64, alignment: .leading)
-                    Text(model.profile.string("friend_code"))
+                    Text(OnlineText.groupedFriendCode(myFriendCode))
                         .font(.system(size: 15, weight: .medium, design: .monospaced)).textSelection(.enabled)
-                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction) {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(model.profile.string("friend_code"), forType: .string)
-                        copied = true
-                    }
-                    .disabled(model.profile.string("friend_code").isEmpty)
+                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction, action: copyFriendCode)
+                        .disabled(myFriendCode.isEmpty)
+                    shareFriendCode
                     Button(OnlineText.l.newFriendCode) { act("profile", ["action": "rotate_code"]) }
                         .buttonStyle(.borderless).disabled(!model.canWrite)
                         .help(OnlineText.l.newFriendCodeHelp)
@@ -133,22 +130,36 @@ struct OnlineSocialView: View {
         let accepted = items.filter { $0.string("status") == "accepted" }
         return OnlineSection(title: OnlineText.l.friendsTitle) {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 10) {
-                    TextField(OnlineText.l.enterFriendCode, text: $code).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
-                        .onSubmit(sendRequest)
-                    Button(OnlineText.l.sendFriendRequest, action: sendRequest).disabled(!model.canWrite || code.isEmpty)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 10) {
+                        TextField(OnlineText.l.enterFriendCode, text: $code).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
+                            .font(.system(size: 14, weight: .medium, design: .monospaced))
+                            .onSubmit(sendRequest)
+                        // 받은 코드는 대개 메신저에 있다. 칸을 눌러 붙여 넣는 수고를 줄인다.
+                        Button(OnlineText.l.pasteAction) {
+                            guard let text = NSPasteboard.general.string(forType: .string) else { return }
+                            code = OnlineText.groupedFriendCode(OnlineText.normalizedFriendCode(text))
+                        }
+                        Button(OnlineText.l.sendFriendRequest, action: sendRequest)
+                            .disabled(!model.canWrite || OnlineText.normalizedFriendCode(code).count < 8)
+                    }
+                    // 자리 수가 맞지 않으면 보내기 전에 알려 준다. 서버까지 갔다가 「찾지 못했어요」 를
+                    // 듣는 것보다 빠르다.
+                    if !code.isEmpty, OnlineText.normalizedFriendCode(code).count != 16 {
+                        Text(OnlineText.l.friendCodeFormatHint)
+                            .font(Typography.label).foregroundStyle(.secondary)
+                    }
                 }
                 // 친구를 맺으려면 내 코드도 건네야 한다. 프로필 탭까지 가지 않게 여기에도 둔다.
                 HStack(spacing: 8) {
                     Text(OnlineText.l.myFriendCode).font(Typography.label).foregroundStyle(.secondary)
-                    Text(model.profile.string("friend_code"))
+                    Text(OnlineText.groupedFriendCode(myFriendCode))
                         .font(.system(size: 14, weight: .medium, design: .monospaced)).textSelection(.enabled)
-                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction) {
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(model.profile.string("friend_code"), forType: .string)
-                        copied = true
-                    }
-                    .buttonStyle(.link).font(Typography.label)
+                    Button(copied ? OnlineText.l.copiedAction : OnlineText.l.copyAction, action: copyFriendCode)
+                        .buttonStyle(.link).font(Typography.label)
+                        .disabled(myFriendCode.isEmpty)
+                    shareFriendCode
+                        .buttonStyle(.link).font(Typography.label)
                 }
                 ForEach(incoming, id: \.onlineID) { item in
                     friendRow(item, note: OnlineText.l.sentYouRequest) {
@@ -329,9 +340,29 @@ struct OnlineSocialView: View {
     // MARK: 동작
 
     private func sendRequest() {
-        guard !code.isEmpty else { return }
-        act("friends", ["action": "friend_request", "friend_code": code])
+        let normalized = OnlineText.normalizedFriendCode(code)
+        guard normalized.count >= 8 else { return }
+        act("friends", ["action": "friend_request", "friend_code": normalized])
         code = ""
+    }
+
+    private var myFriendCode: String { model.profile.string("friend_code") }
+
+    /// 복사는 끊지 않은 원래 코드로 한다. 예전 앱은 띄어쓰기를 빼지 않고 그대로 보낸다.
+    private func copyFriendCode() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(myFriendCode, forType: .string)
+        copied = true
+    }
+
+    /// 메시지, 메일, 메모로 바로 보낸다. 복사해 다른 앱을 열고 붙여 넣는 세 단계를 하나로 줄인다.
+    @ViewBuilder
+    private var shareFriendCode: some View {
+        if !myFriendCode.isEmpty {
+            ShareLink(item: OnlineText.l.friendCodeShareText(OnlineText.groupedFriendCode(myFriendCode))) {
+                Text(OnlineText.l.shareAction)
+            }
+        }
     }
 
     private func saveProfile() {
@@ -632,7 +663,7 @@ private struct FriendBinderSheet: View {
     private func load(offset: Int) {
         Task {
             do { model.documents["friendInventory"] = try await model.read("v1/inventory?target=\(model.selectedFriend)&offset=\(offset)") }
-            catch { model.message = error.localizedDescription }
+            catch { model.message = OnlineText.message(for: error) }
         }
     }
 }
