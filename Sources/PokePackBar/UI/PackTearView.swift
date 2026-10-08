@@ -151,16 +151,13 @@ struct PackTearView: View {
                              : l.packTearTitle)
                     .font(Typography.title)
                     .lineLimit(1).minimumScaleFactor(0.7)
-                    .contentTransition(.opacity)
             }
             Text(waiting ? " " : l.packTearHint)
                 .font(Typography.label).foregroundStyle(.secondary)
                 .lineLimit(1).minimumScaleFactor(0.8)
-                .contentTransition(.opacity)
         }
+        // 글자는 움직이지 않는다. 안내가 바뀌거나 사라질 때 즉시 바뀐다.
         .opacity(phase == .extracting || phase == .done ? 0 : 1)
-        .animation(.easeOut(duration: 0.2), value: waiting)
-        .animation(.easeOut(duration: 0.16), value: phase == .extracting)
     }
 
     /// 꺼내는 중인 첫 장. 뜯기 전에는 그리지도 않는다 — 팩 그림에 빈틈이 있으면 비친다.
