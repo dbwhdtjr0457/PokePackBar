@@ -114,6 +114,27 @@ enum PopoverLayoutAudit {
                     fixedHeight: PopoverMetrics.tabHeight-36+PopoverMetrics.padding*2)
             }
         }
+        // 팩 뜯기 화면과 그다음 첫 장 화면. 두 화면은 같은 골격이라 카드 자리가 겹쳐야 한다.
+        let tearCards = index.cards(inSet: "cel30").prefix(3).compactMap(index.card).map {
+            PulledCard(id: $0.id, tier: $0.tier, isNew: false, finish: .normal)
+        }
+        let tearPresentation = PackPresentation(packs: [OpenedCards(
+            slotResults: tearCards.map { PackSlotResult(card: $0, finishHint: .defaultForCard) },
+            variant: .standard)], setID: "cel30", era: index.era("cel30"))
+        try await capture("pack-tear", view: AnyView(
+            PackTearView(wallet: wallet, setID: "cel30", setName: index.set("cel30")?.name ?? "cel30",
+                         packCount: 1, pending: nil, onCancel: {}, onReady: { _ in })
+                .environment(nav)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
+        try await capture("pack-reveal-first", view: AnyView(
+            PacksView.auditPresentation(wallet: wallet, index: index, presentation: tearPresentation,
+                                        summary: false)
+                .environment(nav)
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         let picking = OripaPickingScreen(wallet: wallet, index: index, box: wallet.oripaBox(index: index),
                                         picked: .constant(3), onBack: {}, onPull: {})
             .frame(width: PopoverMetrics.contentWidth)

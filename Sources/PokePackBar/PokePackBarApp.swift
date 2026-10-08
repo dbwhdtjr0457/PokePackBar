@@ -123,6 +123,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
         // 실제 카드 렌더러를 고정된 여러 기울기로 PNG 출력하는 내부 시각 진단 모드.
         // 메뉴바 팝오버를 띄우지 않으므로 자동 비교와 밝기 분석에서 같은 프레임을 재현할 수 있다.
+        // 팩 뜯기 장면을 실제 무대와 박자로 프레임마다 PNG 출력한다.
+        if let tear = PackTearDiagnostics.request(from: CommandLine.arguments) {
+            NSApp.setActivationPolicy(.prohibited)
+            Task { @MainActor in
+                do {
+                    let files = try await PackTearDiagnostics.render(tear)
+                    print("\(files.count) frames: \(tear.outputDirectory.path)")
+                    exit(0)
+                } catch {
+                    FileHandle.standardError.write(Data("Pack tear render failed: \(error)\n".utf8))
+                    exit(1)
+                }
+            }
+            return
+        }
+
         if let preview = HoloVisualDiagnostics.request(from: CommandLine.arguments) {
             NSApp.setActivationPolicy(.prohibited)
             Task { @MainActor in

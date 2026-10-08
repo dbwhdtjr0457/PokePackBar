@@ -395,6 +395,16 @@ extension L {
                                      "Compre na loja ou atinja um limite para um pacote bônus.") }
     var packPreparing: String { t("카드를 꺼내는 중…", "Getting the cards ready…", "カードを準備中…",
                                     "Preparando las cartas…", "Préparation des cartes…", "Preparando as cartas…") }
+    var packTearTitle: String { t("밀어서 뜯기", "Swipe to tear open", "スワイプして開封",
+                                    "Desliza para abrir", "Glisse pour ouvrir", "Deslize para abrir") }
+    var packTearHint: String { t("윗부분을 옆으로 밀거나, 팩을 눌러 열어요",
+                                   "Swipe across the top, or click the pack",
+                                   "上の部分を横になぞるか、パックをクリック",
+                                   "Desliza por arriba o haz clic en el sobre",
+                                   "Glisse le long du haut ou clique sur le booster",
+                                   "Deslize pelo topo ou clique no pacote") }
+    var packTearAction: String { t("팩 뜯기", "Tear open the pack", "パックを開封",
+                                     "Abrir el sobre", "Ouvrir le booster", "Abrir o pacote") }
     var openPack: String { t("뜯기", "Open", "開ける", "Abrir", "Ouvrir", "Abrir") }
     func openPackCount(_ count: Int) -> String {
         guard count > 1 else { return openPack }

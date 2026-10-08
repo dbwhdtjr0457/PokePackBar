@@ -14,6 +14,9 @@ struct PacksView: View {
     /// 이미지를 받는 중. 카드는 이미 정해졌고 그림만 기다린다.
     @State private var preparing: PendingPack?
     @State private var opening: OpeningRequest?
+    /// 이번 개봉의 팩 뜯기 화면. 서버가 여는 동안(`opening`)과 그림을 받는 동안(`preparing`)
+    /// 같은 화면이 이어져야 찢던 손이 끊기지 않는다. 새 개봉마다 바꾼다.
+    @State private var tearSession = UUID()
 
     private struct OpeningRequest: Identifiable {
         let id = UUID()
@@ -70,21 +73,16 @@ struct PacksView: View {
 
     var body: some View {
         ZStack {
-            if let opening {
-                VStack(spacing: 12) {
-                    PackImageView(setID: opening.set.id, width: 150)
-                    Text(wallet.l.packPreparingCount(opening.count)).font(Typography.title)
-                    ProgressView().controlSize(.small)
-                    Button(wallet.l.cancel) { self.opening = nil }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let opened {
+            if let opened {
                 RevealView(wallet: wallet, index: index, opened: opened) { self.opened = nil }
-            } else if let preparing {
-                PreparingView(wallet: wallet, pending: preparing) { loaded in
+            } else if let tearing {
+                PackTearView(wallet: wallet, setID: tearing.setID, setName: tearing.setName,
+                             packCount: tearing.packCount, pending: preparing,
+                             onCancel: opening == nil ? nil : { self.opening = nil }) { loaded in
                     opened = loaded
                     self.preparing = nil
                 }
+                .id(tearSession)
             } else if owned.isEmpty {
                 emptyState
             } else {
@@ -100,6 +98,14 @@ struct PacksView: View {
             opening = nil
             if preparing != nil { wallet.markAllRevealed() }
         }
+    }
+
+    /// 뜯고 있는 팩. 서버가 돌려준 뒤에는 실제로 열린 팩 수를 쓴다 — 온라인 대량 개봉은
+    /// 일부만 확정될 수 있다.
+    private var tearing: (setID: String, setName: String, packCount: Int)? {
+        if let preparing { return (preparing.setID, preparing.setName, preparing.packCount) }
+        if let opening { return (opening.set.id, opening.set.name, opening.count) }
+        return nil
     }
 
     private var emptyState: some View {
@@ -140,6 +146,7 @@ struct PacksView: View {
                         OwnedPackRow(wallet: wallet, index: index, set: entry.set,
                                      count: entry.count) { count in
                             guard !wallet.resourceActionsDisabled else { return }
+                            tearSession = UUID()
                             opening = OpeningRequest(set: entry.set, count: count)
                         } onPreviewGodPack: {
                             previewGodPack(set: entry.set, index: index)
@@ -188,61 +195,11 @@ struct PacksView: View {
         }, variant: result.variant)
         let presentation = PackPresentation(packs: [preview],
                                             setID: set.id, era: index.era(set.id))
+        tearSession = UUID()
         preparing = PendingPack(
             setID: set.id, setName: set.name, packCount: 1, presentation: presentation,
             completions: [], isPreview: true
         )
-    }
-}
-
-/// 개봉 직전 — 카드 그림을 미리 받는다.
-///
-/// 한 장씩 0.5초로 넘기는데 그때 받기 시작하면 시간 안에 못 끝나 빈 자리만 지나간다.
-/// 최소 1초는 이 화면을 유지한다. 더 빨리 끝나도 곧바로 넘기면 깜빡임으로 보인다.
-@MainActor
-private struct PreparingView: View {
-    let wallet: WalletStore
-    let pending: PacksView.PendingPack
-    let onReady: (PacksView.OpenedPack) -> Void
-
-    private static let minimumDisplay = Duration.milliseconds(1000)
-
-    var body: some View {
-        let l = wallet.l
-        return VStack(spacing: 12) {
-            Spacer(minLength: 0)
-            // 기다리는 동안 무엇을 뜯고 있는지 보여준다. 팩 아트는 상점에서 이미 받아 둔
-            // 경우가 많아 여기서는 대개 즉시 뜬다.
-            PackImageView(setID: pending.setID, width: 150)
-                .shadow(radius: 8, y: 3)
-            VStack(spacing: 3) {
-                // 갓팩 여부는 카드가 나타나기 전까지 숨긴다. 준비 화면의 색·크기·문구가
-                // 달라지면 첫 장을 보기도 전에 결과를 알게 되어 개봉 연출이 무의미해진다.
-                Text(pending.packCount == 1 ? l.packPreparing
-                                           : l.packPreparingCount(pending.packCount))
-                    .font(Typography.title)
-                Text(pending.setName).font(Typography.body).foregroundStyle(.secondary)
-            }
-            ProgressView().controlSize(.small)
-            Spacer(minLength: 0)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task(id: pending.id) {
-            // Opening 10,000 cards must not wait for every unique HD original.
-            let ids = pending.presentation.imageIDs(at: 0)
-            let summaryIDs = pending.presentation.summaryCards.prefix(PackPresentation.imageWindow).map(\.id)
-            async let hires = CardImageLoader.prefetch(cardIDs: ids, hires: true)
-            async let thumbs = CardImageLoader.prefetch(cardIDs: summaryIDs, hires: false)
-            async let floor: Void = { try? await Task.sleep(for: Self.minimumDisplay) }()
-
-            let (big, small, _) = await (hires, thumbs, floor)
-            guard !Task.isCancelled else { return }
-            onReady(PacksView.OpenedPack(id: pending.id, setName: pending.setName,
-                                         packCount: pending.packCount, presentation: pending.presentation,
-                                         hires: big, thumbs: small,
-                                         completions: pending.completions,
-                                         isPreview: pending.isPreview))
-        }
     }
 }
 
