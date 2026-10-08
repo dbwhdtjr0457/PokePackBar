@@ -291,6 +291,7 @@ struct PackTearView: View {
         guard phase == .tearing else { return }
         phase = .opening
         PackTearHaptics.open()
+        SoundEffects.play(.rip)
         choreography?.cancel()
         choreography = Task { @MainActor in
             if reduceMotion {

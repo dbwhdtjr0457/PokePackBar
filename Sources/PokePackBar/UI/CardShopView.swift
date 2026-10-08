@@ -244,7 +244,7 @@ struct CardShopView: View {
                 LazyVGrid(columns: CardGrid.packShelf.items,
                           spacing: CardGrid.packShelf.spacing) {
                     ForEach(sets) { set in
-                        Button { selectedSet = set.id } label: {
+                        Button { enter { selectedSet = set.id } } label: {
                             PackGridCell(wallet: wallet, index: index, set: set)
                         }
                         .buttonStyle(.plain)
