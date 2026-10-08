@@ -64,7 +64,7 @@ enum ServerRulesBridge {
     }
 
     static func run() throws {
-        if let path = ProcessInfo.processInfo.environment["PPB_RULE_PRICES"] {
+        if let path = AppEnv.value("PPB_RULE_PRICES") {
             _ = try PriceSnapshotStore.validate(PriceSnapshotStore.read(URL(fileURLWithPath: path)))
         }
         guard let index = CardIndex.shared, CardPrices.shared != nil else {

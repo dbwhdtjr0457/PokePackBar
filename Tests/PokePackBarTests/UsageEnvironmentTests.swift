@@ -123,6 +123,7 @@ final class UsageEnvironmentTests: XCTestCase {
     /// - `UsageEnvironment` 자신(프로세스 환경을 읽는 유일한 정당한 위치)
     /// - `BinaryLocator`: 자식 프로세스 환경 구성과 `SHELL` — 앱이 쓰는 값이지 사용자 override 가 아니다
     /// - `WalletStore`: `PPB_STATE_DIR` 도 같은 개발/QA 격리용(사용량 위치와 무관)
+    /// - `AppEnv`: 나머지 `PPB_*` 개발, QA, 서버 설정값(서버 주소, 게이트웨이 키, 그림 폴더)을 읽는 한 곳
     /// - `OAuthLimitsProvider`: 의도적으로 프로세스 환경만 본다(자동 폴링 경로에서 셸 spawn 금지 —
     ///   해당 함수 주석 참조). 값이 필요한 사용량 스캔 쪽이 이미 셸 조회를 한다.
     func testNoProviderReadsUsageLocationEnvDirectly() throws {
@@ -131,6 +132,7 @@ final class UsageEnvironmentTests: XCTestCase {
             "BinaryLocator.swift",
             "WalletStore.swift",
             "OAuthLimitsProvider.swift",
+            "AppEnv.swift",
         ]
         let sources = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()    // PokePackBarTests

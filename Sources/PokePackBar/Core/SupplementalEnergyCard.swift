@@ -77,7 +77,7 @@ enum SupplementalEnergyCard {
         // Original scans are explicit development/audit input only. Distributed
         // apps use CardImageStore's managed-CDN variants and on-demand cache.
         guard let descriptor = descriptor(cardID: cardID),
-              let directory = ProcessInfo.processInfo.environment["PPB_SUPPLEMENT_ART_DIR"],
+              let directory = AppEnv.value("PPB_SUPPLEMENT_ART_DIR"),
               !directory.isEmpty else { return nil }
         // Never fall back to an obsolete non-English MEE filename.
         let isMega = descriptor.style == .megaEvolution || descriptor.style == .anniversary

@@ -217,7 +217,7 @@ enum ServerAuthentication {
             request.setValue("Bearer \(credential.access_token)", forHTTPHeaderField: "Authorization")
             request.setValue(credential.device_id.uuidString, forHTTPHeaderField: "X-PPB-Device-ID")
         }
-        if let gateway = ProcessInfo.processInfo.environment["PPB_GATEWAY_KEY"], !gateway.isEmpty {
+        if let gateway = AppEnv.value("PPB_GATEWAY_KEY"), !gateway.isEmpty {
             request.setValue(gateway, forHTTPHeaderField: "X-PPB-Gateway-Key")
         }
         let reply = try await ServerTransport.exchange(request)
@@ -232,6 +232,7 @@ enum ServerAuthentication {
             case "login_required": message = loginRequired
             case "link_code_invalid": message = L.current.linkCodeInvalid
             case "registration_unavailable": message = L.current.registrationUnavailable
+            case "registration_requires_link_code": message = L.current.registrationNeedsCode
             case "too_many_attempts": message = L.current.tooManyAttempts
             default:
                 message = status == 422 ? L.current.checkEmailAndLength(ServerPasswordPolicy.lengthDescription)

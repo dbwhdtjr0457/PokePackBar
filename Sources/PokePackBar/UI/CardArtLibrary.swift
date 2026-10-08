@@ -28,7 +28,7 @@ enum CardArtLibrary {
     }()
 
     static var root: URL? {
-        if let path = ProcessInfo.processInfo.environment["PPB_CARD_ART_DIR"], !path.isEmpty {
+        if let path = AppEnv.value("PPB_CARD_ART_DIR"), !path.isEmpty {
             return URL(fileURLWithPath: path, isDirectory: true)
         }
         return Bundle.main.resourceURL?.appendingPathComponent("CardArt", isDirectory: true)

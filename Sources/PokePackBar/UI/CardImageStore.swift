@@ -67,7 +67,7 @@ actor CardImageStore {
         if let d = try? Data(contentsOf: file), CardArtLibrary.accepts(d, hires: hires) { remember(key, d); return d }
 
         // Deterministic offline diagnostics; never changes system networking.
-        if ProcessInfo.processInfo.environment["PPB_OFFLINE"] == "1" { return nil }
+        if AppEnv.value("PPB_OFFLINE") == "1" { return nil }
 
         if let existing = inFlight[key] { return await existing.value }
 
