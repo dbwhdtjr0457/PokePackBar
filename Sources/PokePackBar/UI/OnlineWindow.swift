@@ -187,9 +187,12 @@ final class OnlineHubModel {
     func mutate(_ route: String, _ values: [String: Any]) async -> Bool {
         guard canWrite, let remote else { return false }
         mutating = true
-        // 수락할 교환의 카드는 새로 고치기 전에 읽어 둔다. 성사되면 목록에서 상태가 바뀐다.
-        let accepted = values["action"] as? String == "trade_accept"
+        // 축하에 쓸 카드는 새로 고치기 전에 읽어 둔다. 성사되면 목록에서 상태가 바뀌거나 빠진다.
+        let action = values["action"] as? String
+        let accepted = action == "trade_accept"
             ? items("trades").first { $0.string("id") == values["target_id"] as? String } : nil
+        let boughtListing = action == "listing_buy"
+            ? items("listings").first { $0.string("id") == values["target_id"] as? String } : nil
         do {
             let body = values.merging(["request_id": UUID().uuidString, "expected_revision": remote.revision]) { _, right in right }
             _ = try await remote.onlineMutation(path: "v1/\(route)", body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
@@ -197,8 +200,15 @@ final class OnlineHubModel {
             if let accepted {
                 // 받은 제안을 수락했다: 나는 요청받은 카드를 주고 제안된 카드를 받는다.
                 func first(_ key: String) -> String? { (accepted[key] as? [String: Int])?.keys.sorted().first }
-                celebration = OnlineCelebration(gave: first("requested"), got: first("offered"))
+                celebration = OnlineCelebration(kind: .trade(gave: first("requested"), got: first("offered")))
                 SoundEffects.play(.chime(3))
+            } else if let boughtListing {
+                celebration = OnlineCelebration(kind: .bought(printing: boughtListing.string("printing"),
+                                                              quantity: values["quantity"] as? Int ?? 1))
+                SoundEffects.play(.pop)
+            } else if action == "listing_create", let printing = values["printing"] as? String {
+                celebration = OnlineCelebration(kind: .listed(printing: printing))
+                SoundEffects.play(.pop)
             }
             mutating = false
             await refresh()
@@ -274,26 +284,36 @@ struct OnlineHubView: View {
             if let message = model.message {
                 Label(message, systemImage: "checkmark.circle").font(Typography.label).foregroundStyle(.secondary)
             }
-            if model.remote?.authenticationExpired == true {
-                VStack(spacing: 12) {
-                    OnlineEmptyState(icon: "lock", title: OnlineText.l.signInAgain,
-                                     message: OnlineText.l.sessionExpiredMessage)
-                    Button(OnlineText.l.signIn) { AccountWindow.shared.show(wallet: model.wallet) }
-                        .buttonStyle(.borderedProminent)
+            ZStack(alignment: .topLeading) {
+                Group {
+                    if model.remote?.authenticationExpired == true {
+                        VStack(spacing: 12) {
+                            OnlineEmptyState(icon: "lock", title: OnlineText.l.signInAgain,
+                                             message: OnlineText.l.sessionExpiredMessage)
+                            Button(OnlineText.l.signIn) { AccountWindow.shared.show(wallet: model.wallet) }
+                                .buttonStyle(.borderedProminent)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    else if model.section == .stats { statistics }
+                    else if model.section == .social { OnlineSocialView(model: model) }
+                    else if model.section == .trades { OnlineTradingView(model: model) }
+                    else if model.section == .market { OnlineMarketView(model: model) }
+                    else if model.section == .jobs { openingWork }
+                    else { notifications }
                 }
-                .frame(maxWidth: .infinity)
+                // 섹션을 바꾸면 새 내용만 짧게 떠오른다. 이전 내용은 바로 빠진다 —
+                // 둘이 겹쳐 흐려지면 글자가 겹쳐 보인다.
+                .id(model.section)
+                .transition(.asymmetric(insertion: .opacity, removal: .identity))
             }
-            else if model.section == .stats { statistics }
-            else if model.section == .social { OnlineSocialView(model: model) }
-            else if model.section == .trades { OnlineTradingView(model: model) }
-            else if model.section == .market { OnlineMarketView(model: model) }
-            else if model.section == .jobs { openingWork }
-            else { notifications }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .animation(.easeOut(duration: 0.16), value: model.section)
         }
         .padding(22)
         .overlay {
             if let celebration = model.celebration {
-                TradeSwapBanner(celebration: celebration)
+                OnlineCelebrationView(celebration: celebration)
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
                     .task {
                         try? await Task.sleep(for: .seconds(2.6))

@@ -384,9 +384,10 @@ private struct RevealPopCanvas: View, @MainActor Animatable {
                 let travel = width * (0.16 + random() * 0.22) * (1 - pow(fade, 3))
                 let point = CGPoint(x: center.x + dx * (edge + travel), y: center.y + dy * (edge + travel))
                 let radius = max(1.5, width * (0.012 + random() * 0.014)) * (0.6 + 0.4 * fade)
-                let dot = CGRect(x: point.x - radius, y: point.y - radius, width: radius * 2, height: radius * 2)
-                context.fill(Path(ellipseIn: dot), with: .color(color.opacity(fade)))
-                context.fill(Path(ellipseIn: dot.insetBy(dx: radius * 0.45, dy: radius * 0.45)),
+                // 보상과 판매의 반짝임과 같은 네 갈래 별. 가운데는 하얗게 빛난다.
+                context.fill(SparkShape.star(at: point, size: radius * 1.9),
+                             with: .color(color.opacity(fade)))
+                context.fill(SparkShape.star(at: point, size: radius * 0.95),
                              with: .color(.white.opacity(0.9 * fade)))
             }
         }

@@ -135,6 +135,14 @@ extension L {
     }
     var onlineLoginRequired: String { t("온라인 로그인이 필요합니다.", "Online sign-in required.", "オンラインログインが必要です。", "Debes iniciar sesión en línea.", "Connexion en ligne requise.", "É preciso entrar online.") }
     var actionDone: String { t("완료했어요.", "Done.", "完了しました。", "Hecho.", "Terminé.", "Concluído.") }
+    func marketBought(_ n: Int) -> String {
+        t("\(n)장 샀어요", n == 1 ? "Bought 1 card" : "Bought \(n) cards", "\(n)枚購入しました",
+          n == 1 ? "Compraste 1 carta" : "Compraste \(n) cartas",
+          n == 1 ? "1 carte achetée" : "\(n) cartes achetées",
+          n == 1 ? "1 carta comprada" : "\(n) cartas compradas")
+    }
+    var marketListed: String { t("판매 등록했어요", "Listed for sale", "出品しました",
+                                 "Publicada en venta", "Mise en vente", "Anunciada para venda") }
     var tradeCompleted: String { t("교환했어요", "Trade complete", "交換しました",
                                    "Intercambio hecho", "Échange conclu", "Troca concluída") }
     func jobProgress(total: Int, completed: Int) -> String {

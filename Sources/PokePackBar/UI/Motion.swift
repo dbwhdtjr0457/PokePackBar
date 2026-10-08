@@ -70,9 +70,10 @@ extension View {
 /// 왼쪽에서 들어온다. 팝오버는 자주 여닫는 곳이라 거리를 짧게(18pt) 잡는다.
 extension AnyTransition {
     static func screen(forward: Bool, reduceMotion: Bool = false) -> AnyTransition {
-        guard !reduceMotion else { return .opacity }
+        guard !reduceMotion else { return .asymmetric(insertion: .opacity, removal: .identity) }
+        // 이전 화면은 바로 빠진다. 두 화면이 겹쳐 흐려지면 글자가 겹쳐 보인다.
         return .asymmetric(insertion: .opacity.combined(with: .offset(x: forward ? 18 : -18)),
-                           removal: .opacity)
+                           removal: .identity)
     }
 }
 

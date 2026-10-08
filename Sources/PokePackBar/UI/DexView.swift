@@ -23,6 +23,9 @@ struct DexView: View {
     /// 그 카드의 가림막이 이미 걷혔는가.
     @State private var revealed = false
     @Environment(PopoverNavigation.self) private var nav
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 한 단계 들어가는 중인가. 상점과 같이 들어갈 때는 오른쪽에서, 나올 때는 왼쪽에서 온다.
+    @State private var navForward = true
 
     init(wallet: WalletStore, index: CardIndex?, initialSearchText: String = "") {
         self.wallet = wallet
@@ -51,7 +54,8 @@ struct DexView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let selected, let dex = wallet.dexes.first(where: { $0.id == selected }) {
                 DexDetailView(wallet: wallet, index: index, dex: dex,
-                              onGranted: show) { self.selected = nil }
+                              onGranted: show) { leave { self.selected = nil } }
+                    .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
             } else {
                 VStack(spacing: 8) {
                     sectionPicker
@@ -61,6 +65,7 @@ struct DexView: View {
                     case .set:   setBrowser
                     }
                 }
+                .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
             }
         }
         .frame(height: PopoverMetrics.tabHeight)
@@ -69,6 +74,18 @@ struct DexView: View {
         .onAppear(perform: consumeNavigation)
         .onChange(of: nav.dexID) { consumeNavigation() }
         .onChange(of: nav.dexSearch) { consumeNavigation() }
+    }
+
+    /// 한 단계 들어간다. 방향을 먼저 정해야 새 화면이 오른쪽에서 들어온다.
+    private func enter(_ change: () -> Void) {
+        navForward = true
+        withAnimation(Motion.shift) { change() }
+    }
+
+    /// 한 단계 나온다.
+    private func leave(_ change: () -> Void) {
+        navForward = false
+        withAnimation(Motion.shift) { change() }
     }
 
     private func consumeNavigation() {
@@ -117,7 +134,7 @@ struct DexView: View {
                            searchMatches: searchMatchNames(status.dex),
                            onGranted: show)
                         .contentShape(Rectangle())
-                        .onTapGesture { selected = status.id }
+                        .onTapGesture { enter { selected = status.id } }
                 }
             }
         }
@@ -150,7 +167,7 @@ struct DexView: View {
                                searchMatches: searchMatchNames(status.dex),
                                onGranted: show)
                             .contentShape(Rectangle())
-                            .onTapGesture { selected = status.id }
+                            .onTapGesture { enter { selected = status.id } }
                     }
                 }
             }
@@ -160,7 +177,7 @@ struct DexView: View {
             let rows = statuses(wallet.dexes.filter { $0.kind == .set && ids.contains($0.homeSet) })
             VStack(spacing: 6) {
                 HStack(spacing: 6) {
-                    BackButton(action: { self.openedEra = nil })
+                    BackButton(action: { leave { self.openedEra = nil } })
                     Text(era.name).font(Typography.bodySemibold)
                     Spacer(minLength: 0)
                     Text(wallet.l.dexCountSummary(rows.filter(\.claimed).count, rows.count))
@@ -172,13 +189,15 @@ struct DexView: View {
                             DexRow(wallet: wallet, index: index, status: status,
                                    onGranted: show)
                                 .contentShape(Rectangle())
-                                .onTapGesture { selected = status.id }
+                                .onTapGesture { enter { selected = status.id } }
                         }
                     }
                 }
             }
+            .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
         } else if let index {
             eraList(index)
+                .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
         }
     }
 
@@ -219,7 +238,7 @@ struct DexView: View {
                     if !rows.isEmpty {
                         eraRow(era.name, rows)
                             .contentShape(Rectangle())
-                            .onTapGesture { openedEra = era.name }
+                            .onTapGesture { enter { openedEra = era.name } }
                     }
                 }
             }

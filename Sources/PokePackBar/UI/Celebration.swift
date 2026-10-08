@@ -49,14 +49,17 @@ private struct SparkBurstCanvas: View, @MainActor Animatable {
                 let point = CGPoint(x: center.x + cos(angle) * reach * travel,
                                     y: center.y + sin(angle) * reach * travel + 12 * progress * progress)
                 let size = (index % 3 == 0 ? 4.6 : 3.1) * (1 - 0.55 * progress)
-                context.fill(Self.star(at: point, size: size),
+                context.fill(SparkShape.star(at: point, size: size),
                              with: .color((index % 4 == 0 ? Color.white : color).opacity(alpha)))
             }
         }
     }
+}
 
-    /// 네 갈래 별.
-    private static func star(at point: CGPoint, size: Double) -> Path {
+/// 반짝임 한 알의 모양. 보상, 판매, 교환, 카드 공개 불꽃이 모두 같은 네 갈래 별을 쓴다 —
+/// 곳마다 점과 별이 섞이면 앱의 빛이 한 가지 재질로 읽히지 않는다.
+enum SparkShape {
+    static func star(at point: CGPoint, size: Double) -> Path {
         var path = Path()
         let inner = size * 0.32
         for step in 0..<8 {
