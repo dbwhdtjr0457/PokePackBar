@@ -23,6 +23,22 @@ final class RevealRarityTests: XCTestCase {
         XCTAssertLessThan(pikachu, PullRarity.Threshold.rare, "30주년 피카츄 레어는 매 팩 나온다")
     }
 
+    /// 같은 등급이라도 칸이 다르면 연출이 다르다. 30주년의 피카츄 레어는 매 팩 고정 칸이라
+    /// 조용하고, 다른 칸에서 가끔 나오는 일러스트레어는 연출을 받는다.
+    func testSameTierInADifferentPositionKeepsItsOwnRarity() throws {
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        let pikachu = try XCTUnwrap(index.cards.first { $0.setID == "cel30" && $0.rarity == "Pikachu Rare" })
+        let illustration = try XCTUnwrap(index.cards.first {
+            $0.setID == "cel30" && $0.tier == .artRare && $0.rarity != "Pikachu Rare"
+        })
+        let fixed = try XCTUnwrap(PullRarity.packsPerPull(setID: "cel30", cardID: pikachu.id,
+                                                          tier: .artRare, index: index))
+        let drawn = try XCTUnwrap(PullRarity.packsPerPull(setID: "cel30", cardID: illustration.id,
+                                                          tier: .artRare, index: index))
+        XCTAssertEqual(PullRarity.emphasis(packsPerPull: fixed), .none, "피카츄 레어: \(fixed)팩")
+        XCTAssertGreaterThan(PullRarity.emphasis(packsPerPull: drawn), .none, "일러스트레어: \(drawn)팩")
+    }
+
     /// 요즘 팩의 R 은 거의 매 팩 나온다. 파란 불꽃이 터지면 안 된다.
     func testModernRaresStayQuiet() throws {
         let index = try XCTUnwrap(CardIndex.loadBundled())

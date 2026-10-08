@@ -42,12 +42,13 @@ struct RevealMotionProfile: Equatable, Sendable {
         Self(emphasis: max(rarityEmphasis(card), RevealValueEmphasis.emphasis(for: card)))
     }
 
-    /// 그 카드의 등급이 제 세트 팩에서 몇 팩에 한 번 나오는가로 정한 단계.
+    /// 그 카드가 제 세트 팩에서 몇 팩에 한 번 나오는가로 정한 단계. 등급이 아니라 그 카드가
+    /// 들어 있는 칸으로 센다 — 같은 AR 이라도 고정 칸의 피카츄 레어와 셋째 칸의 일러스트레어는 다르다.
     /// 팩에서 나오지 않는 등급(프로모 등)은 등급 이름으로 정하되 가장 높은 단계는 주지 않는다.
     static func rarityEmphasis(_ card: PulledCard) -> RevealEmphasis {
         guard card.tier != .energy, !card.isSupplementalEnergy else { return .none }
         let setID = CardIndex.shared?.card(card.id)?.setID ?? String(card.id.prefix { $0 != "-" })
-        if let packs = PullRarity.packsPerPull(setID: setID, tier: card.tier) {
+        if let packs = PullRarity.packsPerPull(setID: setID, cardID: card.id, tier: card.tier) {
             return PullRarity.emphasis(packsPerPull: packs)
         }
         return tierEmphasis(card.tier)
