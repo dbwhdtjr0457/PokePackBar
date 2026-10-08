@@ -144,17 +144,18 @@ struct OnlineCardTile<Footer: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 5) {
-            ZStack(alignment: .topTrailing) {
-                CardImageView(cardID: cardID, width: width)
-                if let badge {
-                    OnlineBadge(text: badge.text, color: badge.color).padding(4)
-                }
-            }
+            // 상태(내 판매, 다 모았어요)는 카드 그림 위에 얹지 않는다. 옅은 바탕의 글자가 그림 위에
+            // 떠서 카드에 인쇄된 이름과 HP 위에 글자만 쓰인 것처럼 보였다. 맨 아래에 두면 같은 줄의
+            // 다른 카드와 이름, 가격 줄도 어긋나지 않는다.
+            CardImageView(cardID: cardID, width: width)
             Text(OnlineText.cardName(cardID))
                 .font(Typography.labelSemibold).lineLimit(1)
             Text(OnlineText.finish(finish))
                 .font(Typography.caption).foregroundStyle(.secondary).lineLimit(1)
             footer
+            if let badge {
+                OnlineBadge(text: badge.text, color: badge.color)
+            }
         }
         .frame(width: width, alignment: .leading)
         .contentShape(Rectangle())
