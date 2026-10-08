@@ -98,6 +98,8 @@ struct PacksView: View {
             opening = nil
             if preparing != nil { wallet.markAllRevealed() }
         }
+        .onAppear(perform: focusHighlightedPack)
+        .onChange(of: nav.packHighlight) { focusHighlightedPack() }
     }
 
     /// 뜯고 있는 팩. 서버가 돌려준 뒤에는 실제로 열린 팩 수를 쓴다 — 온라인 대량 개봉은
@@ -189,6 +191,23 @@ struct PacksView: View {
                     }
                 }
             }
+            .scrollTargetLayout()
+        }
+        .scrollPosition(id: $scrolledPack, anchor: .center)
+    }
+
+    @Environment(PopoverNavigation.self) private var nav
+    /// 목록에서 보이게 할 팩 줄. 상점에서 「팩 탭에서 열기」 로 왔을 때 그 줄로 옮겨 간다.
+    @State private var scrolledPack: String?
+
+    /// 상점에서 방금 산 팩으로 옮겨 가 한 번 빛낸 뒤 빛을 거둔다.
+    private func focusHighlightedPack() {
+        guard let id = nav.packHighlight else { return }
+        withAnimation(.snappy(duration: 0.3)) { scrolledPack = id }
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.6))
+            guard nav.packHighlight == id else { return }
+            withAnimation(.easeOut(duration: 0.4)) { nav.packHighlight = nil }
         }
     }
 
@@ -241,6 +260,9 @@ struct PacksView: View {
 /// 보유 팩 1줄.
 @MainActor
 private struct OwnedPackRow: View {
+    @Environment(PopoverNavigation.self) private var nav
+    private var highlightedRow: Bool { nav.packHighlight == set.id }
+
     let wallet: WalletStore
     let index: CardIndex
     let set: CardSet
@@ -290,6 +312,15 @@ private struct OwnedPackRow: View {
         .padding(10)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+        .hoverHighlight(cornerRadius: 10)
+        // 상점에서 「팩 탭에서 열기」 로 온 팩이면 테두리가 한 번 빛난다.
+        .overlay {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color.accentColor, lineWidth: 2)
+                .shadow(color: Color.accentColor.opacity(0.5), radius: 6)
+                .opacity(highlightedRow ? 1 : 0)
+                .allowsHitTesting(false)
+        }
         .onChange(of: count) { quantity = min(quantity, maximumQuantity) }
     }
 }
@@ -309,6 +340,11 @@ private struct RevealView: View {
     @State private var position = 0
     /// 결과 화면에서 크게 보고 있는 카드.
     @State private var spotlight: PulledCard?
+    /// 결과 카드를 연 자리. 상세가 그 칸에서 커져 열린다.
+    @State private var zoomOrigin = ZoomOrigin()
+    /// 결과 화면에서 세어 올라가는 총 가치(USD).
+    @State private var countedWorth = 0.0
+    private static let space = "reveal"
     @State private var isAdvancing = false
     @State private var advanceTask: Task<Void, Never>?
     @State private var upcomingImages: [String: NSImage] = [:]
@@ -337,26 +373,36 @@ private struct RevealView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 8) {
-                if let focused = spotlight {
-                    CardSpotlightView(wallet: wallet, cardID: focused.id,
-                                      name: index?.card(focused.id)?.displayName(wallet.language) ?? focused.id,
-                                      tier: focused.tier,
-                                      setID: index?.card(focused.id)?.setID ?? "",
-                                      setName: opened.setName,
-                                      rarity: index?.card(focused.id)?.rarity,
-                                      finish: focused.finish,
-                                      ownedCount: wallet.cardCount(focused.id),
-                                      preloaded: revealImage(focused.id)) {
-                        spotlight = nil
+                if isSummary {
+                    // 상세를 열어도 결과 격자는 뒤에 둔다. 여러 팩 결과를 내려 보다 연 카드를
+                    // 닫았을 때 처음으로 튕겨 올라가지 않는다.
+                    ZStack {
+                        summary
+                            .opacity(spotlight == nil ? 1 : 0)
+                            .allowsHitTesting(spotlight == nil)
+                            .accessibilityHidden(spotlight != nil)
+                        if let focused = spotlight {
+                            CardSpotlightView(wallet: wallet, cardID: focused.id,
+                                              name: index?.card(focused.id)?.displayName(wallet.language) ?? focused.id,
+                                              tier: focused.tier,
+                                              setID: index?.card(focused.id)?.setID ?? "",
+                                              setName: opened.setName,
+                                              rarity: index?.card(focused.id)?.rarity,
+                                              finish: focused.finish,
+                                              ownedCount: wallet.cardCount(focused.id),
+                                              preloaded: revealImage(focused.id)) {
+                                withAnimation(.snappy(duration: 0.26)) { spotlight = nil }
+                            }
+                            .transition(.zoom(from: zoomOrigin.anchor, reduceMotion: reduceMotion))
+                        }
                     }
-                } else if isSummary {
-                    summary
                 } else {
                     current
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .coordinateSpace(.named(Self.space))
         .onChange(of: opened.id) {
             advanceTask?.cancel()
             advanceTask = nil
@@ -504,6 +550,14 @@ private struct RevealView: View {
 
     // MARK: 요약
 
+    /// 이번 개봉에서 가장 비싼 카드. 결과 칸에 빛이 한 번 스친다. 평범한 카드뿐이면 없다 —
+    /// 커먼에 빛을 주면 무엇이 좋은 것인지 오히려 흐려진다.
+    private var bestPull: PulledCard? {
+        guard let best = opened.presentation.summaryByPrice.first,
+              RevealMotionProfile.forCard(best).emphasis != .none else { return nil }
+        return best
+    }
+
     /// 이 팩에 맞춘 요약 격자. 1999년 팩은 11장이라 열이 하나 더 필요하다.
     private var summaryGrid: CardGrid {
         opened.packCount == 1 ? CardGrid.packSummary(opened.cards.count) : .collection
@@ -525,18 +579,28 @@ private struct RevealView: View {
             // 요약은 희귀한 것부터 — 무엇을 건졌는지 먼저 보인다.
             ForEach(summaryCardOrder.indices, id: \.self) { offset in
                 let card = summaryCardOrder[offset]
+                let shines = card.id == bestPull?.id && card.finish == bestPull?.finish
                 if card.isSupplementalEnergy {
                     PulledCardCell(wallet: wallet, card: card,
                                    width: summaryGrid.width,
                                    preloaded: opened.thumbs[card.id],
                                    appearanceIndex: offset)
                 } else {
-                    Button { spotlight = card } label: {
+                    Button {
+                        Task { @MainActor in
+                            zoomOrigin.consume(in: CGSize(width: PopoverMetrics.contentWidth,
+                                                          height: PopoverMetrics.tabHeight))
+                            withAnimation(.snappy(duration: 0.32)) { spotlight = card }
+                        }
+                    } label: {
                         PulledCardCell(wallet: wallet, card: card,
                                        width: summaryGrid.width,
                                        preloaded: opened.thumbs[card.id],
-                                       appearanceIndex: offset)
+                                       appearanceIndex: offset,
+                                       shines: shines)
+                            .hoverLift(scale: 1.05)
                     }
+                    .recordsClick(in: Self.space, into: $zoomOrigin)
                     .buttonStyle(.plain)
                 }
             }
@@ -566,9 +630,16 @@ private struct RevealView: View {
                     // 정렬 전환은 총 가치와 같은 줄에 둔다. 한 팩 요약은 두 줄 격자가
                     // 꽉 차게 맞춰져 있어 줄을 하나 더 쓰면 카드가 밀린다.
                     HStack(spacing: 8) {
-                        Text(l.packTotalValue(prices.formattedWithKRW(worth,
-                                                                      language: wallet.language)))
+                        // 총 가치는 0 에서부터 세어 올라간다. 「얼마가 나왔나」 가 이 화면의 답이다.
+                        CountingText(value: countedWorth) {
+                            l.packTotalValue(prices.formattedWithKRW($0, language: wallet.language))
+                        }
                             .font(Typography.amount).monospacedDigit()
+                            .onAppear {
+                                guard !reduceMotion else { countedWorth = worth; return }
+                                countedWorth = 0
+                                withAnimation(.easeOut(duration: 0.9).delay(0.15)) { countedWorth = worth }
+                            }
                             .foregroundStyle(Color.accentColor)
                             .lineLimit(1).minimumScaleFactor(0.8)
                         if opened.cards.count > 1 {
@@ -807,6 +878,9 @@ private struct SpotlightCard: View {
                 return
             }
             withAnimation(.spring(response: 0.34, dampingFraction: 0.7)) { landed = true }
+            if let notes = RevealMotionProfile.forCard(card).emphasis.chimeNotes {
+                SoundEffects.play(.chime(notes))
+            }
             guard card.isNew else { return }
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(190))
@@ -964,6 +1038,8 @@ struct TierGlow: View {
 
     /// 카드가 나타난 뒤 빛이 퍼지도록 한 번만 부풀린다.
     @State private var bloomed = false
+    /// 진단 렌더러가 다 퍼진 모습을 바로 그릴 때만 켠다.
+    var startBloomed = false
 
     var body: some View {
         let byTier = RevealMotionProfile.tierEmphasis(tier)
@@ -985,11 +1061,20 @@ struct TierGlow: View {
                 .blur(radius: width * 0.07)
                 .opacity(strength * 0.85)
                 .scaleEffect(bloomed ? 1.05 : 0.97)
+            // 테두리 — 위에서 빛을 받은 가장자리. 한 가지 색으로만 번지면 납작한 띠로
+            // 보이는데, 윗변이 밝게 맺히면 빛이 카드 뒤에서 새어 나오는 것처럼 읽힌다.
+            RoundedRectangle(cornerRadius: width * 0.05 + 1.5)
+                .strokeBorder(LinearGradient(colors: [.white.opacity(0.7), color, color.opacity(0.2)],
+                                             startPoint: .top, endPoint: .bottom),
+                              lineWidth: 1.5)
+                .padding(-1.5)
+                .opacity(bloomed ? min(1, strength * 1.2) : 0)
         }
         .frame(width: width, height: (width / 0.717).rounded())
         // 후광은 장식이라 보조기술이 읽을 것이 없다. 등급은 배지와 이름이 따로 알린다.
         .accessibilityHidden(true)
         .onAppear {
+            if startBloomed { bloomed = true; return }
             withAnimation(.easeOut(duration: 0.45)) { bloomed = true }
         }
     }
@@ -1043,14 +1128,33 @@ private struct PulledCardCell: View {
     let width: CGFloat
     var preloaded: NSImage?
     let appearanceIndex: Int
+    /// 이번 개봉의 간판 카드. 나타난 뒤 빛이 한 번 스친다.
+    var shines = false
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var appeared = false
+    /// 스치는 빛의 위치(카드 폭 기준, -1 에서 들어와 2 에서 나간다).
+    @State private var glint: CGFloat = -1
 
     var body: some View {
         VStack(spacing: 3) {
             ZStack(alignment: .topTrailing) {
                 CardImageView(cardID: card.id, width: width, preloaded: preloaded)
+                    .overlay {
+                        if shines {
+                            LinearGradient(stops: [
+                                .init(color: .clear, location: 0),
+                                .init(color: .white.opacity(0.75), location: 0.5),
+                                .init(color: .clear, location: 1),
+                            ], startPoint: .leading, endPoint: .trailing)
+                            .frame(width: width * 0.45)
+                            .rotationEffect(.degrees(20))
+                            .offset(x: glint * width)
+                            .blendMode(.plusLighter)
+                            .clipShape(RoundedRectangle(cornerRadius: width * 0.05))
+                            .allowsHitTesting(false)
+                        }
+                    }
                 if card.isNew {
                     // 카드 안쪽에 붙인다. 바깥으로 내밀면 격자 경계에서 위가 잘린다.
                     NewBadge(text: wallet.l.newCardBadge).padding(3)
@@ -1085,6 +1189,11 @@ private struct PulledCardCell: View {
             } else {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.76)) { appeared = true }
             }
+            // 칸이 다 자리 잡은 뒤 간판 카드에 빛이 한 번 스친다.
+            guard shines, !reduceMotion else { return }
+            try? await Task.sleep(for: .milliseconds(420))
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.75)) { glint = 2 }
         }
     }
 }

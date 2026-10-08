@@ -51,6 +51,18 @@ struct RevealMotionProfile: Equatable, Sendable {
     }
 }
 
+extension RevealEmphasis {
+    /// 이 단계에서 울리는 종소리의 음 수. 평범한 카드는 소리가 없다.
+    var chimeNotes: Int? {
+        switch self {
+        case .none: nil
+        case .rare: 1
+        case .premium: 2
+        case .apex: 4
+        }
+    }
+}
+
 /// 등급만으로는 옛 카드의 무게를 못 잰다. 1999년 베이스 리자몽은 RR 이지만 시세가
 /// 최신 SAR 보다 훨씬 높다. 시세(인기의 대리 지표)와 그 팩 안에서의 순위로 연출을 끌어올린다.
 @MainActor
@@ -167,15 +179,19 @@ struct RevealBurst: View {
 struct RevealAura: View {
     let card: PulledCard
     let width: CGFloat
+    /// 진단 렌더러가 고정된 순간을 그릴 때만 준다. 실제 화면은 시계를 따른다.
+    var clock: Double? = nil
     /// 매 프레임 시세를 다시 찾지 않도록 만들 때 한 번 정한다.
     private let emphasis: RevealEmphasis
     private let color: Color
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.popoverShown) private var popoverShown
 
-    init(card: PulledCard, width: CGFloat) {
+    init(card: PulledCard, width: CGFloat, clock: Double? = nil) {
         self.card = card
         self.width = width
+        self.clock = clock
         let emphasis = RevealMotionProfile.forCard(card).emphasis
         self.emphasis = emphasis
         // 시세 덕에 등급보다 높게 뜬 카드는 금빛으로 뿜는다. 등급 색 그대로면 옛 RR 홀로가
@@ -210,10 +226,14 @@ struct RevealAura: View {
         Group {
             if emphasis == .none {
                 EmptyView()
+            } else if let clock {
+                Canvas { context, size in draw(context, size: size, time: clock) }
             } else if reduceMotion {
                 Canvas { context, size in draw(context, size: size, time: 0.3 * period) }
             } else {
-                TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
+                // 초당 30장일 때는 120Hz 화면에서 파동이 계단처럼 끊겼다. 60장으로 그리고,
+                // 팝오버가 닫히면 멈춘다 — 닫혀도 화면 트리가 남아 그대로 두면 계속 그린다.
+                TimelineView(.animation(minimumInterval: 1.0 / 60.0, paused: !popoverShown)) { timeline in
                     Canvas { context, size in
                         draw(context, size: size,
                              time: timeline.date.timeIntervalSinceReferenceDate)
@@ -229,6 +249,7 @@ struct RevealAura: View {
 
     private func draw(_ context: GraphicsContext, size: CGSize, time: Double) {
         let center = CGPoint(x: size.width / 2, y: size.height / 2)
+        if emphasis == .apex { drawBeams(context, center: center, time: time) }
         for wave in 0..<waveCount {
             var phase = time / period + Double(wave) / Double(waveCount)
             phase -= floor(phase)
@@ -241,20 +262,39 @@ struct RevealAura: View {
             context.stroke(path, with: .color(color.opacity(strength * 0.85 * fade)),
                            lineWidth: max(1.5, width * (0.032 - 0.02 * phase)))
         }
-        guard emphasis == .apex else { return }
-        // 최상위 등급: 카드 둘레에서 뻗는 빛줄기가 천천히 돌며 깜빡인다.
-        let rays = 14
-        let spin = time * 0.35
-        let reach = max(width, height) * 0.62
-        for ray in 0..<rays {
-            let angle = spin + Double(ray) * 2 * .pi / Double(rays)
-            let flicker = 0.55 + 0.45 * sin(time * 3.1 + Double(ray) * 1.7)
-            let inner = reach * 0.80, outer = reach * (0.93 + 0.07 * flicker)
-            var path = Path()
-            path.move(to: CGPoint(x: center.x + cos(angle) * inner, y: center.y + sin(angle) * inner))
-            path.addLine(to: CGPoint(x: center.x + cos(angle) * outer, y: center.y + sin(angle) * outer))
-            context.stroke(path, with: .color(color.opacity(0.55 * flicker)),
-                           style: StrokeStyle(lineWidth: max(1.5, width * 0.012), lineCap: .round))
+    }
+
+    /// 최상위 등급: 카드 뒤에서 뻗어 나오는 빛기둥이 천천히 돌며 숨쉰다. 끝으로 갈수록
+    /// 가늘고 옅어져, 짧은 선이 흩어진 것처럼 보이지 않는다. 카드에 가려지는 안쪽은 그리지 않는다.
+    private func drawBeams(_ context: GraphicsContext, center: CGPoint, time: Double) {
+        let beams = 12
+        let spin = time * 0.22
+        let reach = max(width, height) * 0.74
+        let start = min(width, height) * 0.42
+        for beam in 0..<beams {
+            let angle = spin + Double(beam) * 2 * .pi / Double(beams)
+            let breath = 0.6 + 0.4 * sin(time * 2.1 + Double(beam) * 1.7)
+            let spread = beam.isMultiple(of: 2) ? 0.075 : 0.05
+            let outer = reach * (0.92 + 0.1 * breath)
+            func point(_ radius: Double, _ offset: Double) -> CGPoint {
+                CGPoint(x: center.x + cos(angle + offset) * radius,
+                        y: center.y + sin(angle + offset) * radius)
+            }
+            var wedge = Path()
+            wedge.move(to: point(start, -spread * 0.35))
+            wedge.addLine(to: point(outer, -spread))
+            wedge.addLine(to: point(outer, spread))
+            wedge.addLine(to: point(start, spread * 0.35))
+            wedge.closeSubpath()
+            let fadeIn = start / outer
+            context.fill(wedge, with: .radialGradient(
+                Gradient(stops: [
+                    .init(color: color.opacity(0), location: 0),
+                    .init(color: color.opacity(0.42 * breath), location: fadeIn + 0.08),
+                    .init(color: color.opacity(0.16 * breath), location: 0.72),
+                    .init(color: color.opacity(0), location: 1),
+                ]),
+                center: center, startRadius: 0, endRadius: outer))
         }
     }
 }
@@ -350,5 +390,54 @@ private struct RevealPopCanvas: View, @MainActor Animatable {
                              with: .color(.white.opacity(0.9 * fade)))
             }
         }
+    }
+}
+
+// MARK: - 진단
+
+/// 희귀 카드의 후광과 기운을 고정된 순간마다 PNG 로 뽑는다. 개봉 화면을 손으로 찍으면
+/// 매번 다른 순간이 찍혀 전후를 견줄 수 없다.
+@MainActor
+enum RevealEffectDiagnostics {
+    static func request(from arguments: [String]) -> (cardID: String, output: URL, dark: Bool)? {
+        guard let flag = arguments.firstIndex(of: "--render-reveal-effects"),
+              arguments.indices.contains(flag + 2) else { return nil }
+        return (arguments[flag + 1], URL(fileURLWithPath: arguments[flag + 2], isDirectory: true),
+                arguments.contains("--dark"))
+    }
+
+    static func render(cardID: String, output: URL, dark: Bool) async throws -> Int {
+        guard let entry = CardIndex.shared?.card(cardID) else {
+            throw LocalAudit.Failure(description: "Not in the card index: \(cardID)")
+        }
+        let image = await CardImageLoader.image(cardID: cardID, hires: true)
+        let card = PulledCard(id: cardID, tier: entry.tier, isNew: false, finish: .normal)
+        try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+        let width = RevealPeek.cardWidth
+        var written = 0
+        for frame in 0..<8 {
+            let time = Double(frame) * 0.15
+            let view = ZStack {
+                (dark ? Color(white: 0.16) : Color(white: 0.93))
+                ZStack {
+                    TierGlow(tier: entry.tier, width: width, valueCard: card, startBloomed: true)
+                    RevealAura(card: card, width: width, clock: time)
+                    CardImageView(cardID: cardID, hires: true, width: width, preloaded: image)
+                }
+            }
+            .frame(width: width * 1.9, height: (width / 0.717) * 1.6)
+            .environment(\.colorScheme, dark ? .dark : .light)
+            let renderer = ImageRenderer(content: view)
+            renderer.scale = 2
+            guard let rendered = renderer.nsImage, let tiff = rendered.tiffRepresentation,
+                  let bitmap = NSBitmapImageRep(data: tiff),
+                  let png = bitmap.representation(using: .png, properties: [:]) else {
+                throw LocalAudit.Failure(description: "Cannot render frame \(frame)")
+            }
+            try png.write(to: output.appendingPathComponent(String(format: "frame-%02d.png", frame)),
+                          options: .atomic)
+            written += 1
+        }
+        return written
     }
 }

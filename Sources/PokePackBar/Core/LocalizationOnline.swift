@@ -135,6 +135,8 @@ extension L {
     }
     var onlineLoginRequired: String { t("온라인 로그인이 필요합니다.", "Online sign-in required.", "オンラインログインが必要です。", "Debes iniciar sesión en línea.", "Connexion en ligne requise.", "É preciso entrar online.") }
     var actionDone: String { t("완료했어요.", "Done.", "完了しました。", "Hecho.", "Terminé.", "Concluído.") }
+    var tradeCompleted: String { t("교환했어요", "Trade complete", "交換しました",
+                                   "Intercambio hecho", "Échange conclu", "Troca concluída") }
     func jobProgress(total: Int, completed: Int) -> String {
         let total = total.formatted(), done = completed.formatted()
         return t("\(total)팩 중 \(done)팩 열었어요", "Opened \(done) of \(total) packs", "\(total)パック中\(done)パック開封しました",

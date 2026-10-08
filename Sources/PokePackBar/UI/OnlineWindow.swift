@@ -52,6 +52,8 @@ final class OnlineHubModel {
     enum Tab: String, CaseIterable, Sendable { case market, trades, social, stats, jobs, alerts }
     var section: Tab = .market
     var message: String?
+    /// 교환이 성사된 순간. 창 가운데에 잠깐 띄운다.
+    var celebration: OnlineCelebration?
     var documents: [String: [String: Any]] = [:]
     var generation = 0
     var offset = 0
@@ -185,10 +187,19 @@ final class OnlineHubModel {
     func mutate(_ route: String, _ values: [String: Any]) async -> Bool {
         guard canWrite, let remote else { return false }
         mutating = true
+        // 수락할 교환의 카드는 새로 고치기 전에 읽어 둔다. 성사되면 목록에서 상태가 바뀐다.
+        let accepted = values["action"] as? String == "trade_accept"
+            ? items("trades").first { $0.string("id") == values["target_id"] as? String } : nil
         do {
             let body = values.merging(["request_id": UUID().uuidString, "expected_revision": remote.revision]) { _, right in right }
             _ = try await remote.onlineMutation(path: "v1/\(route)", body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
             message = OnlineText.l.actionDone
+            if let accepted {
+                // 받은 제안을 수락했다: 나는 요청받은 카드를 주고 제안된 카드를 받는다.
+                func first(_ key: String) -> String? { (accepted[key] as? [String: Int])?.keys.sorted().first }
+                celebration = OnlineCelebration(gave: first("requested"), got: first("offered"))
+                SoundEffects.play(.chime(3))
+            }
             mutating = false
             await refresh()
             // 수락, 거절, 읽음 처리 뒤 메뉴바 개수가 1분 동안 남아 있지 않게 바로 갱신한다.
@@ -261,7 +272,11 @@ struct OnlineHubView: View {
             .pickerStyle(.segmented).labelsHidden().frame(maxWidth: .infinity, alignment: .leading)
             .onChange(of: model.section) { model.offset = 0; model.message = nil; reload() }
             if let message = model.message {
-                Label(message, systemImage: "checkmark.circle").font(Typography.label).foregroundStyle(.secondary)
+                // 끝났다는 표시가 조용히 바뀌면 눌렀는지조차 헷갈린다. 위에서 내려오며 표시가 한 번 튄다.
+                Label(message, systemImage: "checkmark.circle")
+                    .font(Typography.label).foregroundStyle(.secondary)
+                    .symbolEffect(.bounce, value: message)
+                    .transition(.move(edge: .top).combined(with: .opacity))
             }
             if model.remote?.authenticationExpired == true {
                 VStack(spacing: 12) {
@@ -280,6 +295,19 @@ struct OnlineHubView: View {
             else { notifications }
         }
         .padding(22)
+        .animation(.snappy(duration: 0.3), value: model.message)
+        .overlay {
+            if let celebration = model.celebration {
+                TradeSwapBanner(celebration: celebration)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                    .task {
+                        try? await Task.sleep(for: .seconds(2.6))
+                        guard model.celebration?.id == celebration.id else { return }
+                        withAnimation(.snappy(duration: 0.3)) { model.celebration = nil }
+                    }
+            }
+        }
+        .animation(.snappy(duration: 0.3), value: model.celebration)
         .onChange(of: model.remote?.authenticationExpired) {
             if model.remote?.authenticationExpired == true { model.clearPrivateData() }
         }
@@ -359,6 +387,8 @@ struct OnlineHubView: View {
                     }
                     .padding(.vertical, 8).padding(.horizontal, 10)
                     .background(unread ? Color.accentColor.opacity(0.06) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .animation(.easeOut(duration: 0.2), value: unread)
                 }
                 HStack {
                     if model.offset > 0 { Button(OnlineText.l.backToStart) { model.offset = 0; reload() } }
@@ -368,6 +398,8 @@ struct OnlineHubView: View {
                 }
                 .frame(maxWidth: .infinity)
             }
+            // 새 알림은 위에서 밀려 들어온다. 15초마다 새로 고칠 때 줄이 툭 끼어들지 않게 한다.
+            .animation(.snappy(duration: 0.3), value: items.map(\.onlineID))
         }
     }
 

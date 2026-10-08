@@ -154,6 +154,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             return
         }
 
+        // 희귀 카드 후광과 기운을 고정된 순간마다 PNG 로 출력한다.
+        if let effects = RevealEffectDiagnostics.request(from: CommandLine.arguments) {
+            NSApp.setActivationPolicy(.prohibited)
+            Task { @MainActor in
+                do {
+                    let count = try await RevealEffectDiagnostics.render(
+                        cardID: effects.cardID, output: effects.output, dark: effects.dark)
+                    print("\(count) frames: \(effects.output.path)")
+                    exit(0)
+                } catch {
+                    FileHandle.standardError.write(Data("Reveal effect render failed: \(error)\n".utf8))
+                    exit(1)
+                }
+            }
+            return
+        }
+
         // 조립된 .app 이 리소스를 실제로 여는지 확인하고 끝내는 모드. build-app.sh 가 쓴다.
         //
         // 파일이 있는지 스크립트가 확인하는 것만으로는 부족하다. 앱이 보는 위치와

@@ -142,6 +142,7 @@ struct PulledCardView: View {
             opened = true
         }
         let profile = RevealMotionProfile.forCard(card)
+        if let notes = profile.emphasis.chimeNotes { SoundEffects.play(.chime(notes)) }
         if profile.emphasis != .none {
             showBurst = true
             Task { @MainActor in

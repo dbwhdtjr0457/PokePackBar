@@ -13,11 +13,15 @@ struct SegmentedTabs<Value: Hashable>: View {
     struct Item: Identifiable {
         let value: Value
         let label: String
+        /// 늘 때마다 그 칸이 톡 튄다(산 팩이 「팩」 칸에 내려앉을 때).
+        var bump = 0
         var id: Value { value }
     }
 
     let items: [Item]
     @Binding var selection: Value
+    /// 선택 표시는 칸 사이를 미끄러져 옮겨 간다. 칸마다 따로 칠하면 자리가 순간 이동한다.
+    @Namespace private var pill
 
     /// 칸 하나의 세로 여백. 줄 전체가 28pt 가 되도록 잡았다 —
     /// 바깥 여백 2×2 + 이 값 2×4 + 13pt 글자 높이 16 = 28.
@@ -34,17 +38,24 @@ struct SegmentedTabs<Value: Hashable>: View {
             ForEach(items) { item in
                 let picked = item.value == selection
                 Button {
-                    selection = item.value
+                    withAnimation(Motion.shift) { selection = item.value }
                 } label: {
                     Text(item.label)
                         .font(picked ? pickedFont : font)
                         .foregroundStyle(picked ? Color.white : Color.primary)
                         .lineLimit(1).minimumScaleFactor(0.8)
+                        // 「팩 3」 처럼 수가 붙은 이름은 수가 굴러가며 바뀐다.
+                        .rollingNumber(item.label)
+                        .bumpOnChange(item.bump)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, verticalPadding)
-                        .background(picked ? AnyShapeStyle(Color.accentColor)
-                                           : AnyShapeStyle(Color.clear),
-                                    in: RoundedRectangle(cornerRadius: radius - 2))
+                        .background {
+                            if picked {
+                                RoundedRectangle(cornerRadius: radius - 2)
+                                    .fill(Color.accentColor)
+                                    .matchedGeometryEffect(id: "pill", in: pill)
+                            }
+                        }
                         .contentShape(RoundedRectangle(cornerRadius: radius - 2))
                 }
                 .buttonStyle(.plain)

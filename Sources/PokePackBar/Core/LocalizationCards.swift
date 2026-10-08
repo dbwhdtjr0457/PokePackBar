@@ -383,6 +383,16 @@ extension L {
     func buyCount(_ n: Int) -> String {
         t("\(n)개 구매", "Buy \(n)", "\(n)個 購入", "Comprar \(n)", "Acheter \(n)", "Comprar \(n)")
     }
+    func packBought(_ n: Int) -> String {
+        t("\(n)팩을 샀어요", n == 1 ? "Bought 1 pack" : "Bought \(n) packs", "\(n)パック購入しました",
+          n == 1 ? "Compraste 1 sobre" : "Compraste \(n) sobres",
+          n == 1 ? "1 booster acheté" : "\(n) boosters achetés",
+          n == 1 ? "1 pacote comprado" : "\(n) pacotes comprados")
+    }
+    var dexRewardReceived: String { t("보상을 받았어요", "Reward received", "報酬を受け取りました",
+                                        "Recompensa recibida", "Récompense reçue", "Recompensa recebida") }
+    var packOpenInPacksTab: String { t("팩 탭에서 열기", "Open in Packs", "パックタブで開ける",
+                                         "Abrir en Sobres", "Ouvrir dans Boosters", "Abrir em Pacotes") }
 
     // MARK: 팩
     var packsEmptyTitle: String { t("가진 팩이 없어요", "No packs yet", "パックがありません",

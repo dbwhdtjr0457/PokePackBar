@@ -32,6 +32,9 @@ struct BulkSaleView: View {
     @State private var confirming = false
     /// 방금 판 결과. 뜨면 격자 대신 이것만 보여주고 닫기를 기다린다.
     @State private var sold: WalletStore.BulkSale?
+    /// 결과 화면에서 세어 올라가는 판매액.
+    @State private var countedTokens = 0.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var targets: [String] {
         WalletStore.bulkSaleTargets(pool, maxWon: allPrices ? nil : threshold,
@@ -46,6 +49,7 @@ struct BulkSaleView: View {
             header(l)
             if let sold {
                 result(l, sold)
+                    .transition(.scale(scale: 0.92).combined(with: .opacity))
             } else {
                 picker(l)
                 summary(l, sale)
@@ -162,7 +166,9 @@ struct BulkSaleView: View {
                         Task {
                             let got = await wallet.sellBulkOnlineAware(ids)
                             confirming = false
-                            sold = got.isEmpty ? nil : got
+                            countedTokens = 0
+                            if !got.isEmpty { SoundEffects.play(.coin) }
+                            withAnimation(.snappy(duration: 0.3)) { sold = got.isEmpty ? nil : got }
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -186,12 +192,20 @@ struct BulkSaleView: View {
             Spacer(minLength: 0)
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 40)).foregroundStyle(.green)
-            Text(l.bulkSellDone(sale.copies,
-                                MarketEconomy.money(tokens: sale.tokens,
-                                                    language: wallet.language)))
-                .font(Typography.title)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
+                .symbolEffect(.bounce, value: sale.copies)
+                .background { SparkBurst(color: .green, radius: 52) }
+            // 판 금액이 0 에서부터 세어 올라간다. 얼마를 받았는지가 이 화면의 요점이다.
+            CountingText(value: countedTokens) { tokens in
+                l.bulkSellDone(sale.copies, MarketEconomy.money(tokens: Int(tokens.rounded()),
+                                                                language: wallet.language))
+            }
+            .font(Typography.title).monospacedDigit()
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .onAppear {
+                guard !reduceMotion else { countedTokens = Double(sale.tokens); return }
+                withAnimation(.easeOut(duration: 0.9)) { countedTokens = Double(sale.tokens) }
+            }
             Spacer(minLength: 0)
             Button(l.done, action: onClose)
                 .buttonStyle(.borderedProminent)

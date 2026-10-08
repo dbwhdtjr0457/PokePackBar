@@ -11,6 +11,7 @@ struct SettingsView: View {
     /// 패치 노트로 넘어가기. 설정을 열어 둔 채 덮어 씌우므로 닫으면 여기로 돌아온다.
     var onOpenReleaseNotes: () -> Void = {}
     @State private var launchAtLogin = LoginItem.isEnabled
+    @AppStorage(SoundEffects.defaultsKey) private var soundEffects = false
     @State private var launchAtLoginError: String?
     @State private var reportError: String?
     @State private var advancedExpanded = false
@@ -184,6 +185,21 @@ struct SettingsView: View {
                             launchAtLoginError = "\(error.localizedDescription)"
                             launchAtLogin = LoginItem.isEnabled
                         }
+                    }
+            }
+            Divider()
+            groupRow {
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(l.soundEffects)
+                    Text(l.soundEffectsHint).font(Typography.label).foregroundStyle(.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Toggle("", isOn: $soundEffects)
+                    .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                    // 켜는 순간 어떤 소리인지 들려준다.
+                    .onChange(of: soundEffects) { _, on in
+                        if on { SoundEffects.play(.chime(3), force: true) }
                     }
             }
         }

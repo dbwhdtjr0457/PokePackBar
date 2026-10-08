@@ -28,6 +28,9 @@ struct CardShopView: View {
     @State private var section: Section = .packs
     /// 팩 이름 검색어. 상세에 들어갔다 나와도 남아 있어 결과로 돌아온다.
     @State private var packQuery: String
+    /// 화면을 한 단계 들어가는 중인가. 들어갈 때는 오른쪽에서, 나올 때는 왼쪽에서 밀려 온다.
+    @State private var navForward = true
+    @Environment(\.accessibilityReduceMotion) private var shopReduceMotion
 
     @Environment(PopoverNavigation.self) private var nav
 
@@ -44,11 +47,13 @@ struct CardShopView: View {
                 if let selectedSet, let set = index.set(selectedSet) {
                     // 상세는 한 단계 들어간 화면이라 갈래 선택을 감춘다.
                     PackDetailView(wallet: wallet, index: index, set: set) {
-                        self.selectedSet = nil
+                        leave { self.selectedSet = nil }
                     }
+                    .transition(.screen(forward: navForward, reduceMotion: shopReduceMotion))
                 } else if let openedEra, let era = index.eras.first(where: { $0.name == openedEra }) {
                     // 시대 안 — 갈래 선택을 감춘다. 한 단계 들어온 화면이다.
                     packGrid(index, era: era)
+                        .transition(.screen(forward: navForward, reduceMotion: shopReduceMotion))
                 } else {
                     VStack(spacing: 8) {
                         sectionPicker
@@ -58,6 +63,7 @@ struct CardShopView: View {
                         case .coupons: couponBox(index)
                         }
                     }
+                    .transition(.screen(forward: navForward, reduceMotion: shopReduceMotion))
                 }
             } else {
                 Text(wallet.l.cardIndexMissing)
@@ -127,7 +133,7 @@ struct CardShopView: View {
                 ForEach(Array(rows.enumerated()), id: \.offset) { _, coupon in
                     couponRow(index, coupon)
                         .contentShape(Rectangle())
-                        .onTapGesture { selectedSet = coupon.setID }
+                        .onTapGesture { enter { selectedSet = coupon.setID } }
                 }
             }
             .padding(.horizontal, 1)
@@ -172,6 +178,19 @@ struct CardShopView: View {
         }
         .padding(.vertical, 7).padding(.horizontal, 8)
         .background(Color.accentColor.opacity(0.1), in: RoundedRectangle(cornerRadius: 9))
+        .hoverHighlight(cornerRadius: 9)
+    }
+
+    /// 한 단계 들어간다. 방향을 먼저 정해 두어야 새 화면이 오른쪽에서 들어온다.
+    private func enter(_ change: () -> Void) {
+        navForward = true
+        withAnimation(Motion.shift) { change() }
+    }
+
+    /// 한 단계 나온다. 이전 화면이 왼쪽에서 돌아온다.
+    private func leave(_ change: () -> Void) {
+        navForward = false
+        withAnimation(Motion.shift) { change() }
     }
 
     private func consumeRequestedSet() {
@@ -245,7 +264,7 @@ struct CardShopView: View {
         ScrollView {
             LazyVStack(spacing: 6) {
                 ForEach(index.eras) { era in
-                    Button { openedEra = era.name } label: {
+                    Button { enter { openedEra = era.name } } label: {
                         EraRow(wallet: wallet, era: era)
                     }
                     .buttonStyle(.plain)
@@ -259,7 +278,7 @@ struct CardShopView: View {
     private func packGrid(_ index: CardIndex, era: CardEra) -> some View {
         VStack(spacing: 6) {
             HStack(spacing: 6) {
-                BackButton(action: { openedEra = nil }, hint: wallet.l.back)
+                BackButton(action: { leave { openedEra = nil } }, hint: wallet.l.back)
                 Text(era.name).font(Typography.title).lineLimit(1)
                 Text(era.years)
                     .font(Typography.label).foregroundStyle(.tertiary).monospacedDigit()
@@ -271,7 +290,7 @@ struct CardShopView: View {
                 LazyVGrid(columns: CardGrid.packShelf.items,
                           spacing: CardGrid.packShelf.spacing) {
                     ForEach(era.sets) { set in
-                        Button { selectedSet = set.id } label: {
+                        Button { enter { selectedSet = set.id } } label: {
                             PackGridCell(wallet: wallet, index: index, set: set)
                         }
                         .buttonStyle(.plain)
@@ -345,6 +364,7 @@ private struct EraRow: View {
         .padding(.horizontal, 8).padding(.vertical, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.secondary.opacity(0.07), in: RoundedRectangle(cornerRadius: 8))
+        .hoverHighlight(cornerRadius: 8)
         .contentShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -370,9 +390,11 @@ private struct PackGridCell: View {
                 if owned > 0 {
                     Text("×\(owned)")
                         .font(.system(size: 14, weight: .heavy))
+                        .rollingNumber(owned)
                         .padding(.horizontal, 4).padding(.vertical, 1.5)
                         .background(Color.accentColor, in: Capsule())
                         .foregroundStyle(.white)
+                        .bumpOnChange(owned)
                         .padding(3)
                 }
             }
@@ -401,6 +423,7 @@ private struct PackGridCell: View {
         .padding(.vertical, 8)
         .background(Color.secondary.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+        .hoverLift()
     }
 }
 
@@ -413,6 +436,12 @@ private struct PackDetailView: View {
     let onClose: () -> Void
 
     @State private var quantity = 1
+    /// 방금 산 수. 값이 있으면 「N팩을 샀어요」 줄을 보인다.
+    @State private var bought: Int?
+    /// 팩 그림의 자리(팝오버 좌표). 산 팩이 여기서 팩 탭으로 날아간다.
+    @State private var artFrame: CGRect = .zero
+    @Environment(PopoverNavigation.self) private var nav
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// 이 팩에서 나올 수 있는 카드를 다 보고 있는가.
     @State private var browsingCards = false
     /// 그 목록에서 크게 보고 있는 카드.
@@ -467,6 +496,15 @@ private struct PackDetailView: View {
             HStack(alignment: .top, spacing: 10) {
                 PackImageView(setID: set.id, width: 62)
                     .shadow(radius: 4, y: 2)
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear
+                                .onAppear { artFrame = proxy.frame(in: .named(PackFlight.space)) }
+                                .onChange(of: proxy.frame(in: .named(PackFlight.space))) {
+                                    artFrame = proxy.frame(in: .named(PackFlight.space))
+                                }
+                        }
+                    }
                 VStack(alignment: .leading, spacing: 3) {
                     Text(set.name)
                         .font(Typography.title)
@@ -490,6 +528,10 @@ private struct PackDetailView: View {
 
             summaryRows(l)
             ScrollView { oddsTable(l) }
+            if let bought {
+                boughtNotice(l, count: bought)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
             purchaseBar(l)
         }
     }
@@ -638,6 +680,7 @@ private struct PackDetailView: View {
                             .foregroundStyle(.tertiary).strikethrough()
                         Text(MarketEconomy.money(tokens: total, language: wallet.language))
                             .font(Typography.amount).monospacedDigit()
+                            .rollingNumber(total)
                             .foregroundStyle(canBuy ? AnyShapeStyle(Color.accentColor)
                                                     : AnyShapeStyle(.secondary))
                     }
@@ -645,6 +688,7 @@ private struct PackDetailView: View {
                 } else {
                     Text(MarketEconomy.money(tokens: total, language: wallet.language))
                         .font(Typography.amount).monospacedDigit()
+                        .rollingNumber(total)
                         .lineLimit(1).minimumScaleFactor(0.75)
                         .foregroundStyle(canBuy ? .primary : .secondary)
                 }
@@ -678,6 +722,45 @@ private struct PackDetailView: View {
         Task {
             guard await wallet.purchasePacks(setID: set.id, count: selectedCount, total: selectedTotal) else { return }
             quantity = 1
+            SoundEffects.play(.pop)
+            withAnimation(.snappy(duration: 0.3)) { bought = selectedCount }
+            launchFlights(count: selectedCount)
         }
+    }
+
+    /// 산 팩 그림을 팩 탭으로 날린다. 여러 개를 샀으면 세 장까지 차례로 날린다.
+    private func launchFlights(count: Int) {
+        guard !reduceMotion, artFrame != .zero else {
+            nav.packArrivals += 1
+            return
+        }
+        let shown = min(count, PackFlight.maximumShown)
+        nav.packFlights += (0..<shown).map {
+            PackFlight(setID: set.id, origin: artFrame, delay: Double($0) * 0.09)
+        }
+    }
+
+    /// 산 직후의 한 줄. 무엇을 샀고, 어디서 열면 되는지를 그 자리에서 알린다.
+    private func boughtNotice(_ l: L, count: Int) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+            Text(l.packBought(count))
+                .font(Typography.bodySemibold)
+                .rollingNumber(count)
+            Spacer(minLength: 4)
+            Button {
+                nav.packHighlight = set.id
+                nav.tab = .packs
+            } label: {
+                HStack(spacing: 2) {
+                    Text(l.packOpenInPacksTab)
+                    Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold))
+                }
+                .font(Typography.button)
+            }
+            .buttonStyle(.borderless)
+        }
+        .padding(.horizontal, 9).padding(.vertical, 6)
+        .background(Color.green.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
     }
 }

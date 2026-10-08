@@ -51,6 +51,17 @@ final class PopoverNavigation {
     /// 도감 탭을 이 검색어로 연다. 카드 상세에서 보이지 않는 나머지 도감(「+N」)을 볼 때 쓴다.
     var dexSearch: String?
 
+    /// 상점에서 팩 탭으로 날아가는 중인 팩 그림.
+    var packFlights: [PackFlight] = []
+    /// 날아간 팩이 탭에 내려앉은 횟수. 늘 때마다 「팩」 칸이 톡 튄다.
+    var packArrivals = 0
+    /// 팩 탭이 열리면 그 줄로 옮겨 가 한 번 빛낼 세트. 상점의 「팩 탭에서 열기」 가 채운다.
+    var packHighlight: String?
+    /// 방금 받은 도감 보상 알림. 잠깐 띄웠다가 걷는다.
+    var rewardNotice: RewardNotice?
+    /// 지금 터지고 있는 반짝임.
+    var sparks: [SparkEvent] = []
+
 }
 
 @MainActor
@@ -102,10 +113,26 @@ struct PopoverView: View {
                              onOpenReleaseNotes: { nav.showReleaseNotes = true })
             } else {
                 walletHeader
-                giftToast
-                bonusToast
+                // 선물과 보너스 팩 알림은 위에서 내려오고, 닫으면 걷혀 올라간다. 툭 나타나면
+                // 아래 화면이 한 번에 밀려 무엇이 생겼는지보다 덜컹거림이 먼저 보인다.
+                Group {
+                    giftToast
+                    bonusToast
+                }
+                .animation(.snappy(duration: 0.3), value: wallet.lastGift != nil)
+                .animation(.snappy(duration: 0.3), value: wallet.lastGrant != nil)
                 releaseNotesToast
                 tabPicker
+                    // 산 팩이 날아가 내려앉을 자리. 탭 줄의 「팩」 칸 가운데다.
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear
+                                .onAppear { tabBarFrame = proxy.frame(in: .named(PackFlight.space)) }
+                                .onChange(of: proxy.frame(in: .named(PackFlight.space))) {
+                                    tabBarFrame = proxy.frame(in: .named(PackFlight.space))
+                                }
+                        }
+                    }
                 tabContent
             }
 
@@ -119,6 +146,15 @@ struct PopoverView: View {
                 }
                 .buttonStyle(.borderless)
                 .keyboardShortcut("q", modifiers: .command)
+            }
+        }
+        .coordinateSpace(.named(PackFlight.space))
+        .environment(\.popoverShown, nav.isShown)
+        .overlay { CelebrationLayer(wallet: wallet) }
+        .overlay {
+            PackFlightLayer(flights: nav.packFlights, target: packsTabCenter) { flight in
+                nav.packFlights.removeAll { $0.id == flight.id }
+                nav.packArrivals += 1
             }
         }
         .id(priceRevision)
@@ -310,6 +346,9 @@ struct PopoverView: View {
                 .font(Typography.amount).monospacedDigit()
                 .foregroundStyle(tint ?? .primary)
                 .lineLimit(1).minimumScaleFactor(0.6)
+                // 잔액과 컬렉션 가치가 바뀌면 자릿수가 굴러가며 바뀐다. 순간 교체되면
+                // 얼마가 늘고 줄었는지 눈으로 따라갈 수 없다.
+                .rollingNumber(value)
         }
         .frame(width: Self.statWidth, alignment: .leading)
         .fixedSize(horizontal: false, vertical: true)
@@ -394,6 +433,7 @@ struct PopoverView: View {
             .padding(8)
             .background(Color.orange.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -421,6 +461,7 @@ struct PopoverView: View {
             .padding(8)
             .background(Color.green.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+            .transition(.move(edge: .top).combined(with: .opacity))
         }
     }
 
@@ -455,11 +496,22 @@ struct PopoverView: View {
 
     /// 탭 줄. `SegmentedTabs` 로 직접 그린다 — 기본 세그먼트 컨트롤은 OS 판에 따라 제 내용
     /// 크기로 줄어들고, macOS 26 에서 네 탭이 창 한가운데로 몰렸다.
+    /// 탭 줄의 자리. 산 팩이 날아갈 곳을 여기서 셈한다.
+    @State private var tabBarFrame: CGRect = .zero
+
+    /// 「팩」 칸의 가운데. 칸은 폭을 똑같이 나눠 가지므로 순서로 셈한다.
+    private var packsTabCenter: CGPoint {
+        let tabs = Double(PopoverTab.allCases.count)
+        let position = Double(PopoverTab.allCases.firstIndex(of: .packs) ?? 1) + 0.5
+        return CGPoint(x: tabBarFrame.minX + tabBarFrame.width * position / tabs,
+                       y: tabBarFrame.midY)
+    }
+
     private var tabPicker: some View {
         @Bindable var nav = nav
         return SegmentedTabs(items: [
             .init(value: PopoverTab.shop, label: l.shop),
-            .init(value: PopoverTab.packs, label: packsLabel),
+            .init(value: PopoverTab.packs, label: packsLabel, bump: nav.packArrivals),
             .init(value: PopoverTab.collection, label: l.collection),
             .init(value: PopoverTab.dex, label: l.dexTab),
             .init(value: PopoverTab.stats, label: l.statsTab),

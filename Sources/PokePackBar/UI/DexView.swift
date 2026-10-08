@@ -245,6 +245,7 @@ struct DexView: View {
         .padding(.vertical, 9).padding(.horizontal, CardGrid.dexRowPadding)
         .background(claimable ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.07),
                     in: RoundedRectangle(cornerRadius: 9))
+        .hoverHighlight(cornerRadius: 9)
     }
 
     /// 누적 혜택도 목록과 함께 스크롤한다.
@@ -359,6 +360,7 @@ private struct DexRow: View {
         }
         .padding(.vertical, 8).padding(.horizontal, CardGrid.dexRowPadding)
         .background(background, in: RoundedRectangle(cornerRadius: 9))
+        .hoverHighlight(cornerRadius: 9)
         .overlay {
             RoundedRectangle(cornerRadius: 9)
                 .stroke(status.isClaimable ? Color.accentColor.opacity(0.6) : .clear, lineWidth: 1)
@@ -517,6 +519,10 @@ private struct DexClaimAction: View {
     let status: DexStatus
     /// 확정 카드를 받았을 때 알린다. 화면이 그 카드를 뒤집어 보여 준다.
     var onGranted: ((DexClaim) -> Void)? = nil
+    @Environment(PopoverNavigation.self) private var nav
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 버튼 자리(팝오버 좌표). 받은 순간 여기서 반짝이고 팩이 날아간다.
+    @State private var buttonFrame: CGRect = .zero
 
     var body: some View {
         let l = wallet.l
@@ -525,13 +531,22 @@ private struct DexClaimAction: View {
                 // 확정 카드를 받았으면 무엇이 나왔는지 보여 준다. 조용히 컬렉션에 넣으면
                 // 「MUR 이상 1장」이라 적어 놓고 무엇을 줬는지 알 길이 없다.
                 Task {
-                    if let claim = await wallet.claimDexOnlineAware(status.dex.id, step: step), claim.card != nil {
-                        onGranted?(claim)
-                    }
+                    guard let claim = await wallet.claimDexOnlineAware(status.dex.id, step: step) else { return }
+                    nav.celebrate(claim, from: buttonFrame, reduceMotion: reduceMotion)
+                    if claim.card != nil { onGranted?(claim) }
                 }
             }
             .buttonStyle(.borderedProminent).font(Typography.button)
             .disabled(wallet.resourceActionsDisabled)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { buttonFrame = proxy.frame(in: .named(PackFlight.space)) }
+                        .onChange(of: proxy.frame(in: .named(PackFlight.space))) {
+                            buttonFrame = proxy.frame(in: .named(PackFlight.space))
+                        }
+                }
+            }
         } else if status.claimed {
             Label(l.dexClaimed, systemImage: "checkmark.circle.fill")
                 .font(Typography.label).foregroundStyle(.green)
@@ -557,7 +572,7 @@ private struct DexCardStrip: View {
                          spacing: CardGrid.dexStrip.spacing) {
             ForEach(shown, id: \.self) { cardID in
                 if let onTap {
-                    Button { onTap(cardID) } label: { member(cardID) }
+                    Button { onTap(cardID) } label: { member(cardID).hoverLift(scale: 1.05) }
                         .buttonStyle(.plain)
                 } else {
                     member(cardID)
