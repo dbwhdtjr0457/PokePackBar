@@ -161,8 +161,8 @@ final class BundledDexTests: XCTestCase {
             XCTAssertGreaterThanOrEqual(dex.cards.count, 2,
                                         "\(dex.id): 한 장짜리는 조합이 아니다")
         }
-        let packSets = Set(cards.cards.map { $0.id.prefix(while: { $0 != "-" }) })
-            .map(String.init)
+        // 서브셋(sma, swsh9tg, cel30c 같은 별도 번호)은 부모 세트의 팩에서 나온다.
+        let packSets = Set(cards.cards.map(\.setID))
         let covered = Set(themes.map(\.homeSet))
         let missing = packSets.filter { !covered.contains($0) }.sorted()
         XCTAssertTrue(missing.isEmpty, "테마 도감이 없는 세트: \(missing.joined(separator: ", "))")

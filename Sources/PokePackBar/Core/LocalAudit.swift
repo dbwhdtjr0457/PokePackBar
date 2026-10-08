@@ -16,8 +16,13 @@ enum LocalAudit {
                 || args.contains("--audit-image-library") || args.contains("--audit-foil-geometry")
                 || args.contains("--audit-confirmed-foil-fixes") || args.contains("--audit-price-snapshot")
                 || args.contains("--audit-korean-names") || args.contains("--audit-foil-optics")
-                || args.contains("--audit-reviewed-foil") || args.contains("--audit-physical-pack-cards") else { return false }
+                || args.contains("--audit-reviewed-foil") || args.contains("--audit-physical-pack-cards")
+                || args.contains("--dex-metrics") else { return false }
         guard let index = CardIndex.shared else { throw Failure(description: "Missing card index") }
+        if args.contains("--dex-metrics") {
+            try DexMetrics.run()
+            return true
+        }
         if args.contains("--export-online-catalogue") {
             let entries = index.cards.map { card in
                 ["id": card.id, "name": card.name, "name_ko": card.displayName(.ko),
