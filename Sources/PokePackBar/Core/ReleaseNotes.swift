@@ -56,6 +56,14 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.14.0", lines: [
+                t("가입과 기존 계정 연결을 구분해 안내합니다. 초대 코드는 선택 사항이며, 붙여 넣은 코드 앞뒤의 공백을 제거합니다. 초대제 서버에는 필요한 코드를 안내합니다.",
+                  "Clarified sign-up versus existing-account linking. Invitation codes are optional, pasted whitespace is trimmed, and invite-only servers show actionable code guidance.",
+                  "新規登録と既存アカウント連携の案内を分けました。招待コードは任意で、貼り付けた前後の空白を除去し、招待制サーバーでは必要なコードを案内します。",
+                  "Aclaramos el registro y la vinculación de cuentas. Los códigos son opcionales, se recortan espacios al pegar y los servidores con invitación muestran instrucciones.",
+                  "L’inscription et la liaison de compte sont mieux expliquées. Les codes sont facultatifs, les espaces collés sont retirés et les serveurs sur invitation affichent les instructions.",
+                  "Esclarecemos o cadastro e a vinculação de contas. Os códigos são opcionais, espaços colados são removidos e servidores por convite mostram orientações.")
+            ]),
             ReleaseNote(version: "0.13.0", lines: [
                 t("온라인 창·계정·오류 안내를 6개 언어로 지원하고, 교환 제안의 빈 카드 전송 문제를 수정했습니다. 바인더 카드를 시세순으로 고르고 끌어서 순서를 바꿀 수 있습니다.",
                   "Online views, accounts and errors now support six languages. Fixed empty trade proposals, added a value-sorted binder picker and drag-to-reorder.",

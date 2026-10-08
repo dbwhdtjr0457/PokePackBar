@@ -56,7 +56,9 @@ brew upgrade --cask poke-pack-bar
 ## 온라인 계정과 기존 데이터 이전
 
 설정의 **계정 및 서버**에서 기본 주소 `https://ppb-api.wonyangs.com`을 사용한다.
-온라인 서버는 초대제로 운영하며, 가입에는 운영자가 발급한 연결 코드가 필요하다.
+새 가입과 기존 계정 연결을 구분해서 안내한다. 연결 코드는 운영자가 계정을
+미리 만들었거나 기존 UUID 계정을 이어 쓸 때 사용한다. 초대제로 운영하는
+서버에 연결하면 필요한 코드를 안내한다.
 기존 사용자는 먼저 앱을 종료하고 `~/Library/Application Support/PokePackBar/game-state.json`
 이전을 운영자와 진행한다. 원본 로그나 공급자 로그인 정보는 보내지 않는다.
 
@@ -70,6 +72,13 @@ brew upgrade --cask poke-pack-bar
 
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
+
+## 0.14.0
+
+가입 화면에서 초대 코드와 기존 계정 연결의 용도를 설명하고, 붙여 넣은 코드의
+앞뒤 공백·줄바꿈을 제거한다. 초대제 서버의 거절 응답도 필요한 코드 안내로 표시한다.
+
+![계정 및 서버 화면](docs/reference/screenshots/account-014-ko.png)
 
 ## 0.13.0
 
