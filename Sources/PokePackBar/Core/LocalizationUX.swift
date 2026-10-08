@@ -173,6 +173,13 @@ extension L {
                      "Algo cambió mientras tanto. Actualiza e inténtalo de nuevo.",
                      "Quelque chose a changé entre-temps. Actualisez et réessayez.",
                      "Algo mudou nesse meio tempo. Atualize e tente de novo.")
+        case "rotation_changed":
+            return t("진열이 바뀌었거나 이미 산 카드예요. 오늘 진열을 다시 확인해 주세요.",
+                     "The lineup changed or you already bought this card. Check today’s lineup again.",
+                     "ラインナップが変わったか、すでに購入済みです。今日のラインナップを確認してください。",
+                     "La selección cambió o ya compraste esta carta. Revisa la selección de hoy.",
+                     "La sélection a changé ou vous avez déjà acheté cette carte. Vérifiez la sélection du jour.",
+                     "A seleção mudou ou você já comprou esta carta. Confira a seleção de hoje.")
         case "too_many_attempts":
             return t("너무 자주 시도했어요. 잠시 뒤 다시 해 주세요.", "Too many attempts. Wait a moment and try again.",
                      "試行回数が多すぎます。少し待ってからもう一度お試しください。",

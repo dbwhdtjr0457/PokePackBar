@@ -214,7 +214,16 @@ struct OnlineSocialView: View {
         HStack(spacing: 10) {
             Image(systemName: "person.crop.circle").font(.system(size: 22)).foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: 1) {
-                Text(item.string("nickname")).font(Typography.bodySemibold)
+                HStack(spacing: 6) {
+                    Text(item.string("nickname")).font(Typography.bodySemibold)
+                    // 레벨을 모르는 예전 서버는 값을 보내지 않는다. 그때는 적지 않는다.
+                    if item["level"] != nil {
+                        Text(OnlineText.l.levelShort(item.int("level")))
+                            .font(Typography.caption).foregroundStyle(.secondary)
+                            .padding(.horizontal, 5).padding(.vertical, 1)
+                            .background(Color.secondary.opacity(0.12), in: Capsule())
+                    }
+                }
                 if let note { Text(note).font(Typography.caption).foregroundStyle(.secondary) }
             }
             Spacer()
