@@ -561,6 +561,13 @@ struct PackTearStage: View {
     let pose: PackTearPose
     let ambient: PackTearAmbient
     let reduceMotion: Bool
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// 밝은 화면에서는 빛을 더해 밝히는 합성이 아무것도 보여 주지 못한다(흰 위에 흰).
+    /// 그때는 따뜻한 금빛을 그대로 겹쳐 그린다.
+    private var lightAppearance: Bool { colorScheme == .light }
+    private var glowColor: Color { PackTearPalette.glow(light: lightAppearance) }
+    private var lightBlend: BlendMode { lightAppearance ? .normal : .plusLighter }
 
     private var edge: [CGPoint] { PackTearEdge.points(for: setID) }
     private var direction: Double { pose.fromLeading ? 1 : -1 }
@@ -658,12 +665,13 @@ struct PackTearStage: View {
         let centerX = (from + (0 - from) * min(1, pose.tear + pose.stripGone)) * PackTearMetrics.packWidth * 0.6
         return ZStack {
             Ellipse()
-                .fill(EllipticalGradient(colors: [PackTearPalette.glow.opacity(0.9),
-                                                  PackTearPalette.glow.opacity(0.32), .clear],
+                .fill(EllipticalGradient(colors: [glowColor.opacity(0.9),
+                                                  glowColor.opacity(0.32), .clear],
                                          center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5))
                 .frame(width: PackTearMetrics.packWidth * 1.15, height: 84)
             Ellipse()
-                .fill(EllipticalGradient(colors: [.white, PackTearPalette.glow.opacity(0.5), .clear],
+                .fill(EllipticalGradient(colors: [lightAppearance ? glowColor : .white,
+                                                  glowColor.opacity(0.5), .clear],
                                          center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5))
                 .frame(width: PackTearMetrics.packWidth * 0.78, height: 26)
         }
@@ -683,7 +691,7 @@ struct PackTearStage: View {
                 Rectangle().opacity(pose.stripGone * 0.85)
             }
         }
-        .blendMode(.plusLighter)
+        .blendMode(lightBlend)
         .allowsHitTesting(false)
     }
 
@@ -752,15 +760,15 @@ struct PackTearStage: View {
                 PackTearLine(edge: edge)
                     .stroke(LinearGradient(stops: [
                         .init(color: .clear, location: max(0, streak - 0.14)),
-                        .init(color: .white, location: min(1, max(0, streak))),
+                        .init(color: lightAppearance ? glowColor : .white, location: min(1, max(0, streak))),
                         .init(color: .clear, location: min(1, streak + 0.14)),
                     ], startPoint: .leading, endPoint: .trailing),
                             style: StrokeStyle(lineWidth: 2.2, lineCap: .round))
-                    .shadow(color: PackTearPalette.glow.opacity(0.9), radius: 3)
+                    .shadow(color: glowColor.opacity(0.9), radius: 3)
             }
         }
         .frame(width: PackTearMetrics.packWidth, height: PackTearMetrics.packHeight)
-        .blendMode(.plusLighter)
+        .blendMode(lightBlend)
         .opacity(pose.hintVisible * (1 - pose.tear))
         .allowsHitTesting(false)
     }
@@ -785,7 +793,9 @@ extension View {
 
 /// 팩 화면에서만 쓰는 빛깔. 어느 팩이든 같다 — 색이 결과를 미리 말하면 안 된다.
 enum PackTearPalette {
-    static let glow = Color(red: 1.0, green: 0.95, blue: 0.84)
+    static func glow(light: Bool) -> Color {
+        light ? Color(red: 1.0, green: 0.76, blue: 0.34) : Color(red: 1.0, green: 0.95, blue: 0.84)
+    }
     static let fiber = Color(white: 0.97)
 }
 
