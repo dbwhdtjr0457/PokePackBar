@@ -425,6 +425,9 @@ private struct RevealView: View {
             return .handled
         }
         .onAppear { focused = true }
+        // Esc 는 한 장씩 보는 중이면 결과로 건너뛰고, 결과 화면이면 팩 목록으로 돌아간다.
+        // 결과에서 연 카드 상세는 제 뒤로 버튼이 먼저 받는다.
+        .popoverEscape { if isSummary { onDone() } else { skipToSummary() } }
         .onChange(of: opened.id) {
             advanceTask?.cancel()
             advanceTask = nil

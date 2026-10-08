@@ -52,7 +52,7 @@ struct ReliabilitySettingsView: View {
                 Button(l.importPrices, action: importPrices)
                 Button(l.resetPrices) {
                     do { try PriceSnapshotStore.shared.reset(); message = l.pricesApplied }
-                    catch { message = error.localizedDescription }
+                    catch { message = ProblemText.message(for: error) }
                 }.disabled(!PriceSnapshotStore.shared.usesImportedSnapshot)
             }
             .disabled(wallet.isOnline)
@@ -80,7 +80,7 @@ struct ReliabilitySettingsView: View {
             guard alert.runModal() == .alertFirstButtonReturn else { return }
             try PriceSnapshotStore.shared.apply(data)
             message = l.pricesApplied
-        } catch { message = error.localizedDescription }
+        } catch { message = ProblemText.message(for: error) }
     }
 
     private func exportHistory() {
@@ -93,6 +93,6 @@ struct ReliabilitySettingsView: View {
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             // Foundation reference-date encoding is shared by replay and save decoding.
             try encoder.encode(wallet.state.openingHistory).write(to: url, options: .atomic)
-        } catch { message = error.localizedDescription }
+        } catch { message = ProblemText.message(for: error) }
     }
 }

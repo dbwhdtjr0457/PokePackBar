@@ -222,3 +222,88 @@ extension L {
           "Algo inesperado deu errado. Tente de novo em instantes.")
     }
 }
+
+// MARK: 로컬 실패
+
+extension L {
+    var saveInvalid: String {
+        t("저장 파일을 읽지 못했어요. 원래 파일은 그대로 두었어요.",
+          "Couldn’t read the save file. The original file was kept as is.",
+          "セーブファイルを読めませんでした。元のファイルはそのまま残しています。",
+          "No se pudo leer el archivo de guardado. El original se conservó tal cual.",
+          "Impossible de lire la sauvegarde. Le fichier d’origine est conservé.",
+          "Não foi possível ler o salvamento. O arquivo original foi mantido.")
+    }
+    var saveUnrecoverable: String {
+        t("저장 파일도 백업도 읽지 못해서, 원본을 지키려고 저장을 멈췄어요. 설정의 데이터 탭에서 백업 폴더를 열 수 있어요.",
+          "Neither the save nor a backup could be read, so saving is paused to protect the original. Open the backup folder from Settings > Data.",
+          "セーブもバックアップも読めないため、元データを守るために保存を止めています。設定のデータタブからバックアップフォルダを開けます。",
+          "No se pudo leer ni el guardado ni una copia, así que se pausó el guardado para proteger el original. Abre la carpeta de copias en Ajustes > Datos.",
+          "Ni la sauvegarde ni une copie ne sont lisibles : l’enregistrement est suspendu pour protéger l’original. Ouvrez le dossier des copies dans Réglages > Données.",
+          "Nem o salvamento nem um backup puderam ser lidos, então salvar foi pausado para proteger o original. Abra a pasta de backups em Ajustes > Dados.")
+    }
+    var saveNewerVersion: String {
+        t("더 새 버전의 앱이 만든 저장 파일이에요. 덮어쓰지 않도록 저장을 멈췄어요. 앱을 업데이트해 주세요.",
+          "This save was made by a newer version of the app. Saving is paused so it isn’t overwritten. Please update the app.",
+          "新しいバージョンのアプリで作られたセーブです。上書きしないよう保存を止めています。アプリを更新してください。",
+          "Este guardado es de una versión más nueva de la app. Se pausó el guardado para no sobrescribirlo. Actualiza la app.",
+          "Cette sauvegarde vient d’une version plus récente. L’enregistrement est suspendu pour ne pas l’écraser. Mettez l’app à jour.",
+          "Este salvamento é de uma versão mais nova do app. Salvar foi pausado para não sobrescrevê-lo. Atualize o app.")
+    }
+    var priceSnapshotInvalid: String {
+        t("시세 파일 형식이 맞지 않아요. 쓰던 시세를 그대로 두었어요.",
+          "The price file isn’t in the expected format. The current prices were kept.",
+          "相場ファイルの形式が正しくありません。今の相場をそのまま使います。",
+          "El archivo de precios no tiene el formato esperado. Se conservaron los precios actuales.",
+          "Le fichier de prix n’a pas le format attendu. Les prix actuels sont conservés.",
+          "O arquivo de preços não está no formato esperado. Os preços atuais foram mantidos.")
+    }
+    var packCatalogueIncomplete: String {
+        t("팩 구성 정보를 다 읽지 못해서 열지 않았어요. 팩은 그대로예요.",
+          "The pack’s card list couldn’t be read completely, so it wasn’t opened. Your packs are untouched.",
+          "パックの構成を読み切れなかったため開けませんでした。パックはそのままです。",
+          "No se pudo leer toda la lista de cartas del sobre, así que no se abrió. Tus sobres siguen intactos.",
+          "La liste des cartes du booster est incomplète : il n’a pas été ouvert. Vos boosters sont intacts.",
+          "A lista de cartas do pacote não pôde ser lida por completo, então ele não foi aberto. Seus pacotes estão intactos.")
+    }
+    var openingStateChanged: String {
+        t("여는 동안 컬렉션이나 개봉 설정이 바뀌어서 열지 않았어요. 팩은 그대로예요. 다시 열어 주세요.",
+          "Your collection or opening settings changed while opening, so nothing was opened. Your packs are untouched; try again.",
+          "開けている間にコレクションか開封設定が変わったため、開けませんでした。パックはそのままです。もう一度開けてください。",
+          "Tu colección o los ajustes de apertura cambiaron mientras se abría, así que no se abrió nada. Tus sobres siguen intactos; inténtalo de nuevo.",
+          "Votre collection ou vos réglages d’ouverture ont changé pendant l’ouverture : rien n’a été ouvert. Vos boosters sont intacts, réessayez.",
+          "Sua coleção ou os ajustes de abertura mudaram durante a abertura, então nada foi aberto. Seus pacotes estão intactos; tente de novo.")
+    }
+    var problemDiskFull: String {
+        t("디스크 공간이 모자라 저장하지 못했어요. 공간을 비운 뒤 다시 시도해 주세요.",
+          "Not enough disk space to save. Free up some space and try again.",
+          "ディスクの空き容量が足りず保存できませんでした。空きを作ってからもう一度お試しください。",
+          "No hay espacio en disco para guardar. Libera espacio e inténtalo de nuevo.",
+          "Espace disque insuffisant pour enregistrer. Libérez de l’espace et réessayez.",
+          "Sem espaço em disco para salvar. Libere espaço e tente de novo.")
+    }
+    var problemNoPermission: String {
+        t("이 위치에 읽거나 쓸 권한이 없어요. 다른 위치를 골라 주세요.",
+          "No permission to read or write here. Choose another location.",
+          "この場所を読み書きする権限がありません。別の場所を選んでください。",
+          "No hay permiso para leer o escribir aquí. Elige otra ubicación.",
+          "Pas d’autorisation de lecture ou d’écriture ici. Choisissez un autre emplacement.",
+          "Sem permissão para ler ou gravar aqui. Escolha outro local.")
+    }
+    var problemFileMissing: String {
+        t("파일을 찾지 못했어요. 옮겨졌거나 지워졌을 수 있어요.",
+          "The file wasn’t found. It may have been moved or deleted.",
+          "ファイルが見つかりませんでした。移動されたか削除された可能性があります。",
+          "No se encontró el archivo. Puede que se haya movido o eliminado.",
+          "Fichier introuvable. Il a peut-être été déplacé ou supprimé.",
+          "O arquivo não foi encontrado. Ele pode ter sido movido ou apagado.")
+    }
+    var problemFileUnreadable: String {
+        t("파일을 읽지 못했어요. 손상됐거나 이 앱의 파일이 아닐 수 있어요.",
+          "The file couldn’t be read. It may be damaged or not a file from this app.",
+          "ファイルを読めませんでした。破損しているか、このアプリのファイルではない可能性があります。",
+          "No se pudo leer el archivo. Puede estar dañado o no ser de esta app.",
+          "Impossible de lire le fichier. Il est peut-être endommagé ou ne vient pas de cette app.",
+          "Não foi possível ler o arquivo. Ele pode estar danificado ou não ser deste app.")
+    }
+}

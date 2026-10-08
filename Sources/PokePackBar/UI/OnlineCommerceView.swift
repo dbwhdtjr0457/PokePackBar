@@ -46,7 +46,13 @@ struct OnlineMarketView: View {
             case .mine: mineView
             }
         }
-        .onAppear { model.ownListings = mode == .mine }
+        .onAppear {
+            if model.opensMyListings {
+                model.opensMyListings = false
+                mode = .mine
+            }
+            model.ownListings = mode == .mine
+        }
         .sheet(item: Binding(get: { buying.map(ListingBox.init) }, set: { buying = $0?.item })) { box in
             BuySheet(model: model, item: box.item)
         }

@@ -463,17 +463,13 @@ private struct PackDetailView: View {
     private var total: Int { wallet.packTotal(setID: set.id, count: quantity, index: index) }
     private var canBuy: Bool { wallet.availableTokens >= total }
 
-    /// 한 번 더 묻는 중인가.
+    /// 한 번 더 묻는 중인가. 묻는 기준은 `PurchaseConfirmation` 에 있다.
     @State private var confirmingPurchase = false
-    /// 여러 팩을 사면서 잔액의 절반 이상을 쓰면 한 번 더 묻는다. 수량 칸을 잘못 건드려
-    /// 잔액이 통째로 빠지면 되돌릴 수 없다. 한 팩은 묻지 않는다 — 잔액이 적은 사람은 팩
-    /// 하나에도 절반을 쓰는데, 그때마다 묻는 것은 확인이 아니라 방해다.
     private var needsConfirmation: Bool {
-        quantity > 1 && wallet.availableTokens > 0
-            && Double(total) >= Double(wallet.availableTokens) * 0.5
+        PurchaseConfirmation.needed(quantity: quantity, total: total, balance: wallet.availableTokens)
     }
     private var spendPercent: Int {
-        Int((Double(total) / Double(max(1, wallet.availableTokens)) * 100).rounded())
+        PurchaseConfirmation.percent(total: total, balance: wallet.availableTokens)
     }
 
     var body: some View {

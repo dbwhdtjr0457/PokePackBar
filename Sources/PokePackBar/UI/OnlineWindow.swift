@@ -65,6 +65,8 @@ final class OnlineHubModel {
     var marketFinish = ""
     var marketSort = "newest"
     var ownListings = false
+    /// 마켓 탭이 열릴 때 「내 판매」 부터 보여 줄지. 판매 알림을 누르면 켠다.
+    var opensMyListings = false
     var tradeDraft: [String: Any]?
     var openingJobs: [RemoteGameSession.OpeningJob] = []
     var stopOpening = false
@@ -427,6 +429,8 @@ struct OnlineHubView: View {
                                    quiet: true)
             }
         }
+        // 팔렸거나 기한이 지난 내 판매는 「내 판매」 에서 확인한다. 사기 화면부터 열면 다시 찾아가야 한다.
+        if ["listing_sold", "listing_expired"].contains(item.string("kind")) { model.opensMyListings = true }
         model.section = destination
     }
 

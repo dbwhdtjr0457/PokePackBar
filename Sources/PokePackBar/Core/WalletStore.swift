@@ -1521,7 +1521,7 @@ final class WalletStore {
         var openingJob: RemoteGameSession.OpeningJob?
         if count > 1000 {
             do { openingJob = try await remote.createOpeningJob(setID: setID, count: count) }
-            catch { persistenceError = error.localizedDescription; return nil }
+            catch { persistenceError = ProblemText.message(for: error); return nil }
         }
         while packs.count < count, !Task.isCancelled {
             let chunk = min(count - packs.count, 1000)
@@ -1533,7 +1533,7 @@ final class WalletStore {
                     guard let opened = reply.packs else { throw RemoteGameSession.Failure(message: l.noOpeningResult) }
                     batch = opened
                 } catch {
-                    persistenceError = l.openingJobPaused(packs.count, of: count, reason: error.localizedDescription)
+                    persistenceError = l.openingJobPaused(packs.count, of: count, reason: ProblemText.message(for: error))
                     break
                 }
             } else {
@@ -1577,7 +1577,7 @@ final class WalletStore {
                 pity: pity(setID: setID), seeds: seeds)
             return commitOpening(prepared, setID: setID, count: count, mode: state.openingMode)
         } catch {
-            persistenceError = String(describing: error)
+            persistenceError = ProblemText.message(for: error)
             return nil
         }
     }
@@ -1608,14 +1608,14 @@ final class WalletStore {
             // overwrite those edits or commit NEW/pity results derived from a stale snapshot.
             guard state.cards == cardsBefore, state.openingMode == mode, openingPerks == perks,
                   pity(setID: setID) == pityBefore, packCount(setID: setID) >= count else {
-                persistenceError = "Collection or opening settings changed. No packs were consumed; try again."
+                persistenceError = l.openingStateChanged
                 return nil
             }
             return commitOpening(prepared, setID: setID, count: count, mode: mode)
         } catch is CancellationError {
             return nil
         } catch {
-            persistenceError = String(describing: error)
+            persistenceError = ProblemText.message(for: error)
             return nil
         }
     }
@@ -1648,7 +1648,7 @@ final class WalletStore {
             recoveredSave = loaded.recovered
         } catch {
             savingBlocked = true
-            persistenceError = error.localizedDescription
+            persistenceError = ProblemText.message(for: error)
             AppLog.write("game state protected: \(error.localizedDescription)")
             return
         }
@@ -1714,7 +1714,7 @@ final class WalletStore {
         } catch {
             state = durableState
             refreshPerks()
-            persistenceError = error.localizedDescription
+            persistenceError = ProblemText.message(for: error)
             AppLog.write("game transaction cancelled: \(error.localizedDescription)")
             return false
         }

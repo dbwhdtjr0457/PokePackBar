@@ -20,14 +20,8 @@ struct BackButton: View {
     /// 마우스를 올렸을 때 뜨는 설명.
     var hint: String?
 
-    /// 팝오버 밖(온라인 창 등)에서는 없다. 그때는 Esc 를 맡기지 않는다.
-    @Environment(PopoverNavigation.self) private var nav: PopoverNavigation?
-    @State private var escape = PopoverBackHandler()
-
     var body: some View {
-        // 화면이 다시 그려지며 넘겨받은 동작이 바뀌어도 Esc 는 늘 지금 동작을 부른다.
-        escape.action = action
-        return Button(action: action) {
+        Button(action: action) {
             HStack(spacing: 2) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 15, weight: .semibold))
@@ -42,7 +36,31 @@ struct BackButton: View {
         }
         .buttonStyle(.plain)
         .help(hint ?? label ?? "")
-        .onAppear { nav?.registerBack(escape) }
-        .onDisappear { nav?.unregisterBack(escape) }
+        .popoverEscape(action)
+    }
+}
+
+extension View {
+    /// 이 화면이 떠 있는 동안 Esc 에 맡길 동작. 뒤로 버튼이 없는 화면(팩 뜯기, 카드 공개)도
+    /// 뒤로 버튼과 같은 줄에 선다 — 나중에 나타난 화면이 먼저 받는다. `nil` 이면 지금은 할 일이
+    /// 없다는 뜻이라 Esc 가 팝오버를 닫는다.
+    func popoverEscape(_ action: (() -> Void)?) -> some View {
+        modifier(PopoverEscape(action: action))
+    }
+}
+
+@MainActor
+private struct PopoverEscape: ViewModifier {
+    let action: (() -> Void)?
+    /// 팝오버 밖(온라인 창 등)에서는 없다. 그때는 Esc 를 맡기지 않는다.
+    @Environment(PopoverNavigation.self) private var nav: PopoverNavigation?
+    @State private var handler = PopoverBackHandler()
+
+    func body(content: Content) -> some View {
+        // 화면이 다시 그려지며 넘겨받은 동작이 바뀌어도 Esc 는 늘 지금 동작을 부른다.
+        handler.action = action
+        return content
+            .onAppear { nav?.registerBack(handler) }
+            .onDisappear { nav?.unregisterBack(handler) }
     }
 }

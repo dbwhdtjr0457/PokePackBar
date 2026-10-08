@@ -99,17 +99,20 @@ final class PopoverNavigation {
     ///
     /// 예전에는 어느 화면에서든 Esc 가 팝오버를 통째로 닫았다. 팩 상세나 카드 상세에서
     /// 목록으로 돌아가려고 누르면 창이 사라져, 다시 열고 뒤로 버튼을 눌러야 했다.
+    ///
+    /// 가장 깊은 화면에 지금 할 일이 없으면(`action` 이 비어 있으면) 그 아래 화면으로 내려가지
+    /// 않고 `false` 다. 아래 화면의 뒤로 가기가 위 화면을 둔 채 불리면 엉뚱한 곳으로 간다.
     func goBack() -> Bool {
-        guard let handler = backHandlers.last else { return false }
-        handler.action()
+        guard let action = backHandlers.last?.action else { return false }
+        action()
         return true
     }
 }
 
-/// 뒤로 버튼 하나가 Esc 에 맡기는 동작. 버튼이 다시 그려질 때마다 최신 동작으로 바꿔 끼운다.
+/// 화면 하나가 Esc 에 맡기는 동작. 화면이 다시 그려질 때마다 최신 동작으로 바꿔 끼운다.
 @MainActor
 final class PopoverBackHandler {
-    var action: () -> Void = {}
+    var action: (() -> Void)?
 }
 
 @MainActor

@@ -151,11 +151,7 @@ enum OnlineText {
     /// 시스템이 만든 문장(「데이터가 올바른 형식이 아니므로…」)은 무엇을 하라는 말이 없어
     /// 짧은 안내로 바꾸고, 원문은 로그에 남긴다.
     nonisolated static func message(for error: any Error) -> String {
-        if error is DecodingError || (error as NSError).domain == NSCocoaErrorDomain {
-            AppLog.write("[online] unexpected failure: \(String(describing: error).prefix(300))")
-            return L.current.unexpectedProblem
-        }
-        return error.localizedDescription
+        ProblemText.message(for: error)
     }
 
     /// "6일 남음" 처럼 남은 시간만 말한다. 날짜와 시각을 통째로 보여 주면 계산을 떠넘긴다.

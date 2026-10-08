@@ -122,6 +122,9 @@ struct PackTearView: View {
         }
         .padding(.vertical, 2)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Esc 는 기다리지 않고 넘어가는 키다. 봉인돼 있으면 저절로 뜯고, 꺼내는 중이면 첫 장으로
+        // 간다. 찢는 중이나 카드를 받는 중에는 할 일이 없어 팝오버가 닫힌다(뜯던 자리는 남는다).
+        .popoverEscape(phase == .sealed || phase == .extracting ? { activate() } : nil)
         .onAppear { focused = true }
         .task(id: setID) {
             guard packImage == nil else { return }
