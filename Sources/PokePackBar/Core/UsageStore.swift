@@ -77,6 +77,10 @@ final class UsageStore {
     var bonusPackNotifications: Bool {
         didSet { defaults.set(bonusPackNotifications, forKey: "bonusPackNotifications") }
     }
+    /// 온라인 알림(교환 제안, 마켓 판매, 친구 신청)을 macOS 알림으로 받을지.
+    var onlineNotifications: Bool {
+        didSet { defaults.set(onlineNotifications, forKey: "onlineNotifications") }
+    }
     /// 새 버전 알림(팝오버 업데이트 배너) 표시 여부 — 기본 켬. 끄면 배너 숨김(수동 확인은 설정에서 가능).
     var updateNotificationsEnabled: Bool {
         didSet { defaults.set(updateNotificationsEnabled, forKey: "updateNotificationsEnabled") }
@@ -499,6 +503,7 @@ final class UsageStore {
         limitDisplayMode = LimitDisplayMode(rawValue: d.string(forKey: "limitDisplayMode") ?? "") ?? .used
         limitNotifications = d.object(forKey: "limitNotifications") as? Bool ?? true
         bonusPackNotifications = d.object(forKey: "bonusPackNotifications") as? Bool ?? true
+        onlineNotifications = d.object(forKey: "onlineNotifications") as? Bool ?? true
         updateNotificationsEnabled = d.object(forKey: "updateNotificationsEnabled") as? Bool ?? true
         menuBarCardEnabled = d.object(forKey: "menuBarCardEnabled") as? Bool ?? true
         lastSeenReleaseVersion = d.string(forKey: "lastSeenReleaseVersion") ?? ""

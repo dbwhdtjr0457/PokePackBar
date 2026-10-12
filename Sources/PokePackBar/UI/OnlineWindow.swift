@@ -8,13 +8,16 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
     private var model: OnlineHubModel?
 
     /// `section` 이 있으면 그 탭으로 연다. 메뉴바의 교환 제안이나 알림 개수를 눌렀을 때 쓴다.
-    func show(wallet: WalletStore, section: OnlineHubModel.Tab? = nil) {
+    /// `myListings` 는 마켓 탭을 「내 판매」 부터 연다. 판매 알림을 눌렀을 때 쓴다.
+    func show(wallet: WalletStore, section: OnlineHubModel.Tab? = nil, myListings: Bool = false) {
         OnlineText.wallet = wallet
         if let window {
+            if myListings { model?.opensMyListings = true }
             if let section, model?.section != section { model?.section = section }
             window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true); model?.visible = true; return
         }
         let model = OnlineHubModel(wallet: wallet)
+        if myListings { model.opensMyListings = true }
         if let section { model.section = section }
         self.model = model
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
@@ -29,6 +32,12 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
         model.visible = true
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// 알림을 눌렀을 때. 그 일을 처리할 탭을 열고 해당 교환, 판매 글, 친구 신청을 짚어 준다.
+    func show(wallet: WalletStore, followingAlert kind: String, target: String, printing: String? = nil) {
+        show(wallet: wallet)
+        model?.follow(kind: kind, target: target, printing: printing)
     }
 
     func windowWillClose(_ notification: Notification) { model?.visible = false }
@@ -67,12 +76,21 @@ final class OnlineHubModel {
     var ownListings = false
     /// 마켓 탭이 열릴 때 「내 판매」 부터 보여 줄지. 판매 알림을 누르면 켠다.
     var opensMyListings = false
+    /// 마켓 탭을 「사기」 로 돌려놓을지. 위시리스트 알림을 누르면 켠다.
+    var opensMarketBuy = false
     var tradeDraft: [String: Any]?
+    /// 알림이 가리킨 항목(교환, 판매 글, 친구 관계)의 서버 번호. 그 탭이 이 항목을 화면 안으로
+    /// 끌어오고 테두리로 잠깐 짚어 준다. 예전에는 탭만 열려서 어느 것인지 목록에서 다시 찾아야 했다.
+    private(set) var focusID: String?
+    @ObservationIgnored private var focusFound = false
+    @ObservationIgnored private var focusToken = 0
     var openingJobs: [RemoteGameSession.OpeningJob] = []
     var stopOpening = false
     var openingProgress: String?
     private var refreshAgain = false
     private var refreshAgainFull = false
+    /// 알림을 최신순으로 주지 못하는 예전 서버. 한 번 확인하면 그 뒤로는 예전 방식으로만 묻는다.
+    private(set) var legacyAlerts = false
     init(wallet: WalletStore) { self.wallet = wallet }
     var remote: RemoteGameSession? { wallet.remote }
     /// 다시 불러오는 동안에도 마지막 실패 안내를 그대로 둔다. 15초마다 사라졌다 다시 뜨면
@@ -147,7 +165,7 @@ final class OnlineHubModel {
                         }
                     }
                 } else if currentSection == .alerts {
-                    documents["notifications"] = try await read("v1/notifications?after=\(offset)")
+                    documents["notifications"] = try await readNotifications()
                 } else if currentSection == .trades {
                     documents["trades"] = try await read("v1/trades?offset=\(offset)")
                     documents["friends"] = try await read("v1/friends?limit=100")
@@ -168,6 +186,122 @@ final class OnlineHubModel {
             refreshAgain = false
             refreshAgainFull = false
             await refresh(full: again)
+        }
+    }
+
+    /// 알림은 최신 것부터 받는다. 쌓인 알림이 많으면 방금 온 것이 맨 뒤 쪽에 있어, 예전에는
+    /// 「더 보기」를 끝까지 눌러야 보였다. `offset` 은 다음 쪽의 기준 번호다.
+    /// 최신순을 모르는 예전 서버는 응답에 순서를 적지 않으므로, 그때는 오래된 순 그대로 둔다.
+    private func readNotifications() async throws -> [String: Any] {
+        if !legacyAlerts {
+            let page = try await read(offset > 0 ? "v1/notifications?newest=true&before=\(offset)"
+                                                 : "v1/notifications?newest=true")
+            if page["order"] != nil { return page }
+            legacyAlerts = true
+            if offset == 0 { return page }
+        }
+        return try await read("v1/notifications?after=\(offset)")
+    }
+
+    /// 다음 쪽의 기준 번호. 없으면 끝이다.
+    var nextNotificationCursor: Int? {
+        let page = documents["notifications"]
+        return (legacyAlerts ? page?["next_after"] : page?["next_before"]) as? Int
+    }
+
+    static func shownNotificationBoundary(_ items: [[String: Any]]) -> Int? {
+        items.map { $0.int("id") }.filter { $0 > 0 }.max()
+    }
+
+    /// 안 읽은 알림을 한 번에 읽음으로 바꾼다.
+    ///
+    /// 서버가 한 번에 처리하면 그 명령 하나를 보낸다. 마지막으로 확인한 알림까지만 바꾸므로 누르는
+    /// 사이에 새로 온 것은 안 읽음으로 남는다. 그 명령이 없는 예전 서버에서는 지금 보이는 것만
+    /// 하나씩 바꾼다.
+    func markAllNotificationsRead() async {
+        guard canWrite, let remote else { return }
+        let unread = remote.notificationSummary?.unread ?? 0
+        if remote.notificationSummary?.latest_id != nil {
+            // The summary can advance while this page remains on screen.
+            // Preserve notifications that arrived after the displayed page.
+            guard let latest = Self.shownNotificationBoundary(items("notifications")) else { return }
+            var values: [String: Any] = ["action": "notification_read_all"]
+            values["notification_id"] = latest
+            if await mutate("notifications", values, quiet: true), unread > 0 {
+                message = OnlineText.l.alertsMarkedRead(unread)
+            }
+            return
+        }
+        mutating = true
+        var marked = 0
+        for item in items("notifications") where !item.bool("read") {
+            let body: [String: Any] = ["action": "notification_read", "notification_id": item.int("id"),
+                                       "request_id": UUID().uuidString, "expected_revision": remote.revision]
+            do {
+                _ = try await remote.onlineMutation(
+                    path: "v1/notifications", body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
+                marked += 1
+            } catch {
+                mutating = false
+                fail(error, while: "notifications")
+                return
+            }
+        }
+        mutating = false
+        guard marked > 0 else { return }
+        message = OnlineText.l.alertsMarkedRead(marked)
+        await refresh()
+        await remote.refreshNotificationSummary()
+    }
+
+    // MARK: 알림이 가리키는 곳
+
+    /// 알림이 가리키는 곳으로 간다. 탭을 열고, 그 일을 찾아 짚어 준다.
+    func follow(kind: String, target: String, printing: String? = nil) {
+        let destination = OnlineText.destination(kind) ?? .alerts
+        switch kind {
+        case "listing_sold", "listing_expired":
+            // 팔렸거나 기한이 지난 내 판매는 「내 판매」 에서 확인한다. 사기 화면부터 열면 다시 찾아가야 한다.
+            opensMyListings = true
+        case "wishlist_listing":
+            // 그 카드의 판매 글만 남게 이름으로 찾아 둔다. 걸어 둔 조건에 가려 안 보이면 안 되니 조건은 푼다.
+            opensMarketBuy = true
+            if let name = printing.flatMap(OnlineText.searchName) {
+                search = name
+                marketSet = ""; marketTier = ""; marketFinish = ""
+            }
+        default:
+            break
+        }
+        // 여러 개를 묶은 알림은 가리키는 항목이 없다. 앞서 짚던 것도 거둔다.
+        focus(on: destination == .alerts ? "" : target)
+        // 탭이 바뀌면 화면이 알아서 새로 받는다. 이미 그 탭이면 방금 생긴 항목이 아직 없을 수 있어 직접 받는다.
+        if section != destination { section = destination } else { Task { await refresh(full: false) } }
+    }
+
+    func focus(on id: String) {
+        focusID = id.isEmpty ? nil : id
+        focusFound = false
+        expireFocus(after: 10)
+    }
+
+    /// 목록에 그 항목이 있으면 한 번만 그 번호를 돌려준다. 화면은 그쪽으로 스크롤한다.
+    /// 15초마다 새로 받을 때마다 다시 끌려가지 않게 한 번으로 끝낸다.
+    func takeFocus(among ids: [String]) -> String? {
+        guard let focusID, !focusFound, ids.contains(focusID) else { return nil }
+        focusFound = true
+        expireFocus(after: 3)
+        return focusID
+    }
+
+    /// 짚어 준 테두리는 잠깐 뒤에 거둔다. 그 항목이 목록에 없으면(이미 닫혔거나 다음 쪽) 조용히 잊는다.
+    private func expireFocus(after seconds: Double) {
+        focusToken += 1
+        let token = focusToken
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(seconds))
+            guard let self, self.focusToken == token else { return }
+            self.focusID = nil
         }
     }
 
@@ -215,8 +349,10 @@ final class OnlineHubModel {
                 SoundEffects.play(.pop)
             }
             mutating = false
+            // 내가 방금 한 일로 생긴 알림은 macOS 알림으로 다시 알리지 않는다.
+            OnlineAlerts.current?.quietNext = true
             await refresh()
-            // 수락, 거절, 읽음 처리 뒤 메뉴바 개수가 1분 동안 남아 있지 않게 바로 갱신한다.
+            // 수락, 거절, 읽음 처리 뒤 메뉴바 개수가 다음 확인 때까지 남아 있지 않게 바로 갱신한다.
             await remote.refreshNotificationSummary()
             return true
         } catch {
@@ -281,7 +417,10 @@ struct OnlineHubView: View {
                     .font(Typography.label).foregroundStyle(.orange)
             }
             Picker("", selection: $model.section) {
-                ForEach(OnlineHubModel.Tab.allCases, id: \.self) { Text(OnlineText.l.onlineTab($0)).tag($0) }
+                // 답할 것이 있는 탭은 이름 옆에 개수를 붙인다. 예전에는 탭을 눌러 봐야 알았다.
+                ForEach(OnlineHubModel.Tab.allCases, id: \.self) {
+                    Text(OnlineText.tabTitle($0, summary: model.remote?.notificationSummary)).tag($0)
+                }
             }
             .pickerStyle(.segmented).labelsHidden().frame(maxWidth: .infinity, alignment: .leading)
             .onChange(of: model.section) { model.offset = 0; model.message = nil; reload() }
@@ -388,10 +527,18 @@ struct OnlineHubView: View {
         let info = OnlineText.notification(kind)
         let unread = !item.bool("read")
         let destination = OnlineText.destination(kind)
+        let when = OnlineText.timeAgo(item.int("created_at"))
         let row = HStack(spacing: 12) {
             Image(systemName: info.icon).font(.system(size: 17))
                 .foregroundStyle(unread ? Color.accentColor : Color.secondary).frame(width: 24)
-            Text(info.text).font(unread ? Typography.bodySemibold : Typography.body)
+            VStack(alignment: .leading, spacing: 2) {
+                // 누가, 어떤 카드인지까지 말한다. 「교환 제안이 왔어요」 만으로는 열어 봐야 안다.
+                Text(OnlineText.notificationText(item)).font(unread ? Typography.bodySemibold : Typography.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                if !when.isEmpty {
+                    Text(when).font(Typography.caption).foregroundStyle(.secondary)
+                }
+            }
             Spacer()
             if unread {
                 Button(OnlineText.l.markRead) {
@@ -409,45 +556,55 @@ struct OnlineHubView: View {
         .background(unread ? Color.accentColor.opacity(0.06) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
         .transition(.move(edge: .top).combined(with: .opacity))
         .animation(.easeOut(duration: 0.2), value: unread)
-        if let destination {
+        if destination != nil {
             row
                 .contentShape(RoundedRectangle(cornerRadius: 8))
                 .hoverHighlight(cornerRadius: 8)
-                .onTapGesture { open(item, in: destination) }
+                .onTapGesture { open(item) }
                 .help(OnlineText.l.openNotification)
                 .accessibilityAddTraits(.isButton)
-                .accessibilityAction(named: OnlineText.l.openNotification) { open(item, in: destination) }
+                .accessibilityAction(named: OnlineText.l.openNotification) { open(item) }
         } else {
             row
         }
     }
 
-    private func open(_ item: [String: Any], in destination: OnlineHubModel.Tab) {
+    private func open(_ item: [String: Any]) {
         if !item.bool("read"), model.canWrite {
             Task {
                 await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")],
                                    quiet: true)
             }
         }
-        // 팔렸거나 기한이 지난 내 판매는 「내 판매」 에서 확인한다. 사기 화면부터 열면 다시 찾아가야 한다.
-        if ["listing_sold", "listing_expired"].contains(item.string("kind")) { model.opensMyListings = true }
-        model.section = destination
+        model.follow(kind: item.string("kind"), target: item.string("target"),
+                     printing: (item["detail"] as? [String: Any])?["printing"] as? String)
     }
 
     private var notifications: some View {
         let items = model.items("notifications")
+        let unread = model.remote?.notificationSummary?.unread ?? items.filter { !$0.bool("read") }.count
         return ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 if items.isEmpty {
                     OnlineEmptyState(icon: "bell", title: OnlineText.l.noNewAlerts,
                                      message: OnlineText.l.alertsEmptyHint)
+                } else {
+                    // 알림이 여러 개 쌓였을 때 하나씩 「확인」 을 누르지 않아도 되게 한다.
+                    HStack(spacing: 10) {
+                        Text(unread > 0 ? OnlineText.l.unreadAlerts(unread) : OnlineText.l.allAlertsRead)
+                            .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+                        Spacer()
+                        Button(OnlineText.l.markAllRead) { Task { await model.markAllNotificationsRead() } }
+                            .disabled(unread == 0 || !model.canWrite)
+                    }
+                    .padding(.horizontal, 10)
                 }
                 ForEach(items, id: \.onlineID) { item in
                     notificationRow(item)
                 }
                 HStack {
                     if model.offset > 0 { Button(OnlineText.l.backToStart) { model.offset = 0; reload() } }
-                    if let next = model.documents["notifications"]?["next_after"] as? Int {
+                    if let next = model.nextNotificationCursor {
                         Button(OnlineText.l.showMore) { model.offset = next; reload() }
                     }
                 }

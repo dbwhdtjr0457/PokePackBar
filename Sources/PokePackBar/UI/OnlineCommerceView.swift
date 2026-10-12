@@ -47,17 +47,28 @@ struct OnlineMarketView: View {
             }
         }
         .onAppear {
-            if model.opensMyListings {
-                model.opensMyListings = false
-                mode = .mine
-            }
+            enter()
             model.ownListings = mode == .mine
         }
+        // 마켓 탭이 이미 열려 있을 때 알림을 누른 경우.
+        .onChange(of: model.opensMyListings) { enter() }
+        .onChange(of: model.opensMarketBuy) { enter() }
         .sheet(item: Binding(get: { buying.map(ListingBox.init) }, set: { buying = $0?.item })) { box in
             BuySheet(model: model, item: box.item)
         }
         .sheet(item: $selling) { stock in SellSheet(model: model, stock: stock) }
         .sheet(item: $preview) { OnlinePrintingDetail(printing: $0.id) }
+    }
+
+    /// 알림이 정해 준 화면으로 들어간다. 판매 알림은 「내 판매」, 위시리스트 알림은 「사기」.
+    private func enter() {
+        if model.opensMyListings {
+            model.opensMyListings = false
+            mode = .mine
+        } else if model.opensMarketBuy {
+            model.opensMarketBuy = false
+            mode = .buy
+        }
     }
 
     // MARK: 사기
@@ -99,7 +110,9 @@ struct OnlineMarketView: View {
             }
 
             let listings = model.items("listings")
+            ScrollViewReader { scroller in
             ScrollView {
+                Group {
                 if listings.isEmpty {
                     OnlineEmptyState(icon: "bag",
                                      title: hasFilter ? OnlineText.l.noListingsMatch : OnlineText.l.noListingsYet,
@@ -113,16 +126,26 @@ struct OnlineMarketView: View {
                                                badge: item.bool("mine") ? (OnlineText.l.mySales, .accentColor) : nil) {
                                     Text(OnlineText.won(tokens: item.int("unit_tokens")))
                                         .font(Typography.bodySemibold).monospacedDigit()
+                                    // 올린 값이 싼지 비싼지는 시세와 나란히 있어야 보인다. 예전에는 눌러서 열어야 알았다.
+                                    Text(OnlineText.referenceWon(item.string("printing")).map { OnlineText.l.marketQuote(OnlineText.wonText($0)) }
+                                         ?? OnlineText.l.noMarketPrice)
+                                        .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
                                     Text("\(item.string("nickname")), \(OnlineText.l.cardsCount(item.int("quantity")))")
                                         .font(Typography.caption).foregroundStyle(.secondary).lineLimit(1)
                                 }
                             }
                             .buttonStyle(.plain)
+                            .onlineFocusRing(model.focusID == item.string("id"), cornerRadius: 8, outset: 5)
                         }
                     }
                     .padding(.vertical, 4)
                     OnlinePagination(model: model, key: "listings")
                 }
+                }
+                .padding(.horizontal, OnlineFocus.gutter)
+            }
+            .padding(.horizontal, -OnlineFocus.gutter)
+            .revealsOnlineFocus(model, in: listings, with: scroller)
             }
         }
     }
@@ -185,16 +208,23 @@ struct OnlineMarketView: View {
                 Label(OnlineText.l.spent(OnlineText.won(tokens: model.wallet.state.marketSpentTokens)), systemImage: "arrow.up.circle")
             }
             .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+            ScrollViewReader { scroller in
             ScrollView {
                 if listings.isEmpty {
                     OnlineEmptyState(icon: "tag", title: OnlineText.l.noOwnListings,
                                      message: OnlineText.l.listFromSell)
                 } else {
                     VStack(spacing: 10) {
-                        ForEach(listings, id: \.onlineID) { item in myListing(item) }
+                        ForEach(listings, id: \.onlineID) { item in
+                            myListing(item)
+                                .onlineFocusRing(model.focusID == item.string("id"))
+                                .id(item.onlineID)
+                        }
                     }
                     OnlinePagination(model: model, key: "listings")
                 }
+            }
+            .revealsOnlineFocus(model, in: listings, with: scroller)
             }
         }
     }
@@ -460,6 +490,7 @@ struct OnlineTradingView: View {
             }
             .padding(.bottom, 12)
         }
+        .revealsOnlineFocus(model, in: model.items("trades"), with: scroller)
         }
         .onAppear { if let draft = model.tradeDraft { loadDraft(draft); model.tradeDraft = nil } }
         .onChange(of: friend) {
@@ -596,6 +627,8 @@ struct OnlineTradingView: View {
         }
         .padding(12)
         .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+        .onlineFocusRing(model.focusID == item.string("id"))
+        .id(item.onlineID)
     }
 
     private func friendName(_ id: String) -> String {

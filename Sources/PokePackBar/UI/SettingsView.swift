@@ -353,6 +353,18 @@ struct SettingsView: View {
                 Toggle("", isOn: $store.bonusPackNotifications)
                     .labelsHidden().toggleStyle(.switch).controlSize(.small)
             }
+            if wallet.isOnline {
+                Divider()
+                groupRow {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(l.onlineNotificationsLabel)
+                        Text(l.onlineNotificationsHint).font(Typography.label).foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $store.onlineNotifications)
+                        .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                }
+            }
             Divider()
             groupRow {
                 VStack(alignment: .leading, spacing: 1) {

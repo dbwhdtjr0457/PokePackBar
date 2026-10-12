@@ -810,3 +810,15 @@ read_when:
   exercise the actual ordered trade/counter-offer/listing/replay flow.
   Reintroducing the stale preferred-printing selection makes the regression
   fail; after reverting it, all seven targeted fixture/release-note tests pass.
+
+### Read-all notification boundary (0.16.0)
+
+- A background summary can advance after a notification page is displayed.
+  Using that summary's latest ID marks unseen newer notifications as read.
+- Server tests bounded the operation using the displayed page, while client
+  tests covered cursors and notification text without the read-all input.
+- Read-all now uses the maximum ID in the displayed page; the summary only
+  identifies server support. Other notification cursors were swept: alert
+  delivery advances after fetched items and legacy read-all uses visible rows.
+- `testReadAllUsesDisplayedPageBoundary` covers an advancing summary, empty
+  pages and zero IDs; server read-all tests preserve later and foreign notices.
