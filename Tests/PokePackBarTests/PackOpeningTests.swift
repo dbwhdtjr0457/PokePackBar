@@ -1278,6 +1278,33 @@ final class CollectionFilterTests: XCTestCase {
         XCTAssertTrue(CardCollectionView.filtered(sample, set: "a", tier: .artRare).isEmpty)
     }
 
+    /// 「보유한 카드만」을 끄면 가진 카드와 없는 카드가 값 순서대로 섞여 선다. 가진 카드를 앞에
+    /// 모으면 없는 카드가 값과 상관없이 전부 뒤로 밀린다.
+    func testAllCardsKeepTheirPriceOrderWhetherOwnedOrNot() {
+        // 값 순으로 들어온 목록: 없는 카드(가장 비쌈), 가진 카드, 없는 카드, 중복인 카드.
+        let byValue = sample
+        let owned = ["a-2": 1, "b-2": 3]
+        let all = CardCollectionView.shelf(from: byValue, ownedOnly: false,
+                                           matches: { _ in true }, count: { owned[$0] ?? 0 })
+        XCTAssertEqual(all.visible.map(\.id), ["a-1", "a-2", "b-1", "b-2"], "없는 카드가 뒤로 밀렸다")
+        XCTAssertEqual(all.pool.count, 4)
+        XCTAssertEqual(all.owned, 2)
+        XCTAssertTrue(all.hasSpares)
+
+        // 켜면 가진 카드만, 여전히 값 순서대로. 분모(pool)는 그대로 전체다.
+        let mine = CardCollectionView.shelf(from: byValue, ownedOnly: true,
+                                            matches: { _ in true }, count: { owned[$0] ?? 0 })
+        XCTAssertEqual(mine.visible.map(\.id), ["a-2", "b-2"])
+        XCTAssertEqual(mine.pool.count, 4)
+
+        // 거르기는 순서를 바꾸지 않는다.
+        let setA = CardCollectionView.shelf(from: byValue, ownedOnly: false,
+                                            matches: { $0.setID == "a" }, count: { owned[$0] ?? 0 })
+        XCTAssertEqual(setA.visible.map(\.id), ["a-1", "a-2"])
+        XCTAssertEqual(setA.owned, 1)
+        XCTAssertFalse(setA.hasSpares)
+    }
+
     /// 정렬 기준마다 앞에 오는 것이 달라야 한다.
     ///
     /// **같은 순위끼리는 들어온 순서를 지킨다.** 들어오는 목록이 값 순이므로 그 덕에
