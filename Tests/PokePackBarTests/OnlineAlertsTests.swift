@@ -158,6 +158,74 @@ final class OnlineAlertsTests: XCTestCase {
                        "민수 님이 교환을 제안했어요")
     }
 
+    private func hub() -> OnlineHubModel {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("alerts-\(UUID().uuidString)", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return OnlineHubModel(wallet: WalletStore(fileURL: dir.appendingPathComponent("game-state.json")))
+    }
+
+    /// 알림을 누르면 탭만 여는 것이 아니라 그 교환, 판매 글을 찾아간다.
+    func testFollowingAnAlertLandsOnTheItem() {
+        let model = hub()
+        model.follow(kind: "trade_request", target: "trade-1")
+        XCTAssertEqual(model.section, .trades)
+        XCTAssertEqual(model.focusID, "trade-1")
+        // 목록에 그 항목이 들어왔을 때 한 번만 끌어온다. 새로 받을 때마다 끌려가면 안 된다.
+        XCTAssertNil(model.takeFocus(among: ["other"]))
+        XCTAssertEqual(model.takeFocus(among: ["other", "trade-1"]), "trade-1")
+        XCTAssertNil(model.takeFocus(among: ["other", "trade-1"]))
+
+        model.follow(kind: "listing_sold", target: "listing-1")
+        XCTAssertEqual(model.section, .market)
+        XCTAssertTrue(model.opensMyListings, "팔린 글은 「내 판매」 에서 본다")
+        XCTAssertEqual(model.focusID, "listing-1")
+
+        // 묶은 알림은 가리키는 항목이 없다. 알림 탭으로만 가고, 앞서 짚던 것도 거둔다.
+        model.follow(kind: "", target: "")
+        XCTAssertEqual(model.section, .alerts)
+        XCTAssertNil(model.focusID)
+    }
+
+    /// 위시리스트 알림은 마켓을 그 카드로 찾아 연다. 걸어 둔 조건에 가려 안 보이면 안 된다.
+    func testWishlistAlertSearchesTheMarketForThatCard() throws {
+        let card = try XCTUnwrap(CardIndex.shared?.cards.first { $0.nameKo != nil })
+        let model = hub()
+        model.section = .alerts
+        model.marketSet = "base1"
+        model.marketTier = "C"
+        model.follow(kind: "wishlist_listing", target: "listing-9", printing: "\(card.id)#holo")
+        XCTAssertEqual(model.section, .market)
+        XCTAssertTrue(model.opensMarketBuy)
+        XCTAssertEqual(model.search, card.nameKo)
+        XCTAssertEqual(model.marketSet, "")
+        XCTAssertEqual(model.marketTier, "")
+        XCTAssertEqual(model.focusID, "listing-9")
+
+        // 서버가 아는 이름은 영어와 한국어뿐이다. 다른 언어에서는 영어 이름으로 찾는다.
+        AppLanguage.current = .ja
+        XCTAssertEqual(OnlineText.searchName("\(card.id)#holo"), card.name)
+        AppLanguage.current = .ko
+
+        // 카드를 알려 주지 않는 예전 서버: 찾던 말은 그대로 두고 마켓만 연다.
+        let plain = hub()
+        plain.section = .alerts
+        plain.search = "피카츄"
+        plain.follow(kind: "wishlist_listing", target: "listing-9")
+        XCTAssertEqual(plain.section, .market)
+        XCTAssertEqual(plain.search, "피카츄")
+    }
+
+    /// macOS 알림도 눌렀을 때 그 항목을 찾아갈 수 있게 번호와 카드를 싣는다.
+    func testAnnouncementCarriesWhereToLand() async {
+        let alerts = OnlineAlerts(storageKey: "a", defaults: defaults)
+        await alerts.check(summary: summary(unread: 0, latest: 1), enabled: true, fetch: server([]))
+        let items = [note(2, "wishlist_listing", detail: ["printing": "no-such-card#holo", "unit_tokens": 5])]
+        let sent = await alerts.check(summary: summary(unread: 1, latest: 2), enabled: true, fetch: server(items))
+        XCTAssertEqual(sent.first?.target, "t")
+        XCTAssertEqual(sent.first?.printing, "no-such-card#holo")
+    }
+
     /// 답할 것이 있는 탭만 개수를 단다. 없으면 이름 그대로다.
     func testTabTitleCarriesWhatIsWaiting() {
         let waiting = Summary(unread: 5, incoming_trades: 1, incoming_friends: 0, latest_id: 9)

@@ -614,14 +614,15 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     /// 온라인 알림을 누르면 그 일을 처리할 탭을 연다. 한도나 보너스 팩 알림은 여는 곳이 없다.
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse) async {
-        guard let kind = response.notification.request.content.userInfo[OnlineAlerts.kindKey] as? String
-        else { return }
-        await MainActor.run { openOnline(forAlert: kind) }
+        let info = response.notification.request.content.userInfo
+        guard let kind = info[OnlineAlerts.kindKey] as? String else { return }
+        let target = info[OnlineAlerts.targetKey] as? String ?? ""
+        let printing = info[OnlineAlerts.printingKey] as? String
+        await MainActor.run { openOnline(forAlert: kind, target: target, printing: printing) }
     }
 
-    private func openOnline(forAlert kind: String) {
+    private func openOnline(forAlert kind: String, target: String, printing: String?) {
         guard let wallet else { return }
-        OnlineWindow.shared.show(wallet: wallet, section: OnlineAlerts.destination(kind: kind),
-                                 myListings: ["listing_sold", "listing_expired"].contains(kind))
+        OnlineWindow.shared.show(wallet: wallet, followingAlert: kind, target: target, printing: printing)
     }
 }

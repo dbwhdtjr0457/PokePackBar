@@ -67,6 +67,18 @@ enum OnlineText {
         return MarketEconomy.won(tokens: MarketEconomy.tokens(usd: usd, prices: prices), prices: prices)
     }
 
+    /// 판형을 정하지 않은 카드의 대표 시세.
+    static func cardReferenceWon(_ cardID: String) -> Int? {
+        guard let prices = CardPrices.shared, let usd = prices.price(cardID) else { return nil }
+        return MarketEconomy.won(tokens: MarketEconomy.tokens(usd: usd, prices: prices), prices: prices)
+    }
+
+    /// 마켓 검색 칸에 넣을 카드 이름. 서버는 영어 이름과 한국어 이름으로만 찾으므로 그 둘 중에서 고른다.
+    static func searchName(_ printing: String) -> String? {
+        guard let card = CardIndex.shared?.card(CardPrintingKey(storageKey: printing).cardID) else { return nil }
+        return card.displayName(language == .ko ? .ko : .en)
+    }
+
     static func wonText(_ won: Int) -> String { WonFormatter.exact(won, language: language) }
 
     /// 시세 높은 순. 시세 없는 인쇄본은 뒤로 가고, 같은 값이면 이름순으로 흔들리지 않게 한다.
@@ -529,10 +541,7 @@ struct OnlineCatalogueSearch: View {
     }
 
     /// 카드 대표 시세(원). 판형을 고르기 전 목록에 쓴다.
-    private func cardPrice(_ card: CardEntry) -> Int? {
-        guard let prices = CardPrices.shared, let usd = prices.price(card.id) else { return nil }
-        return MarketEconomy.won(tokens: MarketEconomy.tokens(usd: usd, prices: prices), prices: prices)
-    }
+    private func cardPrice(_ card: CardEntry) -> Int? { OnlineText.cardReferenceWon(card.id) }
 
     /// 고른 판형의 시세. 「아무 판형」이면 대표 시세다.
     private func pickedPrice(_ card: CardEntry) -> Int? {
@@ -890,5 +899,61 @@ struct OnlineFailureBanner: View {
         .padding(12)
         .background(Color.orange.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
         .onChange(of: problem.requestID) { copied = false }
+    }
+}
+
+// MARK: - 알림이 가리킨 항목
+
+/// 알림에서 넘어온 항목을 테두리로 잠깐 짚어 준다. 글자는 그대로 두고 상자만 나타났다 사라진다.
+@MainActor
+private struct OnlineFocusRing: ViewModifier {
+    let active: Bool
+    let cornerRadius: CGFloat
+    let outset: CGFloat
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .strokeBorder(Color.accentColor, lineWidth: 2)
+                .padding(-outset)
+                .opacity(active ? 1 : 0)
+                .allowsHitTesting(false)
+                .animation(.easeOut(duration: 0.3), value: active)
+        }
+    }
+}
+
+enum OnlineFocus {
+    /// 테두리를 바깥으로 내는 목록은 스크롤 영역을 양옆으로 이만큼 넓히고 내용은 그만큼 들여
+    /// 제자리에 둔다. 그러지 않으면 가장자리에 붙은 항목의 테두리가 스크롤 영역에 잘린다.
+    static let gutter: CGFloat = 8
+}
+
+extension View {
+    /// `outset` 은 배경 없이 글자만 있는 줄에서 테두리가 글자에 붙지 않게 바깥으로 내는 폭이다.
+    func onlineFocusRing(_ active: Bool, cornerRadius: CGFloat = 10, outset: CGFloat = 0) -> some View {
+        modifier(OnlineFocusRing(active: active, cornerRadius: cornerRadius, outset: outset))
+    }
+
+    /// 이 목록에 알림이 가리킨 항목이 있으면 그쪽으로 스크롤한다. 목록을 새로 받았을 때와
+    /// 다른 알림을 눌렀을 때 다시 살핀다.
+    @MainActor
+    func revealsOnlineFocus(_ model: OnlineHubModel, in items: [[String: Any]],
+                            with scroller: ScrollViewProxy) -> some View {
+        onChange(of: model.generation, initial: true) { model.revealFocus(in: items, with: scroller) }
+            .onChange(of: model.focusID) { model.revealFocus(in: items, with: scroller) }
+    }
+}
+
+extension OnlineHubModel {
+    func revealFocus(in items: [[String: Any]], with scroller: ScrollViewProxy) {
+        guard let id = takeFocus(among: items.map { $0.string("id") }),
+              let row = items.first(where: { $0.string("id") == id }) else { return }
+        let anchor = row.onlineID
+        // 방금 받은 줄이 화면에 놓인 다음에 움직인다.
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(80))
+            withAnimation(.easeOut(duration: 0.25)) { scroller.scrollTo(anchor, anchor: .center) }
+        }
     }
 }

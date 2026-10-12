@@ -395,6 +395,32 @@ extension L {
     var viewBinder: String { t("바인더 보기", "View binder", "バインダーを見る", "Ver carpeta", "Voir le classeur", "Ver fichário") }
     var unfriend: String { t("친구 끊기", "Remove friend", "フレンドを解除", "Eliminar amigo", "Retirer l’ami", "Remover amigo") }
     var blockUser: String { t("차단하기", "Block", "ブロックする", "Bloquear", "Bloquer", "Bloquear") }
+    /// 친구 줄에서 바로 교환 탭으로. 줄이 좁아 짧게 적는다.
+    var proposeTradeShort: String { t("교환 제안", "Trade", "交換する", "Intercambiar", "Échanger", "Trocar") }
+    func unfriendQuestion(_ name: String) -> String {
+        t("\(name) 님과 친구를 끊을까요?", "Remove \(name) from your friends?", "\(name)さんとのフレンドを解除しますか？",
+          "¿Eliminar a \(name) de tus amigos?", "Retirer \(name) de vos amis ?", "Remover \(name) dos seus amigos?")
+    }
+    var unfriendNote: String {
+        t("주고받던 교환 제안도 함께 취소돼요. 다시 친구가 되려면 친구 신청부터 해야 해요.",
+          "Pending trade offers between you are cancelled too. To be friends again, one of you has to send a new request.",
+          "やり取り中の交換の提案も取り消されます。もう一度フレンドになるには申請からやり直します。",
+          "También se cancelan las ofertas de intercambio pendientes entre ustedes. Para volver a ser amigos hay que enviar otra solicitud.",
+          "Les offres d’échange en cours entre vous sont aussi annulées. Pour redevenir amis, il faudra renvoyer une demande.",
+          "As propostas de troca pendentes entre vocês também são canceladas. Para voltarem a ser amigos, é preciso enviar um novo pedido.")
+    }
+    func blockQuestion(_ name: String) -> String {
+        t("\(name) 님을 차단할까요?", "Block \(name)?", "\(name)さんをブロックしますか？", "¿Bloquear a \(name)?",
+          "Bloquer \(name) ?", "Bloquear \(name)?")
+    }
+    var blockNote: String {
+        t("친구가 끊기고 주고받던 교환 제안이 취소돼요. 서로의 마켓 판매 글도 보이지 않아요. 차단 목록에서 다시 풀 수 있어요.",
+          "You stop being friends, pending trade offers between you are cancelled, and you no longer see each other’s market listings. You can undo this from the blocked list.",
+          "フレンドが解除され、やり取り中の交換の提案が取り消されます。お互いのマーケット出品も表示されなくなります。ブロックリストから解除できます。",
+          "Dejan de ser amigos, se cancelan las ofertas de intercambio pendientes y ya no verán las ventas del otro en el mercado. Puedes deshacerlo desde la lista de bloqueados.",
+          "Vous n’êtes plus amis, les offres d’échange en cours sont annulées et vous ne voyez plus vos annonces respectives. Vous pouvez annuler depuis la liste des bloqués.",
+          "Vocês deixam de ser amigos, as propostas de troca pendentes são canceladas e não veem mais os anúncios um do outro. Dá para desfazer na lista de bloqueados.")
+    }
     var awaitingAcceptance: String { t("수락을 기다리는 중", "Waiting for them to accept", "承認待ち", "Esperando que acepte", "En attente d’acceptation", "Aguardando aceitação") }
     var cancelRequest: String { t("신청 취소", "Cancel request", "申請を取り消す", "Cancelar solicitud", "Annuler la demande", "Cancelar pedido") }
     var friendsEmptyHint: String { t("친구 코드를 받아 신청해 보세요. 상대가 수락하면 서로 바인더를 보고 교환할 수 있어요.", "Get a friend code and send a request. Once they accept, you can see each other’s binders and trade.", "フレンドコードをもらって申請してみましょう。承認されると、お互いのバインダーを見て交換できます。", "Pide un código de amigo y envía una solicitud. Cuando acepte, podréis ver vuestras carpetas e intercambiar.", "Demandez un code ami et envoyez une demande. Une fois acceptée, vous verrez vos classeurs et pourrez échanger.", "Peça um código de amigo e envie um pedido. Quando aceitar, vocês poderão ver os fichários e trocar.") }

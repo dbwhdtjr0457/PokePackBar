@@ -34,6 +34,12 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    /// 알림을 눌렀을 때. 그 일을 처리할 탭을 열고 해당 교환, 판매 글, 친구 신청을 짚어 준다.
+    func show(wallet: WalletStore, followingAlert kind: String, target: String, printing: String? = nil) {
+        show(wallet: wallet)
+        model?.follow(kind: kind, target: target, printing: printing)
+    }
+
     func windowWillClose(_ notification: Notification) { model?.visible = false }
     func windowDidMiniaturize(_ notification: Notification) { model?.visible = false }
     func windowDidDeminiaturize(_ notification: Notification) { model?.visible = true }
@@ -70,7 +76,14 @@ final class OnlineHubModel {
     var ownListings = false
     /// 마켓 탭이 열릴 때 「내 판매」 부터 보여 줄지. 판매 알림을 누르면 켠다.
     var opensMyListings = false
+    /// 마켓 탭을 「사기」 로 돌려놓을지. 위시리스트 알림을 누르면 켠다.
+    var opensMarketBuy = false
     var tradeDraft: [String: Any]?
+    /// 알림이 가리킨 항목(교환, 판매 글, 친구 관계)의 서버 번호. 그 탭이 이 항목을 화면 안으로
+    /// 끌어오고 테두리로 잠깐 짚어 준다. 예전에는 탭만 열려서 어느 것인지 목록에서 다시 찾아야 했다.
+    private(set) var focusID: String?
+    @ObservationIgnored private var focusFound = false
+    @ObservationIgnored private var focusToken = 0
     var openingJobs: [RemoteGameSession.OpeningJob] = []
     var stopOpening = false
     var openingProgress: String?
@@ -232,6 +245,57 @@ final class OnlineHubModel {
         message = OnlineText.l.alertsMarkedRead(marked)
         await refresh()
         await remote.refreshNotificationSummary()
+    }
+
+    // MARK: 알림이 가리키는 곳
+
+    /// 알림이 가리키는 곳으로 간다. 탭을 열고, 그 일을 찾아 짚어 준다.
+    func follow(kind: String, target: String, printing: String? = nil) {
+        let destination = OnlineText.destination(kind) ?? .alerts
+        switch kind {
+        case "listing_sold", "listing_expired":
+            // 팔렸거나 기한이 지난 내 판매는 「내 판매」 에서 확인한다. 사기 화면부터 열면 다시 찾아가야 한다.
+            opensMyListings = true
+        case "wishlist_listing":
+            // 그 카드의 판매 글만 남게 이름으로 찾아 둔다. 걸어 둔 조건에 가려 안 보이면 안 되니 조건은 푼다.
+            opensMarketBuy = true
+            if let name = printing.flatMap(OnlineText.searchName) {
+                search = name
+                marketSet = ""; marketTier = ""; marketFinish = ""
+            }
+        default:
+            break
+        }
+        // 여러 개를 묶은 알림은 가리키는 항목이 없다. 앞서 짚던 것도 거둔다.
+        focus(on: destination == .alerts ? "" : target)
+        // 탭이 바뀌면 화면이 알아서 새로 받는다. 이미 그 탭이면 방금 생긴 항목이 아직 없을 수 있어 직접 받는다.
+        if section != destination { section = destination } else { Task { await refresh(full: false) } }
+    }
+
+    func focus(on id: String) {
+        focusID = id.isEmpty ? nil : id
+        focusFound = false
+        expireFocus(after: 10)
+    }
+
+    /// 목록에 그 항목이 있으면 한 번만 그 번호를 돌려준다. 화면은 그쪽으로 스크롤한다.
+    /// 15초마다 새로 받을 때마다 다시 끌려가지 않게 한 번으로 끝낸다.
+    func takeFocus(among ids: [String]) -> String? {
+        guard let focusID, !focusFound, ids.contains(focusID) else { return nil }
+        focusFound = true
+        expireFocus(after: 3)
+        return focusID
+    }
+
+    /// 짚어 준 테두리는 잠깐 뒤에 거둔다. 그 항목이 목록에 없으면(이미 닫혔거나 다음 쪽) 조용히 잊는다.
+    private func expireFocus(after seconds: Double) {
+        focusToken += 1
+        let token = focusToken
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(seconds))
+            guard let self, self.focusToken == token else { return }
+            self.focusID = nil
+        }
     }
 
     func clearPrivateData() {
@@ -485,29 +549,28 @@ struct OnlineHubView: View {
         .background(unread ? Color.accentColor.opacity(0.06) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
         .transition(.move(edge: .top).combined(with: .opacity))
         .animation(.easeOut(duration: 0.2), value: unread)
-        if let destination {
+        if destination != nil {
             row
                 .contentShape(RoundedRectangle(cornerRadius: 8))
                 .hoverHighlight(cornerRadius: 8)
-                .onTapGesture { open(item, in: destination) }
+                .onTapGesture { open(item) }
                 .help(OnlineText.l.openNotification)
                 .accessibilityAddTraits(.isButton)
-                .accessibilityAction(named: OnlineText.l.openNotification) { open(item, in: destination) }
+                .accessibilityAction(named: OnlineText.l.openNotification) { open(item) }
         } else {
             row
         }
     }
 
-    private func open(_ item: [String: Any], in destination: OnlineHubModel.Tab) {
+    private func open(_ item: [String: Any]) {
         if !item.bool("read"), model.canWrite {
             Task {
                 await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")],
                                    quiet: true)
             }
         }
-        // 팔렸거나 기한이 지난 내 판매는 「내 판매」 에서 확인한다. 사기 화면부터 열면 다시 찾아가야 한다.
-        if ["listing_sold", "listing_expired"].contains(item.string("kind")) { model.opensMyListings = true }
-        model.section = destination
+        model.follow(kind: item.string("kind"), target: item.string("target"),
+                     printing: (item["detail"] as? [String: Any])?["printing"] as? String)
     }
 
     private var notifications: some View {

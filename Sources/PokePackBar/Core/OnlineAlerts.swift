@@ -20,6 +20,8 @@ final class OnlineAlerts {
         let id: Int
         let kind: String
         let read: Bool
+        /// 이 알림이 가리키는 것(교환, 판매 글, 친구 관계)의 서버 번호.
+        var target: String? = nil
         var detail: Detail? = nil
     }
     struct Page: Decodable {
@@ -33,6 +35,10 @@ final class OnlineAlerts {
         let body: String
         /// 눌렀을 때 열 탭을 정하는 알림 종류. 여러 개를 묶은 알림은 비어 있다.
         let kind: String
+        /// 눌렀을 때 찾아가 짚어 줄 항목. 묶은 알림은 비어 있다.
+        var target = ""
+        /// 위시리스트 알림이면 그 카드. 마켓을 그 카드로 찾아 연다.
+        var printing: String? = nil
     }
 
     /// 지금 계정의 알림 담당. 온라인 창이 「내가 방금 한 일」 을 알려 줄 때 쓴다.
@@ -40,6 +46,8 @@ final class OnlineAlerts {
 
     /// 알림을 눌렀을 때 어느 탭을 열지 싣는 키.
     nonisolated static let kindKey = "ppb.online.kind"
+    nonisolated static let targetKey = "ppb.online.target"
+    nonisolated static let printingKey = "ppb.online.printing"
     /// 이보다 많이 한꺼번에 오면 하나로 묶는다. 오래 꺼 두었다 켰을 때 알림이 줄줄이 뜨지 않게 한다.
     static let separateLimit = 3
 
@@ -78,7 +86,8 @@ final class OnlineAlerts {
             return fresh.map { item in
                 let tab = OnlineText.destination(item.kind) ?? .alerts
                 return Announcement(identifier: "ppb-online-\(item.id)", title: OnlineText.l.onlineTab(tab),
-                                    body: text(item), kind: item.kind)
+                                    body: text(item), kind: item.kind, target: item.target ?? "",
+                                    printing: item.detail?.printing)
             }
         }
         guard let newest = fresh.max(by: { $0.id < $1.id }) else { return [] }
@@ -152,7 +161,9 @@ final class OnlineAlerts {
             content.title = announcement.title
             content.body = announcement.body
             content.sound = .default
-            content.userInfo = [kindKey: announcement.kind]
+            var info = [kindKey: announcement.kind, targetKey: announcement.target]
+            if let printing = announcement.printing { info[printingKey] = printing }
+            content.userInfo = info
             UNUserNotificationCenter.current().add(
                 UNNotificationRequest(identifier: announcement.identifier, content: content, trigger: nil))
         }

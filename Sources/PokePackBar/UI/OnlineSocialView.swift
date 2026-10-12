@@ -21,6 +21,10 @@ struct OnlineSocialView: View {
     @State private var visitingFriend: String?
     @State private var preview: PrintingSelection?
     @State private var copied = false
+    /// 끊거나 차단하기 전에 한 번 묻는다. 메뉴에서 누르는 즉시 실행돼, 잘못 누르면 주고받던
+    /// 교환 제안까지 함께 사라졌다.
+    @State private var confirmingUnfriend: [String: Any]?
+    @State private var confirmingBlock: [String: Any]?
 
     /// 친구 탭의 하위 화면. 프로필 설정부터 내 카드까지 한 페이지에 이어 두니 길어서
     /// 원하는 칸을 찾으려면 계속 내려야 했다. 마켓처럼 위에서 고른다.
@@ -48,21 +52,43 @@ struct OnlineSocialView: View {
                 }
             }
             .pickerStyle(.segmented).labelsHidden().fixedSize()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 30) {
-                    switch page {
-                    case .friends: friends
-                    case .wishlist: wishlist
-                    case .binder: binder
-                    case .cards: inventory
-                    case .profile: profile
+            ScrollViewReader { scroller in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 30) {
+                        switch page {
+                        case .friends: friends
+                        case .wishlist: wishlist
+                        case .binder: binder
+                        case .cards: inventory
+                        case .profile: profile
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 12)
+                    .padding(.horizontal, OnlineFocus.gutter)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.bottom, 12)
+                .padding(.horizontal, -OnlineFocus.gutter)
+                .revealsOnlineFocus(model, in: model.items("friends"), with: scroller)
             }
         }
         .onAppear { loadDraft() }
+        // 친구 알림을 눌러 들어왔으면 친구 목록부터 보여 준다.
+        .onChange(of: model.focusID, initial: true) { if model.focusID != nil { page = .friends } }
+        .alert(OnlineText.l.unfriendQuestion(confirmingUnfriend?.string("nickname") ?? ""), isPresented: Binding(
+            get: { confirmingUnfriend != nil }, set: { if !$0 { confirmingUnfriend = nil } })) {
+            Button(OnlineText.l.cancel, role: .cancel) { confirmingUnfriend = nil }
+            Button(OnlineText.l.unfriend, role: .destructive) {
+                if let item = confirmingUnfriend { friendAction("friend_remove", item) }; confirmingUnfriend = nil
+            }
+        } message: { Text(OnlineText.l.unfriendNote) }
+        .alert(OnlineText.l.blockQuestion(confirmingBlock?.string("nickname") ?? ""), isPresented: Binding(
+            get: { confirmingBlock != nil }, set: { if !$0 { confirmingBlock = nil } })) {
+            Button(OnlineText.l.cancel, role: .cancel) { confirmingBlock = nil }
+            Button(OnlineText.l.blockUser, role: .destructive) {
+                if let item = confirmingBlock { act("friends", ["action": "block", "target_id": item.string("public_id")]) }
+                confirmingBlock = nil
+            }
+        } message: { Text(OnlineText.l.blockNote) }
         .onChange(of: model.generation) { loadDraft() }
         .sheet(item: $preview) { OnlinePrintingDetail(printing: $0.id) }
         .sheet(isPresented: $addingWish) {
@@ -169,6 +195,11 @@ struct OnlineSocialView: View {
                 }
                 ForEach(accepted, id: \.onlineID) { item in
                     friendRow(item, note: nil) {
+                        // 교환 탭으로 가서 이 친구를 다시 고르지 않아도 되게 한다.
+                        Button(OnlineText.l.proposeTradeShort) {
+                            model.tradeDraft = ["public_id": item.string("public_id")]
+                            model.section = .trades
+                        }
                         Button(OnlineText.l.viewBinder) {
                             model.documents["friend"] = nil; model.documents["friendInventory"] = nil
                             model.selectedFriend = item.string("public_id")
@@ -176,8 +207,8 @@ struct OnlineSocialView: View {
                             Task { await model.refresh(full: false) }
                         }
                         Menu {
-                            Button(OnlineText.l.unfriend) { friendAction("friend_remove", item) }
-                            Button(OnlineText.l.blockUser, role: .destructive) { act("friends", ["action": "block", "target_id": item.string("public_id")]) }
+                            Button(OnlineText.l.unfriend) { confirmingUnfriend = item }
+                            Button(OnlineText.l.blockUser, role: .destructive) { confirmingBlock = item }
                         } label: { Image(systemName: "ellipsis") }
                         .menuStyle(.borderlessButton).fixedSize()
                     }
@@ -230,6 +261,8 @@ struct OnlineSocialView: View {
             actions().disabled(!model.canWrite)
         }
         .padding(.vertical, 4)
+        .onlineFocusRing(model.focusID == item.string("id"), cornerRadius: 8, outset: 6)
+        .id(item.onlineID)
     }
 
     // MARK: 위시리스트
@@ -238,6 +271,11 @@ struct OnlineSocialView: View {
         (model.profile["wishlist"] as? [[String: Any]] ?? []).map { wish in
             ["card_id": wish.string("card_id"), "finish": wish["finish"] ?? NSNull(), "target": wish.int("target")]
         }
+    }
+
+    static func wishPrice(cardID: String, finish: String) -> Int? {
+        guard let finish = CardFinish(rawValue: finish) else { return OnlineText.cardReferenceWon(cardID) }
+        return OnlineText.referenceWon(CardPrintingKey(cardID: cardID, finish: finish).storageKey)
     }
 
     private var wishlist: some View {
@@ -256,6 +294,10 @@ struct OnlineSocialView: View {
                                        badge: wish.int("missing") == 0 ? (OnlineText.l.collectedAll, .green) : nil) {
                             Text(OnlineText.l.wishProgress(owned: wish.int("owned"), target: wish.int("target"), anyFinish: finish.isEmpty))
                                 .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit()
+                            // 마켓에서 얼마쯤에 살 수 있는지. 판형을 정하지 않았으면 대표 시세다.
+                            Text(Self.wishPrice(cardID: wish.string("card_id"), finish: finish)
+                                .map { OnlineText.l.marketQuote(OnlineText.wonText($0)) } ?? OnlineText.l.noMarketPrice)
+                                .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
                             Button(OnlineText.l.removeCard) {
                                 let next = currentWishes.enumerated().filter { $0.offset != position }.map(\.element)
                                 act("wishlist", ["action": "wishlist", "wishes": next])
