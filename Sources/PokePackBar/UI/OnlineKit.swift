@@ -657,6 +657,9 @@ struct OnlineStockPicker: View {
     var searchPlaceholder: String? = nil
     var emptyTitle: String? = nil
     var emptyMessage: String? = nil
+    /// 내 컬렉션에 없는 카드를 표시하고 그것만 가려 볼 수 있게 한다. 친구의 교환 바인더에서 켠다.
+    var marksMissing = false
+    var startsMissingOnly = false
     let onPick: (_ key: String, _ quantity: Int) -> Void
 
     @State private var query = ""
@@ -664,16 +667,20 @@ struct OnlineStockPicker: View {
     @State private var picked: OnlineStock?
     @State private var quantity = 1
     @State private var order = Order.priceHigh
+    @State private var missingOnly = false
     @Environment(\.dismiss) private var dismiss
 
     enum Order: CaseIterable { case priceHigh, priceLow, name }
 
     private var stock: [OnlineStock] {
-        let all = Self.sorted(source ?? OnlineStock.sellable(wallet: wallet), by: order)
+        var all = Self.sorted(source ?? OnlineStock.sellable(wallet: wallet), by: order)
+        if marksMissing, missingOnly { all = all.filter(isMissing) }
         let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return all }
         return all.filter { DexCardSearch.names(cardID: $0.cardID).contains { $0.contains(needle) } }
     }
+
+    private func isMissing(_ item: OnlineStock) -> Bool { wallet.cardCount(item.cardID) == 0 }
 
     /// 시세 없는 카드는 어느 가격순에서도 뒤에 둔다. 낮은 순 맨 앞에 값 모르는 카드가 몰리면
     /// 싼 카드를 찾는 사람에게 쓸모가 없다.
@@ -734,14 +741,24 @@ struct OnlineStockPicker: View {
                     }
                     .labelsHidden().fixedSize()
                     .help(OnlineText.l.sortBy)
+                    if marksMissing {
+                        Toggle(OnlineText.l.missingOnlyToggle, isOn: $missingOnly).toggleStyle(.checkbox).fixedSize()
+                    }
                 }
                 ScrollView {
                     if stock.isEmpty {
-                        OnlineEmptyState(icon: "square.stack",
-                                         title: query.isEmpty ? emptyTitle ?? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
-                                         message: query.isEmpty ? emptyMessage ?? OnlineText.l.spareCardsHint : nil)
+                        if marksMissing, missingOnly, query.isEmpty, !(source ?? []).isEmpty {
+                            // 친구에게 남는 카드는 있는데 내게 없는 것이 없다. 바인더가 빈 것과는 다르다.
+                            OnlineEmptyState(icon: "checkmark.circle", title: OnlineText.l.noMissingCardsTitle,
+                                             message: OnlineText.l.noMissingCardsHint)
+                        } else {
+                            OnlineEmptyState(icon: "square.stack",
+                                             title: query.isEmpty ? emptyTitle ?? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
+                                             message: query.isEmpty ? emptyMessage ?? OnlineText.l.spareCardsHint : nil)
+                        }
                     } else {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12)], spacing: 14) {
+                        // 「아직 없음」 표시가 붙은 칸과 없는 칸의 높이가 달라도 카드 윗선은 맞춘다.
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12, alignment: .top)], spacing: 14) {
                             ForEach(stock) { item in
                                 Button {
                                     picked = OnlineStock(key: item.key, cardID: item.cardID, finish: item.finish,
@@ -749,7 +766,9 @@ struct OnlineStockPicker: View {
                                                          referenceWon: item.referenceWon)
                                     quantity = 1
                                 } label: {
-                                    OnlineCardTile(cardID: item.cardID, finish: item.finish.rawValue, width: 92) {
+                                    OnlineCardTile(cardID: item.cardID, finish: item.finish.rawValue, width: 92,
+                                                   badge: marksMissing && isMissing(item)
+                                                       ? (OnlineText.l.missingBadge, .accentColor) : nil) {
                                         // 고르기 전에 값이 보여야 한다. 눌러 들어가야만 시세가 나오면
                                         // 카드마다 들어갔다 나오며 견줘야 한다.
                                         Text(item.referenceWon.map(OnlineText.wonText) ?? OnlineText.l.noMarketPrice)
@@ -782,6 +801,7 @@ struct OnlineStockPicker: View {
         }
         .padding(24)
         .frame(width: 560)
+        .onAppear { missingOnly = startsMissingOnly }
     }
 }
 

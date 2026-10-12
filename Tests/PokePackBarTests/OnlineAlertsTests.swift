@@ -226,6 +226,46 @@ final class OnlineAlertsTests: XCTestCase {
         XCTAssertEqual(sent.first?.printing, "no-such-card#holo")
     }
 
+    /// 교환 칸의 「내게 없는 카드」: 친구에게 남는 카드 가운데 내 컬렉션에 한 장도 없는 것만,
+    /// 시세 높은 순으로. 판형이 달라도 같은 카드를 갖고 있으면 없는 카드가 아니다.
+    func testCardsMissingFromAFriendAreTheOnesIDoNotOwn() throws {
+        let cards = try XCTUnwrap(CardIndex.shared?.currentCardsByValue.prefix(3).map(\.id))
+        let stock = FriendTradeBinder.stock([
+            "\(cards[2])#normal": 1, "\(cards[0])#holo": 2, "\(cards[1])#holo": 3,
+            "\(cards[1])#normal": 0,            // 남는 장이 없는 줄은 뺀다
+            "no-such-card#holo": 4,             // 이 앱이 모르는 카드는 보여 줄 수 없다
+        ])
+        XCTAssertEqual(Set(stock.map(\.cardID)), Set(cards))
+        XCTAssertEqual(stock.map(\.available).reduce(0, +), 6)
+        let prices = stock.map { $0.referenceWon ?? 0 }
+        XCTAssertEqual(prices, prices.sorted(by: >), "시세 높은 순이 아니다")
+
+        // 가운데 카드는 다른 판형으로라도 갖고 있다.
+        let owned = [cards[1]: 1]
+        let missing = FriendTradeBinder.missing(stock, owned: { owned[$0] ?? 0 })
+        XCTAssertEqual(Set(missing.map(\.cardID)), [cards[0], cards[2]])
+        XCTAssertEqual(missing.map(\.key), stock.map(\.key).filter { !$0.hasPrefix(cards[1] + "#") }, "순서가 바뀌었다")
+        XCTAssertTrue(FriendTradeBinder.missing(stock, owned: { _ in 1 }).isEmpty)
+    }
+
+    /// 받아 둔 친구 바인더는 잠깐 끊겨 다시 받지 못해도 비우지 않는다. 처음부터 받지 못했으면 실패로 남는다.
+    func testFriendBinderSurvivesAFailedRefresh() async throws {
+        let model = hub()                       // 온라인 세션이 없어 받기는 늘 실패한다
+        let card = try XCTUnwrap(CardIndex.shared?.cards.first).id
+        model.friendBinders["friend"] = .ready(FriendTradeBinder.stock(["\(card)#holo": 2]))
+        await model.loadFriendBinder("friend")
+        guard case .ready(let kept)? = model.friendBinders["friend"] else { return XCTFail("받아 둔 목록을 비웠다") }
+        XCTAssertEqual(kept.map(\.available), [2])
+
+        await model.loadFriendBinder("stranger")
+        guard case .failed? = model.friendBinders["stranger"] else { return XCTFail("실패를 알리지 않았다") }
+        await model.loadFriendBinder("")
+        XCTAssertNil(model.friendBinders[""], "친구를 고르지 않았는데 받으려 했다")
+
+        model.clearPrivateData()
+        XCTAssertTrue(model.friendBinders.isEmpty, "로그아웃 뒤에 친구의 카드 목록이 남았다")
+    }
+
     /// 답할 것이 있는 탭만 개수를 단다. 없으면 이름 그대로다.
     func testTabTitleCarriesWhatIsWaiting() {
         let waiting = Summary(unread: 5, incoming_trades: 1, incoming_friends: 0, latest_id: 9)

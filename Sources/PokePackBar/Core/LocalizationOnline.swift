@@ -733,6 +733,57 @@ extension L {
 // MARK: 교환 바인더와 역제안
 
 extension L {
+    // MARK: 교환 칸의 「내게 없는 카드」
+
+    var missingFromFriendTitle: String {
+        t("내게 없는 카드", "Cards I don’t have", "持っていないカード", "Cartas que no tengo",
+          "Cartes que je n’ai pas", "Cartas que não tenho")
+    }
+    func missingFromFriendCount(_ name: String, _ n: Int) -> String {
+        t("\(name) 님에게 남는 카드 중 \(n)종", "\(n) of \(name)’s spare cards", "\(name)さんの余りカードのうち\(n)種",
+          "\(n) de las cartas repetidas de \(name)", "\(n) des cartes en double de \(name)",
+          "\(n) das cartas repetidas de \(name)")
+    }
+    func nothingMissingFromFriend(_ name: String) -> String {
+        t("\(name) 님에게 남는 카드는 이미 모두 갖고 있어요.", "You already own every card \(name) can spare.",
+          "\(name)さんの余りカードはすべて持っています。", "Ya tienes todas las cartas que le sobran a \(name).",
+          "Vous avez déjà toutes les cartes que \(name) a en double.",
+          "Você já tem todas as cartas que sobram para \(name).")
+    }
+    func seeAllCards(_ n: Int) -> String {
+        t("\(n)종 모두 보기", "See all \(n)", "\(n)種すべて見る", "Ver las \(n)", "Voir les \(n)", "Ver todas as \(n)")
+    }
+    var checkingFriendSpares: String {
+        t("친구에게 남는 카드를 확인하는 중", "Checking your friend’s spare cards", "フレンドの余りカードを確認中",
+          "Comprobando las cartas repetidas de tu amigo", "Vérification des cartes en double de votre ami",
+          "Verificando as cartas repetidas do seu amigo")
+    }
+    var addToWantedHint: String {
+        t("받고 싶은 카드에 담아요", "Adds it to the cards you want", "欲しいカードに入れます",
+          "La añade a las cartas que quieres", "L’ajoute aux cartes que vous voulez", "Adiciona às cartas que você quer")
+    }
+    /// 검색 칸과 한 줄에 놓이므로 짧게 적는다.
+    var missingOnlyToggle: String {
+        t("내게 없는 카드만", "Only cards I don’t have", "未所持のみ", "Solo las que me faltan",
+          "Manquantes seulement", "Só as que me faltam")
+    }
+    /// 카드 아래 한 줄에 들어가야 하는 표시. 컬렉션의 「아직 없음」보다 짧게 적는 언어가 있다.
+    var missingBadge: String {
+        t("아직 없음", "Not owned", "未所持", "Me falta", "Manquante", "Me falta")
+    }
+    var noMissingCardsTitle: String {
+        t("내게 없는 카드는 없어요", "Nothing here you don’t already own", "持っていないカードはありません",
+          "No hay cartas que no tengas", "Aucune carte que vous n’ayez déjà", "Não há cartas que você não tenha")
+    }
+    var noMissingCardsHint: String {
+        t("「내게 없는 카드만」을 끄면 친구에게 남는 카드를 모두 볼 수 있어요.",
+          "Turn off “Only cards I don’t have” to see everything your friend can spare.",
+          "「未所持のみ」をオフにすると、フレンドの余りカードをすべて表示します。",
+          "Desactiva «Solo las que me faltan» para ver todo lo que le sobra a tu amigo.",
+          "Désactivez « Manquantes seulement » pour voir tout ce que votre ami a en double.",
+          "Desative “Só as que me faltam” para ver tudo o que sobra para seu amigo.")
+    }
+
     var friendBinderTitle: String { t("친구의 교환 바인더", "Friend’s trade binder", "フレンドの交換バインダー", "Carpeta de intercambio del amigo", "Classeur d’échange de l’ami", "Fichário de troca do amigo") }
     var searchFriendCards: String { t("친구 카드에서 찾기", "Search friend’s cards", "フレンドのカードから探す", "Buscar en las cartas del amigo", "Chercher dans les cartes de l’ami", "Buscar nas cartas do amigo") }
     var friendBinderEmpty: String { t("친구가 내놓을 수 있는 카드가 없어요", "Your friend has no cards to trade", "フレンドが出せるカードはありません", "Tu amigo no tiene cartas para intercambiar", "Votre ami n’a aucune carte à échanger", "Seu amigo não tem cartas para trocar") }

@@ -378,6 +378,8 @@ struct OnlineTradingView: View {
     @State private var requested: [String: Int] = [:]
     @State private var pickingOffer = false
     @State private var pickingRequest = false
+    /// 친구 카드를 고르는 창을 「내게 없는 카드만」으로 열지.
+    @State private var pickingMissingOnly = false
     @State private var confirming = false
     @State private var accepting: [String: Any]?
     @State private var preview: PrintingSelection?
@@ -428,7 +430,10 @@ struct OnlineTradingView: View {
                             .fixedSize()
                             .disabled(countering != nil)
                             tray(OnlineText.l.cardsIGive, lines: $offered) { pickingOffer = true }
-                            tray(OnlineText.l.cardsIWant, lines: $requested, canAdd: !friend.isEmpty) { pickingRequest = true }
+                            // 바로 아래에 담을 카드가 놓이면 빈 칸을 높게 비워 둘 까닭이 없다.
+                            tray(OnlineText.l.cardsIWant, lines: $requested, canAdd: !friend.isEmpty,
+                                 emptyHeight: missingFromFriend.isEmpty ? 60 : 0,
+                                 add: { pickingMissingOnly = false; pickingRequest = true }) { missingCards }
                             if !offered.isEmpty, !requested.isEmpty {
                                 Text(OnlineText.valueBalance(give: offered, get: requested))
                                     .font(Typography.label).foregroundStyle(.secondary)
@@ -500,8 +505,11 @@ struct OnlineTradingView: View {
             OnlineStockPicker(wallet: model.wallet, title: OnlineText.l.addCardsToGive, actionTitle: OnlineText.l.addAction,
                               alreadyPicked: offered) { key, quantity in offered[key, default: 0] += quantity }
         }
+        // 친구를 고르면 그 친구에게 남는 카드를 받아 둔다. 「내게 없는 카드」를 창을 열지 않고 보여 준다.
+        .task(id: friend) { await model.loadFriendBinder(friend) }
         .sheet(isPresented: $pickingRequest) {
-            FriendTradeBinderPicker(model: model, friendID: friend, alreadyPicked: requested) { key, quantity in
+            FriendTradeBinderPicker(model: model, friendID: friend, alreadyPicked: requested,
+                                    startsMissingOnly: pickingMissingOnly) { key, quantity in
                 requested[key, default: 0] += quantity
             }
         }
@@ -557,6 +565,13 @@ struct OnlineTradingView: View {
 
     private func tray(_ title: String, lines: Binding<[String: Int]>, canAdd: Bool = true,
                       add: @escaping () -> Void) -> some View {
+        tray(title, lines: lines, canAdd: canAdd, add: add) { EmptyView() }
+    }
+
+    /// `footer` 는 칸 아래에 붙는 것. 받고 싶은 카드 칸이 「내게 없는 카드」를 여기에 둔다.
+    private func tray<Footer: View>(_ title: String, lines: Binding<[String: Int]>, canAdd: Bool = true,
+                                    emptyHeight: CGFloat = 60, add: @escaping () -> Void,
+                                    @ViewBuilder footer: () -> Footer) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text(title).font(Typography.labelSemibold)
@@ -568,15 +583,102 @@ struct OnlineTradingView: View {
             }
             if lines.wrappedValue.isEmpty {
                 Text(OnlineText.l.trayEmpty).font(Typography.label).foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+                    .frame(maxWidth: .infinity, minHeight: emptyHeight, alignment: .leading)
             } else {
                 OnlineCardStrip(lines: lines.wrappedValue,
                                 onRemove: { lines.wrappedValue[$0] = nil },
                                 onOpen: { preview = PrintingSelection(id: $0) })
             }
+            footer()
         }
         .padding(12)
         .background(Color.secondary.opacity(0.06), in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    /// 한 줄에 그리는 「내게 없는 카드」의 수. 나머지는 고르는 창에서 본다.
+    private static let missingShown = 24
+
+    /// 받고 싶은 카드 칸 아래: 고른 친구에게 남는 카드 가운데 내 컬렉션에 한 장도 없는 것.
+    ///
+    /// 교환에서 가장 먼저 찾는 것이 「나는 없고 친구는 남는 카드」인데, 예전에는 친구의 교환 바인더를
+    /// 열어 카드를 하나씩 내 컬렉션과 견줘야 알 수 있었다. 누르면 바로 받고 싶은 카드에 담긴다.
+    private var missingFromFriend: [OnlineStock] {
+        guard !friend.isEmpty, case .ready(let stock)? = model.friendBinders[friend] else { return [] }
+        return FriendTradeBinder.missing(stock, owned: { model.wallet.cardCount($0) })
+    }
+
+    @ViewBuilder
+    private var missingCards: some View {
+        switch friend.isEmpty ? nil : model.friendBinders[friend] {
+        case .ready(let stock)?:
+            let missing = missingFromFriend
+            Divider()
+            if missing.isEmpty {
+                Text(stock.isEmpty ? OnlineText.l.friendBinderEmpty
+                                   : OnlineText.l.nothingMissingFromFriend(friendName(friend)))
+                    .font(Typography.caption).foregroundStyle(.secondary)
+            } else {
+                HStack(spacing: 8) {
+                    Text(OnlineText.l.missingFromFriendTitle).font(Typography.labelSemibold)
+                    Text(OnlineText.l.missingFromFriendCount(friendName(friend), missing.count))
+                        .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
+                    Spacer()
+                    if missing.count > Self.missingShown {
+                        Button(OnlineText.l.seeAllCards(missing.count)) {
+                            pickingMissingOnly = true
+                            pickingRequest = true
+                        }
+                        .buttonStyle(.link).font(Typography.label)
+                    }
+                }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(alignment: .top, spacing: 10) {
+                        ForEach(missing.prefix(Self.missingShown)) { missingTile($0) }
+                    }
+                    .padding(.top, 6)
+                }
+            }
+        case .hidden?:
+            Divider()
+            Text(OnlineText.l.friendBinderPrivate).font(Typography.caption).foregroundStyle(.secondary)
+        case .loading?:
+            Divider()
+            HStack(spacing: 6) {
+                ProgressView().controlSize(.small)
+                Text(OnlineText.l.checkingFriendSpares).font(Typography.caption).foregroundStyle(.secondary)
+            }
+        default:
+            // 지원하지 않는 서버나 실패는 고르는 창이 알린다. 여기서는 자리를 차지하지 않는다.
+            EmptyView()
+        }
+    }
+
+    private func missingTile(_ item: OnlineStock) -> some View {
+        let picked = requested[item.key] != nil
+        return Button {
+            guard requested[item.key] == nil, requested.count < 20 else { return }
+            requested[item.key] = 1
+        } label: {
+            VStack(spacing: 3) {
+                ZStack(alignment: .topTrailing) {
+                    CardImageView(cardID: item.cardID, width: 52)
+                    // 담은 카드 줄의 빼기 표시와 짝이 되는 담기 표시. 담은 뒤에는 체크로 바뀐다.
+                    Image(systemName: picked ? "checkmark.circle.fill" : "plus.circle.fill").font(.system(size: 16))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, picked ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(.black.opacity(0.6)))
+                        .offset(x: 5, y: -5)
+                }
+                Text(item.referenceWon.map(OnlineText.wonText) ?? OnlineText.l.noMarketPrice)
+                    .font(Typography.caption).monospacedDigit().foregroundStyle(.secondary)
+                    .lineLimit(1).minimumScaleFactor(0.7).frame(width: 60)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(picked || requested.count >= 20)
+        .help(OnlineText.printingSummary(item.key))
+        .accessibilityLabel(OnlineText.printingSummary(item.key))
+        .accessibilityHint(OnlineText.l.addToWantedHint)
     }
 
     private func trade(_ item: [String: Any], counter: (() -> Void)? = nil) -> some View {
@@ -687,10 +789,11 @@ private struct FriendTradeBinderPicker: View {
     @Bindable var model: OnlineHubModel
     let friendID: String
     var alreadyPicked: [String: Int] = [:]
+    /// 「내게 없는 카드만」을 켠 채로 연다. 교환 칸의 「모두 보기」 에서 들어올 때다.
+    var startsMissingOnly = false
     let onPick: (_ key: String, _ quantity: Int) -> Void
 
-    private enum Load { case loading, ready([OnlineStock]), hidden, unsupported, failed(String) }
-    @State private var load = Load.loading
+    private var load: FriendTradeBinder { model.friendBinders[friendID] ?? .loading }
     @State private var searchingAll = false
     @Environment(\.dismiss) private var dismiss
 
@@ -706,12 +809,14 @@ private struct FriendTradeBinderPicker: View {
                                   actionTitle: OnlineText.l.addAction, alreadyPicked: alreadyPicked,
                                   source: stock, searchPlaceholder: OnlineText.l.searchFriendCards,
                                   emptyTitle: OnlineText.l.friendBinderEmpty,
-                                  emptyMessage: OnlineText.l.friendBinderEmptyHint, onPick: onPick)
+                                  emptyMessage: OnlineText.l.friendBinderEmptyHint,
+                                  marksMissing: true, startsMissingOnly: startsMissingOnly, onPick: onPick)
             } else {
                 status
             }
         }
-        .task(id: friendID) { await fetch() }
+        // 열 때마다 새로 받는다. 교환 칸이 받아 둔 목록이 있으면 받는 동안 그것을 보여 준다.
+        .task(id: friendID) { await model.loadFriendBinder(friendID) }
     }
 
     private var status: some View {
@@ -748,30 +853,45 @@ private struct FriendTradeBinderPicker: View {
         .padding(24)
         .frame(width: 560)
     }
+}
 
-    private func fetch() async {
-        load = .loading
+/// 친구가 교환에 내놓을 수 있는 카드(한 장은 남긴 장수)를 받아 온 결과.
+enum FriendTradeBinder {
+    case loading, ready([OnlineStock]), hidden, unsupported, failed(String)
+
+    @MainActor
+    static func load(_ model: OnlineHubModel, friendID: String) async -> FriendTradeBinder {
         do {
             let reply = try await model.read("v1/friends/\(friendID)/tradeable")
-            let spares = reply["items"] as? [String: Any] ?? [:]
-            let stock = spares.compactMap { key, value -> OnlineStock? in
-                let count = (value as? NSNumber)?.intValue ?? 0
-                let printing = CardPrintingKey(storageKey: key)
-                guard count > 0, CardIndex.shared?.card(printing.cardID) != nil else { return nil }
-                return OnlineStock(key: key, cardID: printing.cardID, finish: printing.finish,
-                                   available: count, referenceWon: OnlineText.referenceWon(key))
-            }
-            .sorted { ($0.referenceWon ?? 0, $0.key) > ($1.referenceWon ?? 0, $1.key) }
-            load = .ready(stock)
+            return .ready(stock(reply["items"] as? [String: Any] ?? [:]))
         } catch let failure as RemoteGameSession.Failure {
             switch failure.status {
-            case 403: load = .hidden
+            case 403: return .hidden
             // 친구가 아니게 된 경우의 404 는 그대로 알리고, 경로가 없는 옛 서버만 지원 안 함으로 본다.
-            case 404 where failure.code != "friend_not_found": load = .unsupported
-            default: load = .failed(failure.localizedDescription)
+            case 404 where failure.code != "friend_not_found": return .unsupported
+            default: return .failed(failure.localizedDescription)
             }
         } catch {
-            load = .failed(OnlineText.message(for: error))
+            return .failed(OnlineText.message(for: error))
         }
+    }
+
+    /// 서버가 준 「인쇄본: 남는 장수」 를 시세 높은 순의 목록으로.
+    @MainActor
+    static func stock(_ spares: [String: Any]) -> [OnlineStock] {
+        spares.compactMap { key, value -> OnlineStock? in
+            let count = (value as? NSNumber)?.intValue ?? 0
+            let printing = CardPrintingKey(storageKey: key)
+            guard count > 0, CardIndex.shared?.card(printing.cardID) != nil else { return nil }
+            return OnlineStock(key: key, cardID: printing.cardID, finish: printing.finish,
+                               available: count, referenceWon: OnlineText.referenceWon(key))
+        }
+        .sorted { ($0.referenceWon ?? 0, $0.key) > ($1.referenceWon ?? 0, $1.key) }
+    }
+
+    /// 그 가운데 내 컬렉션에 한 장도 없는 카드. 판형이 달라도 같은 카드를 갖고 있으면 뺀다.
+    /// 들어온 순서(시세 높은 순)를 지킨다.
+    static func missing(_ stock: [OnlineStock], owned: (String) -> Int) -> [OnlineStock] {
+        stock.filter { owned($0.cardID) == 0 }
     }
 }

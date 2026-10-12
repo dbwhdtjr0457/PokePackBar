@@ -79,6 +79,9 @@ final class OnlineHubModel {
     /// 마켓 탭을 「사기」 로 돌려놓을지. 위시리스트 알림을 누르면 켠다.
     var opensMarketBuy = false
     var tradeDraft: [String: Any]?
+    /// 친구별 교환 바인더(그 친구가 내놓을 수 있는 카드). 교환 칸이 「나는 없고 친구는 남는 카드」를
+    /// 바로 보여 주고, 카드를 고르는 창도 같은 것을 쓴다.
+    var friendBinders: [String: FriendTradeBinder] = [:]
     /// 알림이 가리킨 항목(교환, 판매 글, 친구 관계)의 서버 번호. 그 탭이 이 항목을 화면 안으로
     /// 끌어오고 테두리로 잠깐 짚어 준다. 예전에는 탭만 열려서 어느 것인지 목록에서 다시 찾아야 했다.
     private(set) var focusID: String?
@@ -305,8 +308,19 @@ final class OnlineHubModel {
         }
     }
 
+    /// 친구의 교환 바인더를 새로 받는다. 이미 보여 주던 목록이 있으면 받는 동안 그대로 두고,
+    /// 잠깐 끊겨 실패했다고 비우지 않는다.
+    func loadFriendBinder(_ friendID: String) async {
+        guard !friendID.isEmpty else { return }
+        if friendBinders[friendID] == nil { friendBinders[friendID] = .loading }
+        let loaded = await FriendTradeBinder.load(self, friendID: friendID)
+        if case .failed = loaded, case .ready? = friendBinders[friendID] { return }
+        friendBinders[friendID] = loaded
+    }
+
     func clearPrivateData() {
         data = [:]; documents = [:]; selectedFriend = ""; tradeDraft = nil; message = nil
+        friendBinders = [:]
         openingJobs = []; openingProgress = nil; stopOpening = true
     }
 
