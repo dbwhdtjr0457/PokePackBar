@@ -113,6 +113,10 @@ struct OnlineMarketView: View {
                                                badge: item.bool("mine") ? (OnlineText.l.mySales, .accentColor) : nil) {
                                     Text(OnlineText.won(tokens: item.int("unit_tokens")))
                                         .font(Typography.bodySemibold).monospacedDigit()
+                                    // 올린 값이 싼지 비싼지는 시세와 나란히 있어야 보인다. 예전에는 눌러서 열어야 알았다.
+                                    Text(OnlineText.referenceWon(item.string("printing")).map { OnlineText.l.marketQuote(OnlineText.wonText($0)) }
+                                         ?? OnlineText.l.noMarketPrice)
+                                        .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
                                     Text("\(item.string("nickname")), \(OnlineText.l.cardsCount(item.int("quantity")))")
                                         .font(Typography.caption).foregroundStyle(.secondary).lineLimit(1)
                                 }

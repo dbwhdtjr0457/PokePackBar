@@ -161,7 +161,9 @@ final class NotificationGuardTests: XCTestCase {
         for case let url as URL in files where url.pathExtension == "swift" {
             let text = try String(contentsOf: url, encoding: .utf8)
             let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
-            for (i, line) in lines.enumerated() where line.contains("UNUserNotificationCenter")
+            // 예외를 던지는 것은 `current()` 다. 델리게이트 선언처럼 타입 이름만 적은 줄은 호출이 아니고,
+            // 델리게이트는 알림 센터를 쓸 수 있을 때만 불린다.
+            for (i, line) in lines.enumerated() where line.contains("UNUserNotificationCenter.current()")
                 && !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {
                 // 주석은 뺀다 — 가드 함수 자신의 설명이 API 이름을 언급한다.
                 // 같은 함수 안에서 앞쪽에 가드가 있는지 본다. 함수 경계는 들여쓰기 4칸 닫는 괄호.

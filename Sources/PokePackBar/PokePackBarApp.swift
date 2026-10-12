@@ -1,6 +1,7 @@
 import AppKit
 import QuartzCore
 import SwiftUI
+import UserNotifications
 
 @main
 @MainActor
@@ -25,6 +26,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var wallet: WalletStore!
     private var updater: UpdateChecker!
     private let navigation = PopoverNavigation()
+    /// 온라인 알림을 macOS 알림으로 보내는 쪽. 온라인 계정이 있을 때만 만든다.
+    private var onlineAlerts: OnlineAlerts?
 
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -228,6 +231,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         updater = UpdateChecker()
         store.localizationLanguage = wallet.language   // 알림 현지화용 미러 시드
         store.onRefresh = { [weak self] in self?.onStoreRefreshed() }   // 한도 로드 후 companion·사탕 지급
+        startOnlineAlerts()
         Task { await updater.check() }                    // 기동 시 1회 업데이트 확인
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -247,6 +251,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         observeMenuBarCard()
         updateMenuBarIcon()
         applyState()
+    }
+
+    /// 온라인 계정이면 알림 개수를 확인할 때마다 새로 온 알림을 macOS 알림으로 보낸다.
+    /// 알림을 누르면 그 일을 처리할 탭으로 온라인 창을 연다.
+    private func startOnlineAlerts() {
+        guard let remote = wallet.remote else { return }
+        let alerts = OnlineAlerts(storageKey: remote.configuration.storageKey)
+        onlineAlerts = alerts
+        OnlineAlerts.current = alerts
+        // 번들이 등록되지 않은 실행(개발 빌드 등)에서는 알림 센터를 건드리면 앱이 죽는다.
+        if AppEnv.canUseNotifications {
+            UNUserNotificationCenter.current().delegate = self
+        }
+        remote.onNotificationSummary = { [weak self, weak remote] summary in
+            guard let self, let remote else { return }
+            Task {
+                await alerts.check(summary: summary, enabled: self.store.onlineNotifications) { path in
+                    try await remote.api(path)
+                }
+            }
+        }
     }
 
     /// Observation 기반 상태 반영 — store 의 menuTitle(=menuLines) 변경 시 재호출.
@@ -575,4 +600,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         return navigation.goBack()
     }
 
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    /// 앱이 앞에 있어도 알림을 띄운다. 메뉴바 앱은 팝오버나 온라인 창이 열려 있으면 「활성」 이라
+    /// 기본 동작대로면 그때 온 알림이 조용히 사라진다.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                            willPresent notification: UNNotification) async
+        -> UNNotificationPresentationOptions {
+        [.banner, .list, .sound]
+    }
+
+    /// 온라인 알림을 누르면 그 일을 처리할 탭을 연다. 한도나 보너스 팩 알림은 여는 곳이 없다.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                            didReceive response: UNNotificationResponse) async {
+        guard let kind = response.notification.request.content.userInfo[OnlineAlerts.kindKey] as? String
+        else { return }
+        await MainActor.run { openOnline(forAlert: kind) }
+    }
+
+    private func openOnline(forAlert kind: String) {
+        guard let wallet else { return }
+        OnlineWindow.shared.show(wallet: wallet, section: OnlineAlerts.destination(kind: kind),
+                                 myListings: ["listing_sold", "listing_expired"].contains(kind))
+    }
 }

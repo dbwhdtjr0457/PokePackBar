@@ -49,6 +49,18 @@ enum OnlineText {
     }
 
     /// 참고 시세를 원화 100원 칸으로.
+    /// 탭 이름. 답할 것이 있으면 그 개수를 붙인다(교환 제안, 친구 신청, 안 읽은 알림).
+    static func tabTitle(_ tab: OnlineHubModel.Tab, summary: RemoteGameSession.NotificationSummary?) -> String {
+        let waiting: Int
+        switch tab {
+        case .trades: waiting = summary?.incoming_trades ?? 0
+        case .social: waiting = summary?.incoming_friends ?? 0
+        case .alerts: waiting = summary?.unread ?? 0
+        default: waiting = 0
+        }
+        return waiting > 0 ? "\(l.onlineTab(tab)) \(waiting)" : l.onlineTab(tab)
+    }
+
     static func referenceWon(_ key: String) -> Int? {
         let printing = CardPrintingKey(storageKey: key)
         guard let prices = CardPrices.shared, let usd = prices.price(printing) else { return nil }
@@ -56,6 +68,19 @@ enum OnlineText {
     }
 
     static func wonText(_ won: Int) -> String { WonFormatter.exact(won, language: language) }
+
+    /// 시세 높은 순. 시세 없는 인쇄본은 뒤로 가고, 같은 값이면 이름순으로 흔들리지 않게 한다.
+    static func byReferencePrice(_ keys: [String]) -> [String] {
+        let priced = keys.map { (key: $0, won: referenceWon($0) ?? -1) }
+        return priced.sorted { ($0.won, $1.key) > ($1.won, $0.key) }.map(\.key)
+    }
+
+    /// 마우스를 올렸을 때의 한 줄: 이름, 판형, 장당 시세.
+    static func printingSummary(_ key: String) -> String {
+        let printing = printing(key)
+        let price = referenceWon(key).map { l.marketQuote(wonText($0)) } ?? l.noMarketPrice
+        return "\(printing.name) \(printing.finish), \(price)"
+    }
 
     /// 교환 한쪽의 참고 시세 합계(원)와 시세가 없어 빠진 장수.
     static func referenceTotal(_ lines: [String: Int]) -> (won: Int, unpriced: Int) {
@@ -116,8 +141,64 @@ enum OnlineText {
         case "friend_accept", "friend_accepted": return (OnlineText.l.noteFriendAccepted, "person.2")
         case "friend_reject", "friend_rejected": return (OnlineText.l.noteFriendRejected, "person.badge.minus")
         case "friend_expired": return (OnlineText.l.noteFriendExpired, "clock")
+        case "friend_remove": return (OnlineText.l.noteFriendRemoved, "person.badge.minus")
         default: return (kind, "bell")
         }
+    }
+
+    /// 알림 한 줄의 문장. 서버가 상대 이름이나 카드를 함께 보냈으면 그것을 넣어 말한다.
+    /// 예전 서버는 보내지 않으므로 그때는 `notification(_:)` 의 짧은 문장이 그대로 나온다.
+    static func notificationText(kind: String, nickname: String? = nil, printing key: String? = nil,
+                                 unitTokens: Int? = nil) -> String {
+        let l = OnlineText.l
+        if let name = nickname, !name.isEmpty {
+            switch kind {
+            case "trade_request": return l.noteTradeRequestFrom(name)
+            case "trade_countered": return l.noteTradeCounteredBy(name)
+            case "trade_accepted": return l.noteTradeAcceptedWith(name)
+            case "trade_rejected": return l.noteTradeRejectedWith(name)
+            case "trade_cancelled": return l.noteTradeCancelledWith(name)
+            case "trade_expired": return l.noteTradeExpiredWith(name)
+            case "friend_request": return l.noteFriendRequestFrom(name)
+            case "friend_accept", "friend_accepted": return l.noteFriendAcceptedBy(name)
+            case "friend_reject", "friend_rejected": return l.noteFriendRejectedBy(name)
+            case "friend_remove": return l.noteFriendRemovedBy(name)
+            case "friend_expired": return l.noteFriendExpiredWith(name)
+            default: break
+            }
+        }
+        if let key, !key.isEmpty, CardIndex.shared?.card(CardPrintingKey(storageKey: key).cardID) != nil {
+            let printing = printing(key)
+            let card = "\(printing.name) (\(printing.finish))"
+            let price = unitTokens.map(won(tokens:)) ?? ""
+            switch kind {
+            case "listing_sold" where !price.isEmpty: return l.noteListingSoldCard(card, price: price)
+            case "listing_bought": return l.noteListingBoughtCard(card)
+            case "listing_expired": return l.noteListingExpiredCard(card)
+            case "wishlist_listing" where !price.isEmpty: return l.noteWishlistListingCard(card, price: price)
+            default: break
+            }
+        }
+        return notification(kind).text
+    }
+
+    /// 목록의 한 줄(서버 응답 그대로)에서 문장을 만든다.
+    static func notificationText(_ item: [String: Any]) -> String {
+        let detail = item["detail"] as? [String: Any] ?? [:]
+        let tokens = detail.int("unit_tokens")
+        return notificationText(kind: item.string("kind"), nickname: detail["nickname"] as? String,
+                                printing: detail["printing"] as? String, unitTokens: tokens > 0 ? tokens : nil)
+    }
+
+    /// 「3시간 전」 처럼 얼마나 지났는지만 말한다. 일주일이 넘으면 날짜로 적는다.
+    static func timeAgo(_ timestamp: Int, now: Date = Date()) -> String {
+        guard timestamp > 0 else { return "" }
+        let seconds = max(0, now.timeIntervalSince1970 - Double(timestamp))
+        if seconds < 60 { return l.justNow }
+        if seconds < 3600 { return l.minutesAgo(Int(seconds / 60)) }
+        if seconds < 86_400 { return l.hoursAgo(Int(seconds / 3600)) }
+        if seconds < 7 * 86_400 { return l.daysAgo(Int(seconds / 86_400)) }
+        return Date(timeIntervalSince1970: Double(timestamp)).formatted(date: .abbreviated, time: .omitted)
     }
 
     /// 알림을 눌렀을 때 열 탭. 알림은 「무엇이 있었다」 만 말해서, 예전에는 읽고 나서
@@ -377,8 +458,10 @@ struct OnlineCardStrip: View {
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .top, spacing: 10) {
-                ForEach(lines.keys.sorted(), id: \.self) { key in
+                // 비싼 카드가 앞에 온다. 교환에서 먼저 보고 싶은 것은 값이 큰 카드다.
+                ForEach(OnlineText.byReferencePrice(Array(lines.keys)), id: \.self) { key in
                     let printing = CardPrintingKey(storageKey: key)
+                    let price = OnlineText.referenceWon(key)
                     VStack(spacing: 3) {
                         ZStack(alignment: .topTrailing) {
                             CardImageView(cardID: printing.cardID, width: width)
@@ -394,8 +477,14 @@ struct OnlineCardStrip: View {
                             }
                         }
                         Text("×\(lines[key] ?? 0)").font(Typography.captionMedium).monospacedDigit()
+                        // 장당 시세. 눌러서 크게 봐야만 알 수 있으면 주고받는 값을 견주기 어렵다.
+                        Text(price.map(OnlineText.wonText) ?? OnlineText.l.noMarketPrice)
+                            .font(Typography.caption).monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1).minimumScaleFactor(0.7)
+                            .frame(width: max(width, 60))
                     }
-                    .help("\(OnlineText.printing(key).name) \(OnlineText.printing(key).finish)")
+                    .help(OnlineText.printingSummary(key))
                 }
             }
             .padding(.top, 6)
@@ -439,6 +528,18 @@ struct OnlineCatalogueSearch: View {
         return exact + prefix + partial
     }
 
+    /// 카드 대표 시세(원). 판형을 고르기 전 목록에 쓴다.
+    private func cardPrice(_ card: CardEntry) -> Int? {
+        guard let prices = CardPrices.shared, let usd = prices.price(card.id) else { return nil }
+        return MarketEconomy.won(tokens: MarketEconomy.tokens(usd: usd, prices: prices), prices: prices)
+    }
+
+    /// 고른 판형의 시세. 「아무 판형」이면 대표 시세다.
+    private func pickedPrice(_ card: CardEntry) -> Int? {
+        guard let finish else { return cardPrice(card) }
+        return OnlineText.referenceWon(CardPrintingKey(cardID: card.id, finish: finish).storageKey)
+    }
+
     private func finishes(_ card: CardEntry) -> [CardFinish] {
         guard let index = CardIndex.shared else { return [] }
         var seen: [CardFinish] = []
@@ -458,9 +559,13 @@ struct OnlineCatalogueSearch: View {
                 HStack(alignment: .top, spacing: 16) {
                     CardImageView(cardID: picked.id, hires: true, width: 150)
                     VStack(alignment: .leading, spacing: 12) {
-                        Text(picked.displayName(.ko)).font(Typography.title)
+                        Text(picked.displayName(OnlineText.language)).font(Typography.title)
                         Text(CardIndex.shared?.set(picked.setID)?.name ?? picked.setID)
                             .font(Typography.label).foregroundStyle(.secondary)
+                        // 고른 판형의 시세. 판형을 바꾸면 값도 따라 바뀐다.
+                        Text(pickedPrice(picked).map { OnlineText.l.priceEach(OnlineText.wonText($0)) }
+                             ?? OnlineText.l.noMarketPrice)
+                            .font(Typography.bodySemibold).monospacedDigit()
                         Picker(OnlineText.l.finishLabel, selection: $finish) {
                             if allowsAnyFinish { Text(OnlineText.l.anyFinish).tag(CardFinish?.none) }
                             ForEach(finishes(picked), id: \.self) { option in
@@ -497,9 +602,12 @@ struct OnlineCatalogueSearch: View {
                                 } label: {
                                     VStack(alignment: .leading, spacing: 3) {
                                         CardImageView(cardID: card.id, width: 92)
-                                        Text(card.displayName(.ko)).font(Typography.caption).lineLimit(1)
+                                        Text(card.displayName(OnlineText.language)).font(Typography.caption).lineLimit(1)
                                         Text(CardIndex.shared?.set(card.setID)?.name ?? card.setID)
                                             .font(Typography.caption).foregroundStyle(.secondary).lineLimit(1)
+                                        Text(cardPrice(card).map(OnlineText.wonText) ?? OnlineText.l.noMarketPrice)
+                                            .font(Typography.captionMedium).monospacedDigit()
+                                            .lineLimit(1).minimumScaleFactor(0.75)
                                     }
                                     .frame(width: 92)
                                 }
@@ -546,13 +654,39 @@ struct OnlineStockPicker: View {
     @State private var appliedQuery = ""
     @State private var picked: OnlineStock?
     @State private var quantity = 1
+    @State private var order = Order.priceHigh
     @Environment(\.dismiss) private var dismiss
 
+    enum Order: CaseIterable { case priceHigh, priceLow, name }
+
     private var stock: [OnlineStock] {
-        let all = source ?? OnlineStock.sellable(wallet: wallet)
+        let all = Self.sorted(source ?? OnlineStock.sellable(wallet: wallet), by: order)
         let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return all }
         return all.filter { DexCardSearch.names(cardID: $0.cardID).contains { $0.contains(needle) } }
+    }
+
+    /// 시세 없는 카드는 어느 가격순에서도 뒤에 둔다. 낮은 순 맨 앞에 값 모르는 카드가 몰리면
+    /// 싼 카드를 찾는 사람에게 쓸모가 없다.
+    static func sorted(_ stock: [OnlineStock], by order: Order) -> [OnlineStock] {
+        switch order {
+        case .priceHigh:
+            return stock.sorted { ($0.referenceWon ?? -1, $1.key) > ($1.referenceWon ?? -1, $0.key) }
+        case .priceLow:
+            return stock.sorted { ($0.referenceWon ?? .max, $0.key) < ($1.referenceWon ?? .max, $1.key) }
+        case .name:
+            return stock.sorted {
+                (OnlineText.cardName($0.cardID), $0.key) < (OnlineText.cardName($1.cardID), $1.key)
+            }
+        }
+    }
+
+    private func title(_ order: Order) -> String {
+        switch order {
+        case .priceHigh: OnlineText.l.sortPriceHigh
+        case .priceLow: OnlineText.l.sortPriceLow
+        case .name: OnlineText.l.sortName
+        }
     }
 
     var body: some View {
@@ -568,13 +702,30 @@ struct OnlineStockPicker: View {
                             .font(Typography.label).foregroundStyle(.secondary)
                         Text(OnlineText.l.offerableCount(picked.available))
                             .font(Typography.label)
+                        if let won = picked.referenceWon {
+                            Text(OnlineText.l.priceEach(OnlineText.wonText(won)))
+                                .font(Typography.bodySemibold).monospacedDigit()
+                            if quantity > 1 {
+                                Text(OnlineText.l.priceTotal(quantity, OnlineText.wonText(won * quantity)))
+                                    .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+                            }
+                        } else {
+                            Text(OnlineText.l.noMarketPrice).font(Typography.label).foregroundStyle(.secondary)
+                        }
                         OnlineQuantity(value: $quantity, range: 1...min(1000, remaining))
                         Button(OnlineText.l.pickAnotherCard) { self.picked = nil }.buttonStyle(.borderless)
                     }
                 }
             } else {
-                TextField(searchPlaceholder ?? OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
-                    .debouncedSearch(query, into: $appliedQuery)
+                HStack(spacing: 10) {
+                    TextField(searchPlaceholder ?? OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
+                        .debouncedSearch(query, into: $appliedQuery)
+                    Picker(OnlineText.l.sortBy, selection: $order) {
+                        ForEach(Order.allCases, id: \.self) { Text(title($0)).tag($0) }
+                    }
+                    .labelsHidden().fixedSize()
+                    .help(OnlineText.l.sortBy)
+                }
                 ScrollView {
                     if stock.isEmpty {
                         OnlineEmptyState(icon: "square.stack",
@@ -590,8 +741,15 @@ struct OnlineStockPicker: View {
                                     quantity = 1
                                 } label: {
                                     OnlineCardTile(cardID: item.cardID, finish: item.finish.rawValue, width: 92) {
+                                        // 고르기 전에 값이 보여야 한다. 눌러 들어가야만 시세가 나오면
+                                        // 카드마다 들어갔다 나오며 견줘야 한다.
+                                        Text(item.referenceWon.map(OnlineText.wonText) ?? OnlineText.l.noMarketPrice)
+                                            .font(Typography.captionMedium).monospacedDigit()
+                                            .foregroundStyle(item.referenceWon == nil ? .secondary : .primary)
+                                            .lineLimit(1).minimumScaleFactor(0.75)
                                         Text(OnlineText.l.availableCount(item.available)).font(Typography.caption).foregroundStyle(.secondary)
                                     }
+                                    .help(OnlineText.printingSummary(item.key))
                                 }
                                 .buttonStyle(.plain)
                                 .disabled(item.available - (alreadyPicked[item.key] ?? 0) <= 0)

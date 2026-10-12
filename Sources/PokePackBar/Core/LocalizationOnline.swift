@@ -430,6 +430,11 @@ extension L {
     var noCardsOwned: String { t("가진 카드가 없어요", "You don’t have any cards", "カードを持っていません", "No tienes cartas", "Vous n’avez aucune carte", "Você não tem cartas") }
     var openPacksToSee: String { t("팩을 열면 여기에 나타나요.", "Open packs and they’ll show up here.", "パックを開けるとここに表示されます。", "Abre sobres y aparecerán aquí.", "Ouvrez des boosters pour les voir ici.", "Abra pacotes e elas aparecerão aqui.") }
     var noMarketPrice: String { t("시세 없음", "No price", "相場なし", "Sin precio", "Sans cote", "Sem preço") }
+    func priceEach(_ amount: String) -> String { t("장당 시세 \(amount)", "\(amount) each", "1枚あたり相場 \(amount)", "\(amount) cada una", "\(amount) l’unité", "\(amount) cada") }
+    func priceTotal(_ n: Int, _ amount: String) -> String { t("\(n)장 합계 \(amount)", "\(n) cards, \(amount) in total", "\(n)枚 合計 \(amount)", "\(n) cartas, \(amount) en total", "\(n) cartes, \(amount) au total", "\(n) cartas, \(amount) no total") }
+    var sortPriceHigh: String { t("시세 높은 순", "Highest price", "相場の高い順", "Precio más alto", "Prix décroissant", "Maior preço") }
+    var sortPriceLow: String { t("시세 낮은 순", "Lowest price", "相場の低い順", "Precio más bajo", "Prix croissant", "Menor preço") }
+    var sortName: String { t("이름순", "By name", "名前順", "Por nombre", "Par nom", "Por nome") }
     var saveToBinder: String { t("바인더에 저장", "Save to binder", "バインダーに保存", "Guardar en la carpeta", "Enregistrer dans le classeur", "Salvar no fichário") }
     var loading: String { t("불러오는 중…", "Loading…", "読み込み中…", "Cargando…", "Chargement…", "Carregando…") }
     func friendsCards(_ name: String) -> String { t("\(name)님의 카드", "\(name)’s cards", "\(name)さんのカード", "Cartas de \(name)", "Cartes de \(name)", "Cartas de \(name)") }

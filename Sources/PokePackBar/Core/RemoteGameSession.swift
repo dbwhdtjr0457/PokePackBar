@@ -92,6 +92,8 @@ final class RemoteGameSession {
         let unread: Int
         let incoming_trades: Int
         let incoming_friends: Int
+        /// 가장 최근 알림의 번호. 새 알림이 왔는지 목록을 읽지 않고 안다. 예전 서버는 보내지 않는다.
+        var latest_id: Int? = nil
         var isEmpty: Bool { unread == 0 && incoming_trades == 0 && incoming_friends == 0 }
     }
     struct Quote: Decodable { let tokens: Int; let price_version: String?; let revision: Int }
@@ -117,6 +119,10 @@ final class RemoteGameSession {
     private(set) var priceVersion: String?
     private(set) var priceStatus: PriceStatus?
     private(set) var notificationSummary: NotificationSummary?
+    /// 알림 개수를 확인할 때마다 불린다. macOS 알림이 새로 온 것을 여기서 가려낸다.
+    @ObservationIgnored var onNotificationSummary: ((NotificationSummary) -> Void)?
+    /// 알림 개수를 확인하는 간격(초). 교환 제안이나 판매 소식이 이만큼 안에 macOS 알림으로 뜬다.
+    static let summaryInterval: TimeInterval = 30
     @ObservationIgnored private var summaryCheckedAt: Date?
     /// 요약 API 가 없는 예전 서버. 매분 404 를 로그에 남기지 않게 한 번 확인하면 더 묻지 않는다.
     @ObservationIgnored private var summaryUnsupported = false
@@ -251,7 +257,7 @@ final class RemoteGameSession {
             lastFailure = nil
             failureStreak = 0
             retryAt = nil
-            if summaryCheckedAt.map({ Date().timeIntervalSince($0) >= 60 }) ?? true {
+            if summaryCheckedAt.map({ Date().timeIntervalSince($0) >= Self.summaryInterval }) ?? true {
                 await refreshNotificationSummary()
             }
         } catch {
@@ -285,6 +291,7 @@ final class RemoteGameSession {
         do {
             let summary: NotificationSummary = try await get("v1/notifications/summary")
             if summary != notificationSummary { notificationSummary = summary }
+            onNotificationSummary?(summary)
         } catch let failure as Failure where failure.status == 404 {
             summaryUnsupported = true
         } catch {}
