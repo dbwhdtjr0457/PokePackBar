@@ -247,6 +247,17 @@ final class OnlineAlertsTests: XCTestCase {
         XCTAssertEqual(OnlineText.timeAgo(0, now: now), "", "시각을 모르면 아무것도 적지 않는다")
     }
 
+    func testReadAllUsesDisplayedPageBoundary() {
+        let displayed: [[String: Any]] = [["id": 9], ["id": 7]]
+        let newerSummary = RemoteGameSession.NotificationSummary(
+            unread: 3, incoming_trades: 0, incoming_friends: 0, latest_id: 10)
+        let boundary = OnlineHubModel.shownNotificationBoundary(displayed)
+        XCTAssertEqual(boundary, 9)
+        XCTAssertLessThan(boundary ?? 0, newerSummary.latest_id ?? 0)
+        XCTAssertNil(OnlineHubModel.shownNotificationBoundary([]))
+        XCTAssertNil(OnlineHubModel.shownNotificationBoundary([["id": 0]]))
+    }
+
     /// 교환에 담을 카드는 값으로 견준다. 시세 없는 카드는 어느 가격순에서도 뒤에 온다.
     func testStockSortsByPriceWithUnpricedLast() {
         func stock(_ key: String, _ won: Int?) -> OnlineStock {

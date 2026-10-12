@@ -209,6 +209,10 @@ final class OnlineHubModel {
         return (legacyAlerts ? page?["next_after"] : page?["next_before"]) as? Int
     }
 
+    static func shownNotificationBoundary(_ items: [[String: Any]]) -> Int? {
+        items.map { $0.int("id") }.filter { $0 > 0 }.max()
+    }
+
     /// 안 읽은 알림을 한 번에 읽음으로 바꾼다.
     ///
     /// 서버가 한 번에 처리하면 그 명령 하나를 보낸다. 마지막으로 확인한 알림까지만 바꾸므로 누르는
@@ -217,9 +221,12 @@ final class OnlineHubModel {
     func markAllNotificationsRead() async {
         guard canWrite, let remote else { return }
         let unread = remote.notificationSummary?.unread ?? 0
-        if let latest = remote.notificationSummary?.latest_id {
+        if remote.notificationSummary?.latest_id != nil {
+            // The summary can advance while this page remains on screen.
+            // Preserve notifications that arrived after the displayed page.
+            guard let latest = Self.shownNotificationBoundary(items("notifications")) else { return }
             var values: [String: Any] = ["action": "notification_read_all"]
-            if latest > 0 { values["notification_id"] = latest }
+            values["notification_id"] = latest
             if await mutate("notifications", values, quiet: true), unread > 0 {
                 message = OnlineText.l.alertsMarkedRead(unread)
             }
