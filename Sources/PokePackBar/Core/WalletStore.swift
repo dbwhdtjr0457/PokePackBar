@@ -95,10 +95,23 @@ extension CardSale {
 @Observable
 final class WalletStore {
 
-    private(set) var state = GameState() { didSet { collectionValueCache = nil } }
+    private(set) var state = GameState() { didSet { collectionValueCache = nil; printingLedgerCache = nil } }
     /// 머리글의 컬렉션 가치. 계산에 10ms 안팎이 들어 팝오버를 그릴 때마다 다시 하지 않고,
     /// 상태나 시세가 바뀐 뒤 처음 읽을 때만 계산한다.
     @ObservationIgnored private var collectionValueCache: (prices: Int, value: Double)?
+    /// 카드별로 묶은 판형 장부.
+    ///
+    /// `printingCards` 는 「카드#판형」 한 줄씩이라 카드 하나의 판형을 알려면 전체를 훑어야 한다.
+    /// 카드마다 그렇게 하면 한번에 판매처럼 수백 종을 보는 화면이 그릴 때마다 멈췄다. 판형 2,547줄에
+    /// 중복 576종인 실제 세이브에서 한 번 그리는 데 0.25초, 마켓이나 교환에 묶인 카드가 하나라도
+    /// 있으면 전체 카드 18,949종을 훑어 8초가 걸렸다. 상태가 바뀐 뒤 처음 읽을 때 한 번만 묶는다.
+    private struct PrintingLedger {
+        /// 카드의 판형별 장수. 0장 이하인 줄은 뺀다.
+        var counts: [String: [CardFinish: Int]] = [:]
+        /// 카드에 딸린 저장 키 전부(0장인 줄 포함). 그 카드의 줄만 골라 지울 때 쓴다.
+        var keys: [String: [String]] = [:]
+    }
+    @ObservationIgnored private var printingLedgerCache: PrintingLedger?
     private let fileURL: URL
     @ObservationIgnored private var durableState = GameState()
     @ObservationIgnored private var transactionDepth = 0
@@ -355,7 +368,8 @@ final class WalletStore {
     /// 갈 수 있는 장수 — 보유분에서 한 장은 남긴다. 컬렉션에서 사라지면 안 된다.
     func spareCount(_ cardID: String) -> Int {
         let spares = max(0, cardCount(cardID) - 1)
-        guard !protectedPrintings.isEmpty else { return spares }
+        // 남는 장이 없으면 묶인 판형을 따질 것도 없다. 가지지 않은 카드까지 장부를 뒤지지 않는다.
+        guard spares > 0, !protectedPrintings.isEmpty else { return spares }
         let unreserved = ownedPrintings(cardID: cardID).reduce(0) {
             $0 + max(0, $1.count - (protectedPrintings[$1.printing.storageKey] ?? 0))
         }
@@ -415,7 +429,8 @@ final class WalletStore {
     }
 
     func normalizeServerPrintings() {
-        for id in Array(state.cards.keys) { materializePrintings(cardID: id) }
+        let ledger = printingLedger
+        for id in Array(state.cards.keys) { materializePrintings(cardID: id, ledger: ledger) }
     }
 
     /// Only the stdin server evaluator calls this after an atomic domain check.
@@ -442,12 +457,15 @@ final class WalletStore {
     }
 
     /// 옛 aggregate 수량을 normal 인쇄본으로 구체화해, 이후 감소를 정확히 기록할 수 있게 한다.
-    private func materializePrintings(cardID: String) {
-        let counts = ownedPrintingCounts(cardID: cardID)
-        for storageKey in Array(state.printingCards.keys) {
-            if CardPrintingKey(storageKey: storageKey).cardID == cardID {
-                state.printingCards.removeValue(forKey: storageKey)
-            }
+    ///
+    /// `ledger` 는 여러 카드를 잇달아 고칠 때 처음에 한 번 묶어 둔 장부다. 카드 하나를 고치면 상태가
+    /// 바뀌어 장부를 다시 묶어야 하는데, 카드끼리는 서로의 줄을 건드리지 않으므로 아직 고치지 않은
+    /// 카드에는 처음 장부가 그대로 맞다. 같은 카드를 두 번 고칠 때는 넘기면 안 된다.
+    private func materializePrintings(cardID: String, ledger: PrintingLedger? = nil) {
+        let ledger = ledger ?? printingLedger
+        let counts = ownedPrintingCounts(cardID: cardID, ledger: ledger)
+        for storageKey in ledger.keys[cardID] ?? [] {
+            state.printingCards.removeValue(forKey: storageKey)
         }
         for (finish, count) in counts where count > 0 {
             let key = CardPrintingKey(cardID: cardID, finish: finish).storageKey
@@ -455,9 +473,9 @@ final class WalletStore {
         }
     }
 
-    private func apply(_ plan: [PrintingSaleLine], cardID: String) {
+    private func apply(_ plan: [PrintingSaleLine], cardID: String, ledger: PrintingLedger? = nil) {
         guard !plan.isEmpty else { return }
-        materializePrintings(cardID: cardID)
+        materializePrintings(cardID: cardID, ledger: ledger)
         for line in plan {
             let storageKey = line.printing.storageKey
             let left = (state.printingCards[storageKey] ?? 0) - line.count
@@ -555,13 +573,14 @@ final class WalletStore {
         let sale = bulkSalePreview(targets)
         guard !sale.isEmpty else { return .none }
 
+        // 계획을 모두 세운 다음에 적용한다. 번갈아 하면 카드 하나를 팔 때마다 장부를 다시 묶는다.
         var seen = Set<String>()
-        for cardID in targets {
-            guard seen.insert(cardID).inserted else { continue }
-            let plan = lowestValueSalePlan(cardID: cardID, count: .max,
-                                           prices: CardPrices.shared)
-            apply(plan, cardID: cardID)
+        let plans = targets.compactMap { cardID -> (cardID: String, plan: [PrintingSaleLine])? in
+            guard seen.insert(cardID).inserted else { return nil }
+            return (cardID, lowestValueSalePlan(cardID: cardID, count: .max, prices: CardPrices.shared))
         }
+        let ledger = printingLedger
+        for entry in plans { apply(entry.plan, cardID: entry.cardID, ledger: ledger) }
         state.refundedTokens += sale.tokens
         state.cardsDisenchanted += sale.copies
         guard save() else { return .none }
@@ -680,13 +699,8 @@ final class WalletStore {
     /// SIR·Radiant·Gold처럼 카드 자체가 한 판형으로 정해지는 경우에는 번들 rarity로 복원한다.
     /// Common·Uncommon·Rare처럼 reverse 여부를 알 수 없는 카드만 보수적으로 normal로 둔다.
     /// 상태를 바꾸지 않는 계산이라 업데이트 직후에도 기존 보유량을 그대로 읽을 수 있다.
-    private func ownedPrintingCounts(cardID: String) -> [CardFinish: Int] {
-        var result: [CardFinish: Int] = [:]
-        for (storageKey, count) in state.printingCards where count > 0 {
-            let printing = CardPrintingKey(storageKey: storageKey)
-            guard printing.cardID == cardID else { continue }
-            result[printing.finish, default: 0] += count
-        }
+    private func ownedPrintingCounts(cardID: String, ledger: PrintingLedger? = nil) -> [CardFinish: Int] {
+        var result = (ledger ?? printingLedger).counts[cardID] ?? [:]
         let recorded = result.values.reduce(0, +)
         let legacy = max(0, cardCount(cardID) - recorded)
         if legacy > 0 {
@@ -700,6 +714,22 @@ final class WalletStore {
             result[finish, default: 0] += legacy
         }
         return result
+    }
+
+    private var printingLedger: PrintingLedger {
+        // 캐시를 써도 상태를 읽은 것으로 남겨, 상태가 바뀌면 이 값을 쓴 화면이 다시 그려지게 한다.
+        let recorded = state.printingCards
+        if let cached = printingLedgerCache { return cached }
+        var ledger = PrintingLedger()
+        ledger.counts.reserveCapacity(recorded.count)
+        ledger.keys.reserveCapacity(recorded.count)
+        for (storageKey, count) in recorded {
+            let printing = CardPrintingKey(storageKey: storageKey)
+            ledger.keys[printing.cardID, default: []].append(storageKey)
+            if count > 0 { ledger.counts[printing.cardID, default: [:]][printing.finish, default: 0] += count }
+        }
+        printingLedgerCache = ledger
+        return ledger
     }
 
     /// 특정 인쇄본 보유량. 옛 aggregate 잔량은 고유 판형을 복원하고, 모호할 때만 normal이다.

@@ -830,6 +830,67 @@ final class BulkSaleTests: XCTestCase {
         XCTAssertEqual(sale.kinds, targets.count)
     }
 
+    /// 판형별 장수는 상태가 바뀔 때마다 다시 맞춰진다. 카드별로 한 번 묶어 둔 장부를 계속 쓰면
+    /// 판 뒤에도 팔기 전 장수가 보인다.
+    func testPrintingCountsFollowEveryChange() {
+        let s = makeStore()
+        let normal = CardPrintingKey(cardID: "sv10-1", finish: .normal)
+        let holo = CardPrintingKey(cardID: "sv10-1", finish: .holo)
+        s.addCard(normal, count: 3)
+        s.addCard(holo, count: 2)
+        XCTAssertEqual(s.printingCount(normal), 3)
+        XCTAssertEqual(s.printingCount(holo), 2)
+
+        // 한 종씩 파는 길.
+        XCTAssertGreaterThan(s.sellSpares(cardID: "sv10-1", tier: .rare, count: 1), 0)
+        XCTAssertEqual(s.printingCount(normal) + s.printingCount(holo), 4)
+        XCTAssertEqual(s.ownedPrintings(cardID: "sv10-1").reduce(0) { $0 + $1.count }, s.cardCount("sv10-1"))
+
+        // 새로 얻은 장도 바로 보인다.
+        s.addCard(holo, count: 5)
+        XCTAssertEqual(s.printingCount(normal) + s.printingCount(holo), 9)
+
+        // 한번에 파는 길. 여러 카드를 잇달아 고쳐도 카드마다 한 장씩 남는다.
+        s.collect(["sv10-2", "sv10-2", "sv10-2"])
+        let sale = s.sellSpares(["sv10-1", "sv10-2"])
+        XCTAssertEqual(sale.copies, 8 + 2)
+        XCTAssertEqual(s.ownedPrintings(cardID: "sv10-1").reduce(0) { $0 + $1.count }, 1)
+        XCTAssertEqual(s.ownedPrintings(cardID: "sv10-2").reduce(0) { $0 + $1.count }, 1)
+        XCTAssertEqual(s.spareCount("sv10-1"), 0)
+    }
+
+    /// 큰 컬렉션에서도 화면을 그릴 때마다 하는 계산으로 화면이 멈추지 않는다.
+    ///
+    /// 카드 하나를 볼 때마다 판형 장부 전체를 훑던 때는, 판형 2,547줄에 중복 576종인 실제 세이브에서
+    /// 마켓에 묶인 카드가 하나만 있어도 전체 카드 목록을 한 번 그리는 데 8초가 걸렸다.
+    func testBulkSaleStaysFastOnALargeCollection() throws {
+        let s = makeStore()
+        let index = try XCTUnwrap(CardIndex.loadBundled())
+        let prices = try XCTUnwrap(CardPrices.shared)
+        let owned = Array(index.cards.prefix(2_500))
+        s.collect(owned.flatMap { entry in
+            [CardPrintingKey(cardID: entry.id, finish: .normal), CardPrintingKey(cardID: entry.id, finish: .normal),
+             CardPrintingKey(cardID: entry.id, finish: .holo)]
+        })
+        // 판매 글이나 교환 제안으로 묶인 카드가 하나라도 있으면 카드마다 묶인 판형을 따진다.
+        s.protectedPrintings = [CardPrintingKey(cardID: owned[0].id, finish: .normal).storageKey: 2]
+
+        let started = Date()
+        let targets = WalletStore.bulkSaleTargets(index.cards, maxWon: nil,
+                                                  spares: { s.spareCount($0) }, prices: prices)
+        let preview = s.bulkSalePreview(targets)
+        let drawing = Date().timeIntervalSince(started)
+        XCTAssertEqual(targets.count, owned.count)
+        XCTAssertEqual(preview.copies, owned.count * 2 - 1, "묶인 판형은 남기고 판다")
+        XCTAssertLessThan(drawing, 1, "한번에 판매 화면을 한 번 그리는 계산이 \(drawing)초 걸렸다")
+
+        let selling = Date()
+        XCTAssertEqual(s.sellSpares(targets), preview)
+        let sold = Date().timeIntervalSince(selling)
+        XCTAssertLessThan(sold, 5, "한번에 파는 데 \(sold)초 걸렸다")
+        print(String(format: "bulk sale on %d kinds: draw %.3fs, sell %.3fs", owned.count, drawing, sold))
+    }
+
     /// 잔액에 그만큼 들어오고, 종수는 줄지 않는다.
     func testBalanceRisesAndKindCountHolds() throws {
         let s = makeStore()
