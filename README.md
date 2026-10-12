@@ -73,6 +73,19 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.16.0
+
+교환·마켓·친구 소식을 macOS 알림으로 받으며, 누르면 해당 항목으로 이동한다.
+앱 실행 중 30초마다 확인하고 macOS 알림 권한과 설정의 온라인 알림 옵션을 사용한다.
+알림 목록은 최신순이며 모두 읽음은 화면에 표시된 마지막 알림까지만 처리한다.
+
+교환 카드에 시세를 표시하고 정렬하며, 친구 끊기·차단 전에 확인한다.
+판형 장부 캐싱으로 일괄 판매 화면과 판매 계산의 반복 작업을 줄였다.
+서버 DB 스키마·게임 규칙 버전과 기존 계정·재화는 유지한다.
+
+![온라인 알림 화면](docs/reference/screenshots/online-alerts-016-ko.png)
+![교환 카드 시세 선택](docs/reference/screenshots/trade-picker-016-ko.png)
+
 ## 0.15.0
 
 팩 윗부분을 밀어 뜯는 연출, 팩 검색과 키보드 조작을 추가했다. 누적 개봉 수로

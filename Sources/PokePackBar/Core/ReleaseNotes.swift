@@ -56,6 +56,26 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.16.0", lines: [
+                t("교환·마켓·친구 소식을 macOS 알림으로 받고, 알림에서 해당 항목으로 바로 이동합니다. 앱 실행 중 30초마다 확인합니다.",
+                  "Receive trade, market and friend news as macOS alerts and jump to the related item. Checks run every 30 seconds while the app is running.",
+                  "交換・マーケット・フレンドの通知から該当項目へ移動できます。アプリ起動中は30秒ごとに確認します。",
+                  "Recibe avisos de intercambios, mercado y amigos y abre el elemento. Se comprueban cada 30 segundos con la app abierta.",
+                  "Recevez les nouvelles des échanges, du marché et des amis, puis ouvrez l’élément. Vérification toutes les 30 secondes quand l’app tourne.",
+                  "Receba alertas de trocas, mercado e amigos e abra o item. A verificação ocorre a cada 30 segundos com o app aberto."),
+                t("알림을 최신순으로 보고 모두 읽음으로 처리합니다. 화면을 연 뒤 도착한 새 알림은 읽지 않은 상태로 유지합니다.",
+                  "View newest alerts first and mark displayed history as read. Alerts arriving after the displayed page remain unread.",
+                  "通知を新しい順に表示し、表示済み分を既読にできます。表示後に届いた通知は未読のままです。",
+                  "Muestra avisos recientes primero y marca lo mostrado como leído. Los avisos posteriores siguen sin leer.",
+                  "Affichez les alertes récentes et marquez l’historique affiché comme lu. Les nouvelles alertes restent non lues.",
+                  "Veja os alertas recentes e marque o histórico exibido como lido. Alertas que chegaram depois continuam não lidos."),
+                t("교환 카드를 시세로 정렬하고, 친구 끊기·차단을 확인합니다. 판형 장부를 캐싱해 일괄 판매 화면과 계산을 빠르게 했습니다.",
+                  "Sort trade cards by value and confirm unfriend/block actions. Cached printing ledgers speed up bulk-sale previews and calculations.",
+                  "交換カードを相場順に並べ、解除・ブロックを確認します。台帳キャッシュで一括売却を高速化しました。",
+                  "Ordena cartas por valor y confirma eliminar o bloquear amigos. La caché de versiones acelera la venta masiva.",
+                  "Triez les cartes par valeur et confirmez les retraits ou blocages. Le cache des éditions accélère les ventes groupées.",
+                  "Ordene cartas por valor e confirme remoção ou bloqueio. O cache de versões acelera vendas em lote.")
+            ]),
             ReleaseNote(version: "0.15.0", lines: [
                 t("팩 뜯기 연출, 팩 검색과 키보드 조작을 추가했습니다.",
                   "Added pack tearing, pack search and keyboard controls.",
