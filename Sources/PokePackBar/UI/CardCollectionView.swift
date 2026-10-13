@@ -74,30 +74,37 @@ struct CardCollectionView: View {
     /// 이유가 없고, 정렬을 매번 돌리면 카드 그림이 도착할 때마다 화면이 덜컹거린다.
     private func makeShelf() -> Shelf {
         guard let index else { return Shelf() }
-        var shelf = Shelf()
-        let sorted = index.currentCardsByValue
-        shelf.pool.reserveCapacity(sorted.count)
         let needle = DexCardSearch.normalized(appliedQuery)
-        var missing: [CardEntry] = []
-        for entry in sorted {
-            guard selectedSet == nil || entry.setID == selectedSet,
-                  selectedTier == nil || entry.tier == selectedTier,
-                  needle.isEmpty || Self.matches(entry, needle: needle, index: index) else { continue }
-            shelf.pool.append(entry)
-            let count = wallet.cardCount(entry.id)
-            if count > 0 {
-                shelf.owned += 1
-                if count > 1 { shelf.hasSpares = true }
-                shelf.visible.append(entry)
-            } else if !ownedOnly {
-                missing.append(entry)
-            }
-        }
-        // 가격순은 가진 카드를 먼저 세운다. 섞어 두면 아직 없는 비싼 카드가 맨 위를 차지해
-        // 내 컬렉션을 보러 와서 남의 카드부터 보게 된다. 없는 카드는 그 뒤에 값 순으로 남는다.
-        // 다른 정렬은 들어온 자리를 지켜야 해서(번호순은 바인더처럼 이어져야 한다) pool 그대로.
-        if !ownedOnly { shelf.visible = sort == .value ? shelf.visible + missing : shelf.pool }
+        var shelf = Self.shelf(from: index.currentCardsByValue, ownedOnly: ownedOnly,
+                               matches: { entry in
+                                   (selectedSet == nil || entry.setID == selectedSet)
+                                       && (selectedTier == nil || entry.tier == selectedTier)
+                                       && (needle.isEmpty || Self.matches(entry, needle: needle, index: index))
+                               },
+                               count: { wallet.cardCount($0) })
         shelf.visible = ordered(shelf.visible)
+        return shelf
+    }
+
+    /// 값 순으로 들어온 목록을 한 번 훑어 화면에 필요한 것을 모두 센다.
+    ///
+    /// **「보유한 카드만」을 끄면 가진 카드와 없는 카드를 가르지 않는다.** 들어온 순서가 그대로
+    /// 격자의 순서라, 가격순이면 가진 것과 없는 것이 값대로 섞여 선다. 한때 가격순에서 가진 카드를
+    /// 앞에 모았더니 없는 카드가 값과 상관없이 전부 뒤로 밀려, 「아직 없는 카드 가운데 무엇이
+    /// 비싼가」를 내 카드와 견주어 볼 수 없었다. 내 카드만 보고 싶으면 「보유한 카드만」을 켜면 된다.
+    static func shelf(from sorted: [CardEntry], ownedOnly: Bool,
+                      matches: (CardEntry) -> Bool, count: (String) -> Int) -> Shelf {
+        var shelf = Shelf()
+        shelf.pool.reserveCapacity(sorted.count)
+        for entry in sorted where matches(entry) {
+            shelf.pool.append(entry)
+            let owned = count(entry.id)
+            guard owned > 0 else { continue }
+            shelf.owned += 1
+            if owned > 1 { shelf.hasSpares = true }
+            if ownedOnly { shelf.visible.append(entry) }
+        }
+        if !ownedOnly { shelf.visible = shelf.pool }
         return shelf
     }
 

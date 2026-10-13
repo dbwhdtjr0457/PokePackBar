@@ -67,33 +67,50 @@ import SwiftUI
         try await capture("market-from-alert", width: 980)
         model.focus(on: "")
         model.search = ""
+        func capturePicker(_ name: String, _ view: some View) async throws {
+            let picker = NSHostingController(rootView: view.background(Color(NSColor.windowBackgroundColor)))
+            let pickerSize = picker.view.fittingSize
+            let pickerWindow = NSWindow(contentRect: NSRect(origin: .zero, size: pickerSize), styleMask: [.borderless],
+                                        backing: .buffered, defer: false)
+            pickerWindow.isReleasedWhenClosed = false
+            pickerWindow.contentViewController = picker
+            picker.view.setFrameSize(pickerSize)
+            picker.view.layoutSubtreeIfNeeded()
+            try await Task.sleep(for: .milliseconds(150))
+            guard let pickerBitmap = picker.view.bitmapImageRepForCachingDisplay(in: picker.view.bounds) else {
+                throw LocalAudit.Failure(description: "Stock picker capture failed")
+            }
+            picker.view.cacheDisplay(in: picker.view.bounds, to: pickerBitmap)
+            guard let pickerPNG = pickerBitmap.representation(using: .png, properties: [:]) else {
+                throw LocalAudit.Failure(description: "Stock picker encoding failed")
+            }
+            try pickerPNG.write(to: output.appendingPathComponent("\(name).png"))
+            pickerWindow.close()
+        }
         // 교환에 담을 카드를 고르는 창. 고르기 전에 카드마다 시세가 보여야 한다.
         let pickable = (CardIndex.shared?.currentCardsByValue.prefix(9) ?? []).enumerated().map { offset, entry in
             let key = "\(entry.id)#holo"
             return OnlineStock(key: key, cardID: entry.id, finish: .holo, available: offset + 1,
                                referenceWon: offset == 4 ? nil : OnlineText.referenceWon(key))
         }
-        let picker = NSHostingController(rootView: OnlineStockPicker(
+        try await capturePicker("trade-picker", OnlineStockPicker(
             wallet: wallet, title: OnlineText.l.addCardsToGive, actionTitle: OnlineText.l.addAction,
-            source: pickable) { _, _ in }
-            .background(Color(NSColor.windowBackgroundColor)))
-        let pickerSize = picker.view.fittingSize
-        let pickerWindow = NSWindow(contentRect: NSRect(origin: .zero, size: pickerSize), styleMask: [.borderless],
-                                    backing: .buffered, defer: false)
-        pickerWindow.isReleasedWhenClosed = false
-        pickerWindow.contentViewController = picker
-        picker.view.setFrameSize(pickerSize)
-        picker.view.layoutSubtreeIfNeeded()
-        try await Task.sleep(for: .milliseconds(150))
-        guard let pickerBitmap = picker.view.bitmapImageRepForCachingDisplay(in: picker.view.bounds) else {
-            throw LocalAudit.Failure(description: "Stock picker capture failed")
-        }
-        picker.view.cacheDisplay(in: picker.view.bounds, to: pickerBitmap)
-        guard let pickerPNG = pickerBitmap.representation(using: .png, properties: [:]) else {
-            throw LocalAudit.Failure(description: "Stock picker encoding failed")
-        }
-        try pickerPNG.write(to: output.appendingPathComponent("trade-picker.png"))
-        pickerWindow.close()
+            source: pickable) { _, _ in })
+
+        // 교환 칸: 고른 친구에게 남는 카드 가운데 내게 없는 것이 창을 열지 않아도 보여야 한다.
+        // 친구에게 남는 아홉 장 가운데 앞의 두 장은 내가 이미 가진 카드로 둔다.
+        let partner = friends[1].string("public_id")
+        wallet.collect(pickable.prefix(2).map(\.cardID))
+        model.friendBinders[partner] = .ready(pickable)
+        model.tradeDraft = ["public_id": partner]
+        model.section = .trades
+        try await capture("trades-missing", width: 980)
+        try await capturePicker("friend-binder-picker", OnlineStockPicker(
+            wallet: wallet, title: OnlineText.l.friendBinderTitle, actionTitle: OnlineText.l.addAction,
+            source: pickable, marksMissing: true) { _, _ in })
+        try await capturePicker("friend-binder-picker-missing", OnlineStockPicker(
+            wallet: wallet, title: OnlineText.l.friendBinderTitle, actionTitle: OnlineText.l.addAction,
+            source: pickable, marksMissing: true, startsMissingOnly: true) { _, _ in })
 
         model.documents = ["profile": ["profile": profile]]
         model.clearPrivateData()
@@ -103,6 +120,6 @@ import SwiftUI
         OnlineWindow.shared.show(wallet: wallet)
         try LocalAudit.require(NSApp.windows.contains(where: { $0.title == OnlineText.l.onlineWindowTitle && $0.isVisible }), "Online window did not reopen")
         NSApp.windows.first(where: { $0.title == OnlineText.l.onlineWindowTitle })?.close()
-        print("PASS online native layout: six sections at 740×540 and 980×720, arrivals from alerts, trade card picker, logout cache clearing, close/reopen")
+        print("PASS online native layout: six sections at 740×540 and 980×720, arrivals from alerts, trade card picker, cards missing from a friend, logout cache clearing, close/reopen")
     }
 }
