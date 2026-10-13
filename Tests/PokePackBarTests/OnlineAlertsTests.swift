@@ -266,6 +266,19 @@ final class OnlineAlertsTests: XCTestCase {
         XCTAssertTrue(model.friendBinders.isEmpty, "로그아웃 뒤에 친구의 카드 목록이 남았다")
     }
 
+    func testFriendBinderResponseAfterLogoutKeepsCacheEmpty() async throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("binder-logout-\(UUID()).json")
+        let wallet = WalletStore(fileURL: file)
+        let model = OnlineHubModel(wallet: wallet)
+        let card = try XCTUnwrap(CardIndex.shared?.cards.first).id
+        let stock = FriendTradeBinder.stock(["\(card)#holo": 2])
+        await model.loadFriendBinder("friend", fetch: {
+            model.clearPrivateData()
+            return .ready(stock)
+        })
+        XCTAssertTrue(model.friendBinders.isEmpty, "A late response restored logged-out private data")
+    }
+
     /// 답할 것이 있는 탭만 개수를 단다. 없으면 이름 그대로다.
     func testTabTitleCarriesWhatIsWaiting() {
         let waiting = Summary(unread: 5, incoming_trades: 1, incoming_friends: 0, latest_id: 9)

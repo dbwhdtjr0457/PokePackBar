@@ -822,3 +822,12 @@ read_when:
   delivery advances after fetched items and legacy read-all uses visible rows.
 - `testReadAllUsesDisplayedPageBoundary` covers an advancing summary, empty
   pages and zero IDs; server read-all tests preserve later and foreign notices.
+
+### Friend-binder response after logout (0.17.0)
+
+- Friend-binder loading awaits the server while logout can clear private data.
+  A delayed response could then repopulate the newly cleared cache.
+- The original test cleared the cache after a completed refresh. The added
+  regression clears it during the awaited load and checks the completed result.
+- A private-data epoch advances on clearing; only responses from the current
+  epoch can populate friend-binder data. Peer keys keep friend switches scoped.
