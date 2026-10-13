@@ -56,6 +56,20 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.17.0", lines: [
+                t("친구에게 남는 카드 중 내게 없는 카드를 교환 칸에서 바로 고릅니다. 바인더에서 ‘내게 없는 카드만’으로 좁혀 볼 수 있습니다.",
+                  "Pick cards missing from your collection directly from a friend’s spare cards. Filter the trade binder to missing cards only.",
+                  "フレンドの余剰カードから未所持カードを交換画面で直接選べます。バインダーを未所持カードだけに絞れます。",
+                  "Elige cartas que te faltan entre las repetidas de un amigo. Filtra el álbum de intercambio por cartas que no tienes.",
+                  "Choisissez vos cartes manquantes parmi les doubles d’un ami et filtrez son classeur sur les cartes manquantes.",
+                  "Escolha cartas que faltam entre as extras de um amigo. Filtre o fichário de troca por cartas que você não tem."),
+                t("컬렉션 전체를 가격순으로 볼 때 보유 여부와 관계없이 시세대로 정렬합니다. 친구 바인더 조회가 끝나기 전에 로그아웃해도 계정 캐시를 안전하게 비웁니다.",
+                  "The full collection sorts by value regardless of ownership. Late friend-binder responses preserve cleared account caches after logout.",
+                  "全コレクションを所持状況に関係なく相場順に並べます。ログアウト後に届くフレンドの応答からキャッシュを保護します。",
+                  "La colección completa se ordena por valor. Las respuestas tardías del álbum respetan la limpieza de datos al cerrar sesión.",
+                  "La collection complète suit l’ordre des valeurs. Les réponses tardives respectent l’effacement du cache à la déconnexion.",
+                  "A coleção completa segue a ordem de valor. Respostas tardias preservam o cache limpo após sair da conta.")
+            ]),
             ReleaseNote(version: "0.16.0", lines: [
                 t("교환·마켓·친구 소식을 macOS 알림으로 받고, 알림에서 해당 항목으로 바로 이동합니다. 앱 실행 중 30초마다 확인합니다.",
                   "Receive trade, market and friend news as macOS alerts and jump to the related item. Checks run every 30 seconds while the app is running.",

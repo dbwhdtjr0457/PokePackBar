@@ -73,6 +73,18 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.17.0
+
+친구에게 남는 카드 중 내가 없는 카드를 교환 칸에서 바로 고를 수 있다.
+친구 바인더에는 ‘내게 없는 카드만’ 필터와 미보유 표시를 추가했다.
+컬렉션 전체의 가격순 정렬은 보유 여부와 관계없이 시세 순서를 따른다.
+로그아웃 중 도착한 바인더 응답은 비워 둔 계정 캐시를 유지한다.
+
+기존 계정·재화, 서버 DB 스키마와 게임 규칙 버전은 유지한다.
+
+![친구의 미보유 카드 추천](docs/reference/screenshots/trades-missing-017-ko.png)
+![미보유 카드 바인더](docs/reference/screenshots/friend-binder-missing-017-ko.png)
+
 ## 0.16.0
 
 교환·마켓·친구 소식을 macOS 알림으로 받으며, 누르면 해당 항목으로 이동한다.
