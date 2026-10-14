@@ -62,6 +62,7 @@ struct OnlineMarketView: View {
     }
 
     /// 알림이 정해 준 화면으로 들어간다. 판매 알림은 「내 판매」, 위시리스트 알림은 「사기」.
+    /// 카드 상세의 「마켓에 팔기」는 「팔기」에서 그 카드를 찾아 두고, 판형이 하나뿐이면 판매 창까지 연다.
     private func enter() {
         if model.opensMyListings {
             model.opensMyListings = false
@@ -128,16 +129,18 @@ struct OnlineMarketView: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: 16)], alignment: .leading, spacing: 18) {
                         ForEach(listings, id: \.onlineID) { item in
                             let printing = CardPrintingKey(storageKey: item.string("printing"))
-                            Button { item.bool("mine") ? (preview = PrintingSelection(id: item.string("printing"))) : (buying = item) } label: {
+                            // 내 판매와 이미 한 장 산 로테이션 카드는 살 수 없으니 카드만 보여 준다.
+                            let viewOnly = item.bool("mine") || item.bool("bought")
+                            Button { viewOnly ? (preview = PrintingSelection(id: item.string("printing"))) : (buying = item) } label: {
                                 OnlineCardTile(cardID: printing.cardID, finish: printing.finish.rawValue,
-                                               badge: item.bool("mine") ? (OnlineText.l.mySales, .accentColor) : nil) {
+                                               badge: Self.badge(item)) {
                                     Text(OnlineText.won(tokens: item.int("unit_tokens")))
                                         .font(Typography.bodySemibold).monospacedDigit()
                                     // 올린 값이 싼지 비싼지는 시세와 나란히 있어야 보인다. 예전에는 눌러서 열어야 알았다.
                                     Text(OnlineText.referenceWon(item.string("printing")).map { OnlineText.l.marketQuote(OnlineText.wonText($0)) }
                                          ?? OnlineText.l.noMarketPrice)
                                         .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
-                                    Text("\(item.string("nickname")), \(OnlineText.l.cardsCount(item.int("quantity")))")
+                                    Text("\(Self.seller(item)), \(OnlineText.l.cardsCount(item.int("quantity")))")
                                         .font(Typography.caption).foregroundStyle(.secondary).lineLimit(1)
                                 }
                             }
@@ -155,6 +158,18 @@ struct OnlineMarketView: View {
             .revealsOnlineFocus(model, in: listings, with: scroller)
             }
         }
+    }
+
+    /// 판매 글 아래의 표시. 내 판매, 로테이션(서버가 올린 카드), 그중 이미 산 것.
+    static func badge(_ item: [String: Any]) -> (text: String, color: Color)? {
+        if item.bool("mine") { return (OnlineText.l.mySales, .accentColor) }
+        guard item.bool("rotation") else { return nil }
+        return item.bool("bought") ? (OnlineText.l.rotationBought, .secondary) : (OnlineText.l.rotationBadge, .orange)
+    }
+
+    /// 판매자 이름. 로테이션은 파는 사람이 없어 서버가 이름을 비워 보내고, 화면이 언어에 맞춰 적는다.
+    static func seller(_ item: [String: Any]) -> String {
+        item.bool("rotation") ? OnlineText.l.rotationSeller : item.string("nickname")
     }
 
     private var hasFilter: Bool {
@@ -283,13 +298,15 @@ private struct BuySheet: View {
     var body: some View {
         let printing = CardPrintingKey(storageKey: item.string("printing"))
         let unit = item.int("unit_tokens")
+        let rotation = item.bool("rotation")
         let affordable = unit > 0 ? model.wallet.availableTokens / unit : 0
-        let maximum = max(1, min(item.int("quantity"), 1000, affordable))
+        // 로테이션 카드는 계정마다 한 장이다. 수량을 고를 수 없다.
+        let maximum = rotation ? 1 : max(1, min(item.int("quantity"), 1000, affordable))
         let total = unit * quantity
         let canAfford = total <= model.wallet.availableTokens
         OnlineSheet(title: OnlineText.l.buyCardTitle, actionTitle: OnlineText.l.buyFor(OnlineText.won(tokens: total)),
                     actionDisabled: !model.canWrite || !canAfford || affordable < 1,
-                    note: OnlineText.l.buyNote,
+                    note: rotation ? OnlineText.l.rotationBuyNote : OnlineText.l.buyNote,
                     action: {
                         // 보낼 값은 누르는 순간 정한다. Task 본문은 시트가 닫힌 뒤에 돈다.
                         let values: [String: Any] = ["action": "listing_buy", "target_id": item.string("id"), "target_version": item.int("version"), "quantity": quantity, "unit_tokens": unit]
@@ -299,14 +316,19 @@ private struct BuySheet: View {
                 CardImageView(cardID: printing.cardID, hires: true, width: 150)
                 VStack(alignment: .leading, spacing: 10) {
                     Text(OnlineText.cardName(printing.cardID)).font(Typography.title)
-                    Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish), seller: item.string("nickname")))
+                    Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish), seller: OnlineMarketView.seller(item)))
                         .font(Typography.label).foregroundStyle(.secondary)
                     Text(OnlineText.l.perCard(OnlineText.won(tokens: unit))).font(Typography.bodySemibold).monospacedDigit()
                     if let reference = OnlineText.referenceWon(item.string("printing")) {
                         Text(OnlineText.l.referencePrice(OnlineText.wonText(reference)))
                             .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
                     }
-                    OnlineQuantity(value: $quantity, range: 1...maximum)
+                    if rotation {
+                        Text(OnlineText.remaining(until: item.int("expires_at")))
+                            .font(Typography.label).foregroundStyle(.secondary)
+                    } else {
+                        OnlineQuantity(value: $quantity, range: 1...maximum)
+                    }
                     Text(affordable < 1 ? OnlineText.l.notEnoughBalance : OnlineText.l.balanceAfter(OnlineText.won(tokens: max(0, model.wallet.availableTokens - total))))
                         .font(Typography.label).foregroundStyle(affordable < 1 ? Color.orange : Color.secondary)
                         .monospacedDigit()

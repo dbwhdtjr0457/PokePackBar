@@ -1148,63 +1148,6 @@ final class WalletStore {
         return title?.text(language)
     }
 
-    // MARK: 로테이션 마켓
-
-    /// 오늘의 진열.
-    func rotationLineup(index: CardIndex, date: String = RotationMarket.dateKey()) -> [String] {
-        RotationMarket.lineup(date: date, index: index)
-    }
-
-    /// 진열 카드가 들어올 판형. 단일 카드 보상과 같은 규칙으로 정한다.
-    func rotationPrinting(_ cardID: String, index: CardIndex) -> CardPrintingKey {
-        inferredPrinting(cardID: cardID, entry: index.card(cardID))
-    }
-
-    func rotationPrice(_ cardID: String, index: CardIndex) -> Int {
-        RotationMarket.price(cardID: cardID, finish: rotationPrinting(cardID, index: index).finish)
-    }
-
-    func rotationBought(_ cardID: String, date: String = RotationMarket.dateKey()) -> Bool {
-        state.rotationPurchases.contains(RotationMarket.purchaseKey(date: date, cardID: cardID))
-    }
-
-    /// 진열 카드 한 장을 산다. 오늘 진열이 아니거나, 이미 샀거나, 잔액이 모자라면 nil.
-    @discardableResult
-    func buyRotation(cardID: String, index: CardIndex,
-                     date: String = RotationMarket.dateKey()) -> PulledCard? {
-        transaction(failure: Optional<PulledCard>.none) {
-            buyRotationTransaction(cardID: cardID, index: index, date: date)
-        }
-    }
-
-    private func buyRotationTransaction(cardID: String, index: CardIndex, date: String) -> PulledCard? {
-        guard date == RotationMarket.dateKey(), rotationLineup(index: index, date: date).contains(cardID),
-              !rotationBought(cardID, date: date) else { return nil }
-        let price = rotationPrice(cardID, index: index)
-        guard price > 0, availableTokens >= price, let entry = index.card(cardID) else { return nil }
-        let isNew = cardCount(cardID) == 0
-        state.marketSpentTokens += price
-        // 지난 진열의 기록은 남길 이유가 없다. 오늘 것만 둔다.
-        state.rotationPurchases.removeAll { !$0.hasPrefix("\(date)|") }
-        state.rotationPurchases.append(RotationMarket.purchaseKey(date: date, cardID: cardID))
-        let printing = rotationPrinting(cardID, index: index)
-        _ = collect([printing])
-        AppLog.write("rotation bought \(cardID) for \(price)")
-        return PulledCard(id: cardID, tier: entry.tier, isNew: isNew, finish: printing.finish)
-    }
-
-    func buyRotationOnlineAware(cardID: String, index: CardIndex) async -> PulledCard? {
-        guard let remote else { return buyRotation(cardID: cardID, index: index) }
-        let date = RotationMarket.dateKey()
-        let isNew = cardCount(cardID) == 0
-        let result = await remote.execute(.init(kind: "rotation_buy", card_id: cardID, date: date),
-                                          expectedTokens: rotationPrice(cardID, index: index))
-        persistenceError = remote.error
-        guard result != nil, let entry = index.card(cardID) else { return nil }
-        return PulledCard(id: cardID, tier: entry.tier, isNew: isNew,
-                          finish: rotationPrinting(cardID, index: index).finish)
-    }
-
     /// 갖고 있는 쿠폰 — 남은 장수가 있는 것만, **세트와 할인율이 같으면 한 줄로 묶는다.**
     ///
     /// 도감 칸마다 따로 들어오므로 저장에는 여러 묶음이 남는다. 쿠폰함이 그것을 그대로

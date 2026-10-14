@@ -368,6 +368,26 @@ extension L {
     var friendFallback: String { t("친구", "Friend", "フレンド", "Amigo", "Ami", "Amigo") }
 }
 
+// MARK: 로테이션 (서버가 마켓에 올리는 카드)
+
+extension L {
+    /// 로테이션 매물의 판매자 자리에 적는 이름. 파는 쪽이 사람이 아니라 게임이다.
+    var rotationSeller: String {
+        t("오늘의 로테이션", "Daily rotation", "本日のローテーション",
+          "Rotación del día", "Rotation du jour", "Rotação do dia")
+    }
+    var rotationBadge: String { t("로테이션", "Rotation", "ローテーション", "Rotación", "Rotation", "Rotação") }
+    var rotationBought: String { t("샀어요", "Bought", "購入済み", "Comprada", "Achetée", "Comprada") }
+    var rotationBuyNote: String {
+        t("로테이션 카드는 계정마다 한 장씩 살 수 있어요. 매일 새 카드로 바뀌어요.",
+          "Each account can buy one copy of a rotation card. New cards arrive every day.",
+          "ローテーションのカードは1アカウントにつき1枚まで買えます。毎日新しいカードに替わります。",
+          "Cada cuenta puede comprar una copia de cada carta de la rotación. Cambian cada día.",
+          "Chaque compte peut acheter un exemplaire de chaque carte de la rotation. Elles changent chaque jour.",
+          "Cada conta pode comprar uma cópia de cada carta da rotação. Elas mudam todo dia.")
+    }
+}
+
 // MARK: 친구, 위시리스트, 바인더 (OnlineSocialView)
 
 extension L {
