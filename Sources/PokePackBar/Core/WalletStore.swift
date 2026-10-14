@@ -79,10 +79,7 @@ extension CardSale {
                       prices: CardPrices? = CardPrices.shared,
                       perks: DexPerks = .none) -> Int {
         let usd = MarketEconomy.usd(cardID: cardID, finish: finish, prices: prices)
-        let base = MarketEconomy.tokens(usd: usd, prices: prices)
-        guard perks.dustBonus > 0 else { return base }
-        return MarketEconomy.quantized(Int((Double(base) * (1 + perks.dustBonus)).rounded()),
-                                       prices: prices)
+        return sale(market: MarketEconomy.tokens(usd: usd, prices: prices), prices: prices, perks: perks)
     }
 }
 
@@ -490,7 +487,7 @@ final class WalletStore {
 
     /// 중복분을 판다. 받은 액수를 반환하고, 팔 것이 없으면 0.
     ///
-    /// 시세 그대로 값을 쳐 준다(도감 판매 추가금이 있으면 그만큼 더). 마지막 한 장은
+    /// 시세의 절반을 쳐 준다(`CardSale`, 도감 판매 추가금이 있으면 그만큼 더). 마지막 한 장은
     /// 남긴다 — 수집한 카드가 컬렉션에서 없어지는 것은 되돌릴 수 없고, 실수로 그렇게 되면
     /// 잃은 것이 크다.
     @discardableResult

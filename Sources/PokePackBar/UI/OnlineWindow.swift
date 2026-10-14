@@ -40,6 +40,12 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
         model?.follow(kind: kind, target: target, printing: printing)
     }
 
+    /// 카드 상세의 「마켓에 팔기」. 마켓의 「팔기」를 그 카드로 연다.
+    func showSelling(wallet: WalletStore, cardID: String) {
+        show(wallet: wallet, section: .market)
+        model?.opensMarketSell = cardID
+    }
+
     func windowWillClose(_ notification: Notification) { model?.visible = false }
     func windowDidMiniaturize(_ notification: Notification) { model?.visible = false }
     func windowDidDeminiaturize(_ notification: Notification) { model?.visible = true }
@@ -78,6 +84,8 @@ final class OnlineHubModel {
     var opensMyListings = false
     /// 마켓 탭을 「사기」 로 돌려놓을지. 위시리스트 알림을 누르면 켠다.
     var opensMarketBuy = false
+    /// 마켓 탭을 「팔기」 로 열고 찾아 둘 카드. 카드 상세의 「마켓에 팔기」가 넣는다.
+    var opensMarketSell: String?
     var tradeDraft: [String: Any]?
     /// 친구별 교환 바인더(그 친구가 내놓을 수 있는 카드). 교환 칸이 「나는 없고 친구는 남는 카드」를
     /// 바로 보여 주고, 카드를 고르는 창도 같은 것을 쓴다.

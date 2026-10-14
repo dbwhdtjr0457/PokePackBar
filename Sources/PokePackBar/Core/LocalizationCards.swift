@@ -483,6 +483,36 @@ extension L {
            "Vends \(count) pour \(money). Un exemplaire reste.",
            "Venda \(count) por \(money). Uma cópia fica.")
     }
+    /// 게임에 바로 팔면 절반이라는 것을 파는 자리에서 알린다.
+    var quickSaleNote: String {
+        t("게임에 바로 팔면 시세의 절반이에요.",
+          "Selling to the game pays half the market price.",
+          "ゲームにすぐ売ると相場の半額です。",
+          "Vender al juego paga la mitad del precio de mercado.",
+          "Vendre au jeu rapporte la moitié du prix du marché.",
+          "Vender ao jogo paga metade do preço de mercado.")
+    }
+    /// 온라인이면 제값을 받을 곳도 함께 적는다. 카드 상세는 옆에 「마켓에 팔기」 버튼이 있어 쓰지 않는다.
+    var marketPaysFullValue: String {
+        t("제값은 마켓에서 받을 수 있어요.",
+          "The market pays full value.",
+          "満額はマーケットで受け取れます。",
+          "El mercado paga el valor completo.",
+          "Le marché paie la pleine valeur.",
+          "O mercado paga o valor cheio.")
+    }
+    var sellOnMarket: String {
+        t("마켓에 팔기", "Sell on market", "マーケットで売る",
+          "Vender en el mercado", "Vendre au marché", "Vender no mercado")
+    }
+    var sellOnMarketHint: String {
+        t("온라인 마켓에 올려 다른 트레이너에게 제값에 팔아요",
+          "List it on the online market and sell to other trainers at full value",
+          "オンラインマーケットに出品して、ほかのトレーナーに満額で売ります",
+          "Ponla en el mercado en línea y véndela a otros entrenadores por su valor",
+          "Mettez-la sur le marché en ligne et vendez-la à d’autres dresseurs à sa valeur",
+          "Coloque no mercado online e venda a outros treinadores pelo valor cheio")
+    }
     /// 판매가에 도감 추가금이 얹혀 있을 때 그 사실을 적는다.
     func sellBonusIncluded(_ value: Double) -> String {
         let percent = Self.percent(value)
@@ -1011,12 +1041,12 @@ extension L {
                       "Tous les boosters coûtent moins cher.",
                       "Todos os pacotes ficam mais baratos.")
         case .dustBonus:
-            return t("중복 카드를 팔 때 시세보다 그만큼 더 받아요.",
-                      "Selling duplicates pays that much above market price.",
-                      "重複カードを売るとき相場よりその分多くもらえます。",
-                      "Vender duplicados paga ese porcentaje por encima del precio.",
-                      "Vendre les doublons rapporte ce pourcentage au-dessus du marché.",
-                      "Vender duplicatas paga essa porcentagem acima do mercado.")
+            return t("중복 카드를 게임에 팔 때 그만큼 더 받아요.",
+                      "Selling duplicates to the game pays that much more.",
+                      "重複カードをゲームに売るとき、その分多くもらえます。",
+                      "Vender duplicados al juego paga ese porcentaje más.",
+                      "Vendre des doublons au jeu rapporte ce pourcentage en plus.",
+                      "Vender duplicatas ao jogo paga essa porcentagem a mais.")
         case .hitOdds:
             return t("팩마다 하나씩 들어오는 레어 이상 자리에서 더 높은 등급이 나올 확률이 올라가요.",
                       "The guaranteed rare slot rolls higher rarities more often.",

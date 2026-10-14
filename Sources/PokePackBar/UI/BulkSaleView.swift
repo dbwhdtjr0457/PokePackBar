@@ -72,6 +72,10 @@ struct BulkSaleView: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(l.bulkSellPrompt)
                 .font(Typography.label).foregroundStyle(.secondary)
+            // 게임이 사 주는 값은 시세의 절반이다. 고르기 전에 알아야 한다.
+            Text(wallet.isOnline ? "\(l.quickSaleNote) \(l.marketPaysFullValue)" : l.quickSaleNote)
+                .font(Typography.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 3), spacing: 4) {
                 ForEach(Self.thresholds, id: \.self) { won in
                     priceOption(WonFormatter.money(won, language: wallet.language),

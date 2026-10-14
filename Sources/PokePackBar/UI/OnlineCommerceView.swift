@@ -53,6 +53,7 @@ struct OnlineMarketView: View {
         // 마켓 탭이 이미 열려 있을 때 알림을 누른 경우.
         .onChange(of: model.opensMyListings) { enter() }
         .onChange(of: model.opensMarketBuy) { enter() }
+        .onChange(of: model.opensMarketSell) { enter() }
         .sheet(item: Binding(get: { buying.map(ListingBox.init) }, set: { buying = $0?.item })) { box in
             BuySheet(model: model, item: box.item)
         }
@@ -68,6 +69,12 @@ struct OnlineMarketView: View {
         } else if model.opensMarketBuy {
             model.opensMarketBuy = false
             mode = .buy
+        } else if let cardID = model.opensMarketSell {
+            model.opensMarketSell = nil
+            mode = .sell
+            sellQuery = OnlineText.cardName(cardID)
+            let stock = OnlineStock.sellable(wallet: model.wallet).filter { $0.cardID == cardID }
+            if stock.count == 1 { selling = stock[0] }
         }
     }
 
