@@ -38,13 +38,35 @@ final class CardSpinTests: XCTestCase {
         XCTAssertEqual(image.size.width / image.size.height, 0.717, accuracy: 0.01)
     }
 
-    /// 도는 동안 넘기는 광택 기울기는 정면과 옆으로 선 순간에 0 이다. 그래야 정면에서는 지금과
-    /// 같은 모습이고, 옆으로 설 때 더 기운 앞면의 뒤쪽이 비치지 않는다.
-    func testSpinLightIsQuietFaceOnAndEdgeOn() {
+    /// 도는 동안의 광택은 마우스로 기울일 때와 같은 쪽으로 흐른다. 마우스를 오른쪽에 두면
+    /// 오른쪽이 멀어지며 nx 가 커지니, 오른쪽으로 끌어 오른쪽이 멀어질 때도 nx 가 커져야 한다.
+    /// 한 방향으로 돌리는 동안 되돌아오지 않고, 35도쯤에서 끝에 닿아 옆으로 설 때까지 머문다.
+    func testSpinLightFlowsLikeThePointerTiltAndNeverTurnsBack() {
         XCTAssertEqual(CardSpin.rest.lightTilt.nx, 0, accuracy: 0.001)
-        XCTAssertEqual(CardSpin(yaw: 90, pitch: 0).lightTilt.nx, 0, accuracy: 0.001)
-        XCTAssertEqual(CardSpin(yaw: 45, pitch: 0).lightTilt.nx, 0.9, accuracy: 0.001)
+        let rightAway = CardSpin.rest.turned(by: CGSize(width: 20, height: 0), width: 200)
+        XCTAssertGreaterThan(rightAway.lightTilt.nx, 0)
+        var last = -1.0
+        for yaw in stride(from: 0.0, through: -89, by: -1) {
+            let nx = CardSpin(yaw: yaw, pitch: 0).lightTilt.nx
+            XCTAssertGreaterThanOrEqual(nx, last - 0.0001, "\(yaw)")
+            last = nx
+        }
+        XCTAssertEqual(CardSpin(yaw: -35, pitch: 0).lightTilt.nx, 0.9, accuracy: 0.001)
+        XCTAssertEqual(CardSpin(yaw: -85, pitch: 0).lightTilt.nx, 0.9, accuracy: 0.001)
+        XCTAssertEqual(CardSpin(yaw: 380, pitch: 0).lightTilt.nx, CardSpin(yaw: 20, pitch: 0).lightTilt.nx, accuracy: 0.001)
+        // 아래로 끌면 아래쪽이 멀어지고, 마우스를 아래에 둘 때처럼 ny 가 커진다.
         XCTAssertEqual(CardSpin(yaw: 0, pitch: CardSpin.pitchLimit).lightTilt.ny, 0.9, accuracy: 0.001)
+    }
+
+    /// 마우스 기울기는 앞면을 거의 똑바로 볼 때만 섞는다. 도는 동안 앞면이 두께 상자 안에서
+    /// 따로 기울면 옆면과 어긋나 틈이 보였다.
+    func testPointerTiltOnlyBlendsInNearTheFront() {
+        XCTAssertEqual(CardSpin.rest.faceOn, 1, accuracy: 0.001)
+        XCTAssertEqual(CardSpin(yaw: 360, pitch: 0).faceOn, 1, accuracy: 0.001)
+        XCTAssertEqual(CardSpin(yaw: 5, pitch: 0).faceOn, 0.5, accuracy: 0.001)
+        XCTAssertEqual(CardSpin(yaw: 30, pitch: 0).faceOn, 0)
+        XCTAssertEqual(CardSpin(yaw: 0, pitch: 12).faceOn, 0)
+        XCTAssertEqual(CardSpin(yaw: 180, pitch: 0).faceOn, 0)
     }
 
     /// 두께 있는 카드: 멈춘 앞면은 보는 쪽, 뒷면은 반대쪽이고 옆면은 옆을 본다.
@@ -57,8 +79,8 @@ final class CardSpinTests: XCTestCase {
         }
         let back = CardSlab(spin: CardSpin(yaw: 180, pitch: 0), width: 200, height: 279)
         XCTAssertEqual(back.facing(.back), 1, accuracy: 0.001)
-        XCTAssertGreaterThan(rest.thickness, 1)
-        XCTAssertLessThan(rest.thickness, 2, "판지 한 장 두께로 얇게")
+        // 실물 비율: 63mm 폭에 0.3mm 남짓. 1.2% 도 0.7% 도 두꺼워 보였다.
+        XCTAssertEqual(rest.thickness / rest.width, 0.005, accuracy: 0.0005)
     }
 
     /// 잡은 자리가 손을 따라간다: 오른쪽으로 끌면 오른쪽 가장자리가 멀어지며 왼쪽 옆면이 보이고,

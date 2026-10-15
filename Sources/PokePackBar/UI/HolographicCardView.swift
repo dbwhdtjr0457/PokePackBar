@@ -209,6 +209,7 @@ struct HolographicCardView: View {
     var spinnable: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.valueAwareGlow) private var valueAwareGlow
     @State private var pointerTilt = TiltVector.zero
     @State private var pendingPointerTilt: TiltVector?
     @State private var hoverUpdateScheduled = false
@@ -258,12 +259,18 @@ struct HolographicCardView: View {
         let visualKind = CardIndex.shared?.card(cardID)?.visualKind
         Group {
             if spinnable {
-                CardSpinStage(spin: spin, pointerTilt: dragOrigin == nil ? tilt : nil,
-                              width: width, height: height) { faceTilt in
+                // 등급 빛과 그림자는 무대가 그린다. 앞면 안에 두면 카드와 함께 눌려 옆으로 설 때
+                // 두꺼운 띠처럼 보였다.
+                CardSpinStage(spin: spin, pointerTilt: dragOrigin == nil ? tilt : .zero,
+                              width: width, height: height,
+                              glow: dimmed ? nil : TierGlow(tier: tier, width: width,
+                                  valueCard: valueAwareGlow
+                                      ? PulledCard(id: cardID, tier: tier, isNew: false, finish: resolved.finish)
+                                      : nil)) { light, pose in
                     HoloCardBody(cardID: cardID, tier: tier, finish: resolved.finish,
                                  spec: resolved.spec, width: width, height: height,
                                  dimmed: dimmed, preloaded: preloaded,
-                                 visualKind: visualKind, tilt: faceTilt)
+                                 visualKind: visualKind, tilt: light, pose: pose, onSlab: true)
                 }
             } else {
                 HoloCardBody(cardID: cardID, tier: tier, finish: resolved.finish,
@@ -313,12 +320,15 @@ struct HolographicCardView: View {
     private var spinGesture: some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
-                if dragOrigin == nil {
+                let origin: CardSpin
+                if let dragOrigin {
+                    origin = dragOrigin
+                } else {
                     // 3pt 넘게 움직여야 끌기로 본다. 그 전에는 클릭일 수 있다.
                     guard hypot(value.translation.width, value.translation.height) >= 3 else { return }
-                    dragOrigin = spin
+                    origin = spin
                 }
-                follow((dragOrigin ?? spin).turned(by: value.translation, width: width))
+                follow(from: origin, to: origin.turned(by: value.translation, width: width))
             }
             .onEnded { value in
                 guard let origin = dragOrigin else {
@@ -331,29 +341,39 @@ struct HolographicCardView: View {
                     }
                     return
                 }
-                dragOrigin = nil
                 let thrown = reduceMotion ? value.translation : value.predictedEndTranslation
                 settle(at: origin.turned(by: thrown, width: width).settled)
             }
     }
 
+    /// 끌기를 끝내는 것(`dragOrigin`)도 같은 애니메이션 안에서 바꾼다. 그래야 마우스 기울기가
+    /// 카드가 정면으로 돌아오는 만큼 스며들고, 놓는 순간 튀지 않는다.
     private func settle(at target: CardSpin) {
         if reduceMotion {
+            dragOrigin = nil
             spin = target
         } else {
-            withAnimation(.spring(response: 0.6, dampingFraction: 0.82)) { spin = target }
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.82)) {
+                dragOrigin = nil
+                spin = target
+            }
         }
     }
 
     /// 끄는 동안은 짧은 스프링이 손을 따라간다. 마우스 이벤트는 화면 주사율과 어긋나게 들어와서,
     /// 받은 값을 그대로 넣거나 타이머로 모아 넣으면 어떤 프레임은 건너뛰고 어떤 프레임은 크게 뛴다.
     /// 스프링은 매 프레임 그 사이를 메우고, 새 값이 오면 속도를 이어 받아 목표만 바꾼다.
-    /// 이벤트가 한 프레임에 여럿 와도 그리는 것은 프레임마다 한 번이다.
-    private func follow(_ next: CardSpin) {
+    /// 이벤트가 한 프레임에 여럿 와도 그리는 것은 프레임마다 한 번이다. 끌기 시작(`dragOrigin`)도
+    /// 같은 스프링 안에서 바꿔, 마우스 기울기가 한 번에 빠지지 않고 스르르 풀린다.
+    private func follow(from origin: CardSpin, to next: CardSpin) {
         if reduceMotion {
+            dragOrigin = origin
             spin = next
         } else {
-            withAnimation(.interactiveSpring(response: 0.14, dampingFraction: 0.86)) { spin = next }
+            withAnimation(.interactiveSpring(response: 0.14, dampingFraction: 0.86)) {
+                dragOrigin = origin
+                spin = next
+            }
         }
     }
 
@@ -509,12 +529,13 @@ enum HoloVisualDiagnostics {
             for (name, spin) in spins {
                 let view = ZStack {
                     Color(red: 0.055, green: 0.06, blue: 0.075)
-                    CardSpinStage(spin: spin, pointerTilt: .zero, width: cardWidth, height: cardHeight) { tilt in
+                    CardSpinStage(spin: spin, pointerTilt: .zero, width: cardWidth, height: cardHeight,
+                                  glow: TierGlow(tier: card.tier, width: cardWidth, startBloomed: true)) { light, pose in
                         HoloCardBody(cardID: card.id, tier: card.tier,
                                      finish: resolved.finish, spec: resolved.spec,
                                      width: cardWidth, height: cardHeight,
                                      dimmed: false, preloaded: image,
-                                     visualKind: card.visualKind, tilt: tilt)
+                                     visualKind: card.visualKind, tilt: light, pose: pose, onSlab: true)
                     }
                     .frame(width: cardWidth, height: cardHeight)
                 }
@@ -610,6 +631,11 @@ struct HoloCardBody: View, @MainActor Animatable {
     let visualKind: CardVisualKind?
     var tilt: TiltVector
     var flatCard: Bool = false
+    /// 몸체를 기울일 기울기. 없으면 `tilt` 를 쓴다. 돌리는 카드는 빛만 크게 옮기고 몸체는
+    /// 두께 상자와 같은 판에 둬야 해서 따로 받는다.
+    var pose: TiltVector? = nil
+    /// 두께 있는 카드(`CardSpinStage`)의 앞면으로 그린다. 등급 빛과 그림자는 무대가 그린다.
+    var onSlab: Bool = false
 
     nonisolated var animatableData: AnimatablePair<Double, Double> {
         get { AnimatablePair(tilt.nx, tilt.ny) }
@@ -624,11 +650,12 @@ struct HoloCardBody: View, @MainActor Animatable {
             nx: tilt.nx, ny: tilt.ny, tilt: profile.tilt)
         let band = HoloOptics.bandPosition(
             nx: tilt.nx, ny: tilt.ny, tilt: profile.tilt)
+        let posed = pose ?? tilt
 
         ZStack {
             // 아직 없는 카드는 빛나지 않는다. 회색 카드 뒤에서 등급 빛만 켜져 있으면
             // 도감을 훑을 때 백라이트처럼 보이고, 빛이 「뽑았다」는 신호로 읽히지 않는다.
-            if !dimmed {
+            if !dimmed && !onSlab {
                 TierGlow(tier: tier, width: width,
                          valueCard: valueAwareGlow
                             ? PulledCard(id: cardID, tier: tier, isNew: false, finish: finish) : nil)
@@ -646,12 +673,12 @@ struct HoloCardBody: View, @MainActor Animatable {
                     })
                 })
                 .compositingGroup()
-                .shadow(color: .black.opacity(0.3), radius: width * 0.045,
-                        x: flatCard ? 0 : -tilt.nx * width * 0.018,
-                        y: width * 0.022 - (flatCard ? 0 : tilt.ny * width * 0.012))
+                .shadow(color: onSlab ? .clear : .black.opacity(0.3), radius: width * 0.045,
+                        x: flatCard ? 0 : -posed.nx * width * 0.018,
+                        y: width * 0.022 - (flatCard ? 0 : posed.ny * width * 0.012))
         }
-        .rotation3DEffect(.degrees(flatCard ? 0 : tilt.magnitude * profile.tilt),
-                          axis: tilt.axis, perspective: 0.55)
+        .rotation3DEffect(.degrees(flatCard ? 0 : posed.magnitude * profile.tilt),
+                          axis: posed.axis, perspective: 0.55)
     }
 
     @ViewBuilder

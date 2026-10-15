@@ -47,13 +47,24 @@ struct CardSpin: Equatable {
     /// 가장 가까운 앞면.
     var front: CardSpin { CardSpin(yaw: (yaw / 360).rounded() * 360, pitch: 0) }
 
-    /// 도는 동안 광택이 따라 흐르게 카드 본체에 넘길 기울기.
+    /// 도는 동안 광택이 따라 흐르게 카드 본체에 넘길 기울기. 마우스로 기울일 때와 같은 뜻이라,
+    /// 오른쪽 가장자리가 멀어지면 nx 가, 아래쪽이 멀어지면 ny 가 커진다.
     ///
-    /// 카드 본체는 이 값으로 빛을 옮기면서 몸체도 조금 더 기울인다. 좌우 값을 sin(2 * yaw) 로
-    /// 두면 앞면이 옆으로 설 때(±90도) 0 이 되어, 더 기운 앞면의 뒤쪽이 비치지 않는다.
+    /// 돌린 방향으로만 흐르다가 35도쯤에서 끝에 닿고, 옆으로 설 때까지 그대로 둔다. 처음에는
+    /// sin(2 * yaw) 여서 한 방향으로 돌리는데 빛이 갔다가 되돌아왔고, 좌우도 마우스와 반대였다.
     var lightTilt: TiltVector {
-        let pitchShare = sin(pitch * .pi / 180) / sin(Self.pitchLimit * .pi / 180)
-        return TiltVector(nx: sin(2 * yaw * .pi / 180) * 0.9, ny: pitchShare * 0.9)
+        func share(_ degrees: Double) -> Double {
+            min(1, max(-1, sin(degrees * .pi / 180) / sin(Self.pitchLimit * .pi / 180)))
+        }
+        return TiltVector(nx: -share(yaw) * 0.9, ny: share(pitch) * 0.9)
+    }
+
+    /// 앞면을 얼마나 똑바로 보는지. 정면에서 1, 정면에서 10도 벗어나면 0 이다. 마우스 기울이기는
+    /// 이만큼만 섞어, 도는 동안에는 앞면이 두께 상자 안에서 따로 기울지 않고, 정면으로 돌아오며
+    /// 마우스 기울기가 스며든다. 10도 안쪽에서는 옆면이 0.2pt 도 안 보여 어긋남이 드러나지 않는다.
+    var faceOn: Double {
+        let off = ((yaw - front.yaw) * (yaw - front.yaw) + pitch * pitch).squareRoot()
+        return max(0, 1 - off / 10)
     }
 }
 
@@ -69,9 +80,9 @@ struct CardSlab {
     let width: CGFloat
     let height: CGFloat
 
-    /// 두께. 실물은 폭의 0.5% 남짓이다. 그보다 조금만 키워 옆으로 섰을 때 얇은 띠로 보이게 한다.
-    /// 처음에 둔 1.2% 는 두꺼워 보였다. 반올림하지 않아야 작은 카드에서도 비율이 그대로다.
-    var thickness: CGFloat { max(1, width * 0.007) }
+    /// 두께. 실물 비율(63mm 폭에 0.3mm 남짓, 폭의 0.5%)을 그대로 쓴다. 1.2% 와 0.7% 는
+    /// 두꺼워 보였다. 반올림하지 않아야 작은 카드에서도 비율이 그대로다.
+    var thickness: CGFloat { width * 0.005 }
     /// 옆면이 둥근 모서리 밖으로 튀어나오지 않게 모서리만큼 짧게 둔다.
     private var corner: CGFloat { width * 0.05 }
     /// 원근을 주는 눈의 거리. 예전 `rotation3DEffect(perspective: 0.45)` 와 비슷한 깊이로 맞췄다.
@@ -152,18 +163,28 @@ struct CardSlab {
 
 /// 돌리는 카드의 무대. 애니메이션 중간 각도마다 다시 그려, 옆으로 서는 순간 앞면과 뒷면을
 /// 바꿔 끼고 옆면을 보이거나 감춘다. 상태 값만 보고 고르면 놓는 순간 끝 각도의 면이 먼저 보인다.
+///
+/// 그림자는 무대가 돌린 뒤의 모양에 한 번만 드리운다. 면마다 그림자를 붙이면 그림자도 카드와
+/// 함께 3D 로 돌아 옆으로 설 때 눌린 띠가 되고, 그 띠가 두께처럼 보였다. 등급 빛은 카드에
+/// 붙어 함께 돌되, 옆으로 설수록 흐려져 띠로 남지 않는다.
 @MainActor
-struct CardSpinStage<Front: View>: View, @MainActor Animatable {
+struct CardSpinStage<Glow: View, Front: View>: View, @MainActor Animatable {
     var spin: CardSpin
-    /// 앞면을 똑바로 보고 멈췄을 때 쓸 마우스 기울기. 끄는 동안에는 nil 이다.
-    let pointerTilt: TiltVector?
+    /// 마우스 기울기. 끄는 동안에는 0 이다. 앞면을 거의 똑바로 볼 때만 섞는다(`CardSpin.faceOn`).
+    var pointerTilt: TiltVector
     let width: CGFloat
     let height: CGFloat
-    @ViewBuilder let front: (TiltVector) -> Front
+    /// 카드 뒤의 등급 빛. 카드와 같은 크기로 그린다.
+    let glow: Glow
+    /// 앞면. 광택에 쓸 기울기와 몸체를 기울일 기울기를 따로 받고, 그림자와 등급 빛은 그리지 않는다.
+    @ViewBuilder let front: (_ light: TiltVector, _ pose: TiltVector) -> Front
 
-    nonisolated var animatableData: AnimatablePair<Double, Double> {
-        get { AnimatablePair(spin.yaw, spin.pitch) }
-        set { spin = CardSpin(yaw: newValue.first, pitch: newValue.second) }
+    nonisolated var animatableData: AnimatablePair<AnimatablePair<Double, Double>, AnimatablePair<Double, Double>> {
+        get { AnimatablePair(AnimatablePair(spin.yaw, spin.pitch), AnimatablePair(pointerTilt.nx, pointerTilt.ny)) }
+        set {
+            spin = CardSpin(yaw: newValue.first.first, pitch: newValue.first.second)
+            pointerTilt = TiltVector(nx: newValue.second.first, ny: newValue.second.second)
+        }
     }
 
     var body: some View {
@@ -172,21 +193,36 @@ struct CardSpinStage<Front: View>: View, @MainActor Animatable {
         // 멈춘 앞면과 도는 앞면을 같은 자리의 같은 뷰로 그린다. 따로 그리면 끌기 시작하고 멈출
         // 때마다 카드 그림을 다시 불러와 한 박자 비었다.
         let resting = spin.isSettled && spin.showsFront
+        let faceOn = spin.faceOn
+        let pose = TiltVector(nx: pointerTilt.nx * faceOn, ny: pointerTilt.ny * faceOn)
+        let turn = spin.lightTilt
+        let light = TiltVector(nx: min(1, max(-1, pose.nx + turn.nx)),
+                               ny: min(1, max(-1, pose.ny + turn.ny)))
+        let shown: CardSlab.Face = slab.facing(.front) > 0 ? .front : .back
+        let glowShare = slab.facing(shown)
         ZStack {
-                if slab.facing(.front) > 0 {
-                    front(resting ? pointerTilt ?? .zero : spin.lightTilt)
+            glow
+                .projectionEffect(resting ? ProjectionTransform() : slab.projection(shown))
+                .opacity(Double(glowShare * glowShare))
+            ZStack {
+                if shown == .front {
+                    front(light, pose)
                         .projectionEffect(resting ? ProjectionTransform() : slab.projection(.front))
                 } else {
                     CardBackFace(width: width, height: height).projectionEffect(slab.projection(.back))
                 }
-                // 옆면은 앞면, 뒷면 다음에 그린다. 앞면 뒤의 등급 빛이 옆면을 덮지 않게.
+                // 옆면은 앞면, 뒷면 다음에 그린다.
                 ForEach([CardSlab.Face.left, .right, .top, .bottom], id: \.self) { face in
-                    let light = slab.facing(face)
-                    if light > 0.001 {
-                        CardEdgeFace(size: slab.size(face), vertical: face == .left || face == .right, light: light)
+                    let facing = slab.facing(face)
+                    if facing > 0.001 {
+                        CardEdgeFace(size: slab.size(face), vertical: face == .left || face == .right, light: facing)
                             .projectionEffect(slab.projection(face))
                     }
                 }
+            }
+            .compositingGroup()
+            .shadow(color: .black.opacity(0.3), radius: width * 0.045,
+                    x: -pose.nx * width * 0.018, y: width * 0.022 - pose.ny * width * 0.012)
         }
     }
 }
@@ -239,7 +275,6 @@ struct CardBackFace: View {
         .frame(width: width, height: height)
         .clipShape(RoundedRectangle(cornerRadius: corner))
         .overlay(RoundedRectangle(cornerRadius: corner).strokeBorder(.black.opacity(0.15), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.3), radius: width * 0.045, y: width * 0.022)
         .accessibilityHidden(true)
     }
 }
