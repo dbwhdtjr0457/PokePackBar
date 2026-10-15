@@ -69,8 +69,9 @@ struct CardSlab {
     let width: CGFloat
     let height: CGFloat
 
-    /// 두께. 실물은 폭의 0.5% 남짓이라 화면에서는 1pt 안팎으로 보이지 않는다. 두 배 남짓 키운다.
-    var thickness: CGFloat { (width * 0.012).rounded(.toNearestOrAwayFromZero) }
+    /// 두께. 실물은 폭의 0.5% 남짓이다. 그보다 조금만 키워 옆으로 섰을 때 얇은 띠로 보이게 한다.
+    /// 처음에 둔 1.2% 는 두꺼워 보였다. 반올림하지 않아야 작은 카드에서도 비율이 그대로다.
+    var thickness: CGFloat { max(1, width * 0.007) }
     /// 옆면이 둥근 모서리 밖으로 튀어나오지 않게 모서리만큼 짧게 둔다.
     private var corner: CGFloat { width * 0.05 }
     /// 원근을 주는 눈의 거리. 예전 `rotation3DEffect(perspective: 0.45)` 와 비슷한 깊이로 맞췄다.

@@ -58,6 +58,7 @@ final class CardSpinTests: XCTestCase {
         let back = CardSlab(spin: CardSpin(yaw: 180, pitch: 0), width: 200, height: 279)
         XCTAssertEqual(back.facing(.back), 1, accuracy: 0.001)
         XCTAssertGreaterThan(rest.thickness, 1)
+        XCTAssertLessThan(rest.thickness, 2, "판지 한 장 두께로 얇게")
     }
 
     /// 잡은 자리가 손을 따라간다: 오른쪽으로 끌면 오른쪽 가장자리가 멀어지며 왼쪽 옆면이 보이고,
