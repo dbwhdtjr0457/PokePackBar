@@ -372,19 +372,29 @@ extension L {
 
 extension L {
     /// 로테이션 매물의 판매자 자리에 적는 이름. 파는 쪽이 사람이 아니라 게임이다.
-    var rotationSeller: String {
-        t("오늘의 로테이션", "Daily rotation", "本日のローテーション",
-          "Rotación del día", "Rotation du jour", "Rotação do dia")
+    /// 카드 칸 한 줄에 「이름, 수량」이 들어가야 해서 짧게 쓴다. 봇 매물이라는 것은 표시가 따로 말한다.
+    var rotationSeller: String { t("로테이션 봇", "Bot", "ボット", "Bot", "Bot", "Bot") }
+    /// 카드 아래 표시. 트레이너가 올린 것이 아니라는 것을 바로 알게 한다.
+    var rotationBadge: String { t("봇 매물", "Bot listing", "ボット出品", "Venta de bot", "Vente du bot", "Venda do bot") }
+    var sellerLabel: String { t("판매자", "Seller", "出品者", "Vendedor", "Vendeur", "Vendedor") }
+    var allSellers: String {
+        t("모든 판매자", "All sellers", "すべての出品者", "Todos los vendedores", "Tous les vendeurs", "Todos os vendedores")
     }
-    var rotationBadge: String { t("로테이션", "Rotation", "ローテーション", "Rotación", "Rotation", "Rotação") }
+    var trainerListings: String {
+        t("트레이너 매물", "Trainer listings", "トレーナーの出品",
+          "Ventas de entrenadores", "Ventes des dresseurs", "Vendas de treinadores")
+    }
+    var botListings: String {
+        t("봇 매물", "Bot listings", "ボット出品", "Ventas de bot", "Ventes du bot", "Vendas do bot")
+    }
     var rotationBought: String { t("샀어요", "Bought", "購入済み", "Comprada", "Achetée", "Comprada") }
     var rotationBuyNote: String {
-        t("로테이션 카드는 계정마다 한 장씩 살 수 있어요. 매일 새 카드로 바뀌어요.",
-          "Each account can buy one copy of a rotation card. New cards arrive every day.",
-          "ローテーションのカードは1アカウントにつき1枚まで買えます。毎日新しいカードに替わります。",
-          "Cada cuenta puede comprar una copia de cada carta de la rotación. Cambian cada día.",
-          "Chaque compte peut acheter un exemplaire de chaque carte de la rotation. Elles changent chaque jour.",
-          "Cada conta pode comprar uma cópia de cada carta da rotação. Elas mudam todo dia.")
+        t("봇 매물은 계정마다 한 장씩 살 수 있어요. 매일 새 카드로 바뀌어요.",
+          "Each account can buy one copy of a bot listing. New cards arrive every day.",
+          "ボット出品は1アカウントにつき1枚まで買えます。毎日新しいカードに替わります。",
+          "Cada cuenta puede comprar una copia de cada venta de bot. Cambian cada día.",
+          "Chaque compte peut acheter un exemplaire de chaque vente du bot. Elles changent chaque jour.",
+          "Cada conta pode comprar uma cópia de cada venda do bot. Elas mudam todo dia.")
     }
 }
 

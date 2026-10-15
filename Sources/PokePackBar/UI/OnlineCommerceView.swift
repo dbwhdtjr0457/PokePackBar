@@ -83,32 +83,16 @@ struct OnlineMarketView: View {
 
     private var buyView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 10) {
-                TextField(OnlineText.l.searchByCardName, text: $model.search)
-                    .textFieldStyle(.roundedBorder).frame(maxWidth: 260)
-                    .onSubmit { reload() }
-                Picker(OnlineText.l.setLabel, selection: $model.marketSet) {
-                    Text(OnlineText.l.allSetsOption).tag("")
-                    ForEach(CardIndex.shared?.sets ?? [], id: \.id) { Text($0.name).tag($0.id) }
-                }
-                .fixedSize()
-                Picker(OnlineText.l.tierLabel, selection: $model.marketTier) {
-                    Text(OnlineText.l.allTiers).tag("")
-                    ForEach(CardIndex.shared?.presentTiers ?? [], id: \.self) { tier in
-                        Text("\(tier.rawValue) \(OnlineText.l.tierName(tier))").tag(tier.rawValue)
-                    }
-                }
-                .fixedSize()
-                Picker(OnlineText.l.sortLabel, selection: $model.marketSort) {
-                    Text(OnlineText.l.sortNewest).tag("newest")
-                    Text(OnlineText.l.sortPrice).tag("price")
-                }
-                .fixedSize()
+            // 좁은 창이나 긴 언어에서는 검색창을 윗줄로 올린다. 한 줄에 다 넣으면 정렬 칸이 창 밖으로 밀린다.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) { searchField; filterPickers }
+                VStack(alignment: .leading, spacing: 8) { searchField; HStack(spacing: 10) { filterPickers } }
             }
             .labelsHidden()
             .onChange(of: model.marketSet) { reload() }
             .onChange(of: model.marketTier) { reload() }
             .onChange(of: model.marketSort) { reload() }
+            .onChange(of: model.marketSeller) { reload() }
             .task(id: model.search) {
                 // 치는 대로 찾는다. 글자마다 서버에 묻지 않도록 잠깐 멈춘 뒤에만.
                 try? await Task.sleep(for: .milliseconds(450))
@@ -174,6 +158,41 @@ struct OnlineMarketView: View {
 
     private var hasFilter: Bool {
         !model.search.isEmpty || !model.marketSet.isEmpty || !model.marketTier.isEmpty || !model.marketFinish.isEmpty
+            || !model.marketSeller.isEmpty
+    }
+
+    private var searchField: some View {
+        TextField(OnlineText.l.searchByCardName, text: $model.search)
+            .textFieldStyle(.roundedBorder).frame(maxWidth: 260)
+            .onSubmit { reload() }
+    }
+
+    /// 세트, 등급, 판매자, 정렬. 판매자는 트레이너가 올린 것과 봇 매물(서버가 매일 올리는 로테이션)을 가른다.
+    @ViewBuilder
+    private var filterPickers: some View {
+        Picker(OnlineText.l.setLabel, selection: $model.marketSet) {
+            Text(OnlineText.l.allSetsOption).tag("")
+            ForEach(CardIndex.shared?.sets ?? [], id: \.id) { Text($0.name).tag($0.id) }
+        }
+        .fixedSize()
+        Picker(OnlineText.l.tierLabel, selection: $model.marketTier) {
+            Text(OnlineText.l.allTiers).tag("")
+            ForEach(CardIndex.shared?.presentTiers ?? [], id: \.self) { tier in
+                Text("\(tier.rawValue) \(OnlineText.l.tierName(tier))").tag(tier.rawValue)
+            }
+        }
+        .fixedSize()
+        Picker(OnlineText.l.sellerLabel, selection: $model.marketSeller) {
+            Text(OnlineText.l.allSellers).tag("")
+            Text(OnlineText.l.trainerListings).tag("players")
+            Text(OnlineText.l.botListings).tag("bot")
+        }
+        .fixedSize()
+        Picker(OnlineText.l.sortLabel, selection: $model.marketSort) {
+            Text(OnlineText.l.sortNewest).tag("newest")
+            Text(OnlineText.l.sortPrice).tag("price")
+        }
+        .fixedSize()
     }
 
     // MARK: 팔기

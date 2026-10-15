@@ -79,6 +79,8 @@ final class OnlineHubModel {
     var marketTier = ""
     var marketFinish = ""
     var marketSort = "newest"
+    /// 판매자 거르기. 빈 값은 모두, "players" 는 트레이너가 올린 것, "bot" 은 봇 매물(로테이션)이다.
+    var marketSeller = ""
     var ownListings = false
     /// 마켓 탭이 열릴 때 「내 판매」 부터 보여 줄지. 판매 알림을 누르면 켠다.
     var opensMyListings = false
@@ -183,7 +185,7 @@ final class OnlineHubModel {
                     documents["friends"] = try await read("v1/friends?limit=100")
                     documents["matches"] = try await read("v1/matches?limit=100")
                 } else if currentSection == .market {
-                    documents["listings"] = try await read("v1/market/listings?q=\(escaped(search))&set_id=\(escaped(marketSet))&tier=\(escaped(marketTier))&finish=\(escaped(marketFinish))&sort=\(marketSort)&mine=\(ownListings)&offset=\(offset)")
+                    documents["listings"] = try await read("v1/market/listings?q=\(escaped(search))&set_id=\(escaped(marketSet))&tier=\(escaped(marketTier))&finish=\(escaped(marketFinish))&sort=\(marketSort)&seller=\(marketSeller)&mine=\(ownListings)&offset=\(offset)")
                 }
             }
             generation += 1
@@ -280,7 +282,7 @@ final class OnlineHubModel {
             opensMarketBuy = true
             if let name = printing.flatMap(OnlineText.searchName) {
                 search = name
-                marketSet = ""; marketTier = ""; marketFinish = ""
+                marketSet = ""; marketTier = ""; marketFinish = ""; marketSeller = ""
             }
         default:
             break

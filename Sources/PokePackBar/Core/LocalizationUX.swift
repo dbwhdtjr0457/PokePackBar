@@ -174,12 +174,12 @@ extension L {
                      "Quelque chose a changé entre-temps. Actualisez et réessayez.",
                      "Algo mudou nesse meio tempo. Atualize e tente de novo.")
         case "rotation_limit_reached":
-            return t("로테이션 카드는 계정마다 한 장씩만 살 수 있어요.",
-                     "Each account can buy one copy of a rotation card.",
-                     "ローテーションのカードは1アカウントにつき1枚までです。",
-                     "Cada cuenta puede comprar una sola copia de una carta de la rotación.",
-                     "Chaque compte ne peut acheter qu’un exemplaire d’une carte de la rotation.",
-                     "Cada conta pode comprar só uma cópia de uma carta da rotação.")
+            return t("봇 매물은 계정마다 한 장씩만 살 수 있어요.",
+                     "Each account can buy one copy of a bot listing.",
+                     "ボット出品は1アカウントにつき1枚までです。",
+                     "Cada cuenta puede comprar una sola copia de una venta de bot.",
+                     "Chaque compte ne peut acheter qu’un exemplaire d’une vente du bot.",
+                     "Cada conta pode comprar só uma cópia de uma venda do bot.")
         case "too_many_attempts":
             return t("너무 자주 시도했어요. 잠시 뒤 다시 해 주세요.", "Too many attempts. Wait a moment and try again.",
                      "試行回数が多すぎます。少し待ってからもう一度お試しください。",
