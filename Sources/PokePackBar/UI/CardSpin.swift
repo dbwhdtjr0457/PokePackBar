@@ -1,4 +1,5 @@
 import AppKit
+import QuartzCore
 import SwiftUI
 
 // MARK: - 드래그로 돌리기
@@ -53,8 +54,100 @@ struct CardSpin: Equatable {
     }
 }
 
+/// 두께 있는 카드. 앞면, 뒷면, 네 옆면을 각자 3D 자리에 놓고 같은 회전과 원근을 준다.
+///
+/// `rotation3DEffect` 는 한 번 돌릴 때마다 결과를 평면으로 눌러 버려서, 옆면을 직각으로 세워
+/// 붙여도 두께가 생기지 않는다. 면마다 변환 행렬을 직접 만들어 `projectionEffect` 로 준다.
+/// 볼록한 상자라 보는 쪽을 향한 면만 그리면 서로 겹치지 않는다.
+struct CardSlab {
+    enum Face: CaseIterable { case front, back, left, right, top, bottom }
+
+    let spin: CardSpin
+    let width: CGFloat
+    let height: CGFloat
+
+    /// 두께. 실물은 폭의 0.5% 남짓이라 화면에서는 1pt 안팎으로 보이지 않는다. 두 배 남짓 키운다.
+    var thickness: CGFloat { (width * 0.012).rounded(.toNearestOrAwayFromZero) }
+    /// 옆면이 둥근 모서리 밖으로 튀어나오지 않게 모서리만큼 짧게 둔다.
+    private var corner: CGFloat { width * 0.05 }
+    /// 원근을 주는 눈의 거리. 예전 `rotation3DEffect(perspective: 0.45)` 와 비슷한 깊이로 맞췄다.
+    private var eyeDistance: CGFloat { max(width, height) * 2.6 }
+
+    func size(_ face: Face) -> CGSize {
+        switch face {
+        case .front, .back: CGSize(width: width, height: height)
+        case .left, .right: CGSize(width: thickness, height: height - 2 * corner)
+        case .top, .bottom: CGSize(width: width - 2 * corner, height: thickness)
+        }
+    }
+
+    /// 면을 카드 중심 기준 자리에 놓는다. 화면 좌표라 y 는 아래, z 는 보는 사람 쪽이다.
+    private func placement(_ face: Face) -> CATransform3D {
+        let half = thickness / 2
+        switch face {
+        case .front:
+            return CATransform3DMakeTranslation(0, 0, half)
+        case .back:
+            // 뒷면은 앞면의 반대쪽에 붙어 있다. 반 바퀴 돌려 두어야 카드를 반 바퀴 돌렸을 때
+            // 글자가 바로 읽힌다.
+            return CATransform3DConcat(CATransform3DMakeRotation(.pi, 0, 1, 0),
+                                       CATransform3DMakeTranslation(0, 0, -half))
+        case .right:
+            return CATransform3DConcat(CATransform3DMakeRotation(.pi / 2, 0, 1, 0),
+                                       CATransform3DMakeTranslation(width / 2, 0, 0))
+        case .left:
+            return CATransform3DConcat(CATransform3DMakeRotation(-.pi / 2, 0, 1, 0),
+                                       CATransform3DMakeTranslation(-width / 2, 0, 0))
+        case .top:
+            return CATransform3DConcat(CATransform3DMakeRotation(.pi / 2, 1, 0, 0),
+                                       CATransform3DMakeTranslation(0, -height / 2, 0))
+        case .bottom:
+            return CATransform3DConcat(CATransform3DMakeRotation(-.pi / 2, 1, 0, 0),
+                                       CATransform3DMakeTranslation(0, height / 2, 0))
+        }
+    }
+
+    /// 끌어 돌린 자세: 세로축으로 `yaw`, 그다음 가로축으로 `pitch`.
+    var rotation: CATransform3D {
+        CATransform3DConcat(CATransform3DMakeRotation(CGFloat(-spin.yaw * .pi / 180), 0, 1, 0),
+                            CATransform3DMakeRotation(CGFloat(-spin.pitch * .pi / 180), 1, 0, 0))
+    }
+
+    /// 면이 보는 사람 쪽을 얼마나 향하는지(-1...1). 0 보다 크면 보인다.
+    func facing(_ face: Face) -> CGFloat {
+        Self.apply(CATransform3DConcat(placement(face), rotation), to: (0, 0, 1, 0)).z
+    }
+
+    /// 카드 중심 기준의 점이 돌린 뒤 어디에 오는지. 테스트가 방향을 고정하는 데 쓴다.
+    func rotated(_ point: (x: CGFloat, y: CGFloat, z: CGFloat)) -> (x: CGFloat, y: CGFloat, z: CGFloat) {
+        Self.apply(rotation, to: (point.x, point.y, point.z, 1))
+    }
+
+    /// 면 뷰에 줄 변환. 면 뷰는 카드 중심에 놓이므로, 면의 가운데를 원점으로 옮겨 자리에 놓고
+    /// 돌리고 원근을 준 뒤 다시 가운데로 되돌린다.
+    func projection(_ face: Face) -> ProjectionTransform {
+        let size = size(face)
+        var perspective = CATransform3DIdentity
+        perspective.m34 = -1 / eyeDistance
+        var m = CATransform3DMakeTranslation(-size.width / 2, -size.height / 2, 0)
+        m = CATransform3DConcat(m, placement(face))
+        m = CATransform3DConcat(m, rotation)
+        m = CATransform3DConcat(m, perspective)
+        m = CATransform3DConcat(m, CATransform3DMakeTranslation(size.width / 2, size.height / 2, 0))
+        return ProjectionTransform(m)
+    }
+
+    /// 행 벡터 × 행렬. Core Animation 은 점을 행 벡터로 곱한다.
+    private static func apply(_ m: CATransform3D,
+                              to v: (CGFloat, CGFloat, CGFloat, CGFloat)) -> (x: CGFloat, y: CGFloat, z: CGFloat) {
+        (x: v.0 * m.m11 + v.1 * m.m21 + v.2 * m.m31 + v.3 * m.m41,
+         y: v.0 * m.m12 + v.1 * m.m22 + v.2 * m.m32 + v.3 * m.m42,
+         z: v.0 * m.m13 + v.1 * m.m23 + v.2 * m.m33 + v.3 * m.m43)
+    }
+}
+
 /// 돌리는 카드의 무대. 애니메이션 중간 각도마다 다시 그려, 옆으로 서는 순간 앞면과 뒷면을
-/// 바꿔 낀다. 상태 값만 보고 고르면 놓는 순간 끝 각도의 면이 먼저 보인다.
+/// 바꿔 끼고 옆면을 보이거나 감춘다. 상태 값만 보고 고르면 놓는 순간 끝 각도의 면이 먼저 보인다.
 @MainActor
 struct CardSpinStage<Front: View>: View, @MainActor Animatable {
     var spin: CardSpin
@@ -70,19 +163,47 @@ struct CardSpinStage<Front: View>: View, @MainActor Animatable {
     }
 
     var body: some View {
-        let facingFront = spin.showsFront
-        ZStack {
-            if facingFront {
-                front(spin.isSettled ? pointerTilt ?? .zero : spin.lightTilt)
-            } else {
-                // 뒷면은 앞면의 반대쪽에 붙어 있다. 미리 반 바퀴 돌려 두어야 반 바퀴 돌았을 때
-                // 글자가 바로 읽힌다.
-                CardBackFace(width: width, height: height)
-                    .rotation3DEffect(.degrees(180), axis: (x: 0, y: 1, z: 0))
+        // 앞면을 똑바로 보고 멈춰 있으면 돌리기 전과 똑같이 그린다. 마우스로 기울이는 모습도 그대로다.
+        if spin.isSettled, spin.showsFront {
+            front(pointerTilt ?? .zero)
+        } else {
+            let slab = CardSlab(spin: spin, width: width, height: height)
+            ZStack {
+                if slab.facing(.front) > 0 {
+                    front(spin.lightTilt).projectionEffect(slab.projection(.front))
+                } else {
+                    CardBackFace(width: width, height: height).projectionEffect(slab.projection(.back))
+                }
+                // 옆면은 앞면, 뒷면 다음에 그린다. 앞면 뒤의 등급 빛이 옆면을 덮지 않게.
+                ForEach([CardSlab.Face.left, .right, .top, .bottom], id: \.self) { face in
+                    let light = slab.facing(face)
+                    if light > 0.001 {
+                        CardEdgeFace(size: slab.size(face), vertical: face == .left || face == .right, light: light)
+                            .projectionEffect(slab.projection(face))
+                    }
+                }
             }
         }
-        .rotation3DEffect(.degrees(spin.yaw), axis: (x: 0, y: 1, z: 0), perspective: 0.45)
-        .rotation3DEffect(.degrees(spin.pitch), axis: (x: -1, y: 0, z: 0), perspective: 0.45)
+    }
+}
+
+/// 카드 옆면. 실물처럼 겉은 흰 종이, 가운데는 어두운 심이 보인다. 보는 쪽으로 돌수록 밝다.
+@MainActor
+struct CardEdgeFace: View {
+    let size: CGSize
+    let vertical: Bool
+    let light: CGFloat
+
+    var body: some View {
+        let paper = Color(red: 0.93, green: 0.93, blue: 0.91)
+        let core = Color(red: 0.16, green: 0.16, blue: 0.18)
+        LinearGradient(stops: [.init(color: paper, location: 0), .init(color: paper, location: 0.32),
+                               .init(color: core, location: 0.42), .init(color: core, location: 0.58),
+                               .init(color: paper, location: 0.68), .init(color: paper, location: 1)],
+                       startPoint: vertical ? .leading : .top, endPoint: vertical ? .trailing : .bottom)
+            .brightness(-0.35 * (1 - Double(light)))
+            .frame(width: size.width, height: size.height)
+            .accessibilityHidden(true)
     }
 }
 

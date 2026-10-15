@@ -46,4 +46,30 @@ final class CardSpinTests: XCTestCase {
         XCTAssertEqual(CardSpin(yaw: 45, pitch: 0).lightTilt.nx, 0.9, accuracy: 0.001)
         XCTAssertEqual(CardSpin(yaw: 0, pitch: CardSpin.pitchLimit).lightTilt.ny, 0.9, accuracy: 0.001)
     }
+
+    /// 두께 있는 카드: 멈춘 앞면은 보는 쪽, 뒷면은 반대쪽이고 옆면은 옆을 본다.
+    func testSlabFacesPointOutward() {
+        let rest = CardSlab(spin: .rest, width: 200, height: 279)
+        XCTAssertEqual(rest.facing(.front), 1, accuracy: 0.001)
+        XCTAssertEqual(rest.facing(.back), -1, accuracy: 0.001)
+        for face in [CardSlab.Face.left, .right, .top, .bottom] {
+            XCTAssertEqual(rest.facing(face), 0, accuracy: 0.001, "\(face)")
+        }
+        let back = CardSlab(spin: CardSpin(yaw: 180, pitch: 0), width: 200, height: 279)
+        XCTAssertEqual(back.facing(.back), 1, accuracy: 0.001)
+        XCTAssertGreaterThan(rest.thickness, 1)
+    }
+
+    /// 방향은 예전과 같다: 오른쪽으로 끌면 오른쪽 가장자리가 다가오며 오른쪽 옆면이 보이고,
+    /// 아래로 끌면 아래쪽이 멀어지며 윗면이 보인다.
+    func testSlabTurnsTheWayTheDragGoes() {
+        let right = CardSlab(spin: CardSpin(yaw: 30, pitch: 0), width: 200, height: 279)
+        XCTAssertGreaterThan(right.rotated((x: 100, y: 0, z: 0)).z, 0)
+        XCTAssertGreaterThan(right.facing(.right), 0)
+        XCTAssertLessThan(right.facing(.left), 0)
+        let down = CardSlab(spin: CardSpin(yaw: 0, pitch: 30), width: 200, height: 279)
+        XCTAssertLessThan(down.rotated((x: 0, y: 140, z: 0)).z, 0)
+        XCTAssertGreaterThan(down.facing(.top), 0)
+        XCTAssertLessThan(down.facing(.bottom), 0)
+    }
 }
