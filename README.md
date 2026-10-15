@@ -73,6 +73,19 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.18.0
+
+로테이션은 온라인 마켓의 봇 매물로 통합했다. 매일 한국 시간 오전 9시에 20종을
+갱신하며 각 5장, 계정당 한 장씩 살 수 있다. 판매자와 미보유 카드로 거르고,
+카드 상세에서 마켓 판매로 바로 이동할 수 있다.
+
+게임에 바로 팔면 시세의 50%에 도감 판매 혜택을 곱해 지급한다. 장당 최소
+100원이며 팩 가격은 유지한다. 기존 계정·재화는 보존하고 DB를 0008로 갱신한다.
+온라인 판매 견적과 로테이션 변경을 사용하려면 앱을 0.18.0으로 업데이트한다.
+
+![봇 매물과 미보유 카드 필터](docs/reference/screenshots/market-bots-018-ko.png)
+![카드 상세 판매](docs/reference/screenshots/quick-sale-018-ko.png)
+
 ## 0.17.0
 
 친구에게 남는 카드 중 내가 없는 카드를 교환 칸에서 바로 고를 수 있다.

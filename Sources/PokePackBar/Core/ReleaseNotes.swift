@@ -56,6 +56,26 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.18.0", lines: [
+                t("로테이션을 온라인 마켓의 봇 매물로 통합했습니다. 매일 한국 시간 오전 9시에 20종을 갱신하고, 각 5장 중 계정당 한 장씩 살 수 있습니다.",
+                  "Daily rotation is now bot listings in the online market. Twenty cards refresh at 00:00 UTC, with five copies each and one per account.",
+                  "ローテーションをオンラインマーケットのBot出品に統合しました。毎日UTC 0時に20種を更新し、各5枚から1アカウント1枚購入できます。",
+                  "La rotación ahora aparece como ofertas del Bot: 20 cartas a las 00:00 UTC, cinco copias y una por cuenta.",
+                  "La rotation devient des annonces du Bot : 20 cartes à 00 h UTC, cinq exemplaires chacune et un par compte.",
+                  "A rotação agora aparece como ofertas do Bot: 20 cartas às 00:00 UTC, cinco cópias e uma por conta."),
+                t("게임에 바로 팔면 시세의 절반에 도감 판매 혜택을 더해 받습니다. 장당 최소 100원이며 팩 가격은 유지합니다. 다른 트레이너에게는 마켓으로 판매할 수 있습니다.",
+                  "Quick sales pay half the market value plus dex sale bonuses, with a 100-won minimum. Pack prices are unchanged. Sell to other trainers on the market.",
+                  "ゲームへの即売却は相場の半額に図鑑ボーナスを加算し、最低100ウォンです。パック価格は据え置きです。トレーナーへの販売はマーケットで行えます。",
+                  "La venta rápida paga la mitad del valor más bonos, con mínimo de 100 won. Los sobres mantienen su precio. Vende a otros entrenadores en el mercado.",
+                  "La vente rapide rapporte la moitié de la valeur plus les bonus, avec un minimum de 100 wons. Le prix des boosters reste identique. Vendez aux autres via le marché.",
+                  "A venda rápida paga metade do valor mais bônus, com mínimo de 100 won. Os pacotes mantêm o preço. Venda a outros treinadores no mercado."),
+                t("마켓에 판매자 필터와 ‘내게 없는 카드만’을 추가했습니다. 카드 상세에서 마켓 판매로 바로 이동하고 봇 매물의 구매 여부를 확인합니다.",
+                  "Filter market listings by seller and missing cards. Open market selling from card details and see which bot listings you have bought.",
+                  "販売者と未所持カードのフィルターを追加しました。カード詳細から出品へ移動でき、Bot出品の購入済み状態も確認できます。",
+                  "Filtra por vendedor y cartas que te faltan. Publica desde los detalles y consulta las compras al Bot.",
+                  "Filtrez par vendeur et cartes manquantes. Accédez à la vente depuis une carte et voyez vos achats au Bot.",
+                  "Filtre por vendedor e cartas que faltam. Abra a venda nos detalhes e veja as compras feitas no Bot.")
+            ]),
             ReleaseNote(version: "0.17.0", lines: [
                 t("친구에게 남는 카드 중 내게 없는 카드를 교환 칸에서 바로 고릅니다. 바인더에서 ‘내게 없는 카드만’으로 좁혀 볼 수 있습니다.",
                   "Pick cards missing from your collection directly from a friend’s spare cards. Filter the trade binder to missing cards only.",
