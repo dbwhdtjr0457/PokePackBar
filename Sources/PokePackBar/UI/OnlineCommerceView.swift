@@ -83,16 +83,20 @@ struct OnlineMarketView: View {
 
     private var buyView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            // 좁은 창이나 긴 언어에서는 검색창을 윗줄로 올린다. 한 줄에 다 넣으면 정렬 칸이 창 밖으로 밀린다.
+            // 좁은 창이나 긴 언어에서는 검색창과 「내게 없는 카드만」을 윗줄로 올린다.
+            // 한 줄에 다 넣으면 정렬 칸이 창 밖으로 밀리고 화면 전체가 옆으로 밀린다.
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: 10) { searchField; filterPickers }
-                VStack(alignment: .leading, spacing: 8) { searchField; HStack(spacing: 10) { filterPickers } }
+                HStack(spacing: 10) { searchField; filterPickers; missingToggle }
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 10) { searchField; missingToggle }
+                    HStack(spacing: 10) { filterPickers }
+                }
             }
-            .labelsHidden()
             .onChange(of: model.marketSet) { reload() }
             .onChange(of: model.marketTier) { reload() }
             .onChange(of: model.marketSort) { reload() }
             .onChange(of: model.marketSeller) { reload() }
+            .onChange(of: model.marketMissing) { reload() }
             .task(id: model.search) {
                 // 치는 대로 찾는다. 글자마다 서버에 묻지 않도록 잠깐 멈춘 뒤에만.
                 try? await Task.sleep(for: .milliseconds(450))
@@ -110,7 +114,8 @@ struct OnlineMarketView: View {
                                      title: hasFilter ? OnlineText.l.noListingsMatch : OnlineText.l.noListingsYet,
                                      message: hasFilter ? OnlineText.l.narrowFilters : OnlineText.l.listingsAppearHere)
                 } else {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: 16)], alignment: .leading, spacing: 18) {
+                    // 표시가 붙은 칸과 없는 칸의 높이가 달라도 카드 윗선은 맞춘다.
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: 16, alignment: .top)], alignment: .leading, spacing: 18) {
                         ForEach(listings, id: \.onlineID) { item in
                             let printing = CardPrintingKey(storageKey: item.string("printing"))
                             // 내 판매와 이미 한 장 산 로테이션 카드는 살 수 없으니 카드만 보여 준다.
@@ -126,6 +131,10 @@ struct OnlineMarketView: View {
                                         .font(Typography.caption).foregroundStyle(.secondary).monospacedDigit().lineLimit(1)
                                     Text("\(Self.seller(item)), \(OnlineText.l.cardsCount(item.int("quantity")))")
                                         .font(Typography.caption).foregroundStyle(.secondary).lineLimit(1)
+                                    // 컬렉션에 한 장도 없는 카드. 판매자 표시(봇 매물 등)와 따로 한 줄을 쓴다.
+                                    if !item.bool("mine"), model.wallet.cardCount(printing.cardID) == 0 {
+                                        OnlineBadge(text: OnlineText.l.missingBadge, color: .accentColor)
+                                    }
                                 }
                             }
                             .buttonStyle(.plain)
@@ -158,7 +167,7 @@ struct OnlineMarketView: View {
 
     private var hasFilter: Bool {
         !model.search.isEmpty || !model.marketSet.isEmpty || !model.marketTier.isEmpty || !model.marketFinish.isEmpty
-            || !model.marketSeller.isEmpty
+            || !model.marketSeller.isEmpty || model.marketMissing
     }
 
     private var searchField: some View {
@@ -174,25 +183,31 @@ struct OnlineMarketView: View {
             Text(OnlineText.l.allSetsOption).tag("")
             ForEach(CardIndex.shared?.sets ?? [], id: \.id) { Text($0.name).tag($0.id) }
         }
-        .fixedSize()
+        .labelsHidden().fixedSize()
         Picker(OnlineText.l.tierLabel, selection: $model.marketTier) {
             Text(OnlineText.l.allTiers).tag("")
             ForEach(CardIndex.shared?.presentTiers ?? [], id: \.self) { tier in
                 Text("\(tier.rawValue) \(OnlineText.l.tierName(tier))").tag(tier.rawValue)
             }
         }
-        .fixedSize()
+        .labelsHidden().fixedSize()
         Picker(OnlineText.l.sellerLabel, selection: $model.marketSeller) {
             Text(OnlineText.l.allSellers).tag("")
             Text(OnlineText.l.trainerListings).tag("players")
             Text(OnlineText.l.botListings).tag("bot")
         }
-        .fixedSize()
+        .labelsHidden().fixedSize()
         Picker(OnlineText.l.sortLabel, selection: $model.marketSort) {
             Text(OnlineText.l.sortNewest).tag("newest")
             Text(OnlineText.l.sortPrice).tag("price")
         }
-        .fixedSize()
+        .labelsHidden().fixedSize()
+    }
+
+    /// 서버가 거른다. 한 쪽씩 받아 앱에서 거르면 다음 쪽에 있는 카드가 빠진다.
+    private var missingToggle: some View {
+        Toggle(OnlineText.l.missingOnlyToggle, isOn: $model.marketMissing)
+            .toggleStyle(.checkbox).fixedSize()
     }
 
     // MARK: 팔기
@@ -338,6 +353,11 @@ private struct BuySheet: View {
                     Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish), seller: OnlineMarketView.seller(item)))
                         .font(Typography.label).foregroundStyle(.secondary)
                     Text(OnlineText.l.perCard(OnlineText.won(tokens: unit))).font(Typography.bodySemibold).monospacedDigit()
+                    // 이미 가진 카드인지 사기 전에 본다.
+                    let owned = model.wallet.cardCount(printing.cardID)
+                    Text(owned == 0 ? OnlineText.l.notOwnedYet : OnlineText.l.copiesOwned(owned))
+                        .font(Typography.label).monospacedDigit()
+                        .foregroundStyle(owned == 0 ? Color.accentColor : Color.secondary)
                     if let reference = OnlineText.referenceWon(item.string("printing")) {
                         Text(OnlineText.l.referencePrice(OnlineText.wonText(reference)))
                             .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
