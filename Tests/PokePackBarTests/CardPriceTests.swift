@@ -192,27 +192,28 @@ final class CardPriceTests: XCTestCase {
         XCTAssertGreaterThan(median(.artRare), median(.superRare))
     }
 
-    /// 판매가는 화면에 적힌 카드값과 **같아야** 한다.
+    /// 게임에 파는 값은 화면에 적힌 카드값의 **정확히 절반**이다(100원 칸으로 올림, 최소 100원).
     ///
-    /// 카드 상세는 "이 카드 12,000원" 이라고 적어 둔다. 팔 때 그보다 적게 주면 적어 둔 값이
-    /// 무엇을 뜻하는지 알 수 없게 된다. 토큰을 거쳐 돌아오는 길에 배율이 끼어들지 않았는지
-    /// 여기서 잡는다.
-    func testSalePriceEqualsTheCardValueOnScreen() throws {
+    /// 카드 상세는 "이 카드 12,000원" 이라고 적고, 바로 팔면 6,000원이라고 알린다. 토큰을 거쳐
+    /// 돌아오는 길에 다른 배율이 끼어들면 적어 둔 값과 받는 값의 관계가 무너진다. 여기서 잡는다.
+    func testSalePriceIsHalfTheCardValueOnScreen() throws {
         let prices = try XCTUnwrap(Self.prices)
         let index = try XCTUnwrap(CardIndex.loadBundled())
+        let step = MarketEconomy.wonStep
         for entry in index.cards.prefix(200) {
             guard let usd = prices.price(entry.id) else { continue }
             let shown = prices.krw(usd)
             let paid = MarketEconomy.won(tokens: CardSale.price(cardID: entry.id, prices: prices),
                                          prices: prices)
-            // 값은 100원 칸에만 있으므로 **정확히** 같아야 한다.
-            XCTAssertEqual(paid, shown, "\(entry.id): 적힌 값 \(shown)원, 판매가 \(paid)원")
+            // 값은 100원 칸에만 있다. 홀수 칸의 절반(예: 1,500원의 750원)은 위 칸으로 올린다.
+            let half = max(step, (shown / step + 1) / 2 * step)
+            XCTAssertEqual(paid, half, "\(entry.id): 적힌 값 \(shown)원, 판매가 \(paid)원")
             XCTAssertEqual(shown % MarketEconomy.wonStep, 0,
                            "\(entry.id): 카드값이 100원 칸에 없다")
         }
     }
 
-    /// 도감 추가금은 그 위에 얹힌다 — 시세보다 적게 주는 일은 없다.
+    /// 도감 추가금은 반값 위에 얹힌다 — 추가금이 있으면 늘 더 받는다.
     func testSaleBonusOnlyAddsOnTop() throws {
         let prices = try XCTUnwrap(Self.prices)
         let index = try XCTUnwrap(CardIndex.loadBundled())

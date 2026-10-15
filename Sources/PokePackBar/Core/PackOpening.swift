@@ -565,27 +565,38 @@ enum PackPricing {
     }
 }
 
-/// 중복 카드를 팔았을 때 받는 돈. **그 카드의 시세를 그대로 준다.**
+/// 중복 카드를 게임에 바로 팔았을 때 받는 돈. **시세의 절반이다(급처).**
 ///
-/// 화면에 "이 카드 12,000원" 이라 적어 두고 팔 때 그보다 적게 주면 적어 둔 값이 무엇을
-/// 뜻하는지 알 수 없게 된다. 판매가는 시세와 같고, 도감 혜택이 있으면 그 위에 추가금이 붙는다.
+/// 예전에는 시세를 그대로 줬다. 그러면 온라인 마켓에 올릴 이유가 없다 — 게임이 기다림 없이
+/// 같은 값을 준다. 이제 제값은 마켓에서 다른 사람에게 받고, 게임은 급할 때 절반에 사 준다.
+/// 도감 혜택이 있으면 그 위에 추가금이 붙는다.
+///
+/// 가장 싼 카드는 100원 한 칸 밑으로 내려가지 않는다. 그 한 칸이 잡카드의 대량 매입가다.
+/// 따로 고정가 구간을 두면 그 경계에서 값이 몇 배로 뛴다(1,000원 카드는 100원, 1,100원 카드는 600원).
 ///
 /// 등급표를 쓰지 않는다. 같은 SAR 이라도 리자몽과 나머지가 시장에서 25배 차이 나고,
 /// 등급 사다리 자체가 시장과 네 군데에서 순서가 뒤집혀 있다.
 ///
 /// 팩 하나를 통째로 팔아 나오는 총액이 팩 값을 넘으면 안 된다 — 사서 팔기만 반복하는 것이
 /// 이득이면 게임이 성립하지 않는다. 팩값이 같은 시세에 `MarketEconomy.packMargin` 을 곱한
-/// 값이므로 이 비율은 자동으로 `1/packMargin` 에서 시작한다.
+/// 값이므로 이 비율은 자동으로 `quickSaleRate/packMargin` 에서 시작한다.
 enum CardSale {
+    /// 게임이 사 주는 비율. 서버(`ppb-server/app/native_economy.py` 의 `QUICK_SALE_RATE`)와 같아야 한다.
+    static let quickSaleRate = 0.5
+
     /// 한 장 값. `perks.dustBonus` 가 도감이 주는 판매 추가금이다.
     static func price(cardID: String, prices: CardPrices? = CardPrices.shared,
                       perks: DexPerks = .none) -> Int {
-        let base = MarketEconomy.tokens(usd: MarketEconomy.usd(cardID: cardID, prices: prices),
-                                        prices: prices)
-        guard perks.dustBonus > 0 else { return base }
-        // 추가금을 곱하면 100원 칸에서 벗어난다. 곱한 뒤에 다시 끊는다.
-        return MarketEconomy.quantized(Int((Double(base) * (1 + perks.dustBonus)).rounded()),
-                                       prices: prices)
+        sale(market: MarketEconomy.tokens(usd: MarketEconomy.usd(cardID: cardID, prices: prices),
+                                          prices: prices),
+             prices: prices, perks: perks)
+    }
+
+    /// 시세(토큰)를 판매가로. 비율과 추가금을 다 곱한 **뒤에** 한 번만 100원 칸에 맞춘다 —
+    /// 곱할 때마다 끊으면 서버와 반올림이 어긋난다.
+    static func sale(market: Int, prices: CardPrices?, perks: DexPerks) -> Int {
+        MarketEconomy.quantized(Int((Double(market) * quickSaleRate * (1 + perks.dustBonus)).rounded()),
+                                prices: prices)
     }
 }
 

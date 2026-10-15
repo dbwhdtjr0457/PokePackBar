@@ -41,6 +41,9 @@ struct CardSpotlightView: View {
     @State private var selectedFinish: CardFinish? = nil
     /// 방금 받은 액수. 잠깐 보여주고 지운다.
     @State private var lastRefund: Int?
+    /// 판매 줄의 실제 높이. 언어에 따라 두 버튼(바로 팔기, 마켓에 팔기)이 한 줄이나 두 줄이 되고,
+    /// 확인 단계에는 안내 줄이 붙는다. 어림값으로 두면 카드가 덜 줄어 마지막 버튼이 화면 밖으로 밀린다.
+    @State private var saleControlsHeight: CGFloat = 27
 
     var body: some View {
         GeometryReader { geometry in
@@ -48,7 +51,7 @@ struct CardSpotlightView: View {
             // height instead of assuming that every caller gets the whole tab.
             let informationHeight: CGFloat = ownedCount > 1 ? 182 : 160
             let dexHeight: CGFloat = relatedDexes.shown.isEmpty ? 0 : 42
-            let saleHeight: CGFloat = wallet.spareCount(cardID) == 0 ? 0 : (confirmingSale ? 110 : 36)
+            let saleHeight: CGFloat = wallet.spareCount(cardID) == 0 ? 0 : saleControlsHeight + 9
             let cardWidth = min(230, max(150,
                 ((geometry.size.height - informationHeight - dexHeight - saleHeight) * 0.717).rounded(.down)))
             ScrollView {
@@ -150,6 +153,7 @@ struct CardSpotlightView: View {
                 .padding(.top, 6)
 
             saleControls(l)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { saleControlsHeight = $0 }
                 .padding(.top, 5)
                 .padding(.bottom, 4)
         }
@@ -411,7 +415,8 @@ struct CardSpotlightView: View {
         }
     }
 
-    /// 중복분을 판다. 값은 시세 그대로다.
+    /// 중복분을 게임에 바로 판다. 값은 시세의 절반이다(`CardSale`). 온라인이면 제값을 받을 수
+    /// 있는 마켓 판매를 옆에 둔다.
     ///
     /// 금액을 원으로 적는다. 카드값을 원으로 보여 주면서 파는 자리에서만 토큰 자릿수를
     /// 내놓으면 같은 것을 두 가지 자로 재는 셈이 된다.
@@ -443,6 +448,10 @@ struct CardSpotlightView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 // 추가금이 붙어 있으면 그 사실을 여기서 알린다 — 도감 탭까지 가야
                 // 알 수 있으면 혜택을 받고 있다는 것을 모른 채 판다.
+                Text(l.quickSaleNote)
+                    .font(Typography.caption).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                 if bonus > 0 {
                     Text(l.sellBonusIncluded(bonus))
                         .font(Typography.caption).foregroundStyle(Color.accentColor)
@@ -467,18 +476,41 @@ struct CardSpotlightView: View {
                 .font(Typography.button)
             }
         } else {
+            // 두 버튼이 한 줄에 들어가지 않는 언어에서는 위아래로 놓는다.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 6) { quickSaleButton(l, spare: spare, refund: refund); marketSaleButton(l) }
+                VStack(spacing: 6) { quickSaleButton(l, spare: spare, refund: refund); marketSaleButton(l) }
+            }
+        }
+    }
+
+    private func quickSaleButton(_ l: L, spare: Int, refund: Int) -> some View {
+        Button {
+            confirmingSale = true
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "wonsign.circle")
+                Text("\(l.sellSpares) ×\(spare)")
+                Text("+\(MarketEconomy.money(tokens: refund, language: wallet.language))")
+                    .monospacedDigit().foregroundStyle(.secondary)
+            }
+            .font(Typography.button)
+        }
+        .buttonStyle(.bordered)
+    }
+
+    /// 제값을 받는 길. 온라인 마켓의 「팔기」를 이 카드로 연다. 로그인하지 않았으면 마켓이 없다.
+    @ViewBuilder
+    private func marketSaleButton(_ l: L) -> some View {
+        if wallet.isOnline {
             Button {
-                confirmingSale = true
+                OnlineWindow.shared.showSelling(wallet: wallet, cardID: cardID)
             } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "wonsign.circle")
-                    Text("\(l.sellSpares) ×\(spare)")
-                    Text("+\(MarketEconomy.money(tokens: refund, language: wallet.language))")
-                        .monospacedDigit().foregroundStyle(.secondary)
-                }
-                .font(Typography.button)
+                Label(l.sellOnMarket, systemImage: "storefront")
+                    .font(Typography.button)
             }
             .buttonStyle(.bordered)
+            .help(l.sellOnMarketHint)
         }
     }
 }

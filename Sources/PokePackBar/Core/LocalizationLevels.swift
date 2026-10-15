@@ -99,39 +99,3 @@ extension L {
           "\(levelTitle(level)) (Nv \(level))", "\(levelTitle(level)) (Niv \(level))", "\(levelTitle(level)) (Nv \(level))")
     }
 }
-
-// MARK: 로테이션 마켓
-
-extension L {
-    var rotationSection: String { t("로테이션", "Rotation", "ローテーション", "Rotación", "Rotation", "Rotação") }
-    var rotationTitle: String { t("오늘의 진열", "Today’s lineup", "今日のラインナップ", "Selección de hoy", "Sélection du jour", "Seleção de hoje") }
-    func rotationNext(_ seconds: TimeInterval) -> String {
-        let hours = Int(seconds) / 3600, minutes = (Int(seconds) % 3600) / 60
-        return t("다음 진열까지 \(hours)시간 \(minutes)분", "Next lineup in \(hours)h \(minutes)m",
-                 "次のラインナップまで\(hours)時間\(minutes)分", "Próxima selección en \(hours) h \(minutes) min",
-                 "Prochaine sélection dans \(hours) h \(minutes) min", "Próxima seleção em \(hours) h \(minutes) min")
-    }
-    var rotationHint: String {
-        t("하루 8장을 시세 기준가에 팔아요. 카드마다 한 장씩만 살 수 있어요.",
-          "Eight cards a day at market-based prices. One copy of each.",
-          "1日8枚を相場基準の価格で販売します。各カード1枚まで。",
-          "Ocho cartas al día a precio de mercado. Una copia de cada una.",
-          "Huit cartes par jour au prix du marché. Un exemplaire de chacune.",
-          "Oito cartas por dia a preço de mercado. Uma cópia de cada.")
-    }
-    var rotationBuy: String { t("사기", "Buy", "購入", "Comprar", "Acheter", "Comprar") }
-    var rotationBought: String { t("샀어요", "Bought", "購入済み", "Comprada", "Achetée", "Comprada") }
-    func rotationBoughtNotice(_ name: String) -> String {
-        t("\(name)을(를) 샀어요. 컬렉션에 들어갔어요.", "Bought \(name). It’s in your collection.",
-          "\(name)を購入しました。コレクションに入りました。", "Compraste \(name). Ya está en tu colección.",
-          "\(name) achetée. Elle est dans votre collection.", "Você comprou \(name). Já está na sua coleção.")
-    }
-    var rotationNotEnough: String { t("잔액 부족", "Not enough", "残高不足", "Sin saldo", "Solde insuffisant", "Saldo insuficiente") }
-    var rotationFailed: String {
-        t("사지 못했어요. 진열이 바뀌었거나 잔액이 모자라요.", "Couldn’t buy it. The lineup changed or your balance is short.",
-          "購入できませんでした。ラインナップが変わったか残高が足りません。",
-          "No se pudo comprar. Cambió la selección o falta saldo.",
-          "Achat impossible : la sélection a changé ou le solde est insuffisant.",
-          "Não foi possível comprar. A seleção mudou ou falta saldo.")
-    }
-}

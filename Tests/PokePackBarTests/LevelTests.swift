@@ -44,47 +44,6 @@ final class LevelRulesTests: XCTestCase {
     }
 }
 
-/// 로테이션 마켓. 진열은 날짜만으로 정해지고, 서버가 같은 8장을 고른다.
-final class RotationMarketTests: XCTestCase {
-
-    func testLineupIsStablePerDayAndFollowsThePlan() throws {
-        let index = try XCTUnwrap(CardIndex.loadBundled())
-        let today = RotationMarket.lineup(date: "2026-10-08", index: index)
-        XCTAssertEqual(today, RotationMarket.lineup(date: "2026-10-08", index: index))
-        XCTAssertEqual(today.count, RotationMarket.slots)
-        XCTAssertEqual(Set(today).count, today.count, "같은 카드가 두 번 올라왔다")
-        XCTAssertNotEqual(today, RotationMarket.lineup(date: "2026-10-09", index: index))
-        let tiers = try today.map { try XCTUnwrap(index.card($0)).tier }
-        XCTAssertTrue(RotationMarket.top.contains(tiers[0]))
-        XCTAssertTrue(tiers[1...3].allSatisfy(RotationMarket.middle.contains))
-        XCTAssertTrue(tiers[4...].allSatisfy(RotationMarket.low.contains))
-    }
-
-    func testSeedMatchesTheServer() {
-        // FNV-1a 64("rotation:2026-10-08"). 서버 테스트가 같은 값을 확인한다.
-        XCTAssertEqual(RotationMarket.seed("2026-10-08"), RotationMarket.seed("2026-10-08"))
-        XCTAssertNotEqual(RotationMarket.seed("2026-10-08"), RotationMarket.seed("2026-10-09"))
-    }
-
-    func testDateKeyIsUTC() {
-        // 2026-10-08 23:30 UTC 는 한국 시간으로 10월 9일 아침이지만 진열은 아직 10월 8일 것이다.
-        let date = Date(timeIntervalSince1970: 1_791_502_200)
-        XCTAssertEqual(RotationMarket.dateKey(date), "2026-10-08")
-        XCTAssertEqual(RotationMarket.untilNextLineup(date), 1_800, accuracy: 1)
-    }
-
-    /// 사서 바로 갈아도 남지 않는다. 판매에는 도감 혜택으로 최대 15%가 더 붙는다.
-    func testBuyingAndGrindingNeverPays() throws {
-        let index = try XCTUnwrap(CardIndex.loadBundled())
-        let prices = try XCTUnwrap(CardPrices.loadBundled())
-        for card in RotationMarket.lineup(date: "2026-10-08", index: index) {
-            let price = RotationMarket.price(cardID: card, finish: .normal, prices: prices)
-            let sale = CardSale.price(cardID: card, prices: prices, perks: DexPerks.caps)
-            XCTAssertGreaterThan(price, sale, "\(card): \(price) 에 사서 \(sale) 에 판다")
-        }
-    }
-}
-
 @MainActor
 final class LevelWalletTests: XCTestCase {
     private var dir: URL!
@@ -118,21 +77,5 @@ final class LevelWalletTests: XCTestCase {
         XCTAssertEqual(wallet.activeCoupons.reduce(0) { $0 + $1.left }, 2, "5레벨 쿠폰")
         XCTAssertTrue(wallet.claimableLevels.isEmpty)
         XCTAssertTrue(wallet.claimLevels().isEmpty, "같은 보상을 두 번 받았다")
-    }
-
-    func testRotationCardSellsOncePerDay() throws {
-        let index = try XCTUnwrap(CardIndex.shared)
-        let wallet = wallet()
-        let card = try XCTUnwrap(wallet.rotationLineup(index: index).last)
-        let price = wallet.rotationPrice(card, index: index)
-        wallet.creditReportedTokens(price * 3)
-        let before = wallet.availableTokens
-        XCTAssertNotNil(wallet.buyRotation(cardID: card, index: index))
-        XCTAssertEqual(wallet.availableTokens, before - price)
-        XCTAssertEqual(wallet.cardCount(card), 1)
-        XCTAssertTrue(wallet.rotationBought(card))
-        XCTAssertNil(wallet.buyRotation(cardID: card, index: index), "한 장을 두 번 샀다")
-        XCTAssertNil(wallet.buyRotation(cardID: card, index: index, date: "2000-01-01"),
-                     "지난 진열로 샀다")
     }
 }

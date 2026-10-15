@@ -33,7 +33,15 @@ import SwiftUI
         }
         let friends = [friend("새 친구", "pending", incoming: true), friend("교환 친구", "accepted", incoming: false),
                        friend("기다리는 친구", "pending", incoming: false)]
-        model.documents = ["profile": ["profile": profile], "trades": ["items": [row]], "listings": ["items": [row.merging(["status": "active"]) { _, new in new }]],
+        // 마켓: 사람이 올린 글 하나와 서버가 올린 로테이션 카드 둘(아직 안 산 것, 이미 한 장 산 것).
+        func rotation(_ printing: String, bought: Bool) -> [String: Any] {
+            ["id": UUID().uuidString, "printing": printing, "nickname": "", "public_id": "", "status": "active",
+             "quantity": bought ? 3 : 5, "unit_tokens": 2_400_000, "version": 0, "expires_at": now + 5 * 3600,
+             "rotation": true, "bought": bought]
+        }
+        let listings = [row.merging(["status": "active"]) { _, new in new },
+                        rotation("sv8pt5-1#normal", bought: false), rotation("me2pt5-295#gold", bought: true)]
+        model.documents = ["profile": ["profile": profile], "trades": ["items": [row]], "listings": ["items": listings],
                            "notifications": ["items": notes, "order": "desc"], "friends": ["items": friends]]
         model.data = ["totals": ["opened": 1200, "purchased": 1200, "new": 180, "duplicates": 11820], "collection_usd": 3141.59,
                       "variants": ["standard": 1199, "god": 1], "variant_rates": ["god": 1.0 / 1200]]

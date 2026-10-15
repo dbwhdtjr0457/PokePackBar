@@ -1596,17 +1596,21 @@ final class PackOddsTests: XCTestCase {
 
 final class CardSaleTests: XCTestCase {
 
-    /// 환급은 그 카드의 실제 시세다.
+    /// 환급은 그 카드 실제 시세의 절반이다. 100원 한 칸 밑으로는 내려가지 않는다.
     ///
     /// 예전에는 "희귀할수록 환급이 크다" 를 검사했다. 시장은 그렇지 않다 — 등급 중앙값이
     /// 네 군데에서 뒤집히므로 그 검사는 이제 거짓을 지키는 셈이 된다.
     func testDustFollowsTheCardsPrice() throws {
         let prices = try XCTUnwrap(CardPrices.loadBundled())
         let index = try XCTUnwrap(CardIndex.loadBundled())
+        let step = MarketEconomy.stepTokens(prices)
         for entry in index.cards.prefix(50) {
             let usd = try XCTUnwrap(prices.price(entry.id))
-            XCTAssertEqual(CardSale.price(cardID: entry.id, prices: prices),
-                           MarketEconomy.tokens(usd: usd))
+            let market = MarketEconomy.tokens(usd: usd, prices: prices)
+            let sale = CardSale.price(cardID: entry.id, prices: prices)
+            XCTAssertGreaterThanOrEqual(sale, step, "\(entry.id): 100원 아래로 샀다")
+            XCTAssertLessThanOrEqual(abs(sale - max(step, market / 2)), step / 2 + 1,
+                                     "\(entry.id): 시세 \(market) 의 절반이 아니라 \(sale)")
         }
     }
 
@@ -1641,7 +1645,8 @@ final class CardSaleTests: XCTestCase {
         }
     }
 
-    /// 밀봉 시세가 없는 폴백 경로의 회수율은 `1/packMargin` 이어야 한다.
+    /// 밀봉 시세가 없는 폴백 경로의 회수율은 `quickSaleRate/packMargin`(약 15%)이어야 한다.
+    /// 시세가 100원인 잡카드는 반값이 아니라 100원에 팔리므로, 잡카드가 많은 세트는 조금 높다(swsh1 17%).
     ///
     /// 실제 뽑기로 연 팩을 **판형 시세로** 판 평균으로 잰다. 등급 평균(`sellBackRatio`)은
     /// 리버스 홀로처럼 판형마다 값이 다른 카드를 대표 시세로 세는데, 팩값은 판형까지 보정해
@@ -1658,7 +1663,7 @@ final class CardSaleTests: XCTestCase {
     func testGrindRatioMatchesTheMargin() throws {
         let index = try XCTUnwrap(CardIndex.loadBundled())
         let prices = try XCTUnwrap(CardPrices.loadBundled())
-        let want = 1 / MarketEconomy.packMargin
+        let want = CardSale.quickSaleRate / MarketEconomy.packMargin
         for setID in ["base1", "ecard1", "ex1", "xy1", "swsh1", "sv8pt5", "sv10", "cel30"] {
             XCTAssertNotNil(index.set(setID), "\(setID) 가 카탈로그에서 빠졌다")
             let sample = Self.simulatedSellBack(setID, index: index, prices: prices, packs: 5_000)

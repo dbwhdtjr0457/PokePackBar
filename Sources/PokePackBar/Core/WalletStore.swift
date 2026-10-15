@@ -79,10 +79,7 @@ extension CardSale {
                       prices: CardPrices? = CardPrices.shared,
                       perks: DexPerks = .none) -> Int {
         let usd = MarketEconomy.usd(cardID: cardID, finish: finish, prices: prices)
-        let base = MarketEconomy.tokens(usd: usd, prices: prices)
-        guard perks.dustBonus > 0 else { return base }
-        return MarketEconomy.quantized(Int((Double(base) * (1 + perks.dustBonus)).rounded()),
-                                       prices: prices)
+        return sale(market: MarketEconomy.tokens(usd: usd, prices: prices), prices: prices, perks: perks)
     }
 }
 
@@ -490,7 +487,7 @@ final class WalletStore {
 
     /// 중복분을 판다. 받은 액수를 반환하고, 팔 것이 없으면 0.
     ///
-    /// 시세 그대로 값을 쳐 준다(도감 판매 추가금이 있으면 그만큼 더). 마지막 한 장은
+    /// 시세의 절반을 쳐 준다(`CardSale`, 도감 판매 추가금이 있으면 그만큼 더). 마지막 한 장은
     /// 남긴다 — 수집한 카드가 컬렉션에서 없어지는 것은 되돌릴 수 없고, 실수로 그렇게 되면
     /// 잃은 것이 크다.
     @discardableResult
@@ -1149,63 +1146,6 @@ final class WalletStore {
     func displayTitle(_ l: L) -> String? {
         if let picked = state.levelTitle, levelTitles.contains(picked) { return l.levelTitle(picked) }
         return title?.text(language)
-    }
-
-    // MARK: 로테이션 마켓
-
-    /// 오늘의 진열.
-    func rotationLineup(index: CardIndex, date: String = RotationMarket.dateKey()) -> [String] {
-        RotationMarket.lineup(date: date, index: index)
-    }
-
-    /// 진열 카드가 들어올 판형. 단일 카드 보상과 같은 규칙으로 정한다.
-    func rotationPrinting(_ cardID: String, index: CardIndex) -> CardPrintingKey {
-        inferredPrinting(cardID: cardID, entry: index.card(cardID))
-    }
-
-    func rotationPrice(_ cardID: String, index: CardIndex) -> Int {
-        RotationMarket.price(cardID: cardID, finish: rotationPrinting(cardID, index: index).finish)
-    }
-
-    func rotationBought(_ cardID: String, date: String = RotationMarket.dateKey()) -> Bool {
-        state.rotationPurchases.contains(RotationMarket.purchaseKey(date: date, cardID: cardID))
-    }
-
-    /// 진열 카드 한 장을 산다. 오늘 진열이 아니거나, 이미 샀거나, 잔액이 모자라면 nil.
-    @discardableResult
-    func buyRotation(cardID: String, index: CardIndex,
-                     date: String = RotationMarket.dateKey()) -> PulledCard? {
-        transaction(failure: Optional<PulledCard>.none) {
-            buyRotationTransaction(cardID: cardID, index: index, date: date)
-        }
-    }
-
-    private func buyRotationTransaction(cardID: String, index: CardIndex, date: String) -> PulledCard? {
-        guard date == RotationMarket.dateKey(), rotationLineup(index: index, date: date).contains(cardID),
-              !rotationBought(cardID, date: date) else { return nil }
-        let price = rotationPrice(cardID, index: index)
-        guard price > 0, availableTokens >= price, let entry = index.card(cardID) else { return nil }
-        let isNew = cardCount(cardID) == 0
-        state.marketSpentTokens += price
-        // 지난 진열의 기록은 남길 이유가 없다. 오늘 것만 둔다.
-        state.rotationPurchases.removeAll { !$0.hasPrefix("\(date)|") }
-        state.rotationPurchases.append(RotationMarket.purchaseKey(date: date, cardID: cardID))
-        let printing = rotationPrinting(cardID, index: index)
-        _ = collect([printing])
-        AppLog.write("rotation bought \(cardID) for \(price)")
-        return PulledCard(id: cardID, tier: entry.tier, isNew: isNew, finish: printing.finish)
-    }
-
-    func buyRotationOnlineAware(cardID: String, index: CardIndex) async -> PulledCard? {
-        guard let remote else { return buyRotation(cardID: cardID, index: index) }
-        let date = RotationMarket.dateKey()
-        let isNew = cardCount(cardID) == 0
-        let result = await remote.execute(.init(kind: "rotation_buy", card_id: cardID, date: date),
-                                          expectedTokens: rotationPrice(cardID, index: index))
-        persistenceError = remote.error
-        guard result != nil, let entry = index.card(cardID) else { return nil }
-        return PulledCard(id: cardID, tier: entry.tier, isNew: isNew,
-                          finish: rotationPrinting(cardID, index: index).finish)
     }
 
     /// 갖고 있는 쿠폰 — 남은 장수가 있는 것만, **세트와 할인율이 같으면 한 줄로 묶는다.**

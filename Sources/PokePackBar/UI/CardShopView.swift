@@ -16,7 +16,7 @@ struct CardShopView: View {
     /// 나눠 가지므로 갈래가 둘에서 셋으로 오갈 때마다 옆 칸의 폭과 자리가 함께 움직였다 —
     /// 마지막 쿠폰을 쓰는 순간 탭 줄이 덜컹거린다. 쿠폰을 받기 전에 그런 것이 있는 줄
     /// 모른다는 문제도 있었다.
-    enum Section: CaseIterable { case packs, oripa, rotation, coupons }
+    enum Section: CaseIterable { case packs, oripa, coupons }
 
     /// 상세를 보고 있는 세트. nil 이면 목록.
     @State private var selectedSet: String?
@@ -68,7 +68,6 @@ struct CardShopView: View {
                             } else {
                                 OripaView(wallet: wallet, index: index)
                             }
-                        case .rotation: RotationMarketView(wallet: wallet, index: index)
                         case .coupons: couponBox(index)
                         }
                     }
@@ -104,7 +103,6 @@ struct CardShopView: View {
         return SegmentedTabs(items: [
             .init(value: Section.packs, label: wallet.l.shopPacksSection),
             .init(value: Section.oripa, label: wallet.l.oripaTitle),
-            .init(value: Section.rotation, label: wallet.l.rotationSection),
             .init(value: Section.coupons, label: wallet.l.shopCouponsSection(total)),
         ], selection: $section)
     }

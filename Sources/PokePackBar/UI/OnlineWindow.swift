@@ -40,6 +40,12 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
         model?.follow(kind: kind, target: target, printing: printing)
     }
 
+    /// 카드 상세의 「마켓에 팔기」. 마켓의 「팔기」를 그 카드로 연다.
+    func showSelling(wallet: WalletStore, cardID: String) {
+        show(wallet: wallet, section: .market)
+        model?.opensMarketSell = cardID
+    }
+
     func windowWillClose(_ notification: Notification) { model?.visible = false }
     func windowDidMiniaturize(_ notification: Notification) { model?.visible = false }
     func windowDidDeminiaturize(_ notification: Notification) { model?.visible = true }
@@ -73,11 +79,17 @@ final class OnlineHubModel {
     var marketTier = ""
     var marketFinish = ""
     var marketSort = "newest"
+    /// 판매자 거르기. 빈 값은 모두, "players" 는 트레이너가 올린 것, "bot" 은 봇 매물(로테이션)이다.
+    var marketSeller = ""
+    /// 내게 한 장도 없는 카드만 볼지. 서버가 거른다.
+    var marketMissing = false
     var ownListings = false
     /// 마켓 탭이 열릴 때 「내 판매」 부터 보여 줄지. 판매 알림을 누르면 켠다.
     var opensMyListings = false
     /// 마켓 탭을 「사기」 로 돌려놓을지. 위시리스트 알림을 누르면 켠다.
     var opensMarketBuy = false
+    /// 마켓 탭을 「팔기」 로 열고 찾아 둘 카드. 카드 상세의 「마켓에 팔기」가 넣는다.
+    var opensMarketSell: String?
     var tradeDraft: [String: Any]?
     /// 친구별 교환 바인더(그 친구가 내놓을 수 있는 카드). 교환 칸이 「나는 없고 친구는 남는 카드」를
     /// 바로 보여 주고, 카드를 고르는 창도 같은 것을 쓴다.
@@ -175,7 +187,7 @@ final class OnlineHubModel {
                     documents["friends"] = try await read("v1/friends?limit=100")
                     documents["matches"] = try await read("v1/matches?limit=100")
                 } else if currentSection == .market {
-                    documents["listings"] = try await read("v1/market/listings?q=\(escaped(search))&set_id=\(escaped(marketSet))&tier=\(escaped(marketTier))&finish=\(escaped(marketFinish))&sort=\(marketSort)&mine=\(ownListings)&offset=\(offset)")
+                    documents["listings"] = try await read("v1/market/listings?q=\(escaped(search))&set_id=\(escaped(marketSet))&tier=\(escaped(marketTier))&finish=\(escaped(marketFinish))&sort=\(marketSort)&seller=\(marketSeller)&missing=\(marketMissing)&mine=\(ownListings)&offset=\(offset)")
                 }
             }
             generation += 1
@@ -272,7 +284,7 @@ final class OnlineHubModel {
             opensMarketBuy = true
             if let name = printing.flatMap(OnlineText.searchName) {
                 search = name
-                marketSet = ""; marketTier = ""; marketFinish = ""
+                marketSet = ""; marketTier = ""; marketFinish = ""; marketSeller = ""; marketMissing = false
             }
         default:
             break
