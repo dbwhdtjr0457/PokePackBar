@@ -31,6 +31,13 @@ final class CardSpinTests: XCTestCase {
         XCTAssertFalse(CardSpin(yaw: 30, pitch: 0).isSettled)
     }
 
+    /// 뒷면 그림은 리소스에 들어 있고 카드와 같은 비율이다. 없으면 어두운 판으로 바뀌어
+    /// 화면은 깨지지 않지만, 빠진 줄 모르고 지나가면 안 된다.
+    func testCardBackShipsWithTheApp() throws {
+        let image = try XCTUnwrap(CardBackImage.image, "Resources/card-back.webp 를 읽지 못했다")
+        XCTAssertEqual(image.size.width / image.size.height, 0.717, accuracy: 0.01)
+    }
+
     /// 도는 동안 넘기는 광택 기울기는 정면과 옆으로 선 순간에 0 이다. 그래야 정면에서는 지금과
     /// 같은 모습이고, 옆으로 설 때 더 기운 앞면의 뒤쪽이 비치지 않는다.
     func testSpinLightIsQuietFaceOnAndEdgeOn() {
