@@ -84,10 +84,14 @@ final class OnlineHubModel {
     /// 내게 한 장도 없는 카드만 볼지. 서버가 거른다.
     var marketMissing = false
     var ownListings = false
+    /// 마켓의 「보낸 제안」을 보고 있는지. 그때는 판매 글 대신 내가 보낸 가격 제안을 받는다.
+    var sentOffers = false
     /// 마켓 탭이 열릴 때 「내 판매」 부터 보여 줄지. 판매 알림을 누르면 켠다.
     var opensMyListings = false
     /// 마켓 탭을 「사기」 로 돌려놓을지. 위시리스트 알림을 누르면 켠다.
     var opensMarketBuy = false
+    /// 마켓 탭을 「보낸 제안」 으로 열지. 내 가격 제안이 수락, 거절되거나 닫혔다는 알림을 누르면 켠다.
+    var opensSentOffers = false
     /// 마켓 탭을 「팔기」 로 열고 찾아 둘 카드. 카드 상세의 「마켓에 팔기」가 넣는다.
     var opensMarketSell: String?
     var tradeDraft: [String: Any]?
@@ -186,7 +190,11 @@ final class OnlineHubModel {
                     documents["trades"] = try await read("v1/trades?offset=\(offset)")
                     documents["friends"] = try await read("v1/friends?limit=100")
                     documents["matches"] = try await read("v1/matches?limit=100")
+                } else if currentSection == .market, sentOffers {
+                    documents["offersSent"] = try await read("v1/market/offers?role=sent&offset=\(offset)")
                 } else if currentSection == .market {
+                    // 내 판매를 볼 때는 판매 글마다 받은 가격 제안도 함께 받는다.
+                    if ownListings { documents["offersReceived"] = try await read("v1/market/offers?role=received&limit=100") }
                     documents["listings"] = try await read("v1/market/listings?q=\(escaped(search))&set_id=\(escaped(marketSet))&tier=\(escaped(marketTier))&finish=\(escaped(marketFinish))&sort=\(marketSort)&seller=\(marketSeller)&missing=\(marketMissing)&mine=\(ownListings)&offset=\(offset)")
                 }
             }
@@ -276,9 +284,12 @@ final class OnlineHubModel {
     func follow(kind: String, target: String, printing: String? = nil) {
         let destination = OnlineText.destination(kind) ?? .alerts
         switch kind {
-        case "listing_sold", "listing_expired":
-            // 팔렸거나 기한이 지난 내 판매는 「내 판매」 에서 확인한다. 사기 화면부터 열면 다시 찾아가야 한다.
+        case "listing_sold", "listing_expired", "offer_received":
+            // 팔렸거나 기한이 지난 내 판매, 내 판매에 온 가격 제안은 「내 판매」 에서 확인한다.
+            // 사기 화면부터 열면 다시 찾아가야 한다.
             opensMyListings = true
+        case "offer_accepted", "offer_rejected", "offer_expired":
+            opensSentOffers = true
         case "wishlist_listing":
             // 그 카드의 판매 글만 남게 이름으로 찾아 둔다. 걸어 둔 조건에 가려 안 보이면 안 되니 조건은 푼다.
             opensMarketBuy = true
