@@ -8,9 +8,9 @@ final class CardSpinTests: XCTestCase {
     /// 카드 폭만큼 좌우로 끌면 반 바퀴. 위아래는 한계에서 멈춘다.
     func testDraggingTurnsHalfAWidthPerCardWidth() {
         let turned = CardSpin.rest.turned(by: CGSize(width: 200, height: 1_000), width: 200)
-        XCTAssertEqual(turned.yaw, 180, accuracy: 0.001)
+        XCTAssertEqual(abs(turned.yaw), 180, accuracy: 0.001)
         XCTAssertEqual(turned.pitch, CardSpin.pitchLimit, accuracy: 0.001)
-        XCTAssertEqual(CardSpin.rest.turned(by: CGSize(width: -50, height: -20), width: 200).yaw, -45, accuracy: 0.001)
+        XCTAssertEqual(abs(CardSpin.rest.turned(by: CGSize(width: -50, height: -20), width: 200).yaw), 45, accuracy: 0.001)
     }
 
     /// 옆으로 서는 90도를 넘으면 뒷면이 보인다. 한 바퀴를 넘겨도 마찬가지다.
@@ -60,14 +60,16 @@ final class CardSpinTests: XCTestCase {
         XCTAssertGreaterThan(rest.thickness, 1)
     }
 
-    /// 방향은 예전과 같다: 오른쪽으로 끌면 오른쪽 가장자리가 다가오며 오른쪽 옆면이 보이고,
-    /// 아래로 끌면 아래쪽이 멀어지며 윗면이 보인다.
+    /// 잡은 자리가 손을 따라간다: 오른쪽으로 끌면 오른쪽 가장자리가 멀어지며 왼쪽 옆면이 보이고,
+    /// 아래로 끌면 아래쪽이 멀어지며 윗면이 보인다. 처음에는 오른쪽이 다가와서 거꾸로 느껴졌다.
     func testSlabTurnsTheWayTheDragGoes() {
-        let right = CardSlab(spin: CardSpin(yaw: 30, pitch: 0), width: 200, height: 279)
-        XCTAssertGreaterThan(right.rotated((x: 100, y: 0, z: 0)).z, 0)
-        XCTAssertGreaterThan(right.facing(.right), 0)
-        XCTAssertLessThan(right.facing(.left), 0)
-        let down = CardSlab(spin: CardSpin(yaw: 0, pitch: 30), width: 200, height: 279)
+        let dragged = CardSpin.rest.turned(by: CGSize(width: 34, height: 0), width: 200)
+        let right = CardSlab(spin: dragged, width: 200, height: 279)
+        XCTAssertLessThan(right.rotated((x: 100, y: 0, z: 0)).z, 0)
+        XCTAssertGreaterThan(right.facing(.left), 0)
+        XCTAssertLessThan(right.facing(.right), 0)
+        let down = CardSlab(spin: CardSpin.rest.turned(by: CGSize(width: 0, height: 34), width: 200),
+                            width: 200, height: 279)
         XCTAssertLessThan(down.rotated((x: 0, y: 140, z: 0)).z, 0)
         XCTAssertGreaterThan(down.facing(.top), 0)
         XCTAssertLessThan(down.facing(.bottom), 0)

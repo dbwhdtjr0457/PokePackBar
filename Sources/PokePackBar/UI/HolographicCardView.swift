@@ -215,8 +215,7 @@ struct HolographicCardView: View {
     @State private var spin = CardSpin.rest
     /// 끌기를 시작할 때의 자세. 끄는 중이 아니면 nil 이다.
     @State private var dragOrigin: CardSpin?
-    @State private var pendingSpin: CardSpin?
-    @State private var spinUpdateScheduled = false
+    @State private var spinPump = CardSpinPump()
 
     private var height: CGFloat { (width / 0.717).rounded() }
 
@@ -276,12 +275,6 @@ struct HolographicCardView: View {
             .frame(width: width, height: height)
             .contentShape(Rectangle())
             .gesture(spinGesture, including: spinnable ? .all : .subviews)
-            // 두 번 누르면 가장 가까운 앞면으로 돌아온다.
-            .simultaneousGesture(TapGesture(count: 2).onEnded {
-                dragOrigin = nil
-                pendingSpin = nil
-                settle(at: spin.front)
-            }, including: spinnable ? .all : .subviews)
             .onContinuousHover(coordinateSpace: .local) { phase in
                 guard !reduceMotion else {
                     pointerTilt = .zero
@@ -302,7 +295,7 @@ struct HolographicCardView: View {
                 pendingPointerTilt = nil
                 pointerTilt = .zero
                 dragOrigin = nil
-                pendingSpin = nil
+                spinPump.pending = nil
                 spin = .rest
             }
             .onChange(of: reduceMotion) {
@@ -315,17 +308,32 @@ struct HolographicCardView: View {
 
     /// 끄는 대로 돌고, 놓으면 던진 속도만큼 더 돌다가 가까운 앞면이나 뒷면에 멈춘다.
     /// 동작 줄이기를 켰으면 관성 없이 놓은 자리에서 가까운 면으로 바로 선다.
+    ///
+    /// 두 번 누르면 가장 가까운 앞면으로 돌아온다. 두 번 누르기를 따로 붙이면 macOS 가 그 판정을
+    /// 기다리느라 끌기가 늦게 잡혀, 같은 제스처 안에서 「거의 움직이지 않고 뗀 것」을 클릭으로 센다.
     private var spinGesture: some Gesture {
-        DragGesture(minimumDistance: 3)
+        DragGesture(minimumDistance: 0)
             .onChanged { value in
-                let origin = dragOrigin ?? spin
-                if dragOrigin == nil { dragOrigin = origin }
-                scheduleSpin(origin.turned(by: value.translation, width: width))
+                if dragOrigin == nil {
+                    // 3pt 넘게 움직여야 끌기로 본다. 그 전에는 클릭일 수 있다.
+                    guard hypot(value.translation.width, value.translation.height) >= 3 else { return }
+                    dragOrigin = spin
+                }
+                scheduleSpin((dragOrigin ?? spin).turned(by: value.translation, width: width))
             }
             .onEnded { value in
-                let origin = dragOrigin ?? spin
+                guard let origin = dragOrigin else {
+                    let now = Date()
+                    if let last = spinPump.lastClick, now.timeIntervalSince(last) < NSEvent.doubleClickInterval {
+                        spinPump.lastClick = nil
+                        settle(at: spin.front)
+                    } else {
+                        spinPump.lastClick = now
+                    }
+                    return
+                }
                 dragOrigin = nil
-                pendingSpin = nil
+                spinPump.pending = nil
                 let thrown = reduceMotion ? value.translation : value.predictedEndTranslation
                 settle(at: origin.turned(by: thrown, width: width).settled)
             }
@@ -342,16 +350,15 @@ struct HolographicCardView: View {
     /// 끄는 동안의 갱신도 기울이기처럼 화면 한 프레임에 한 번만 반영한다. 카드 본체는
     /// 광택 레이어가 수십 겹이라 드래그 이벤트마다 다시 그리면 밀린다.
     private func scheduleSpin(_ next: CardSpin) {
-        pendingSpin = next
-        guard !spinUpdateScheduled else { return }
-        spinUpdateScheduled = true
+        let pump = spinPump
+        pump.pending = next
+        guard !pump.scheduled else { return }
+        pump.scheduled = true
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(16))
-            if let pendingSpin, dragOrigin != nil {
-                spin = pendingSpin
-                self.pendingSpin = nil
-            }
-            spinUpdateScheduled = false
+            if let pending = pump.pending, dragOrigin != nil { spin = pending }
+            pump.pending = nil
+            pump.scheduled = false
         }
     }
 

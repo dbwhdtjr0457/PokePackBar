@@ -31,10 +31,13 @@ struct CardSpin: Equatable {
     }
 
     /// 끈 거리만큼 돌린 자세. 카드 폭만큼 끌면 반 바퀴다.
+    ///
+    /// 잡은 자리가 손을 따라간다. 오른쪽으로 끌면 오른쪽 가장자리가 멀어지고(yaw 가 줄고),
+    /// 아래로 끌면 아래쪽이 멀어진다.
     func turned(by translation: CGSize, width: CGFloat) -> CardSpin {
         let degreesPerPoint = 180 / Double(max(width, 1))
         let pitch = Double(translation.height) * degreesPerPoint
-        return CardSpin(yaw: yaw + Double(translation.width) * degreesPerPoint,
+        return CardSpin(yaw: yaw - Double(translation.width) * degreesPerPoint,
                         pitch: min(Self.pitchLimit, max(-Self.pitchLimit, pitch)))
     }
 
@@ -163,14 +166,15 @@ struct CardSpinStage<Front: View>: View, @MainActor Animatable {
     }
 
     var body: some View {
-        // 앞면을 똑바로 보고 멈춰 있으면 돌리기 전과 똑같이 그린다. 마우스로 기울이는 모습도 그대로다.
-        if spin.isSettled, spin.showsFront {
-            front(pointerTilt ?? .zero)
-        } else {
-            let slab = CardSlab(spin: spin, width: width, height: height)
-            ZStack {
+        let slab = CardSlab(spin: spin, width: width, height: height)
+        // 앞면을 똑바로 보고 멈춰 있으면 변환 없이 돌리기 전과 똑같이 그린다. 마우스 기울이기도 그대로다.
+        // 멈춘 앞면과 도는 앞면을 같은 자리의 같은 뷰로 그린다. 따로 그리면 끌기 시작하고 멈출
+        // 때마다 카드 그림을 다시 불러와 한 박자 비었다.
+        let resting = spin.isSettled && spin.showsFront
+        ZStack {
                 if slab.facing(.front) > 0 {
-                    front(spin.lightTilt).projectionEffect(slab.projection(.front))
+                    front(resting ? pointerTilt ?? .zero : spin.lightTilt)
+                        .projectionEffect(resting ? ProjectionTransform() : slab.projection(.front))
                 } else {
                     CardBackFace(width: width, height: height).projectionEffect(slab.projection(.back))
                 }
@@ -182,9 +186,18 @@ struct CardSpinStage<Front: View>: View, @MainActor Animatable {
                             .projectionEffect(slab.projection(face))
                     }
                 }
-            }
         }
     }
+}
+
+/// 끄는 동안의 갱신 대기열. 화면 상태가 아니라 참조로 두어, 마우스 이벤트마다 값을 바꿔도
+/// 카드를 다시 그리지 않는다. 한 프레임에 한 번만 `spin` 에 넣는다.
+@MainActor
+final class CardSpinPump {
+    var pending: CardSpin?
+    var scheduled = false
+    /// 직전 클릭 시각. 두 번 누르기를 드래그와 같은 제스처 안에서 가린다.
+    var lastClick: Date?
 }
 
 /// 카드 옆면. 실물처럼 겉은 흰 종이, 가운데는 어두운 심이 보인다. 보는 쪽으로 돌수록 밝다.
