@@ -131,9 +131,8 @@ struct OnlineMarketView: View {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 128), spacing: 16, alignment: .top)], alignment: .leading, spacing: 18) {
                         ForEach(listings, id: \.onlineID) { item in
                             let printing = CardPrintingKey(storageKey: item.string("printing"))
-                            // 내 판매와 이미 한 장 산 로테이션 카드는 살 수 없으니 카드만 보여 준다.
-                            let viewOnly = item.bool("mine") || item.bool("bought")
-                            Button { viewOnly ? (preview = PrintingSelection(id: item.string("printing"))) : (buying = item) } label: {
+                            // 내 판매도, 이미 한 장 산 봇 매물도 같은 판매 글 창을 연다. 할 수 있는 일만 다르다.
+                            Button { buying = item } label: {
                                 OnlineCardTile(cardID: printing.cardID, finish: printing.finish.rawValue,
                                                badge: Self.badge(item)) {
                                     Text(OnlineText.won(tokens: item.int("unit_tokens")))
@@ -453,6 +452,11 @@ struct BuySheet: View {
     @State private var quantity = 1
     /// 가격 제안으로 보내는지. 봇 매물은 하루 동안 정해진 값에만 팔아 바로 사기만 있다.
     @State private var offering: Bool
+
+    /// 이 판매 글로 할 수 있는 일. 남의 글은 사거나 제안하고, 내 글은 내리고,
+    /// 이미 한 장 산 봇 매물은 보기만 한다. 창의 모양은 셋 다 같다.
+    private enum Role { case buyer, seller, viewer }
+    private var role: Role { item.bool("mine") ? .seller : item.bool("bought") ? .viewer : .buyer }
     @State private var offerWon = 0
 
     /// `startsOffering` 은 레이아웃 감사가 제안 화면을 찍을 때 쓴다.
@@ -490,14 +494,22 @@ struct BuySheet: View {
         let total = (offering ? offerTokens ?? 0 : unit) * quantity
         let canAfford = total <= model.wallet.availableTokens
         let blocked = offering ? offerTokens == nil || !canAfford : !canAfford || affordable < 1
-        OnlineSheet(title: offering ? OnlineText.l.makeOfferTitle : OnlineText.l.buyCardTitle,
-                    actionTitle: offering ? OnlineText.l.sendOffer(OnlineText.won(tokens: offerTokens ?? 0))
-                                          : OnlineText.l.buyFor(OnlineText.won(tokens: total)),
-                    actionDisabled: !model.canWrite || blocked,
-                    note: offering ? OnlineText.l.offerNote : rotation ? OnlineText.l.rotationBuyNote : OnlineText.l.buyNote,
+        let role = self.role
+        let buying = role == .buyer
+        OnlineSheet(title: !buying ? OnlineText.l.listingDetailTitle
+                           : offering ? OnlineText.l.makeOfferTitle : OnlineText.l.buyCardTitle,
+                    actionTitle: role == .seller ? OnlineText.l.takeDownListing
+                                 : offering ? OnlineText.l.sendOffer(OnlineText.won(tokens: offerTokens ?? 0))
+                                 : OnlineText.l.buyFor(OnlineText.won(tokens: total)),
+                    actionDisabled: !model.canWrite || (buying && blocked),
+                    note: !buying ? nil : offering ? OnlineText.l.offerNote : rotation ? OnlineText.l.rotationBuyNote : OnlineText.l.buyNote,
+                    showsAction: role != .viewer,
                     action: {
                         // 보낼 값은 누르는 순간 정한다. Task 본문은 시트가 닫힌 뒤에 돈다.
-                        if offering, let offerTokens {
+                        if role == .seller {
+                            let values: [String: Any] = ["action": "listing_cancel", "target_id": item.string("id"), "target_version": item.int("version")]
+                            Task { await model.mutate("market/listings", values) }
+                        } else if offering, let offerTokens {
                             let values: [String: Any] = ["action": "offer_create", "target_id": item.string("id"), "quantity": quantity, "unit_tokens": offerTokens]
                             Task { await model.mutate("market/offers", values) }
                         } else {
@@ -506,7 +518,7 @@ struct BuySheet: View {
                         }
                     }) {
             VStack(alignment: .leading, spacing: 14) {
-                if !rotation {
+                if buying, !rotation {
                     Picker("", selection: $offering) {
                         Text(OnlineText.l.buyNow).tag(false)
                         Text(OnlineText.l.makeOffer).tag(true)
@@ -514,7 +526,8 @@ struct BuySheet: View {
                     .pickerStyle(.segmented).labelsHidden().fixedSize()
                 }
                 HStack(alignment: .top, spacing: 18) {
-                    CardImageView(cardID: printing.cardID, hires: true, width: 150)
+                    // 마우스로 기울이고 좌우로 끌어 뒷면까지 돌려 본다. 내 글이든 남의 글이든 같다.
+                    OnlinePrintingArt(printing: item.string("printing"), width: 180)
                     VStack(alignment: .leading, spacing: 10) {
                         Text(OnlineText.cardName(printing.cardID)).font(Typography.title)
                         Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish), seller: OnlineMarketView.seller(item)))
@@ -529,17 +542,30 @@ struct BuySheet: View {
                             Text(OnlineText.l.referencePrice(OnlineText.wonText(reference)))
                                 .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
                         }
-                        if offering { offerFields }
-                        if rotation {
+                        switch role {
+                        case .seller:
+                            Text(OnlineText.l.myListingLine(finish: OnlineText.l.cardFinishName(printing.finish),
+                                                            unit: OnlineText.won(tokens: unit), left: item.int("quantity")))
+                                .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
                             Text(OnlineText.remaining(until: item.int("expires_at")))
                                 .font(Typography.label).foregroundStyle(.secondary)
-                        } else {
-                            OnlineQuantity(value: $quantity, range: 1...maximum)
+                        case .viewer:
+                            Text(OnlineText.l.rotationBought).font(Typography.labelSemibold)
+                            Text(OnlineText.remaining(until: item.int("expires_at")))
+                                .font(Typography.label).foregroundStyle(.secondary)
+                        case .buyer:
+                            if offering { offerFields }
+                            if rotation {
+                                Text(OnlineText.remaining(until: item.int("expires_at")))
+                                    .font(Typography.label).foregroundStyle(.secondary)
+                            } else {
+                                OnlineQuantity(value: $quantity, range: 1...maximum)
+                            }
+                            Text(!canAfford || (!offering && affordable < 1) ? OnlineText.l.notEnoughBalance
+                                 : OnlineText.l.balanceAfter(OnlineText.won(tokens: max(0, model.wallet.availableTokens - total))))
+                                .font(Typography.label).foregroundStyle(!canAfford ? Color.orange : Color.secondary)
+                                .monospacedDigit()
                         }
-                        Text(!canAfford || (!offering && affordable < 1) ? OnlineText.l.notEnoughBalance
-                             : OnlineText.l.balanceAfter(OnlineText.won(tokens: max(0, model.wallet.availableTokens - total))))
-                            .font(Typography.label).foregroundStyle(!canAfford ? Color.orange : Color.secondary)
-                            .monospacedDigit()
                     }
                 }
             }
@@ -597,7 +623,7 @@ private struct SellSheet: View {
                         Task { await model.mutate("market/listings", values) }
                     }) {
             HStack(alignment: .top, spacing: 18) {
-                CardImageView(cardID: stock.cardID, hires: true, width: 150)
+                OnlinePrintingArt(printing: stock.key, width: 180)
                 VStack(alignment: .leading, spacing: 12) {
                     Text(OnlineText.cardName(stock.cardID)).font(Typography.title)
                     Text(OnlineText.l.sellableLine(finish: OnlineText.l.cardFinishName(stock.finish), available: stock.available))

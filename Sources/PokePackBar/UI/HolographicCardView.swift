@@ -204,18 +204,26 @@ struct HolographicCardView: View {
     var width: CGFloat
     var dimmed: Bool
     var preloaded: NSImage?
+    /// 끌어서 돌려 볼 수 있는지. 들여다보는 자리(카드 상세, 온라인 카드 창)에서만 켠다.
+    /// 팩 개봉 화면은 밀어서 뜯기와 끌어서 엿보기가 이미 드래그를 쓴다.
+    var spinnable: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pointerTilt = TiltVector.zero
     @State private var pendingPointerTilt: TiltVector?
     @State private var hoverUpdateScheduled = false
+    @State private var spin = CardSpin.rest
+    /// 끌기를 시작할 때의 자세. 끄는 중이 아니면 nil 이다.
+    @State private var dragOrigin: CardSpin?
+    @State private var pendingSpin: CardSpin?
+    @State private var spinUpdateScheduled = false
 
     private var height: CGFloat { (width / 0.717).rounded() }
 
     /// Source-compatible initializer for existing callers. Finish metadata is
     /// recovered from the bundled card index when possible.
     init(cardID: String, tier: CardTier, width: CGFloat = 200,
-         dimmed: Bool = false, preloaded: NSImage? = nil) {
+         dimmed: Bool = false, preloaded: NSImage? = nil, spinnable: Bool = false) {
         self.cardID = cardID
         self.tier = tier
         self.explicitFinish = nil
@@ -224,12 +232,14 @@ struct HolographicCardView: View {
         self.width = width
         self.dimmed = dimmed
         self.preloaded = preloaded
+        self.spinnable = spinnable
     }
 
     /// Printing-aware initializer for pulled variants.
     init(cardID: String, tier: CardTier, finish: CardFinish,
          setID: String? = nil, originalRarity: String? = nil,
-         width: CGFloat = 200, dimmed: Bool = false, preloaded: NSImage? = nil) {
+         width: CGFloat = 200, dimmed: Bool = false, preloaded: NSImage? = nil,
+         spinnable: Bool = false) {
         self.cardID = cardID
         self.tier = tier
         self.explicitFinish = finish
@@ -238,6 +248,7 @@ struct HolographicCardView: View {
         self.width = width
         self.dimmed = dimmed
         self.preloaded = preloaded
+        self.spinnable = spinnable
     }
 
     var body: some View {
@@ -245,13 +256,32 @@ struct HolographicCardView: View {
         let tilt = HoloInteraction.effectiveTilt(
             pointer: pointerTilt, reduceMotion: reduceMotion)
 
-        HoloCardBody(cardID: cardID, tier: tier, finish: resolved.finish,
-                     spec: resolved.spec, width: width, height: height,
-                     dimmed: dimmed, preloaded: preloaded,
-                     visualKind: CardIndex.shared?.card(cardID)?.visualKind,
-                     tilt: tilt)
+        let visualKind = CardIndex.shared?.card(cardID)?.visualKind
+        Group {
+            if spinnable {
+                CardSpinStage(spin: spin, pointerTilt: dragOrigin == nil ? tilt : nil,
+                              width: width, height: height) { faceTilt in
+                    HoloCardBody(cardID: cardID, tier: tier, finish: resolved.finish,
+                                 spec: resolved.spec, width: width, height: height,
+                                 dimmed: dimmed, preloaded: preloaded,
+                                 visualKind: visualKind, tilt: faceTilt)
+                }
+            } else {
+                HoloCardBody(cardID: cardID, tier: tier, finish: resolved.finish,
+                             spec: resolved.spec, width: width, height: height,
+                             dimmed: dimmed, preloaded: preloaded,
+                             visualKind: visualKind, tilt: tilt)
+            }
+        }
             .frame(width: width, height: height)
             .contentShape(Rectangle())
+            .gesture(spinGesture, including: spinnable ? .all : .subviews)
+            // 두 번 누르면 가장 가까운 앞면으로 돌아온다.
+            .simultaneousGesture(TapGesture(count: 2).onEnded {
+                dragOrigin = nil
+                pendingSpin = nil
+                settle(at: spin.front)
+            }, including: spinnable ? .all : .subviews)
             .onContinuousHover(coordinateSpace: .local) { phase in
                 guard !reduceMotion else {
                     pointerTilt = .zero
@@ -271,6 +301,9 @@ struct HolographicCardView: View {
             .onChange(of: cardID) {
                 pendingPointerTilt = nil
                 pointerTilt = .zero
+                dragOrigin = nil
+                pendingSpin = nil
+                spin = .rest
             }
             .onChange(of: reduceMotion) {
                 if reduceMotion {
@@ -278,6 +311,48 @@ struct HolographicCardView: View {
                     pointerTilt = .zero
                 }
             }
+    }
+
+    /// 끄는 대로 돌고, 놓으면 던진 속도만큼 더 돌다가 가까운 앞면이나 뒷면에 멈춘다.
+    /// 동작 줄이기를 켰으면 관성 없이 놓은 자리에서 가까운 면으로 바로 선다.
+    private var spinGesture: some Gesture {
+        DragGesture(minimumDistance: 3)
+            .onChanged { value in
+                let origin = dragOrigin ?? spin
+                if dragOrigin == nil { dragOrigin = origin }
+                scheduleSpin(origin.turned(by: value.translation, width: width))
+            }
+            .onEnded { value in
+                let origin = dragOrigin ?? spin
+                dragOrigin = nil
+                pendingSpin = nil
+                let thrown = reduceMotion ? value.translation : value.predictedEndTranslation
+                settle(at: origin.turned(by: thrown, width: width).settled)
+            }
+    }
+
+    private func settle(at target: CardSpin) {
+        if reduceMotion {
+            spin = target
+        } else {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.82)) { spin = target }
+        }
+    }
+
+    /// 끄는 동안의 갱신도 기울이기처럼 화면 한 프레임에 한 번만 반영한다. 카드 본체는
+    /// 광택 레이어가 수십 겹이라 드래그 이벤트마다 다시 그리면 밀린다.
+    private func scheduleSpin(_ next: CardSpin) {
+        pendingSpin = next
+        guard !spinUpdateScheduled else { return }
+        spinUpdateScheduled = true
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(16))
+            if let pendingSpin, dragOrigin != nil {
+                spin = pendingSpin
+                self.pendingSpin = nil
+            }
+            spinUpdateScheduled = false
+        }
     }
 
     /// 연속 hover 이벤트마다 0.12초 애니메이션을 새로 쌓으면 수십 개의 Canvas·mask가 같은 프레임에
@@ -326,6 +401,8 @@ enum HoloVisualDiagnostics {
         let sweep: Bool
         var geometry: Bool = false
         var visibility: Bool = false
+        /// 끌어서 돌린 자세들(앞면, 옆으로 서기 직전과 직후, 뒷면, 위아래 기울기).
+        var spin: Bool = false
     }
 
     enum Failure: LocalizedError {
@@ -337,7 +414,7 @@ enum HoloVisualDiagnostics {
         var errorDescription: String? {
             switch self {
             case .malformedArguments:
-                "Usage: --render-holo-preview <card-id> <output-directory> [finish] [--compact] [--actual-size] [--flat-card] [--sweep]"
+                "Usage: --render-holo-preview <card-id> <output-directory> [finish] [--compact] [--actual-size] [--flat-card] [--sweep] [--spin]"
             case .unknownCard(let cardID):
                 "Not in the card index: \(cardID)"
             case .missingImage(let cardID):
@@ -382,7 +459,8 @@ enum HoloVisualDiagnostics {
                        flatCard: options.contains("--flat-card"),
                        sweep: options.contains("--sweep"),
                        geometry: options.contains("--geometry"),
-                       visibility: options.contains("--visibility"))
+                       visibility: options.contains("--visibility"),
+                       spin: options.contains("--spin"))
     }
 
     static func render(_ request: Request) async throws -> [URL] {
@@ -419,6 +497,39 @@ enum HoloVisualDiagnostics {
         let cardWidth: CGFloat = request.actualSize ? 240 : 420
         let cardHeight = (cardWidth / 0.717).rounded()
         var files: [URL] = []
+        if request.spin {
+            let spins: [(String, CardSpin)] = [
+                ("spin-000", .rest), ("spin-030", CardSpin(yaw: 30, pitch: 0)),
+                ("spin-085", CardSpin(yaw: 85, pitch: 0)), ("spin-095", CardSpin(yaw: 95, pitch: 0)),
+                ("spin-150", CardSpin(yaw: 150, pitch: 0)), ("spin-180", CardSpin(yaw: 180, pitch: 0)),
+                ("spin-pitch-down", CardSpin(yaw: 0, pitch: 30)), ("spin-pitch-back", CardSpin(yaw: 180, pitch: -30)),
+            ]
+            for (name, spin) in spins {
+                let view = ZStack {
+                    Color(red: 0.055, green: 0.06, blue: 0.075)
+                    CardSpinStage(spin: spin, pointerTilt: .zero, width: cardWidth, height: cardHeight) { tilt in
+                        HoloCardBody(cardID: card.id, tier: card.tier,
+                                     finish: resolved.finish, spec: resolved.spec,
+                                     width: cardWidth, height: cardHeight,
+                                     dimmed: false, preloaded: image,
+                                     visualKind: card.visualKind, tilt: tilt)
+                    }
+                    .frame(width: cardWidth, height: cardHeight)
+                }
+                .frame(width: cardWidth + 120, height: cardHeight + 120)
+                let renderer = ImageRenderer(content: view)
+                renderer.scale = 2
+                guard let rendered = renderer.nsImage, let tiff = rendered.tiffRepresentation,
+                      let bitmap = NSBitmapImageRep(data: tiff),
+                      let png = bitmap.representation(using: .png, properties: [:]) else {
+                    throw Failure.renderingFailed(name)
+                }
+                let file = request.outputDirectory.appendingPathComponent("\(card.id)-\(name).png")
+                try png.write(to: file, options: .atomic)
+                files.append(file)
+            }
+            return files
+        }
         let selectedPoses: [Pose]
         if request.visibility {
             selectedPoses = [poses[0],

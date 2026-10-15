@@ -137,9 +137,12 @@ import SwiftUI
             return OnlineStock(key: key, cardID: entry.id, finish: .holo, available: offset + 1,
                                referenceWon: offset == 4 ? nil : OnlineText.referenceWon(key))
         }
-        // 판매 글에 가격을 제안하는 창.
+        // 판매 글 창: 남의 글에 가격 제안, 남의 글 바로 사기, 내 글, 이미 한 장 산 봇 매물. 모양은 같고 할 일만 다르다.
         try await capturePicker("buy-offer", BuySheet(model: model, item: playerListing, startsOffering: true)
             .frame(width: 560))
+        try await capturePicker("listing-buy", BuySheet(model: model, item: playerListing).frame(width: 560))
+        try await capturePicker("listing-mine", BuySheet(model: model, item: mine).frame(width: 560))
+        try await capturePicker("listing-bought", BuySheet(model: model, item: listings[2]).frame(width: 560))
         try await capturePicker("trade-picker", OnlineStockPicker(
             wallet: wallet, title: OnlineText.l.addCardsToGive, actionTitle: OnlineText.l.addAction,
             source: pickable) { _, _ in })

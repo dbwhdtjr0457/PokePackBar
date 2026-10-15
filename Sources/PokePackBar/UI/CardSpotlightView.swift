@@ -85,15 +85,16 @@ struct CardSpotlightView: View {
 
             // 마우스를 올리면 기울고 광택이 흐른다 — 확대 화면에서만 준다.
             // 격자에서는 크기가 작아 각도가 읽히지 않고, 지나가는 커서마다 반응하면 산만하다.
+            // 좌우로 끌면 뒷면까지 돌려 볼 수 있고, 두 번 누르면 앞면으로 돌아온다.
             Group {
                 if let displayedFinish {
                     HolographicCardView(cardID: cardID, tier: tier,
                                         finish: displayedFinish, setID: setID,
                                         originalRarity: rarity, width: cardWidth,
-                                        dimmed: ownedCount == 0, preloaded: preloaded)
+                                        dimmed: ownedCount == 0, preloaded: preloaded, spinnable: true)
                 } else {
                     HolographicCardView(cardID: cardID, tier: tier, width: cardWidth,
-                                        dimmed: ownedCount == 0, preloaded: preloaded)
+                                        dimmed: ownedCount == 0, preloaded: preloaded, spinnable: true)
                 }
             }
                 // 상세 화면은 개봉 연출이 아니라 들여다보는 자리다. 후광은 절반만.

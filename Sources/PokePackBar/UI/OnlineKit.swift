@@ -431,6 +431,8 @@ struct OnlineSheet<Content: View>: View {
     let actionTitle: String
     var actionDisabled = false
     var note: String? = nil
+    /// 보기만 하는 창은 실행 버튼 없이 닫기만 둔다.
+    var showsAction = true
     let action: () -> Void
     @ViewBuilder var content: Content
     @Environment(\.dismiss) private var dismiss
@@ -444,12 +446,14 @@ struct OnlineSheet<Content: View>: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             HStack {
-                Button(OnlineText.l.cancel) { dismiss() }.keyboardShortcut(.cancelAction)
+                Button(showsAction ? OnlineText.l.cancel : OnlineText.l.close) { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
-                Button(actionTitle) { dismiss(); action() }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(actionDisabled)
+                if showsAction {
+                    Button(actionTitle) { dismiss(); action() }
+                        .buttonStyle(.borderedProminent)
+                        .keyboardShortcut(.defaultAction)
+                        .disabled(actionDisabled)
+                }
             }
         }
         .padding(24)

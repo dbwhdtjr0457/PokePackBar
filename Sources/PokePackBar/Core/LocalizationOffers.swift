@@ -34,6 +34,7 @@ extension L {
 // MARK: 마켓 가격 제안
 
 extension L {
+    var listingDetailTitle: String { t("판매 글", "Listing", "出品", "Anuncio", "Annonce", "Anúncio") }
     var sentOffers: String { t("보낸 제안", "My offers", "送った提案", "Mis ofertas", "Mes offres", "Minhas ofertas") }
     var buyNow: String { t("바로 사기", "Buy now", "今すぐ買う", "Comprar ya", "Acheter", "Comprar agora") }
     var makeOffer: String { t("가격 제안", "Make an offer", "価格を提案", "Hacer oferta", "Faire une offre", "Fazer oferta") }
