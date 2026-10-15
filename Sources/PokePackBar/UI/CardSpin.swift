@@ -191,13 +191,10 @@ struct CardSpinStage<Front: View>: View, @MainActor Animatable {
     }
 }
 
-/// 끄는 동안의 갱신 대기열. 화면 상태가 아니라 참조로 두어, 마우스 이벤트마다 값을 바꿔도
-/// 카드를 다시 그리지 않는다. 한 프레임에 한 번만 `spin` 에 넣는다.
+/// 직전 클릭 시각. 두 번 누르기를 드래그와 같은 제스처 안에서 가린다. 화면 상태가 아니라
+/// 참조로 두어, 클릭할 때마다 카드를 다시 그리지 않는다.
 @MainActor
-final class CardSpinPump {
-    var pending: CardSpin?
-    var scheduled = false
-    /// 직전 클릭 시각. 두 번 누르기를 드래그와 같은 제스처 안에서 가린다.
+final class CardClickClock {
     var lastClick: Date?
 }
 

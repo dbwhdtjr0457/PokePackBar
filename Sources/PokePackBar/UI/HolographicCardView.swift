@@ -215,7 +215,7 @@ struct HolographicCardView: View {
     @State private var spin = CardSpin.rest
     /// 끌기를 시작할 때의 자세. 끄는 중이 아니면 nil 이다.
     @State private var dragOrigin: CardSpin?
-    @State private var spinPump = CardSpinPump()
+    @State private var clicks = CardClickClock()
 
     private var height: CGFloat { (width / 0.717).rounded() }
 
@@ -295,7 +295,6 @@ struct HolographicCardView: View {
                 pendingPointerTilt = nil
                 pointerTilt = .zero
                 dragOrigin = nil
-                spinPump.pending = nil
                 spin = .rest
             }
             .onChange(of: reduceMotion) {
@@ -319,21 +318,20 @@ struct HolographicCardView: View {
                     guard hypot(value.translation.width, value.translation.height) >= 3 else { return }
                     dragOrigin = spin
                 }
-                scheduleSpin((dragOrigin ?? spin).turned(by: value.translation, width: width))
+                follow((dragOrigin ?? spin).turned(by: value.translation, width: width))
             }
             .onEnded { value in
                 guard let origin = dragOrigin else {
                     let now = Date()
-                    if let last = spinPump.lastClick, now.timeIntervalSince(last) < NSEvent.doubleClickInterval {
-                        spinPump.lastClick = nil
+                    if let last = clicks.lastClick, now.timeIntervalSince(last) < NSEvent.doubleClickInterval {
+                        clicks.lastClick = nil
                         settle(at: spin.front)
                     } else {
-                        spinPump.lastClick = now
+                        clicks.lastClick = now
                     }
                     return
                 }
                 dragOrigin = nil
-                spinPump.pending = nil
                 let thrown = reduceMotion ? value.translation : value.predictedEndTranslation
                 settle(at: origin.turned(by: thrown, width: width).settled)
             }
@@ -347,18 +345,15 @@ struct HolographicCardView: View {
         }
     }
 
-    /// 끄는 동안의 갱신도 기울이기처럼 화면 한 프레임에 한 번만 반영한다. 카드 본체는
-    /// 광택 레이어가 수십 겹이라 드래그 이벤트마다 다시 그리면 밀린다.
-    private func scheduleSpin(_ next: CardSpin) {
-        let pump = spinPump
-        pump.pending = next
-        guard !pump.scheduled else { return }
-        pump.scheduled = true
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(16))
-            if let pending = pump.pending, dragOrigin != nil { spin = pending }
-            pump.pending = nil
-            pump.scheduled = false
+    /// 끄는 동안은 짧은 스프링이 손을 따라간다. 마우스 이벤트는 화면 주사율과 어긋나게 들어와서,
+    /// 받은 값을 그대로 넣거나 타이머로 모아 넣으면 어떤 프레임은 건너뛰고 어떤 프레임은 크게 뛴다.
+    /// 스프링은 매 프레임 그 사이를 메우고, 새 값이 오면 속도를 이어 받아 목표만 바꾼다.
+    /// 이벤트가 한 프레임에 여럿 와도 그리는 것은 프레임마다 한 번이다.
+    private func follow(_ next: CardSpin) {
+        if reduceMotion {
+            spin = next
+        } else {
+            withAnimation(.interactiveSpring(response: 0.14, dampingFraction: 0.86)) { spin = next }
         }
     }
 
