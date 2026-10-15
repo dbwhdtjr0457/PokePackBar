@@ -191,10 +191,10 @@ final class OnlineHubModel {
                     documents["friends"] = try await read("v1/friends?limit=100")
                     documents["matches"] = try await read("v1/matches?limit=100")
                 } else if currentSection == .market, sentOffers {
-                    documents["offersSent"] = try await read("v1/market/offers?role=sent&offset=\(offset)")
+                    documents["offersSent"] = try await readOffers("v1/market/offers?role=sent&offset=\(offset)")
                 } else if currentSection == .market {
                     // 내 판매를 볼 때는 판매 글마다 받은 가격 제안도 함께 받는다.
-                    if ownListings { documents["offersReceived"] = try await read("v1/market/offers?role=received&limit=100") }
+                    if ownListings { documents["offersReceived"] = try await readOffers("v1/market/offers?role=received&limit=100") }
                     documents["listings"] = try await read("v1/market/listings?q=\(escaped(search))&set_id=\(escaped(marketSet))&tier=\(escaped(marketTier))&finish=\(escaped(marketFinish))&sort=\(marketSort)&seller=\(marketSeller)&missing=\(marketMissing)&mine=\(ownListings)&offset=\(offset)")
                 }
             }
@@ -357,6 +357,12 @@ final class OnlineHubModel {
     func read(_ path: String) async throws -> [String: Any] {
         guard let remote else { throw RemoteGameSession.Failure(message: OnlineText.l.onlineLoginRequired) }
         return try JSONSerialization.jsonObject(with: await remote.api(path)) as? [String: Any] ?? [:]
+    }
+    /// 가격 제안 목록. 제안을 모르는 서버는 404 를 주므로 빈 목록으로 본다. 그렇지 않으면
+    /// 내 판매 화면 전체가 실패로 바뀐다.
+    private func readOffers(_ path: String) async throws -> [String: Any] {
+        do { return try await read(path) }
+        catch let error as RemoteGameSession.Failure where error.status == 404 { return ["items": []] }
     }
     func escaped(_ value: String) -> String { value.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? "" }
     func items(_ key: String) -> [[String: Any]] { documents[key]?["items"] as? [[String: Any]] ?? [] }

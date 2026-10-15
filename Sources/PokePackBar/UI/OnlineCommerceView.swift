@@ -829,8 +829,11 @@ struct OnlineTradingView: View {
                             // 보낼 카드는 누르는 순간 정한다. Task 본문은 이 블록이 끝난 뒤에 돌아서,
                             // 그 안에서 바구니를 읽으면 이미 비운 빈 바구니가 나가 서버가
                             // both_sides_required 로 거절했다. 바구니는 성공했을 때만 비운다.
-                            var values: [String: Any] = ["action": "trade_create", "target_id": friend, "offered": lines(offered), "requested": lines(requested),
-                                                         "offered_tokens": giveTokens, "requested_tokens": getTokens]
+                            var values: [String: Any] = ["action": "trade_create", "target_id": friend, "offered": lines(offered), "requested": lines(requested)]
+                            // 돈은 넣었을 때만 보낸다. 돈을 모르는 서버는 모르는 값이 있으면 요청을
+                            // 통째로 거절해서, 0 을 보내면 돈 없는 교환까지 막힌다.
+                            if giveTokens > 0 { values["offered_tokens"] = giveTokens }
+                            if getTokens > 0 { values["requested_tokens"] = getTokens }
                             if let countering {
                                 values.merge(["action": "trade_counter", "target_id": countering.string("id"),
                                               "target_version": countering.int("version")]) { _, new in new }
