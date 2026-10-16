@@ -251,6 +251,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         observeMenuBarCard()
         updateMenuBarIcon()
         applyState()
+        // 다른 계정으로 로그인해 다시 뜬 경우다. 그 계정 화면을 바로 보여 준다.
+        if CommandLine.arguments.contains(AppRelauncher.openOnlineArgument), wallet.isOnline {
+            OnlineWindow.shared.show(wallet: wallet)
+        }
     }
 
     /// 온라인 계정이면 알림 개수를 확인할 때마다 새로 온 알림을 macOS 알림으로 보낸다.
