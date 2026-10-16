@@ -180,6 +180,15 @@ struct TiltVector: Equatable {
     }
 }
 
+extension View {
+    /// 마우스 기울기만큼 카드 몸체를 기울인다. 앞면과 그 뒤의 등급 빛이 같은 각도로 기울어야
+    /// 둘이 어긋나지 않아, 한 곳에서 정한다.
+    func holoTilt(_ tilt: TiltVector, spec: FoilSpec) -> some View {
+        rotation3DEffect(.degrees(tilt.magnitude * HoloProfile.of(spec).tilt),
+                         axis: tilt.axis, perspective: 0.55)
+    }
+}
+
 /// Pure interaction policy so reduced-motion behavior can be verified without
 /// mounting a SwiftUI view.
 enum HoloInteraction {
@@ -263,10 +272,15 @@ struct HolographicCardView: View {
                 // 두꺼운 띠처럼 보였다.
                 CardSpinStage(spin: spin, pointerTilt: dragOrigin == nil ? tilt : .zero,
                               width: width, height: height,
-                              glow: dimmed ? nil : TierGlow(tier: tier, width: width,
-                                  valueCard: valueAwareGlow
-                                      ? PulledCard(id: cardID, tier: tier, isNew: false, finish: resolved.finish)
-                                      : nil)) { light, pose in
+                              glow: { pose in
+                                  if !dimmed {
+                                      TierGlow(tier: tier, width: width,
+                                               valueCard: valueAwareGlow
+                                                  ? PulledCard(id: cardID, tier: tier, isNew: false, finish: resolved.finish)
+                                                  : nil)
+                                          .holoTilt(pose, spec: resolved.spec)
+                                  }
+                              }) { light, pose in
                     HoloCardBody(cardID: cardID, tier: tier, finish: resolved.finish,
                                  spec: resolved.spec, width: width, height: height,
                                  dimmed: dimmed, preloaded: preloaded,
@@ -520,17 +534,25 @@ enum HoloVisualDiagnostics {
         let cardHeight = (cardWidth / 0.717).rounded()
         var files: [URL] = []
         if request.spin {
-            let spins: [(String, CardSpin)] = [
-                ("spin-000", .rest), ("spin-030", CardSpin(yaw: 30, pitch: 0)),
-                ("spin-085", CardSpin(yaw: 85, pitch: 0)), ("spin-095", CardSpin(yaw: 95, pitch: 0)),
-                ("spin-150", CardSpin(yaw: 150, pitch: 0)), ("spin-180", CardSpin(yaw: 180, pitch: 0)),
-                ("spin-pitch-down", CardSpin(yaw: 0, pitch: 30)), ("spin-pitch-back", CardSpin(yaw: 180, pitch: -30)),
+            // 멈춘 카드에 마우스를 올린 자세도 함께 본다. 돌리는 카드의 등급 빛이 앞면과 따로
+            // 놀면 이 자세에서 가장자리에 선이 드러난다.
+            let spins: [(String, CardSpin, TiltVector)] = [
+                ("spin-000", .rest, .zero), ("spin-030", CardSpin(yaw: 30, pitch: 0), .zero),
+                ("spin-085", CardSpin(yaw: 85, pitch: 0), .zero), ("spin-095", CardSpin(yaw: 95, pitch: 0), .zero),
+                ("spin-150", CardSpin(yaw: 150, pitch: 0), .zero), ("spin-180", CardSpin(yaw: 180, pitch: 0), .zero),
+                ("spin-pitch-down", CardSpin(yaw: 0, pitch: 30), .zero),
+                ("spin-pitch-back", CardSpin(yaw: 180, pitch: -30), .zero),
+                ("spin-hover-right", .rest, TiltVector(nx: 0.88, ny: -0.02)),
+                ("spin-hover-diagonal", .rest, TiltVector(nx: 0.68, ny: -0.68)),
             ]
-            for (name, spin) in spins {
+            for (name, spin, pointer) in spins {
                 let view = ZStack {
                     Color(red: 0.055, green: 0.06, blue: 0.075)
-                    CardSpinStage(spin: spin, pointerTilt: .zero, width: cardWidth, height: cardHeight,
-                                  glow: TierGlow(tier: card.tier, width: cardWidth, startBloomed: true)) { light, pose in
+                    CardSpinStage(spin: spin, pointerTilt: pointer, width: cardWidth, height: cardHeight,
+                                  glow: { pose in
+                                      TierGlow(tier: card.tier, width: cardWidth, startBloomed: true)
+                                          .holoTilt(pose, spec: resolved.spec)
+                                  }) { light, pose in
                         HoloCardBody(cardID: card.id, tier: card.tier,
                                      finish: resolved.finish, spec: resolved.spec,
                                      width: cardWidth, height: cardHeight,
@@ -677,8 +699,7 @@ struct HoloCardBody: View, @MainActor Animatable {
                         x: flatCard ? 0 : -posed.nx * width * 0.018,
                         y: width * 0.022 - (flatCard ? 0 : posed.ny * width * 0.012))
         }
-        .rotation3DEffect(.degrees(flatCard ? 0 : posed.magnitude * profile.tilt),
-                          axis: posed.axis, perspective: 0.55)
+        .holoTilt(flatCard ? .zero : posed, spec: spec)
     }
 
     @ViewBuilder

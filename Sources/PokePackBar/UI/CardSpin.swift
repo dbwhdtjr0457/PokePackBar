@@ -174,8 +174,9 @@ struct CardSpinStage<Glow: View, Front: View>: View, @MainActor Animatable {
     var pointerTilt: TiltVector
     let width: CGFloat
     let height: CGFloat
-    /// 카드 뒤의 등급 빛. 카드와 같은 크기로 그린다.
-    let glow: Glow
+    /// 카드 뒤의 등급 빛. 카드와 같은 크기로 그리고, 받은 몸체 기울기만큼 앞면과 함께 기운다.
+    /// 따로 두면 마우스로 기울일 때 빛의 테두리 선이 제자리에 남아 가장자리 밖으로 드러났다.
+    @ViewBuilder let glow: (_ pose: TiltVector) -> Glow
     /// 앞면. 광택에 쓸 기울기와 몸체를 기울일 기울기를 따로 받고, 그림자와 등급 빛은 그리지 않는다.
     @ViewBuilder let front: (_ light: TiltVector, _ pose: TiltVector) -> Front
 
@@ -201,7 +202,7 @@ struct CardSpinStage<Glow: View, Front: View>: View, @MainActor Animatable {
         let shown: CardSlab.Face = slab.facing(.front) > 0 ? .front : .back
         let glowShare = slab.facing(shown)
         ZStack {
-            glow
+            glow(pose)
                 .projectionEffect(resting ? ProjectionTransform() : slab.projection(shown))
                 .opacity(Double(glowShare * glowShare))
             ZStack {
