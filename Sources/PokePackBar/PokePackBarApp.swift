@@ -249,6 +249,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
         observeStore()
         observeMenuBarCard()
+        observeAlertDot()
         updateMenuBarIcon()
         applyState()
         // 다른 계정으로 로그인해 다시 뜬 경우다. 그 계정 화면을 바로 보여 준다.
@@ -295,6 +296,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
     /// 메뉴바 카드가 바뀌면 아이콘을 다시 만든다. 사용량 숫자와 달리 카드는 자주 바뀌지 않지만,
     /// 최애를 지정하거나 새 카드를 뽑은 순간에는 바로 반영돼야 한다.
+    /// 안 읽은 알림이 생기거나 다 읽으면 메뉴바 아이콘의 빨간 점을 켜고 끈다.
+    private func observeAlertDot() {
+        withObservationTracking {
+            _ = wallet.remote?.notificationSummary?.unread
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                guard let self else { return }
+                self.updateAlertDot()
+                self.observeAlertDot()
+            }
+        }
+    }
+
+    private let alertDot = MenuBarAlertDot()
+
+    /// 점의 자리는 아이콘 그림을 따라가므로 그림이나 글자가 바뀔 때도 다시 놓는다.
+    private func updateAlertDot() {
+        guard let button = statusItem.button else { return }
+        let unread = wallet.remote?.notificationSummary?.unread ?? 0
+        alertDot.update(visible: unread > 0, on: button)
+        button.setAccessibilityValue(unread > 0 ? wallet.l.pendingAlerts(unread) : nil)
+    }
+
     private func observeMenuBarCard() {
         withObservationTracking {
             _ = store.menuBarCardEnabled
@@ -315,6 +339,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         // 으로 오인되던 것 방지(사용자 반복 지적). 데이터가 오래됐다는 신호가 필요하면 팝오버
         // (limitsUpdatedAt 등)에서 제공하고, 메뉴바 아이콘·숫자는 흐리게 하지 않는다.
         button.appearsDisabled = false
+        updateAlertDot()
 
         updateWallet()
     }
@@ -419,6 +444,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         CATransaction.setDisableActions(true)
         statusItem.button?.image = image
         CATransaction.commit()
+        updateAlertDot()
     }
 
 
