@@ -313,7 +313,7 @@ struct OnlineMarketView: View {
                     Text(OnlineText.cardName(printing.cardID)).font(Typography.bodySemibold)
                     OnlineBadge(text: status.text, color: status.color)
                 }
-                Text(OnlineText.l.myListingLine(finish: OnlineText.l.cardFinishName(printing.finish), unit: OnlineText.won(tokens: item.int("unit_tokens")), left: item.int("quantity")))
+                Text(OnlineText.l.myListingLine(finish: OnlineText.l.cardFinishName(printing.finish, cardID: printing.cardID), unit: OnlineText.won(tokens: item.int("unit_tokens")), left: item.int("quantity")))
                     .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
                 if item.string("status") == "active" {
                     Text(OnlineText.remaining(until: item.int("expires_at")))
@@ -417,7 +417,7 @@ struct OnlineMarketView: View {
                                                 asking: OnlineText.won(tokens: item.int("listing_unit_tokens")),
                                                 count: OnlineText.l.cardsCount(item.int("quantity"))))
                     .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
-                Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish), seller: item.string("nickname")))
+                Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish, cardID: printing.cardID), seller: item.string("nickname")))
                     .font(Typography.caption).foregroundStyle(.secondary)
                 if pending {
                     Text(OnlineText.remaining(until: item.int("expires_at")))
@@ -536,7 +536,7 @@ struct BuySheet: View {
                                                       perks: model.wallet.openingPerks) {
                             CardSourceLine(source: source, l: OnlineText.l)
                         }
-                        Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish), seller: OnlineMarketView.seller(item)))
+                        Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish, cardID: printing.cardID), seller: OnlineMarketView.seller(item)))
                             .font(Typography.label).foregroundStyle(.secondary)
                         Text(OnlineText.l.perCard(OnlineText.won(tokens: unit))).font(Typography.bodySemibold).monospacedDigit()
                         // 이미 가진 카드인지 사기 전에 본다.
@@ -550,7 +550,7 @@ struct BuySheet: View {
                         }
                         switch role {
                         case .seller:
-                            Text(OnlineText.l.myListingLine(finish: OnlineText.l.cardFinishName(printing.finish),
+                            Text(OnlineText.l.myListingLine(finish: OnlineText.l.cardFinishName(printing.finish, cardID: printing.cardID),
                                                             unit: OnlineText.won(tokens: unit), left: item.int("quantity")))
                                 .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
                             Text(OnlineText.remaining(until: item.int("expires_at")))
@@ -632,7 +632,7 @@ private struct SellSheet: View {
                 OnlinePrintingArt(printing: stock.key, width: 180)
                 VStack(alignment: .leading, spacing: 12) {
                     Text(OnlineText.cardName(stock.cardID)).font(Typography.title)
-                    Text(OnlineText.l.sellableLine(finish: OnlineText.l.cardFinishName(stock.finish), available: stock.available))
+                    Text(OnlineText.l.sellableLine(finish: OnlineText.l.cardFinishName(stock.finish, cardID: stock.cardID), available: stock.available))
                         .font(Typography.label).foregroundStyle(.secondary)
                     OnlineQuantity(value: $quantity, range: 1...min(1000, stock.available))
                     VStack(alignment: .leading, spacing: 6) {

@@ -28,7 +28,7 @@ enum OnlineText {
 
     static func printing(_ key: String) -> (name: String, finish: String) {
         let printing = CardPrintingKey(storageKey: key)
-        return (cardName(printing.cardID), l.cardFinishName(printing.finish))
+        return (cardName(printing.cardID), l.cardFinishName(printing.finish, cardID: printing.cardID))
     }
 
     /// 토큰을 원화로. 시장 가격은 천 원 단위로 뭉개면 안 되므로 끊지 않은 표기를 쓴다.
@@ -601,7 +601,7 @@ struct OnlineCatalogueSearch: View {
                         Picker(OnlineText.l.finishLabel, selection: $finish) {
                             if allowsAnyFinish { Text(OnlineText.l.anyFinish).tag(CardFinish?.none) }
                             ForEach(finishes(picked), id: \.self) { option in
-                                Text(OnlineText.l.cardFinishName(option)).tag(Optional(option))
+                                Text(OnlineText.l.cardFinishName(option, cardID: picked.id)).tag(Optional(option))
                             }
                         }
                         .fixedSize()
@@ -737,7 +737,7 @@ struct OnlineStockPicker: View {
                     CardImageView(cardID: picked.cardID, hires: true, width: 150)
                     VStack(alignment: .leading, spacing: 10) {
                         Text(OnlineText.cardName(picked.cardID)).font(Typography.title)
-                        Text(OnlineText.l.cardFinishName(picked.finish))
+                        Text(OnlineText.l.cardFinishName(picked.finish, cardID: picked.cardID))
                             .font(Typography.label).foregroundStyle(.secondary)
                         Text(OnlineText.l.offerableCount(picked.available))
                             .font(Typography.label)

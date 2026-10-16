@@ -24,6 +24,12 @@ extension L {
     /// 카드 상세 값 표에서 시세의 출처 줄 라벨.
     var priceBasis: String { t("기준", "Basis", "基準", "Base", "Base", "Base") }
     var marketHoldings: String { t("보유", "Holdings", "保有", "En posesión", "En stock", "Em posse") }
+    /// 그 카드의 실물 재질 이름. 원본 데이터가 다른 판형으로 묶어 둔 카드는 실물 이름을 쓴다
+    /// (`PhysicalFoilFixes`). 저장된 판형은 그대로다.
+    func cardFinishName(_ finish: CardFinish, cardID: String) -> String {
+        cardFinishName(PhysicalFoilFixes.displayedFinish(cardID: cardID, stored: finish))
+    }
+
     func cardFinishName(_ finish: CardFinish) -> String {
         switch finish {
         case .normal: return t("일반", "Non-foil", "ノーマル", "Normal", "Standard", "Normal")

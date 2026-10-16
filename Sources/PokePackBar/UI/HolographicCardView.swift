@@ -1623,8 +1623,28 @@ private struct FinishPatternLayer: View {
                                   isMonochrome: pattern == .monochrome,
                                   tilt: tilt)
         } else if let material = FoilReliefMaterial(pattern: pattern, texture: texture, cardID: cardID) {
-            ImageGuidedFoilRelief(cardID: cardID, preloaded: preloaded,
-                                 material: material, seed: seed, tilt: tilt)
+            ZStack {
+                ImageGuidedFoilRelief(cardID: cardID, preloaded: preloaded,
+                                     material: material, seed: seed, tilt: tilt)
+                if material == .gold(.megaGold) {
+                    // 실물 MUR(ME01 루카리오 188, 개봉 영상 두 편)은 기울이면 빨강~청록 무지개 띠가
+                    // 금색 위를 대각선으로 넓게 지나간다. 정면의 강한 빛에서는 거의 금색이다.
+                    // 결 하나하나가 아니라 넓은 띠라서 금속 결은 그대로 두고 빛 띠로 얹는다.
+                    // 일반 혼합: 포일 마스크 안의 특수 혼합 모드는 실제 창에서 회색 판으로 나온 적이 있다.
+                    plainHolographicSpectrum
+                        .mask { plainHolographicLightBand }
+                        .opacity(0.10 + 0.42 * tilt.magnitude)
+                }
+                if material == .neoShining {
+                    // 실물 샤이닝 라이츄(개봉 영상)는 기울이면 포켓몬 부분이 밝은 은색 거울로 빛난다.
+                    // 스캔은 이 포일을 어둡게 담아서 작은 반짝임만으로는 검은 실루엣으로 남았다.
+                    // 정면은 스캔 그대로 두고, 기울일 때 빛이 닿는 띠만 은색으로 밝힌다.
+                    // 일반 혼합: 위 MUR 띠와 같은 이유.
+                    Color(red: 0.88, green: 0.90, blue: 0.93)
+                        .mask { plainHolographicLightBand }
+                        .opacity(0.80 * tilt.magnitude)
+                }
+            }
         } else {
             let motif = FinishPatternCanvas(pattern: pattern, seed: seed,
                                             cardID: cardID, visualKind: visualKind)
@@ -2842,12 +2862,21 @@ struct FinishPatternCanvas: View {
 
     private func drawScarletVioletTiles(context: inout GraphicsContext, size: CGSize) {
         let step = max(23, size.width * 0.145)
+        // 실물(SV 151 텐타쿨 072 리버스)은 기술 칸 오른쪽에 타입 심볼을 품은 큰 원이 있고, 타일은
+        // 그 바깥에만 깔린다. 예전에는 왼쪽 아래의 작은 심볼 하나뿐이었다.
+        let emblemCenter = CGPoint(x: size.width * 0.73, y: size.height * 0.64)
+        let emblemRadius = size.width * 0.135
         var row = 0
         var y: CGFloat = 0
         while y < size.height + step {
             var column = 0
             var x: CGFloat = row.isMultiple(of: 2) ? 0 : step * 0.5
             while x < size.width + step {
+                if hypot(x - emblemCenter.x, y - emblemCenter.y) < emblemRadius * 1.08 {
+                    column += 1
+                    x += step
+                    continue
+                }
                 let radius = step * 0.42
                 let wobble = (row + column).isMultiple(of: 2) ? 0.82 : 1.08
                 let pebble = CGRect(x: x - radius * wobble,
@@ -2870,10 +2899,16 @@ struct FinishPatternCanvas: View {
             y += step * 0.72
         }
 
-        drawCardMotif(context: &context,
-                      center: CGPoint(x: size.width * 0.12, y: size.height * 0.60),
-                      radius: size.width * 0.07, element: motifElements[0],
-                      trainer: isTrainerMotif, opacity: 0.26)
+        let line = max(0.8, size.width * 0.006)
+        for (scale, opacity) in [(1.0, 0.42), (0.84, 0.24)] {
+            let r = emblemRadius * scale
+            context.stroke(Path(ellipseIn: CGRect(x: emblemCenter.x - r, y: emblemCenter.y - r,
+                                                  width: r * 2, height: r * 2)),
+                           with: .color(.white.opacity(opacity)), lineWidth: line * scale)
+        }
+        drawCardMotif(context: &context, center: emblemCenter,
+                      radius: emblemRadius * 0.56, element: motifElements[0],
+                      trainer: isTrainerMotif, opacity: 0.46)
     }
 
     private var isTrainerMotif: Bool {

@@ -269,10 +269,12 @@ final class CardFinishResolverTests: XCTestCase {
                     pattern: .pokeBall3D),
             Example(cardID: "ex12-1", setID: "ex12", coverage: .artWindow,
                     pattern: .cosmosStamp),
-            Example(cardID: "ex13-1", setID: "ex13", coverage: .artWindow,
+            // Delta-species reverses foil the Pokémon only, with a plain sheet
+            // (real Dragon Frontiers Cyndaquil δ 45 and Holon Phantoms reverses).
+            Example(cardID: "ex13-1", setID: "ex13", coverage: .artSubject,
                     pattern: .stampedMirror),
-            Example(cardID: "ex15-1", setID: "ex15", coverage: .artWindow,
-                    pattern: .subjectStamp),
+            Example(cardID: "ex15-1", setID: "ex15", coverage: .artSubject,
+                    pattern: .stampedMirror),
             Example(cardID: "dp3-1", setID: "dp3", coverage: .outsideArt,
                     pattern: .mirror),
             Example(cardID: "bw6-1", setID: "bw6", coverage: .outsideArt,

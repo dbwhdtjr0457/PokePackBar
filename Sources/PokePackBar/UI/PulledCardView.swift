@@ -199,7 +199,7 @@ struct PulledCardView: View {
                             .foregroundStyle(tierColor(card.tier))
                         Text(l.tierName(card.tier)).font(Typography.label).foregroundStyle(.secondary)
                         Text("·").font(Typography.label).foregroundStyle(.tertiary)
-                        Text(l.cardFinishName(card.finish))
+                        Text(l.cardFinishName(card.finish, cardID: card.id))
                             .font(Typography.label).foregroundStyle(.secondary)
                         if let prices = CardPrices.shared,
                            let usd = prices.price(cardID: card.id, finish: card.finish) {

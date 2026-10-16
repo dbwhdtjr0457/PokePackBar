@@ -354,8 +354,8 @@ enum CardFinishResolver {
         }
 
         if rarity.contains("black white") { return .blackWhite }
-        // Mega Hyper Rare(MUR)는 금색 단색 계열이다. 공격명과 컬러 버스트가 강조되는
-        // Mega Attack Rare와 같은 판형으로 묶으면 무지개빛이 과하게 올라온다.
+        // Mega Hyper Rare(MUR)는 금색 판형이다. 기울이면 넓은 무지개 띠가 지나가지만(재질에서
+        // 그린다), 공격명과 컬러 버스트가 강조되는 Mega Attack Rare 판형과는 다르다.
         if rarity.contains("mega hyper") { return .gold }
         if rarity.contains("mega attack") { return .megaAttack }
         if rarity.contains("radiant") { return .radiant }

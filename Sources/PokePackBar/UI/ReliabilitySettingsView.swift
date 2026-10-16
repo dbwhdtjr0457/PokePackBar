@@ -29,7 +29,7 @@ struct ReliabilitySettingsView: View {
                     ForEach(wallet.state.openingHistory.suffix(10).reversed()) { record in
                         VStack(alignment: .leading, spacing: 2) {
                             Text("\(record.setID) · \(record.openedAt.formatted(date: .abbreviated, time: .shortened))")
-                            Text(record.printings.map { "\($0.cardID) [\(l.cardFinishName($0.finish))]" }.joined(separator: ", "))
+                            Text(record.printings.map { "\($0.cardID) [\(l.cardFinishName($0.finish, cardID: $0.cardID))]" }.joined(separator: ", "))
                                 .foregroundStyle(.secondary)
                             if record.supplement.energyCount > 0 {
                                 Text(l.supplement(record.supplement))

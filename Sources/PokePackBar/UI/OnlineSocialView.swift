@@ -744,7 +744,7 @@ struct OnlinePrintingDetail: View {
         let key = CardPrintingKey(storageKey: printing)
         VStack(spacing: 12) {
             Text(OnlineText.cardName(key.cardID)).font(Typography.heading)
-            Text("\(OnlineText.l.cardFinishName(key.finish)), \(CardIndex.shared?.card(key.cardID).flatMap { CardIndex.shared?.set($0.setID)?.name } ?? "")")
+            Text("\(OnlineText.l.cardFinishName(key.finish, cardID: key.cardID)), \(CardIndex.shared?.card(key.cardID).flatMap { CardIndex.shared?.set($0.setID)?.name } ?? "")")
                 .font(Typography.label).foregroundStyle(.secondary)
             OnlinePrintingArt(printing: printing, width: 260)
             if let won = OnlineText.referenceWon(printing), let prices = CardPrices.shared {

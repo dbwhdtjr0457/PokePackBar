@@ -603,7 +603,8 @@ private enum FoilReliefCache {
             switch pattern {
             case .megaGold:
                 // Dense metal grain, not rectangular patches or rainbow
-                // scratches. A scan cannot supply the exact emboss plate.
+                // scratches. The real card's rainbow is a broad tilted band,
+                // drawn by the sheen layer. A scan cannot supply the exact emboss plate.
                 let facet = sin(x * 739 + y * 1031 + phase)
                     * cos(x * 617 - y * 887 + phase)
                 return (facet * 2.7, facet * .pi, facet * 0.1)

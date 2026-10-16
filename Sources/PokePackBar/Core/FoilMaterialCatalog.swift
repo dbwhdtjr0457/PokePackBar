@@ -60,6 +60,13 @@ enum FoilMaterialCatalog {
         case .gold:
             return gold(setID: setID, rarity: rarity, visualKind: visualKind)
         case .rainbow:
+            // 대체 아트 VMAX 와 아리타 뮤츠-GX 는 레인보우와 같은 레어도 이름으로 들어왔지만
+            // 실물은 무지개가 아닌 질감 풀아트다. 저장 판형은 그대로 두고 재질만 바꾼다.
+            if PhysicalFoilFixes.swordShieldAlternateArtVMAX.contains(cardID)
+                || PhysicalFoilFixes.sunMoonTexturedSecret.contains(cardID) {
+                return etched(cardID: cardID, setID: setID, rarity: "rare ultra", tier: tier,
+                              visualKind: visualKind)
+            }
             return rainbow(setID: setID)
         case .aceSpec:
             return aceSpec(setID: setID)
@@ -94,6 +101,10 @@ enum FoilMaterialCatalog {
         // The upstream index labels this gold Secret Rare as ordinary Rare Holo.
         if cardID == "cel25-25" {
             return gold(setID: "cel25", rarity: "rare secret", visualKind: nil)
+        }
+        if PhysicalFoilFixes.holoBorderTrainer.contains(cardID) {
+            // Time-Space Distortion: the first English Trainer with a holofoil border.
+            return foil(.artAndBorder, .cosmos, .none, .holo, 0.52)
         }
         if cardID == "cel25-5" {
             // Untextured full-art Pikachu: the source-bound window covers all
@@ -219,10 +230,10 @@ enum FoilMaterialCatalog {
             return foil(.artBackground, .pokeBall3D, .none, .silver, 0.57)
         case "ex12":
             return foil(.artWindow, .cosmosStamp, .none, .silver, 0.52)
-        case "ex15":
-            return foil(.artWindow, .subjectStamp, .none, .silver, 0.52)
-        case "ex11", "ex13", "ex14", "ex16":
-            return foil(.artWindow, .stampedMirror, .none, .silver, 0.50)
+        case "ex11", "ex13", "ex14", "ex15", "ex16":
+            // These reverses are a plain holo sheet on part of the art only, never the whole window.
+            return foil(deltaEraReverseCoverage(cardID: cardID, setID: setID, rarity: rarity),
+                        .stampedMirror, .none, .silver, 0.50)
 
         case let id where id.hasPrefix("dp") || id.hasPrefix("pl")
             || id.hasPrefix("hgss") || id == "col1" || id == "bw1":
@@ -252,6 +263,27 @@ enum FoilMaterialCatalog {
 
         default:
             return foil(.outsideArt, .reverse, .fineLines, .silver, 0.46)
+        }
+    }
+
+    /// Delta Species 부터 Power Keepers 까지의 리버스 포일 자리.
+    ///
+    /// 그림 칸 전체가 아니라 배경이나 포켓몬 한쪽에만 포일이 있다.
+    /// - Bulbapedia(Holofoil): DS 는 "within the background ... (excluding the Pokémon itself)",
+    ///   HP 는 "on the background of the artwork", DF 는 "on the Pokémon themselves".
+    /// - 실물 영상: HP 피카츄 78(델타종 아님)은 배경만, DF 브케인 δ 45 는 포켓몬만 빛난다.
+    /// - 델타종은 포켓몬 쪽이다. DS 와 HP 는 레어만, CG 와 DF 는 레어도와 상관없다(수집가 정리).
+    private static func deltaEraReverseCoverage(cardID: String, setID: String,
+                                                rarity: String) -> FoilCoverage {
+        let isDelta = CardIndex.shared?.card(cardID)?.name.contains("δ") == true
+        guard isDelta else { return .artBackground }
+        switch setID {
+        case "ex14", "ex15":
+            return .artSubject
+        case "ex11", "ex13":
+            return rarity == "rare" || rarity.contains("holo") ? .artSubject : .artBackground
+        default:
+            return .artBackground
         }
     }
 
@@ -311,6 +343,14 @@ enum FoilMaterialCatalog {
     private static func etched(cardID: String, setID: String, rarity: String,
                                tier: CardTier,
                                visualKind: CardVisualKind?) -> FoilSpec {
+        if PhysicalFoilFixes.xyGoldItemStoredAsEtched.contains(cardID) {
+            // Gold secret Item like Energy Retrieval in the same set, not a full-art Trainer.
+            return gold(setID: setID, rarity: "rare secret", visualKind: visualKind)
+        }
+        if PhysicalFoilFixes.xyGoldBorderSecretEX.contains(cardID) {
+            // Later XY secret EX keep the textured sheet, but the border is gold.
+            return foil(.fullCard, .sheen, .xyEtched, .gold, 0.57)
+        }
         if tier == .futureUltra || rarity.contains("futuristic rare") {
             return foil(.fullCard, .futuristic, .none, .holo, 0.66)
         }
@@ -462,8 +502,9 @@ enum FoilMaterialCatalog {
     private static func gold(setID: String, rarity: String,
                              visualKind: CardVisualKind?) -> FoilSpec {
         if rarity.contains("mega hyper") {
-            // MUR is gold-etched, not a rainbow Mega Attack coating. The
-            // dedicated pattern owns its micro-etch to avoid a second grid.
+            // MUR is gold-etched, not the Mega Attack comic coating. Tilted, a broad
+            // rainbow band sweeps across the gold (drawn with the sheen, not the
+            // relief). The dedicated pattern owns its micro-etch to avoid a second grid.
             return foil(.fullCard, .megaGold, .none, .gold, 0.62)
         }
         switch setID {

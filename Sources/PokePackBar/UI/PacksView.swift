@@ -516,7 +516,7 @@ private struct RevealView: View {
                     .foregroundStyle(tierColor(card.tier))
                 Text(l.tierName(card.tier)).font(Typography.label).foregroundStyle(.secondary)
                 Text("·").font(Typography.label).foregroundStyle(.tertiary)
-                Text(l.cardFinishName(card.finish))
+                Text(l.cardFinishName(card.finish, cardID: card.id))
                     .font(Typography.label).foregroundStyle(.secondary)
                 if !card.isSupplementalEnergy, let prices = CardPrices.shared,
                    let usd = prices.price(cardID: card.id, finish: card.finish) {
@@ -1236,8 +1236,8 @@ private struct PulledCardCell: View {
                         .padding(3)
                         .frame(maxWidth: .infinity, maxHeight: .infinity,
                                alignment: .bottomLeading)
-                        .help(wallet.l.cardFinishName(card.finish))
-                        .accessibilityLabel(wallet.l.cardFinishName(card.finish))
+                        .help(wallet.l.cardFinishName(card.finish, cardID: card.id))
+                        .accessibilityLabel(wallet.l.cardFinishName(card.finish, cardID: card.id))
                 }
             }
             Text(wallet.l.tierBadge(card.tier))
