@@ -530,6 +530,12 @@ struct BuySheet: View {
                     OnlinePrintingArt(printing: item.string("printing"), width: 180)
                     VStack(alignment: .leading, spacing: 10) {
                         Text(OnlineText.cardName(printing.cardID)).font(Typography.title)
+                        // 어느 팩에서 나오고 얼마나 드문지. 사지 않고 팩을 열어 노릴지 정할 수 있다.
+                        if let index = CardIndex.shared,
+                           let source = CardSource.of(cardID: printing.cardID, index: index,
+                                                      perks: model.wallet.openingPerks) {
+                            CardSourceLine(source: source, l: OnlineText.l)
+                        }
                         Text(OnlineText.l.soldBy(finish: OnlineText.l.cardFinishName(printing.finish), seller: OnlineMarketView.seller(item)))
                             .font(Typography.label).foregroundStyle(.secondary)
                         Text(OnlineText.l.perCard(OnlineText.won(tokens: unit))).font(Typography.bodySemibold).monospacedDigit()

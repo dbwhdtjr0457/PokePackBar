@@ -46,6 +46,12 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
         model?.opensMarketSell = cardID
     }
 
+    /// 카드 상세의 마켓 줄. 마켓의 「사기」를 그 카드로 찾아 둔다.
+    func showBuying(wallet: WalletStore, cardID: String) {
+        show(wallet: wallet, section: .market)
+        model?.openBuying(cardID: cardID)
+    }
+
     func windowWillClose(_ notification: Notification) { model?.visible = false }
     func windowDidMiniaturize(_ notification: Notification) { model?.visible = false }
     func windowDidDeminiaturize(_ notification: Notification) { model?.visible = true }
@@ -276,6 +282,15 @@ final class OnlineHubModel {
         message = OnlineText.l.alertsMarkedRead(marked)
         await refresh()
         await remote.refreshNotificationSummary()
+    }
+
+    /// 마켓의 「사기」를 그 카드 이름과 출처 팩으로 찾아 둔다. 위시리스트 알림을 누를 때와 같은 방식이고,
+    /// 같은 이름의 다른 세트 카드가 섞이지 않게 세트도 고른다. 다른 조건은 푼다.
+    func openBuying(cardID: String) {
+        opensMarketBuy = true
+        marketTier = ""; marketFinish = ""; marketSeller = ""; marketMissing = false
+        marketSet = CardIndex.shared?.card(cardID)?.setID ?? ""
+        if let name = OnlineText.searchName(cardID) { search = name }
     }
 
     // MARK: 알림이 가리키는 곳
