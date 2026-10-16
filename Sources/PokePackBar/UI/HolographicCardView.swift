@@ -277,7 +277,8 @@ struct HolographicCardView: View {
                                       TierGlow(tier: tier, width: width,
                                                valueCard: valueAwareGlow
                                                   ? PulledCard(id: cardID, tier: tier, isNew: false, finish: resolved.finish)
-                                                  : nil)
+                                                  : nil,
+                                               rim: false)
                                           .holoTilt(pose, spec: resolved.spec)
                                   }
                               }) { light, pose in
@@ -550,7 +551,7 @@ enum HoloVisualDiagnostics {
                     Color(red: 0.055, green: 0.06, blue: 0.075)
                     CardSpinStage(spin: spin, pointerTilt: pointer, width: cardWidth, height: cardHeight,
                                   glow: { pose in
-                                      TierGlow(tier: card.tier, width: cardWidth, startBloomed: true)
+                                      TierGlow(tier: card.tier, width: cardWidth, startBloomed: true, rim: false)
                                           .holoTilt(pose, spec: resolved.spec)
                                   }) { light, pose in
                         HoloCardBody(cardID: card.id, tier: card.tier,

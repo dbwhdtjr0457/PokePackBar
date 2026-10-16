@@ -1094,6 +1094,10 @@ struct TierGlow: View {
     @State private var bloomed = false
     /// 진단 렌더러가 다 퍼진 모습을 바로 그릴 때만 켠다.
     var startBloomed = false
+    /// 가장자리에 맺히는 테두리 선. 선은 카드 그림이 아니라 카드 틀에 맞춰 그려서, 스캔 속 카드가
+    /// 틀보다 안쪽에 있으면 카드에서 떨어진 테두리로 보인다. 카드를 크게 놓고 돌려 보는 상세
+    /// 화면에서는 끈다.
+    var rim = true
 
     var body: some View {
         let base = valueCard.map(RevealMotionProfile.rarityEmphasis(_:))
@@ -1123,12 +1127,14 @@ struct TierGlow: View {
                 .scaleEffect(bloomed ? 1.05 : 0.97)
             // 테두리 — 위에서 빛을 받은 가장자리. 한 가지 색으로만 번지면 납작한 띠로
             // 보이는데, 윗변이 밝게 맺히면 빛이 카드 뒤에서 새어 나오는 것처럼 읽힌다.
-            RoundedRectangle(cornerRadius: width * 0.05 + 1.5)
-                .strokeBorder(LinearGradient(colors: [.white.opacity(0.7), color, color.opacity(0.2)],
-                                             startPoint: .top, endPoint: .bottom),
-                              lineWidth: 1.5)
-                .padding(-1.5)
-                .opacity(bloomed ? min(1, strength * 1.2) : 0)
+            if rim {
+                RoundedRectangle(cornerRadius: width * 0.05 + 1.5)
+                    .strokeBorder(LinearGradient(colors: [.white.opacity(0.7), color, color.opacity(0.2)],
+                                                 startPoint: .top, endPoint: .bottom),
+                                  lineWidth: 1.5)
+                    .padding(-1.5)
+                    .opacity(bloomed ? min(1, strength * 1.2) : 0)
+            }
         }
         .frame(width: width, height: (width / 0.717).rounded())
         // 후광은 장식이라 보조기술이 읽을 것이 없다. 등급은 배지와 이름이 따로 알린다.
