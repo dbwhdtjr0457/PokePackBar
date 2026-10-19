@@ -56,6 +56,26 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.19.0", lines: [
+                t("교환 한쪽에 돈을 더하고, 트레이너 판매 글에 가격을 제안할 수 있습니다. 돈은 수락할 때 정산하며 잔액과 재고를 다시 확인합니다.",
+                  "Add money to one side of a trade and offer a price on trainer listings. Payment settles on acceptance after balance and stock checks.",
+                  "交換の片側にお金を追加し、トレーナーの出品に価格を提案できます。承認時に残高と在庫を確認して決済します。",
+                  "Añade dinero a un lado del intercambio y propone precios en anuncios de entrenadores. Al aceptar se comprueban saldo y existencias.",
+                  "Ajoutez de l’argent à un échange et proposez un prix sur les annonces des dresseurs. Le solde et le stock sont vérifiés à l’acceptation.",
+                  "Adicione dinheiro a um lado da troca e ofereça preços nos anúncios de treinadores. Saldo e estoque são verificados ao aceitar."),
+                t("큰 카드를 끌어 뒷면까지 돌려 볼 수 있습니다. 카드 상세에는 뽑힐 확률, 마켓 최저가와 위시리스트를 추가했습니다.",
+                  "Drag large cards to turn them over. Card details now show pull odds, market prices and wishlist controls.",
+                  "大きなカードをドラッグして裏面まで回転できます。カード詳細に排出確率、マーケット価格、ウィッシュリストを追加しました。",
+                  "Arrastra las cartas grandes para girarlas. Los detalles muestran probabilidades, precios del mercado y lista de deseos.",
+                  "Faites tourner les grandes cartes en les glissant. Les détails affichent probabilités, prix du marché et liste de souhaits.",
+                  "Arraste as cartas grandes para virá-las. Os detalhes mostram chances, preços do mercado e lista de desejos."),
+                t("메뉴바에 안 읽은 알림 점을 표시합니다. 다른 계정으로 로그인하면 앱을 자동으로 다시 열어 해당 계정으로 전환합니다.",
+                  "Unread alerts appear as a menu-bar dot. Signing into another account automatically relaunches the app with that account.",
+                  "未読通知をメニューバーの点で表示します。別のアカウントへのログイン時はアプリを再起動して切り替えます。",
+                  "Un punto indica avisos sin leer. Al entrar con otra cuenta, la app se reinicia y cambia a esa cuenta.",
+                  "Un point indique les alertes non lues. Une connexion à un autre compte relance l’app avec ce compte.",
+                  "Um ponto indica alertas não lidos. Ao entrar com outra conta, o app reinicia com essa conta.")
+            ]),
             ReleaseNote(version: "0.18.0", lines: [
                 t("로테이션을 온라인 마켓의 봇 매물로 통합했습니다. 매일 한국 시간 오전 9시에 20종을 갱신하고, 각 5장 중 계정당 한 장씩 살 수 있습니다.",
                   "Daily rotation is now bot listings in the online market. Twenty cards refresh at 00:00 UTC, with five copies each and one per account.",

@@ -73,6 +73,20 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.19.0
+
+교환 한쪽에 돈을 얹고, 트레이너 판매 글에 판매가의 절반 이상인 가격을 제안할 수 있다.
+돈은 제안 중에 묶지 않으며 수락할 때 잔액·재고를 확인해 카드와 함께 정산한다.
+받은 제안은 ‘내 판매’, 보낸 제안과 결과는 ‘보낸 제안’에서 확인한다.
+
+큰 카드를 끌어 뒷면까지 돌려 볼 수 있다. 카드 상세에는 뽑힐 확률과 마켓 최저가,
+위시리스트를 추가했다. 메뉴바의 점은 안 읽은 알림을 표시하며, 다른 계정으로
+로그인하면 앱을 자동으로 다시 열어 그 계정으로 전환한다.
+기존 계정·재화는 보존하고 서버 DB를 0009로 갱신한다.
+
+![카드 상세와 마켓 정보](docs/reference/screenshots/card-detail-019-ko.png)
+![판매 글 가격 제안](docs/reference/screenshots/market-offer-019-ko.png)
+
 ## 0.18.0
 
 로테이션은 온라인 마켓의 봇 매물로 통합했다. 매일 한국 시간 오전 9시에 20종을
