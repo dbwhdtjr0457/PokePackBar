@@ -118,7 +118,11 @@ enum ArtworkMaskCache {
         let identity = source.map { String(describing: ObjectIdentifier($0)) } ?? "missing"
         return "\(cardID)#\(identity)#\(art)"
     }
+    /// Keys whose last segmentation found no foreground. A retry still runs; this only lets
+    /// a subject-only foil fall back to the whole illustration instead of vanishing.
+    private static var failures: Set<String> = []
     static func mask(key: String) -> CGImage? { cache.object(forKey: key as NSString)?.image }
+    static func failed(key: String) -> Bool { failures.contains(key) }
     static func prepare(cardID: String, source: NSImage, art: CGRect) async -> CGImage? {
         // Registered cards use immutable, source-hash-bound paths below. Never
         // silently replace an absent/stale reviewed path with fresh segmentation.
@@ -140,7 +144,12 @@ enum ArtworkMaskCache {
             return CIContext().createCGImage(image, from: image.extent)
         }.value
         // Failed segmentation is retryable; don't permanently cache a miss.
-        if let result { cache.setObject(Entry(result, source: source), forKey: cacheKey) }
+        if let result {
+            cache.setObject(Entry(result, source: source), forKey: cacheKey)
+            failures.remove(cacheKey as String)
+        } else {
+            failures.insert(cacheKey as String)
+        }
         return result
     }
 }
@@ -183,6 +192,13 @@ struct ArtworkFoilMask: View {
             // New background substrate must never flash over opaque Pokémon
             // ink while asynchronous foreground separation is still loading.
             if requirePreparedMask && preparedMask == nil { return }
+            // 분리가 실패하면(그림에서 포켓몬을 찾지 못함) 포켓몬만 칠할 포일이 통째로 사라졌다
+            // (예: ex13-2 리버스). 실패한 카드는 예전처럼 그림 칸 전체에 포일을 둔다.
+            if coverage == .artSubject, preparedMask == nil,
+               maskKey == key || ArtworkMaskCache.failed(key: key) {
+                artContext.fill(artwork, with: .color(.white))
+                return
+            }
             if coverage == .artBackground { artContext.fill(artwork, with: .color(.white)) }
             if let mask = preparedMask {
                 if coverage == .artBackground { artContext.blendMode = .destinationOut }

@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import XCTest
 @testable import PokePackBar
@@ -93,5 +94,21 @@ final class EXReverseRareAccentTests: XCTestCase {
         // 다른 세트는 그대로: Legend Maker 는 레어 리버스도, Holon Phantoms 는 홀로 레어만.
         XCTAssertTrue(HoloCardBody.showsEXReverseRareAccents(cardID: "ex12-20", finish: .reverseHolo, tier: .rare))
         XCTAssertFalse(HoloCardBody.showsEXReverseRareAccents(cardID: "ex13-20", finish: .reverseHolo, tier: .rare))
+    }
+}
+
+@MainActor
+final class ArtworkMaskFailureTests: XCTestCase {
+    /// 포켓몬을 찾지 못한 그림은 실패로 기록되어, 포켓몬만 칠할 포일이 그림 칸 전체로 돌아갈 수 있다.
+    func testFailedSeparationIsRecorded() async throws {
+        let blank = NSImage(size: NSSize(width: 120, height: 160), flipped: false) { rect in
+            NSColor(white: 0.5, alpha: 1).setFill(); rect.fill(); return true
+        }
+        let art = CGRect(x: 0, y: 0, width: 1, height: 1)
+        let key = ArtworkMaskCache.key(cardID: "test-blank", source: blank, art: art)
+        XCTAssertFalse(ArtworkMaskCache.failed(key: key))
+        let mask = await ArtworkMaskCache.prepare(cardID: "test-blank", source: blank, art: art)
+        XCTAssertNil(mask)
+        XCTAssertTrue(ArtworkMaskCache.failed(key: key))
     }
 }
