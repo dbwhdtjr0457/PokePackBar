@@ -11,6 +11,33 @@ read_when:
 
 # 결함 대응 축적 규칙
 
+### 2026-10-19 — Keep replacement data and its revision together
+
+- The card-detail wishlist read fresh data, waited for background sync, then
+  paired that data with the session's newer revision. Another device's wishes
+  could be overwritten after the session advanced. Toggle-only tests missed
+  the request-construction boundary.
+- Build the replacement list and expected revision from the same profile reply.
+  A concurrent edit now produces a revision conflict and preserves that edit.
+- `CardSourceTests.testWishlistMutationUsesTheRevisionOfItsProfileRead` fixes
+  the request boundary as a regression. Sweep: the existing profile form uses
+  a fixed draft revision; ordinary game mutations are serialized by the session.
+
+### 2026-10-19 — Confirm money terms before accepting trades
+
+- Adding optional money fields to a trade made older apps display only cards
+  while their unchanged acceptance could debit a hidden money amount. The new
+  tests used only current-client requests and missed that reachable old-client path.
+- Accept requests echo the exact money shown in the confirmation. The server
+  compares both amounts with the stored terms under its transaction lock, before
+  moving cards or money. Zero-money trades retain their old request shape.
+- Sweep: listing purchases already echo their price; offer acceptance uses an
+  offer ID/version and is unavailable to older clients. Both trade money directions
+  now reject absent or changed terms without modifying either account.
+- `MarketOfferTests` checks the actual acceptance request builder. Server tests
+  exercise the legacy request and verify both wallets/states remain unchanged.
+  Disabling the server guard makes both direction tests fail.
+
 ### 2026-10-07 — Validate remote state before asynchronous cache persistence
 
 - Moving online cache writes off the main actor removed a validation boundary:
