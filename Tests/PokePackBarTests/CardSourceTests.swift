@@ -67,4 +67,13 @@ final class CardSourceTests: XCTestCase {
         let removed = CardWishlist.toggled(added, cardID: "base1-4")
         XCTAssertEqual(removed.map { $0.string("card_id") }, ["sv1-1"])
     }
+
+    func testWishlistMutationUsesTheRevisionOfItsProfileRead() {
+        let reply: [String: Any] = ["revision": 42, "profile": ["wishlist": [
+            ["card_id": "base1-4", "finish": "holo", "target": 2],
+        ]]]
+        let command = CardWishlist.mutation(fromProfile: reply, cardID: "sv1-1")
+        XCTAssertEqual(command["expected_revision"] as? Int, 42)
+        XCTAssertEqual((command["wishes"] as? [[String: Any]])?.map { $0.string("card_id") }, ["base1-4", "sv1-1"])
+    }
 }

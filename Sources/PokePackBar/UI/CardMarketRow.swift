@@ -50,6 +50,13 @@ enum CardWishlist {
             ? wishes.filter { $0.string("card_id") != cardID }
             : wishes + [["card_id": cardID, "finish": NSNull(), "target": 1]]
     }
+
+    /// The replacement list and its revision must come from the same read.
+    /// A background sync can advance the session while this request waits.
+    static func mutation(fromProfile reply: [String: Any], cardID: String) -> [String: Any] {
+        ["action": "wishlist", "wishes": toggled(wishes(fromProfile: reply), cardID: cardID),
+         "request_id": UUID().uuidString, "expected_revision": reply.int("revision")]
+    }
 }
 
 /// 카드 상세의 마켓 줄. 판매 글 수와 최저가를 보여 주고, 누르면 온라인 마켓에서 그 카드를 찾아 둔다.
@@ -127,14 +134,12 @@ struct CardMarketRow: View {
         defer { wishBusy = false }
         do {
             let fresh = try JSONSerialization.jsonObject(with: try await remote.api("v1/profile")) as? [String: Any] ?? [:]
-            let next = CardWishlist.toggled(CardWishlist.wishes(fromProfile: fresh), cardID: cardID)
+            let body = CardWishlist.mutation(fromProfile: fresh, cardID: cardID)
             // 10초마다 도는 동기화와 겹치면 명령이 거절된다. 잠깐 기다렸다 보낸다.
             for _ in 0..<30 where remote.busy { try await Task.sleep(for: .milliseconds(100)) }
-            let body: [String: Any] = ["action": "wishlist", "wishes": next,
-                                       "request_id": UUID().uuidString, "expected_revision": remote.revision]
             _ = try await remote.onlineMutation(path: "v1/wishlist",
                                                 body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
-            wishes = next
+            wishes = body["wishes"] as? [[String: Any]]
         } catch {
             AppLog.write("[online] wishlist toggle failed: \(error.localizedDescription)")
         }

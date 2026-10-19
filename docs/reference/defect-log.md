@@ -11,6 +11,18 @@ read_when:
 
 # 결함 대응 축적 규칙
 
+### 2026-10-19 — Keep replacement data and its revision together
+
+- The card-detail wishlist read fresh data, waited for background sync, then
+  paired that data with the session's newer revision. Another device's wishes
+  could be overwritten after the session advanced. Toggle-only tests missed
+  the request-construction boundary.
+- Build the replacement list and expected revision from the same profile reply.
+  A concurrent edit now produces a revision conflict and preserves that edit.
+- `CardSourceTests.testWishlistMutationUsesTheRevisionOfItsProfileRead` fixes
+  the request boundary as a regression. Sweep: the existing profile form uses
+  a fixed draft revision; ordinary game mutations are serialized by the session.
+
 ### 2026-10-19 — Confirm money terms before accepting trades
 
 - Adding optional money fields to a trade made older apps display only cards
