@@ -67,7 +67,8 @@ enum ConfirmedFoilAudit {
                 if eligible { parallelCount += 1 }
             }
         }
-        try LocalAudit.require(reliefCount == 106, "Unexpected corrected-relief coverage: \(reliefCount)")
+        // 107: the Champion's Path shiny Charizard V (swsh35-79) joined the shiny V relief.
+        try LocalAudit.require(reliefCount == 107, "Unexpected corrected-relief coverage: \(reliefCount)")
         try LocalAudit.require(legendaryReverseCount == 71, "Legendary reverse audit omissions")
         try LocalAudit.require(parallelCount == 471, "Ball audit range drift: \(parallelCount)")
         try LocalAudit.require(try resolved("cel30c-14").spec.treatment == .classic30,
