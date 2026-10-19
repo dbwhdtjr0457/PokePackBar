@@ -123,6 +123,32 @@ enum ArtworkMaskCache {
     private static var failures: Set<String> = []
     static func mask(key: String) -> CGImage? { cache.object(forKey: key as NSString)?.image }
     static func failed(key: String) -> Bool { failures.contains(key) }
+    /// 전경 분리가 아무것도 찾지 못하는 그림이 있다(언노운 I, M 처럼 글자 모양 포켓몬, ex13-2 릴리요).
+    /// 그때만 "눈에 띄는 물체" 열지도로 부드러운 윤곽을 만든다. 거친 덩어리지만, 배경만 칠할 포일이
+    /// 포켓몬까지 덮거나 포켓몬만 칠할 포일이 그림 칸 전체로 번지는 것보다 실물에 가깝다.
+    nonisolated static func salientObjectMask(handler: VNImageRequestHandler, size: CGSize) -> CGImage? {
+        let request = VNGenerateObjectnessBasedSaliencyImageRequest()
+        guard (try? handler.perform([request])) != nil,
+              let observation = request.results?.first,
+              observation.salientObjects?.isEmpty == false else { return nil }
+        let heat = CIImage(cvPixelBuffer: observation.pixelBuffer)
+        let scaled = heat.transformed(by: CGAffineTransform(scaleX: size.width / heat.extent.width,
+                                                            y: size.height / heat.extent.height))
+        // 열지도 0.35~0.60 을 부드러운 가장자리로 펴서 0~1 마스크로 만든다.
+        let gain: CGFloat = 4, bias: CGFloat = -1.4
+        let mask = scaled
+            .applyingFilter("CIColorMatrix", parameters: [
+                "inputRVector": CIVector(x: gain, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: gain, y: 0, z: 0, w: 0),
+                "inputBVector": CIVector(x: gain, y: 0, z: 0, w: 0),
+                "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+                "inputBiasVector": CIVector(x: bias, y: bias, z: bias, w: 0),
+            ])
+            .applyingFilter("CIColorClamp")
+            .applyingFilter("CIMaskToAlpha")
+        return CIContext().createCGImage(mask, from: CGRect(origin: .zero, size: size))
+    }
+
     static func prepare(cardID: String, source: NSImage, art: CGRect) async -> CGImage? {
         // Registered cards use immutable, source-hash-bound paths below. Never
         // silently replace an absent/stale reviewed path with fresh segmentation.
@@ -139,7 +165,10 @@ enum ArtworkMaskCache {
             guard (try? handler.perform([request])) != nil,
                   let observation = request.results?.first, !observation.allInstances.isEmpty,
                   let buffer = try? observation.generateScaledMaskForImage(forInstances: observation.allInstances,
-                                                                           from: handler) else { return Optional<CGImage>.none }
+                                                                           from: handler) else {
+                return ArtworkMaskCache.salientObjectMask(handler: handler, size: CGSize(width: artwork.width,
+                                                                                         height: artwork.height))
+            }
             let image = CIImage(cvPixelBuffer: buffer).applyingFilter("CIMaskToAlpha")
             return CIContext().createCGImage(image, from: image.extent)
         }.value
