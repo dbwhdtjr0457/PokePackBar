@@ -166,7 +166,7 @@ extension L {
                      "Cet échange est déjà terminé ou annulé.", "Esta troca já terminou ou foi cancelada.")
         case "price_or_stock_changed", "quote_changed", "price_version_changed", "revision_conflict",
              "target_version_changed", "reserved_printings_changed", "opening_job_changed",
-             "invalid_resource_state", "game_precondition_failed":
+             "invalid_resource_state", "game_precondition_failed", "trade_terms_changed":
             return t("그사이 내용이 바뀌었어요. 새로 고친 뒤 다시 해 주세요.",
                      "Something changed in the meantime. Refresh and try again.",
                      "その間に内容が変わりました。更新してからもう一度お試しください。",

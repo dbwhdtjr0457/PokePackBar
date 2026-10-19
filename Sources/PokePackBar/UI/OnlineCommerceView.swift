@@ -1071,8 +1071,21 @@ struct OnlineTradingView: View {
         friends.first { $0.string("public_id") == id }?.string("nickname") ?? OnlineText.l.friendFallback
     }
     private func lines(_ values: [String: Int]) -> [[String: Any]] { values.keys.sorted().map { ["printing": $0, "quantity": values[$0] ?? 0] } }
-    private func command(_ action: String, _ item: [String: Any]) -> [String: Any] { ["action": action, "target_id": item.string("id"), "target_version": item.int("version")] }
-    private func act(_ action: String, _ item: [String: Any]) { Task { await model.mutate("trades", command(action, item)) } }
+    /// Echo the money shown in the confirmation. Old apps omit these fields;
+    /// the server rejects those accepts on money-bearing trades.
+    static func command(_ action: String, _ item: [String: Any]) -> [String: Any] {
+        var values: [String: Any] = ["action": action, "target_id": item.string("id"), "target_version": item.int("version")]
+        if action == "trade_accept" {
+            for key in ["offered_tokens", "requested_tokens"] where item.int(key) > 0 {
+                values[key] = item.int(key)
+            }
+        }
+        return values
+    }
+    private func act(_ action: String, _ item: [String: Any]) {
+        let values = Self.command(action, item)
+        Task { await model.mutate("trades", values) }
+    }
     /// 교환에 얹은 돈 한 줄. 없으면 아무것도 그리지 않는다.
     @ViewBuilder
     private func moneyLine(_ tokens: Int) -> some View {

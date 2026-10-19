@@ -6,6 +6,20 @@ import XCTest
 @MainActor
 final class MarketOfferTests: XCTestCase {
 
+    func testTradeAcceptanceEchoesDisplayedMoneyTerms() {
+        for key in ["offered_tokens", "requested_tokens"] {
+            let item: [String: Any] = ["id": "trade", "version": 3, key: 3000]
+            let command = OnlineTradingView.command("trade_accept", item)
+            XCTAssertEqual(command[key] as? Int, 3000)
+            XCTAssertEqual(command["target_version"] as? Int, 3)
+            XCTAssertNil(OnlineTradingView.command("trade_reject", item)[key])
+        }
+        let oldTrade: [String: Any] = ["id": "trade", "version": 0]
+        let command = OnlineTradingView.command("trade_accept", oldTrade)
+        XCTAssertNil(command["offered_tokens"])
+        XCTAssertNil(command["requested_tokens"])
+    }
+
     /// 교환 시세 비교는 얹은 돈까지 더해 양쪽을 견준다.
     func testValueBalanceCountsMoney() {
         let text = OnlineText.valueBalance(give: [:], get: [:], giveWon: 30_000, getWon: 0)
