@@ -35,7 +35,7 @@ struct HoloProfile: Equatable {
         case .none, .tinsel, .sheen, .waterWeb, .verticalLine, .mirage,
              .reverse, .mirror, .energySymbols, .energyTypeStamp,
              .energyPokeBallStamp, .energySetStamp, .pokeBallStamp, .rocketStamp,
-             .pinwheel, .pokeBall3D, .stampedMirror, .cosmosStamp, .subjectStamp,
+             .pinwheel, .pokeBall3D, .stampedMirror, .cosmosStamp,
              .typeSymbols,
              .sunMoonSymbols, .swordShieldTiles, .splitTypeSymbols, .satin, .vmaxRays,
              .stone, .prime, .legend, .aceDiamond, .spectrum, .line, .rainbowSplash,
@@ -81,7 +81,7 @@ struct HoloProfile: Equatable {
         switch pattern {
         case .none:
             return OpticalResponse(patternGain: 0, specularGain: 0.7, glareGain: 0.4)
-        case .mirror, .stampedMirror, .cosmosStamp, .subjectStamp,
+        case .mirror, .stampedMirror, .cosmosStamp,
              .crackedIce, .refractor:
             return OpticalResponse(patternGain: 1.08, specularGain: 1.0, glareGain: 0.82)
         case .stone:
@@ -876,6 +876,10 @@ struct HoloCardBody: View, @MainActor Animatable {
     }
 
     private var showsEXReverseRareAccents: Bool {
+        Self.showsEXReverseRareAccents(cardID: cardID, finish: finish, tier: tier)
+    }
+
+    static func showsEXReverseRareAccents(cardID: String, finish: CardFinish, tier: CardTier) -> Bool {
         let sourceSetID = cardID.split(separator: "-", maxSplits: 1)
             .first.map(String.init) ?? ""
         guard finish == .reverseHolo,
@@ -885,10 +889,12 @@ struct HoloCardBody: View, @MainActor Animatable {
         }
         guard (7...16).contains(sourceNumber) else { return false }
 
-        // Delta Species, Dragon Frontiers, and Power Keepers reserve the
-        // gold-name/HP treatment for Holo Rare parallels. Other late EX sets
-        // apply it to ordinary Rare parallels as well.
-        if [13, 15, 16].contains(sourceNumber) {
+        // Delta Species (ex11), Holon Phantoms (ex13), Dragon Frontiers and Power
+        // Keepers reserve the gold-name/HP treatment for Holo Rare parallels. Other
+        // late EX sets apply it to ordinary Rare parallels as well. For Delta Species
+        // Bulbapedia and a rarity guide both say holo-rare reverses only; no source
+        // covers Holon Phantoms, which keeps its earlier rule.
+        if [11, 13, 15, 16].contains(sourceNumber) {
             return tier == .doubleRare
         }
         return tier == .rare || tier == .doubleRare
@@ -947,7 +953,7 @@ struct HoloCardBody: View, @MainActor Animatable {
             0.96
         case .energySymbols, .energyTypeStamp, .energyPokeBallStamp,
              .pokeBallStamp, .rocketStamp, .pinwheel,
-             .pokeBallStars, .pokeBall3D, .stampedMirror, .subjectStamp:
+             .pokeBallStars, .pokeBall3D, .stampedMirror:
             0.92
         case .energySetStamp:
             0.98
@@ -1032,7 +1038,7 @@ struct HoloCardBody: View, @MainActor Animatable {
                 .white.opacity(0.46), Color.cyan.opacity(0.18),
                 Color.purple.opacity(0.10), .clear,
             ], center: surfaceSource, startRadius: 0, endRadius: width * 2.0)
-        case .mirror, .stampedMirror, .subjectStamp, .reverse, .energySymbols,
+        case .mirror, .stampedMirror, .reverse, .energySymbols,
              .energyTypeStamp, .energyPokeBallStamp, .energySetStamp,
              .pokeBallStamp, .rocketStamp, .pokeBallStars, .pokeBall3D,
              .typeSymbols, .sunMoonSymbols, .swordShieldTiles,
@@ -1520,7 +1526,7 @@ private struct LocalizedPatternFlash: View {
             Color(red: 1.0, green: 0.78, blue: 0.28)
         case .energySymbols, .energyTypeStamp, .energyPokeBallStamp,
              .energySetStamp, .pokeBallStamp, .rocketStamp, .pinwheel,
-             .pokeBallStars, .pokeBall3D, .stampedMirror, .subjectStamp,
+             .pokeBallStars, .pokeBall3D, .stampedMirror,
              .typeSymbols, .sunMoonSymbols, .swordShieldTiles,
              .scarletVioletTiles, .splitTypeSymbols:
             Color(red: 0.92, green: 0.96, blue: 1.0)
@@ -1561,7 +1567,7 @@ private struct LocalizedPatternFlash: View {
             0.48
         case .energySymbols, .energyTypeStamp, .energyPokeBallStamp,
              .energySetStamp, .pokeBallStamp, .rocketStamp, .pinwheel,
-             .pokeBallStars, .pokeBall3D, .stampedMirror, .subjectStamp:
+             .pokeBallStars, .pokeBall3D, .stampedMirror:
             0.60
         case .typeSymbols, .sunMoonSymbols, .swordShieldTiles,
              .scarletVioletTiles, .splitTypeSymbols:
@@ -1664,7 +1670,7 @@ private struct FinishPatternLayer: View {
                         .mask { motifIllumination }
                 }
                 .blendMode(blendMode)
-                if pattern == .mirror || pattern == .stampedMirror || pattern == .subjectStamp {
+                if pattern == .mirror || pattern == .stampedMirror {
                     // Bulbapedia "Holofoil" calls these reverses a flat/plain
                     // holographic finish: no motif, but the smooth sheet still
                     // splits light into a rainbow that slides with the tilt.
@@ -1821,7 +1827,7 @@ private struct FinishPatternLayer: View {
                 Color.pink.opacity(0.12), Color.yellow.opacity(0.09),
                 Color(white: 0.9).opacity(0.28),
             ], startPoint: .top, endPoint: .bottom)
-        case .reverse, .mirror, .stampedMirror, .subjectStamp:
+        case .reverse, .mirror, .stampedMirror:
             LinearGradient(colors: [
                 Color(white: 0.78).opacity(0.24), Color(white: 0.98).opacity(0.38),
                 Color.cyan.opacity(0.11), Color(white: 0.82).opacity(0.26),
@@ -2121,7 +2127,7 @@ private struct FinishPatternLayer: View {
              .verticalLine, .reverse, .fireworks, .mirror, .energySymbols,
              .energyTypeStamp, .energyPokeBallStamp, .energySetStamp,
              .pokeBallStamp, .rocketStamp, .pinwheel, .pokeBallStars,
-             .pokeBall3D, .stampedMirror, .cosmosStamp, .subjectStamp,
+             .pokeBall3D, .stampedMirror, .cosmosStamp,
              .typeSymbols, .sunMoonSymbols,
              .swordShieldTiles, .scarletVioletTiles, .splitTypeSymbols,
              .crackedIce, .stone,
@@ -2146,7 +2152,7 @@ private struct FinishPatternLayer: View {
         // need a screen response to remain legible over both dark artwork and
         // saturated card-type backgrounds; softLight made the real motif
         // geometry effectively disappear at normal viewing angles.
-        case .mirror, .stampedMirror, .cosmosStamp, .subjectStamp,
+        case .mirror, .stampedMirror, .cosmosStamp,
              .energySymbols, .energyTypeStamp, .energyPokeBallStamp,
              .energySetStamp, .pokeBallStamp,
              .rocketStamp, .pinwheel, .pokeBallStars, .pokeBall3D,
@@ -2358,8 +2364,6 @@ struct FinishPatternCanvas: View {
                 drawDimensionalBalls(context: &context, size: size)
             case .stampedMirror:
                 break // Printed stamp is composited outside the foil light mask.
-            case .subjectStamp:
-                drawRefractor(context: &context, size: size)
             case .typeSymbols:
                 drawTypeSymbols(context: &context, size: size)
             case .sunMoonSymbols:
@@ -2863,7 +2867,9 @@ struct FinishPatternCanvas: View {
     private func drawScarletVioletTiles(context: inout GraphicsContext, size: CGSize) {
         let step = max(23, size.width * 0.145)
         // 실물(SV 151 텐타쿨 072 리버스)은 기술 칸 오른쪽에 타입 심볼을 품은 큰 원이 있고, 타일은
-        // 그 바깥에만 깔린다. 예전에는 왼쪽 아래의 작은 심볼 하나뿐이었다.
+        // 그 바깥에만 깔린다. 원은 타입 심볼이라 포켓몬만 그린다. 트레이너와 에너지는 확인한 자료가
+        // 없어 예전처럼 왼쪽 아래의 작은 심볼 하나다.
+        let hasEmblem = visualKind?.supertype == .pokemon
         let emblemCenter = CGPoint(x: size.width * 0.73, y: size.height * 0.64)
         let emblemRadius = size.width * 0.135
         var row = 0
@@ -2872,7 +2878,7 @@ struct FinishPatternCanvas: View {
             var column = 0
             var x: CGFloat = row.isMultiple(of: 2) ? 0 : step * 0.5
             while x < size.width + step {
-                if hypot(x - emblemCenter.x, y - emblemCenter.y) < emblemRadius * 1.08 {
+                if hasEmblem && hypot(x - emblemCenter.x, y - emblemCenter.y) < emblemRadius * 1.08 {
                     column += 1
                     x += step
                     continue
@@ -2899,6 +2905,13 @@ struct FinishPatternCanvas: View {
             y += step * 0.72
         }
 
+        guard hasEmblem else {
+            drawCardMotif(context: &context,
+                          center: CGPoint(x: size.width * 0.12, y: size.height * 0.60),
+                          radius: size.width * 0.07, element: motifElements[0],
+                          trainer: isTrainerMotif, opacity: 0.26)
+            return
+        }
         let line = max(0.8, size.width * 0.006)
         for (scale, opacity) in [(1.0, 0.42), (0.84, 0.24)] {
             let r = emblemRadius * scale

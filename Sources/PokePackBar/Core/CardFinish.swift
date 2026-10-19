@@ -182,7 +182,6 @@ enum FoilPattern: String, Codable, Sendable, CaseIterable {
     case pokeBall3D
     case stampedMirror
     case cosmosStamp
-    case subjectStamp
     case typeSymbols
     case sunMoonSymbols
     case swordShieldTiles

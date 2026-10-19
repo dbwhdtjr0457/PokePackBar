@@ -231,7 +231,7 @@ enum FoilMaterialCatalog {
         case "ex12":
             return foil(.artWindow, .cosmosStamp, .none, .silver, 0.52)
         case "ex11", "ex13", "ex14", "ex15", "ex16":
-            // These reverses are a plain holo sheet on part of the art only, never the whole window.
+            // On Pokémon these reverses are a plain holo sheet on part of the art only.
             return foil(deltaEraReverseCoverage(cardID: cardID, setID: setID, rarity: rarity),
                         .stampedMirror, .none, .silver, 0.50)
 
@@ -273,9 +273,12 @@ enum FoilMaterialCatalog {
     ///   HP 는 "on the background of the artwork", DF 는 "on the Pokémon themselves".
     /// - 실물 영상: HP 피카츄 78(델타종 아님)은 배경만, DF 브케인 δ 45 는 포켓몬만 빛난다.
     /// - 델타종은 포켓몬 쪽이다. DS 와 HP 는 레어만, CG 와 DF 는 레어도와 상관없다(수집가 정리).
+    /// - 근거는 모두 포켓몬 카드다. 트레이너와 에너지는 확인한 자료가 없어 예전처럼 그림 칸 전체로 둔다.
     private static func deltaEraReverseCoverage(cardID: String, setID: String,
                                                 rarity: String) -> FoilCoverage {
-        let isDelta = CardIndex.shared?.card(cardID)?.name.contains("δ") == true
+        let card = CardIndex.shared?.card(cardID)
+        guard card?.visualKind?.supertype == .pokemon else { return .artWindow }
+        let isDelta = card?.name.contains("δ") == true
         guard isDelta else { return .artBackground }
         switch setID {
         case "ex14", "ex15":

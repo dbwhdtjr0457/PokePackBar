@@ -66,10 +66,32 @@ final class PhysicalFoilFixesTests: XCTestCase {
             index.card($0)?.name.contains("δ") == true && index.card($0)?.rarity == "Common"
         })
         XCTAssertEqual(try spec(deltaCommon, .reverseHolo).coverage, .artBackground)
-        let keeper = try XCTUnwrap(index.cards(inSet: "ex16").first)
+        let keeper = try XCTUnwrap(index.cards(inSet: "ex16").first {
+            index.card($0)?.visualKind?.supertype == .pokemon
+        })
         XCTAssertEqual(try spec(keeper, .reverseHolo).coverage, .artBackground)
         for id in ["ex13-78", "ex15-45"] {
             XCTAssertEqual(try spec(id, .reverseHolo).pattern, .stampedMirror, "줄무늬 없는 평평한 홀로")
         }
+    }
+
+    /// 근거는 포켓몬 카드뿐이라 트레이너와 에너지는 예전처럼 그림 칸 전체다. δ 가 붙은 에너지도 같다.
+    func testDeltaEraTrainerAndEnergyReversesKeepTheWholeArtWindow() throws {
+        for id in ["ex13-85", "ex14-78", "ex15-72", "ex13-98", "ex14-88"] {
+            XCTAssertEqual(try spec(id, .reverseHolo).coverage, .artWindow, id)
+        }
+    }
+}
+
+@MainActor
+final class EXReverseRareAccentTests: XCTestCase {
+    /// 델타종 리버스는 홀로 레어만 금색 이름과 HP 를 받는다. 일반 레어 리버스는 받지 않는다.
+    func testDeltaSpeciesGoldNameOnlyOnHoloRareReverses() {
+        XCTAssertTrue(HoloCardBody.showsEXReverseRareAccents(cardID: "ex11-1", finish: .reverseHolo, tier: .doubleRare))
+        XCTAssertFalse(HoloCardBody.showsEXReverseRareAccents(cardID: "ex11-20", finish: .reverseHolo, tier: .rare))
+        XCTAssertFalse(HoloCardBody.showsEXReverseRareAccents(cardID: "ex11-1", finish: .holo, tier: .doubleRare))
+        // 다른 세트는 그대로: Legend Maker 는 레어 리버스도, Holon Phantoms 는 홀로 레어만.
+        XCTAssertTrue(HoloCardBody.showsEXReverseRareAccents(cardID: "ex12-20", finish: .reverseHolo, tier: .rare))
+        XCTAssertFalse(HoloCardBody.showsEXReverseRareAccents(cardID: "ex13-20", finish: .reverseHolo, tier: .rare))
     }
 }
