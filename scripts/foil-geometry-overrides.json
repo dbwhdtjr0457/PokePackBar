@@ -190,5 +190,445 @@
       489
     ],
     "reason": "Reviewed original scan frame; weak edge contrast or overlaid badge"
+  },
+  "base5-17": {
+    "sha256": "51a4c348f47d387d668558fa85227525de5be8d84f7521f539da3d8e0c36ad64",
+    "artPixels": [
+      18,
+      106,
+      582,
+      606
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "neo1-19": {
+    "sha256": "56b14c4e9dd5f48a4a010d84f737fdd0555fd5562bcd01b8688d7508f76fd7da",
+    "artPixels": [
+      24,
+      115,
+      579,
+      605
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "neo4-16": {
+    "sha256": "c560aff5557a7e2cc6282d68dce58c16805926da5d59dc631152798609341283",
+    "artPixels": [
+      18,
+      118,
+      578,
+      603
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex6-103": {
+    "sha256": "2cac1fca66816b8fb5403afde23d1213323d33155a8f6cff7dfc0700f335de82",
+    "artPixels": [
+      31,
+      104,
+      687,
+      687
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex7-94": {
+    "sha256": "1e0ca6212ebdd7699003cc5dc4b3aecfc38800250aebe272cce3a85c68fcdc59",
+    "artPixels": [
+      13,
+      77,
+      587,
+      577
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex7-95": {
+    "sha256": "6621fb17e813a3aad4501b62b48b9892a59d54a36bc88d6dcd85d2a81b1201a4",
+    "artPixels": [
+      13,
+      76,
+      587,
+      578
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex8-93": {
+    "sha256": "64cfcb1ce974053753e8dfdce1e6636ad4efacf92ddd630a3e7f5d48070fe6a3",
+    "artPixels": [
+      14,
+      76,
+      585,
+      572
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex8-94": {
+    "sha256": "d0816b10076b749d577e553db8e42e5b5aa9e28a8d699b5c21a3309198b03884",
+    "artPixels": [
+      14,
+      76,
+      588,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex8-95": {
+    "sha256": "dd778bbf223bb8881969bebbf84d3265a528054d53076931fe591fc64aef0e95",
+    "artPixels": [
+      13,
+      73,
+      587,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex9-86": {
+    "sha256": "b86d4d4945b0b1874f93a0cf53cb2bca934e4951a0b281fcead958fb0cbd605b",
+    "artPixels": [
+      16,
+      77,
+      586,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex9-87": {
+    "sha256": "2bfa370d32f74ef38e2b568f68431cd6de1fd1292622c911899bb1a557904a1d",
+    "artPixels": [
+      16,
+      78,
+      585,
+      570
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex9-88": {
+    "sha256": "7ac49ba09d15fbfd8d9888c5ebedfc56a53f485ea04d2eac46e1025abe5e09c6",
+    "artPixels": [
+      17,
+      77,
+      585,
+      570
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex9-89": {
+    "sha256": "ec871c061421649333fe7ce80330b9317b5804600d76bfcbc06485fb7fe8ab70",
+    "artPixels": [
+      16,
+      78,
+      586,
+      570
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex10-96": {
+    "sha256": "00f3fe89bd7da5114c84d3fa201b33af961610b394a1e6d70df55e6a753631ce",
+    "artPixels": [
+      15,
+      75,
+      585,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex10-97": {
+    "sha256": "a30eff68ab1de7f3db77b41024c1c12d60378c2f06e16305b4d7349c1d94e2a1",
+    "artPixels": [
+      12,
+      77,
+      585,
+      570
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex10-98": {
+    "sha256": "1dded600da04ccb7831517a09edc5077829d8d484ed4505ba266a3256ac60edf",
+    "artPixels": [
+      14,
+      74,
+      584,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex10-99": {
+    "sha256": "4bb2ead5011c6d8eedcf6626e027f3853f36e70be74511262bbae15594ade0f3",
+    "artPixels": [
+      16,
+      75,
+      583,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex10-100": {
+    "sha256": "62dd83adbc36e70d0d00418cd59ee2cc02ca825cf4560106b370770f14266f2f",
+    "artPixels": [
+      13,
+      76,
+      582,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex11-103": {
+    "sha256": "560b06fd4c8507b628f13b5eeb781074a60d8912829bc1867e01357e70792aee",
+    "artPixels": [
+      13,
+      76,
+      585,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex11-104": {
+    "sha256": "44c8d25458c43e19cdff00378f2d71db8dbb199761fa900aa7389fb0aefbe903",
+    "artPixels": [
+      13,
+      75,
+      587,
+      496
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex11-105": {
+    "sha256": "5d9c669bd9a374de18109710799d6dae644aa36d7e3aa39388499d80f316f5f7",
+    "artPixels": [
+      14,
+      75,
+      584,
+      499
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex11-106": {
+    "sha256": "a4497a2941ebb67cec0c908a40d246adacb6d82a4a607470919da4599b782a91",
+    "artPixels": [
+      17,
+      75,
+      583,
+      497
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex11-107": {
+    "sha256": "4bd46189c71a84f400a4bf14a03a21daba7999500108c5cc3fe660493b355830",
+    "artPixels": [
+      13,
+      75,
+      586,
+      570
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex12-81": {
+    "sha256": "b3a5f455b678660b85bdd1b2afda692364f18ac04d3ad7ffbc765c6e7cb84ee4",
+    "artPixels": [
+      12,
+      76,
+      586,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex12-82": {
+    "sha256": "b465c0662d270c52043a1872e5066829c94734f49d295b6106116ae8eb9c449d",
+    "artPixels": [
+      16,
+      77,
+      585,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex13-94": {
+    "sha256": "9da3943c3c072c9b0932e215f4f92374427762ed68426114c3179f51404bf2f4",
+    "artPixels": [
+      16,
+      75,
+      585,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex13-95": {
+    "sha256": "f9a5a24f129dd63973c408983e7e1090b8a6a8fdf321c230433cd1410dcd969d",
+    "artPixels": [
+      14,
+      75,
+      588,
+      569
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex13-96": {
+    "sha256": "51208c172a276a895ff5f9400b802d263dc522ab353a0cb56efe3a5794b44031",
+    "artPixels": [
+      13,
+      77,
+      588,
+      572
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex13-97": {
+    "sha256": "46bb386a96a4d6fefe5b1a868d6831dbec7fc3128ca735726ec1890956324cf2",
+    "artPixels": [
+      13,
+      75,
+      587,
+      570
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex13-98": {
+    "sha256": "d90364f4b7966d1e8eb63b0a8521ddf799df6c2b6fca233778740734df18b079",
+    "artPixels": [
+      16,
+      74,
+      585,
+      568
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex14-88": {
+    "sha256": "729f0fe18da5e61bf34bdb5d2892e67ea5899446090c3e0760de816d4616d0e6",
+    "artPixels": [
+      12,
+      75,
+      585,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex15-84": {
+    "sha256": "3df848d769fa63d19558e13a75d35a73e7bc717d19343b8bf5afb47427476141",
+    "artPixels": [
+      15,
+      75,
+      587,
+      498
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex15-85": {
+    "sha256": "fef74a69d7c4c1e748181f01d3f6d58b1a4fd76194fdbdc0dc9d687127152cc2",
+    "artPixels": [
+      14,
+      75,
+      587,
+      499
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex15-86": {
+    "sha256": "dd4f6f8a01fe3e62d9a9f6db98ea28968018dfc7a3936e05c3b2175c6d028e56",
+    "artPixels": [
+      13,
+      75,
+      586,
+      497
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex15-87": {
+    "sha256": "bc6a5d3b1692bac8e3cfb11209771b11af161b5ab984141622a9c7ec34a98076",
+    "artPixels": [
+      13,
+      74,
+      587,
+      570
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex15-88": {
+    "sha256": "b25bb8f75067fc6686d55ff25e4b3d7c3f58aac6c60873e89d7fa189fd58f6e1",
+    "artPixels": [
+      14,
+      75,
+      587,
+      572
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex15-89": {
+    "sha256": "5f8248b62bfdc9bc4eaf85b551506e5ba96cf5a97f3a4bf5241e97f7943f5738",
+    "artPixels": [
+      12,
+      75,
+      586,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex16-87": {
+    "sha256": "1d9bfa3ab361cb7f3147061d0709fd13f9c9fd4e969849146086ce227afadb58",
+    "artPixels": [
+      13,
+      76,
+      587,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex16-88": {
+    "sha256": "a1f00721c77f4443a467e2e3ec31961bc1eb8b64c76ec73be792e586a7446376",
+    "artPixels": [
+      16,
+      78,
+      587,
+      570
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex16-89": {
+    "sha256": "f08f6387aacbae9d863efd64cf70b2916a576e6c27201462e7a7656b5dce3a88",
+    "artPixels": [
+      15,
+      77,
+      586,
+      573
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex16-90": {
+    "sha256": "70177585733f57e56edae9e9810e53f8a7fd190b06e3e395210041047d6789d7",
+    "artPixels": [
+      15,
+      75,
+      584,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "ex16-91": {
+    "sha256": "e7f059f307c360778c315ced1fd88a2422d398464f7942b7b31a29ad4b26d4c3",
+    "artPixels": [
+      14,
+      75,
+      587,
+      571
+    ],
+    "reason": "Reviewed special Energy scan: foil art ends at the rules panel. Without a window the whole card was foil and the pattern covered the rules text (full catalogue render, 2026-10-19)."
+  },
+  "xy8-145": {
+    "sha256": "fc863e0641dff98802add677e15352d0851d318a05577591ee93f4ae3e276062",
+    "artPixels": [
+      34,
+      166,
+      701,
+      876
+    ],
+    "reason": "Reviewed flip Stadium scan: the illustration runs from the name bar to the rules box, like xy10-94 Chaos Tower. The measured frame only covered the upside-down top half (full catalogue render, 2026-10-19)."
+  },
+  "xy9-110": {
+    "sha256": "bdaa2e837ae904f088b010a2d1277d72cdf5efdc571510e738db2ac8c45332a7",
+    "artPixels": [
+      33,
+      162,
+      685,
+      855
+    ],
+    "reason": "Reviewed flip Stadium scan: the illustration runs from the name bar to the rules box, like xy10-94 Chaos Tower. The measured frame only covered the upside-down top half (full catalogue render, 2026-10-19)."
   }
 }
