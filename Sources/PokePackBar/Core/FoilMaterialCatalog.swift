@@ -58,6 +58,9 @@ enum FoilMaterialCatalog {
             return shinyFullArt(setID: setID, rarity: rarity,
                                 visualKind: visualKind)
         case .gold:
+            if PhysicalFoilFixes.swordShieldShinyStoredAsGold.contains(cardID) {
+                return shinyFullArt(setID: setID, rarity: "rare shiny", visualKind: visualKind)
+            }
             return gold(setID: setID, rarity: rarity, visualKind: visualKind)
         case .rainbow:
             // 대체 아트 VMAX 와 아리타 뮤츠-GX 는 레인보우와 같은 레어도 이름으로 들어왔지만

@@ -33,6 +33,11 @@ enum PhysicalFoilFixes {
     /// 영문 첫 홀로 테두리 트레이너. 그림 칸만이 아니라 테두리도 홀로다(Bulbapedia).
     static let holoBorderTrainer: Set<String> = ["dp2-124"]
 
+    /// 챔피언스 패스 79/73 이로치(검은) 리자몽 V. 레어도 코드 때문에 금색 시크릿으로 분류됐지만
+    /// 스캔은 흰 별 배경의 이로치 풀아트다. Shining Fates 이로치 V 와 같은 재질로 그린다
+    /// (2026-10-19 전체 렌더 점검).
+    static let swordShieldShinyStoredAsGold: Set<String> = ["swsh35-79"]
+
     /// 화면에 적을 판형. 저장된 판형 대신 실물의 재질 이름을 보여 준다.
     static func displayedFinish(cardID: String, stored: CardFinish) -> CardFinish {
         switch stored {
@@ -40,6 +45,8 @@ enum PhysicalFoilFixes {
             .etched
         case .etched where xyGoldItemStoredAsEtched.contains(cardID):
             .gold
+        case .gold where swordShieldShinyStoredAsGold.contains(cardID):
+            .shinyFullArt
         default:
             stored
         }

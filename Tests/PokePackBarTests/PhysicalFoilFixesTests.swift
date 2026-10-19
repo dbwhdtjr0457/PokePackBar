@@ -49,6 +49,16 @@ final class PhysicalFoilFixesTests: XCTestCase {
         }
     }
 
+    /// 챔피언스 패스 이로치 리자몽 V 는 금색이 아니라 Shining Fates 이로치 V 와 같은 재질이다.
+    /// 진짜 금색인 Shining Fates 에테르나 V(SV121)는 그대로 금색이다.
+    func testChampionsPathShinyCharizardIsNotGold() throws {
+        let charizard = try spec("swsh35-79", .gold)
+        XCTAssertEqual(charizard.pattern, try spec("swsh45sv-SV120", .shinyFullArt).pattern)
+        XCTAssertNotEqual(charizard.border, .gold)
+        XCTAssertEqual(PhysicalFoilFixes.displayedFinish(cardID: "swsh35-79", stored: .gold), .shinyFullArt)
+        XCTAssertEqual(try spec("swsh45sv-SV121", .gold).pattern, .swordShieldGold)
+    }
+
     func testTimeSpaceDistortionHasAHoloBorder() throws {
         let foil = try spec("dp2-124", .holo)
         XCTAssertEqual(foil.coverage, .artAndBorder)
