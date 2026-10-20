@@ -58,6 +58,10 @@ enum FoilMaterialCatalog {
             return shinyFullArt(setID: setID, rarity: rarity,
                                 visualKind: visualKind)
         case .gold:
+            if PhysicalFoilFixes.holoStoredAsGold.contains(cardID) {
+                // Pokémon Catcher: yellow border, foil in the art only (2026-10-19 video check).
+                return foil(.artWindow, .tinsel, .none, .paper, 0.50)
+            }
             if PhysicalFoilFixes.swordShieldShinyStoredAsGold.contains(cardID) {
                 return shinyFullArt(setID: setID, rarity: "rare shiny", visualKind: visualKind)
             }
@@ -74,13 +78,16 @@ enum FoilMaterialCatalog {
         case .aceSpec:
             return aceSpec(setID: setID)
         case .radiantCollection:
-            return radiantCollection(cardID: cardID, setID: setID)
+            return radiantCollection(cardID: cardID, setID: setID, rarity: rarity)
         case .prism:
             // Prism Stars are SM holo rares: the set's water-web sheet shows
-            // through the art window and the large diamond in the text box.
-            return foil(.artWindowAndPrismStar, .waterWeb, .none, .blackWhite, 0.58)
+            // through the art and the large diamond in the text box. On Pokémon
+            // the Pokémon itself stays matte (2026-10-19 video check).
+            let pokemon = visualKind?.supertype == .pokemon
+            return foil(pokemon ? .artBackgroundAndPrismStar : .artWindowAndPrismStar,
+                        .waterWeb, .none, .blackWhite, 0.58)
         case .breakFoil:
-            return foil(.fullCard, .breakGrid, .fineLines, .gold, 0.58)
+            return foil(.artBackground, .breakGrid, .none, .paper, 0.58)
         case .blackWhite:
             return blackWhite(cardID: cardID)
         case .megaAttack:
@@ -90,6 +97,12 @@ enum FoilMaterialCatalog {
             return foil(.subjectAndAttack, .comicBurst, .none, .holo, 0.62)
         case .patternedReverse:
             return ExpansionFoil.parallels[cardID] == nil ? CardFinish.normal.foilSpec : finish.foilSpec
+        case .pokeBall where setID == "rsv10pt5" || setID == "zsv10pt5",
+             .masterBall where setID == "rsv10pt5" || setID == "zsv10pt5":
+            // Black Bolt / White Flare: the ball sheet continues faintly over the
+            // illustration (2026-10-19 video check); the art strength is set in the motif.
+            let base = finish.foilSpec
+            return foil(.fullCard, base.pattern, base.texture, base.border, base.intensity)
         case .normal, .radiant, .amazingRare, .pokeBall, .masterBall,
              .celebrationsClassic:
             return finish.foilSpec
@@ -103,7 +116,13 @@ enum FoilMaterialCatalog {
         // Preserve legacy collection/price keys while correcting their optics.
         // The upstream index labels this gold Secret Rare as ordinary Rare Holo.
         if cardID == "cel25-25" {
-            return gold(setID: "cel25", rarity: "rare secret", visualKind: nil)
+            // Gold Mew: Mew itself is smooth printed colour inside a gold-glitter card.
+            let gold = gold(setID: "cel25", rarity: "rare secret", visualKind: nil)
+            return foil(.outsideSubject, gold.pattern, gold.texture, gold.border, gold.intensity)
+        }
+        if PhysicalFoilFixes.reverseStyleSecret.contains(cardID) {
+            // HGSS Gyarados 123/123: plain art, everything else foil (2026-10-19 video check).
+            return foil(.outsideArt, .mirror, .none, .paper, 0.44)
         }
         if PhysicalFoilFixes.holoBorderTrainer.contains(cardID) {
             // Time-Space Distortion: the first English Trainer with a holofoil border.
@@ -112,7 +131,7 @@ enum FoilMaterialCatalog {
         if cardID == "cel25-5" {
             // Untextured full-art Pikachu: the source-bound window covers all
             // printed artwork but excludes its ordinary yellow paper frame.
-            return foil(.artWindow, .celebrationSheen, .none, .paper, 0.56)
+            return foil(.artBackground, .celebrationSheen, .none, .paper, 0.56)
         }
         if isAlphLithograph(cardID) {
             return foil(.stoneSurface, .stone, .embossed, .paper, 0.32)
@@ -127,15 +146,30 @@ enum FoilMaterialCatalog {
             return foil(.fullCard, .legend, .etched, .holo, 0.54)
         }
         if rarity.contains("prime") {
-            return foil(.artNameAndBorder, .prime, .etched, .gold, 0.51)
+            // Prime: silver glitter border and fine glitter in the art; only the name
+            // is gold (2026-10-19 video check).
+            return foil(.artNameAndBorder, .prime, .etched, .silver, 0.51)
         }
         if rarity.contains("lv.x") {
             return foil(.artAndBorder, .cosmos, .fineLines, .holo, 0.52)
         }
         if rarity == "rare holo ex" && setID.hasPrefix("ex") {
+            if isDeltaSpecies(cardID) {
+                // δ Pokémon-ex: a plain rainbow sheen, not Cosmos, with the foil border
+                // (Sceptile ex δ in a 2026-10-19 video check).
+                return foil(.artAndBorder, .refractor, .none, .holo, 0.52)
+            }
             return foil(.artAndBorder, .cosmos, .none, .holo, 0.52)
         }
-        if (setID == "ex11" || setID == "ex15") && rarity == "rare holo" {
+        if PhysicalFoilFixes.exSecretPokemonEX.contains(cardID) {
+            // Secret Pokémon-ex (Rocket's Raikou ex, Rocket's Persian ex, Celebi ex)
+            // are filed as Rare Ultra but look like every other Pokémon-ex.
+            return foil(.artAndBorder, .cosmos, .none, .holo, 0.52)
+        }
+        // Holon Phantoms and Crystal Guardians δ holos look like Delta Species and
+        // Dragon Frontiers: plain sheen on the Pokémon plus a foil border.
+        if (setID == "ex11" || setID == "ex15"
+            || ((setID == "ex13" || setID == "ex14") && isDeltaSpecies(cardID))) && rarity == "rare holo" {
             // Only the Pokémon and metallic frame carry the refractor sheet.
             // Subject contours are stored against each original image hash.
             return foil(.artSubjectAndBorder, .refractor, .none, .holo, 0.51)
@@ -145,27 +179,33 @@ enum FoilMaterialCatalog {
         }
 
         switch setID {
-        case "base1", "base2", "base3":
-            // Base, Jungle and Fossil: soft multi-size starbursts in the art box.
-            return foil(.artWindow, .starlight, .none, .paper, 0.58)
+        case "base1", "base2", "base3", "base6":
+            // Base, Jungle, Fossil and Legendary Collection: many small multicoloured
+            // stars in the art background. The Pokémon is printed opaque over the foil,
+            // so no stars show on it (2026-10-19 video check).
+            return foil(.artBackground, .starlight, .none, .paper, 0.58)
 
         case let id where id.hasPrefix("bw"):
             // Black & White through Legendary Treasures: horizontal tinsel.
             return foil(.artWindow, .tinsel, .none, .paper, 0.50)
 
+        // XY, Evolutions and Sun & Moon holos: the Pokémon is printed matte, so the
+        // foil shows on the art background only (2026-10-19 video check).
         case "xy12":
             // Evolutions deliberately recreates the large Base-era star sheet.
-            return foil(.artWindow, .starlight, .none, .paper, 0.55)
+            return foil(.artBackground, .starlight, .none, .paper, 0.55)
 
         case let id where id.hasPrefix("xy") || id == "g1" || id == "dc1":
             // XY international cards: diagonal bottom-right to top-left sheen.
-            return foil(.artWindow, .sheen, .none, .paper, 0.48)
+            return foil(.artBackground, .sheen, .none, .paper, 0.48)
 
         case let id where id.hasPrefix("sm") || id == "sma":
-            return foil(.artWindow, .waterWeb, .none, .paper, 0.52)
+            return foil(.artBackground, .waterWeb, .none, .paper, 0.52)
 
         case "cel25":
-            return foil(.artWindow, .celebrationSheen, .none, .holo, 0.46)
+            // Celebrations holos: sparkle sheen on the art background only; the
+            // Pokémon and the yellow border stay plain (2026-10-19 video check).
+            return foil(.artBackground, .celebrationSheen, .none, .paper, 0.46)
 
         case let id where id.hasPrefix("swsh") || id == "pgo":
             return foil(.artWindow, .verticalLine, .none, .paper, 0.48)
@@ -198,11 +238,16 @@ enum FoilMaterialCatalog {
         if matches(cardID: cardID, setID: setID, table: ancientTraitReverseNumbers) {
             return foil(.traitBands, .mirror, .none, .silver, 0.46)
         }
+        if matches(cardID: cardID, setID: setID, table: futureReverseNumbers) {
+            // Future cards: sharp vertical rainbow stripes; Ancient cards keep the
+            // plain mirror (2026-10-19 video check).
+            return foil(.outsideArt, .verticalLine, .none, .silver, 0.46)
+        }
         if matches(cardID: cardID, setID: setID, table: ancientFutureReverseNumbers) {
             return foil(.outsideArt, .mirror, .none, .silver, 0.46)
         }
         if matches(cardID: cardID, setID: setID, table: dualTypeReverseNumbers) {
-            return foil(.outsideArt, .splitTypeSymbols, .none, .silver, 0.50)
+            return foil(.outsideArtInsideBorder, .splitTypeSymbols, .none, .paper, 0.50)
         }
 
         let isRareParallel = rarity == "rare" || rarity.contains("holo")
@@ -214,21 +259,24 @@ enum FoilMaterialCatalog {
         case "ecard1", "ecard2", "ecard3", "ex1", "ex2", "ex3", "ex4":
             return foil(.outsideArt, .mirror, .none, .silver, 0.43)
 
+        // Hidden Legends to Emerald reverses foil only the art background; the Pokémon
+        // and the text box stay flat. Rares add a mark in the attack box (2026-10-19
+        // video check).
         case "ex5":
-            return foil(isRareParallel ? .artWindowAndMark : .artWindow,
+            return foil(isRareParallel ? .artBackgroundAndMark : .artBackground,
                         isRareParallel ? .energyTypeStamp : .energySymbols,
                         .none, .silver, 0.54)
         case "ex6":
-            return foil(isRareParallel ? .artWindowAndMark : .artWindow,
+            return foil(isRareParallel ? .artBackgroundAndMark : .artBackground,
                         isRareParallel ? .energyPokeBallStamp : .energySymbols,
                         .none, .silver, 0.56)
         case "ex7":
-            return foil(.artWindow, .energySetStamp, .none,
-                        isRareParallel ? .gold : .silver, 0.57)
+            // Rare reverses have a gold name, not a gold card edge.
+            return foil(.artBackground, .energySetStamp, .none, .silver, 0.57)
         case "ex8":
-            return foil(.artWindow, .pinwheel, .none, .silver, 0.56)
+            return foil(.artBackground, .pinwheel, .none, .silver, 0.56)
         case "ex9":
-            return foil(.artWindow, .pokeBallStars, .none, .silver, 0.56)
+            return foil(.artBackground, .pokeBallStars, .none, .silver, 0.56)
         case "ex10":
             return foil(.artBackground, .pokeBall3D, .none, .silver, 0.57)
         case "ex12":
@@ -242,12 +290,15 @@ enum FoilMaterialCatalog {
             || id.hasPrefix("hgss") || id == "col1" || id == "bw1":
             return foil(.outsideArt, .mirror, .none, .silver, 0.44)
 
+        // XY reverses keep the yellow border flat (2026-10-19 video check).
         case "dc1", "xy12":
-            return foil(.outsideArt, .mirror, .none, .silver, 0.45)
+            return foil(.outsideArtInsideBorder, .mirror, .none, .paper, 0.45)
 
-        case let id where (id.hasPrefix("bw") && id != "bw1")
-            || (id.hasPrefix("xy") && id != "xy12") || id == "g1":
+        case let id where id.hasPrefix("bw") && id != "bw1":
             return foil(.outsideArt, .typeSymbols, .none, .silver, 0.50)
+
+        case let id where (id.hasPrefix("xy") && id != "xy12") || id == "g1":
+            return foil(.outsideArtInsideBorder, .typeSymbols, .none, .paper, 0.50)
 
         case let id where id.hasPrefix("sm") || id == "sma":
             return foil(.outsideArt, .sunMoonSymbols, .none, .silver, 0.52)
@@ -281,16 +332,23 @@ enum FoilMaterialCatalog {
                                                 rarity: String) -> FoilCoverage {
         let card = CardIndex.shared?.card(cardID)
         guard card?.visualKind?.supertype == .pokemon else { return .artWindow }
-        let isDelta = card?.name.contains("δ") == true
+        let isDelta = isDeltaSpecies(cardID)
         guard isDelta else { return .artBackground }
+        // δ holo rares also foil the card border on their reverses (not Power Keepers).
+        let holoRare = rarity.contains("holo")
         switch setID {
         case "ex14", "ex15":
-            return .artSubject
+            return holoRare ? .artSubjectAndBorder : .artSubject
         case "ex11", "ex13":
-            return rarity == "rare" || rarity.contains("holo") ? .artSubject : .artBackground
+            if holoRare { return .artSubjectAndBorder }
+            return rarity == "rare" ? .artSubject : .artBackground
         default:
             return .artBackground
         }
+    }
+
+    static func isDeltaSpecies(_ cardID: String) -> Bool {
+        CardIndex.shared?.card(cardID)?.name.contains("δ") == true
     }
 
     // MARK: Rule-box and premium sheets
@@ -298,10 +356,12 @@ enum FoilMaterialCatalog {
     private static func fullArt(cardID: String, setID: String,
                                 rarity: String,
                                 visualKind: CardVisualKind?) -> FoilSpec {
-        if cardID == "swsh12pt5-160"
-            || (setID == "sm12" && numericCardNumber(cardID).map {
-                (237...248).contains($0)
-            } == true) {
+        if setID == "sm12" && numericCardNumber(cardID).map({ (237...248).contains($0) }) == true {
+            // Cosmic Eclipse character rares: a strong prismatic rainbow sweep over the
+            // full-colour art; the yellow border is paper (2026-10-19 video check).
+            return foil(.artWindow, .mirror, .none, .paper, 0.60)
+        }
+        if cardID == "swsh12pt5-160" {
             return foil(.fullCard, .satin, .fineLines, .silver, 0.48)
         }
         if setID.hasSuffix("tg") || setID.hasSuffix("gg") {
@@ -309,11 +369,13 @@ enum FoilMaterialCatalog {
                 return foil(.fullCard, .vmaxRays, .none, .holo, 0.59)
             }
             if rarity.contains("vstar") {
-                return foil(.fullCard, .vstarSheen, .none, .silver, 0.54)
+                return foil(.outsideSubject, .vstarSheen, .none, .silver, 0.54)
             }
-            // Yellow-border CHR/GG illustration cards use a smooth foil. Rule-
-            // box V/VMAX/VSTAR and Supporter variants resolve through `etched`.
-            return foil(.fullCard, .satin, .none, .silver, 0.48)
+            // Yellow-border CHR/GG illustration cards: a smooth soft sheen on the
+            // background and behind the text; the Pokémon and trainer stay matte
+            // and the yellow border is paper (2026-10-19 video check). Rule-box
+            // V/VMAX/VSTAR and Supporter variants resolve through `etched`.
+            return foil(.outsideSubject, .sheen, .none, .paper, 0.48)
         }
         if rarity.contains("illustration") || rarity.contains("trainer gallery") {
             return foil(.fullCard, .satin, .none, .silver, 0.46)
@@ -322,21 +384,29 @@ enum FoilMaterialCatalog {
             let texture: FoilTexture = visualKind?.isTera == true
                 ? .scarletVioletEtched : .none
             let intensity = visualKind?.isTera == true ? 0.57 : 0.50
-            let pattern: FoilPattern = visualKind?.isTera == true
-                ? .teraSheen : .doubleRareSheen
+            // Tera ex share the ordinary ex star glints; no crystal-web lines.
+            let pattern: FoilPattern = .doubleRareSheen
             return foil(.fullCard, pattern, texture, .silver, intensity)
         }
         if rarity == "rare holo v" {
-            return foil(.fullCard, .verticalLine, .none, .holo, 0.50)
+            // Regular V: smooth broad-band sheen on the background, black frame and
+            // text area; the Pokémon is printed matte (2026-10-19 video check).
+            return foil(.outsideSubject, .sheen, .none, .holo, 0.50)
         }
         if rarity == "rare holo gx" {
-            return foil(.fullCard, .waterWeb, .none, .holo, 0.52)
+            // Regular GX: the Pokémon is matte inside the full-card foil (2026-10-19).
+            return foil(.outsideSubject, .waterWeb, .none, .holo, 0.52)
+        }
+        if rarity == "rare holo ex" && setID.hasPrefix("bw") {
+            // BW regular Pokémon-EX: foil on the art and the border; the attack area
+            // stays plain (2026-10-19 video check).
+            return foil(.artAndBorder, .verticalLine, .none, .holo, 0.52)
         }
         if rarity == "rare holo ex" {
             let isModernSilver = setID.hasPrefix("sv") || setID.hasPrefix("me")
-            let pattern: FoilPattern = isModernSilver
-                ? (visualKind?.isTera == true ? .teraSheen : .doubleRareSheen)
-                : .verticalLine
+            // Tera ex have no straight crystal-web lines over the card (2026-10-19
+            // video check); they share the ordinary ex star glints.
+            let pattern: FoilPattern = isModernSilver ? .doubleRareSheen : .verticalLine
             let border: FoilBorder = isModernSilver ? .silver : .holo
             let texture: FoilTexture = visualKind?.isTera == true
                 ? .scarletVioletEtched : .none
@@ -365,7 +435,7 @@ enum FoilMaterialCatalog {
                 return foil(.fullCard, .vmaxRays, .none, .holo, 0.61)
             }
             if rarity.contains("vstar") {
-                return foil(.fullCard, .vstarSheen, .none, .silver, 0.56)
+                return foil(.outsideSubject, .vstarSheen, .none, .silver, 0.56)
             }
             return foil(.fullCard, .satin, .swordShieldEtched, .silver, 0.55)
         }
@@ -373,7 +443,8 @@ enum FoilMaterialCatalog {
             return foil(.fullCard, .vmaxRays, .none, .holo, 0.62)
         }
         if rarity.contains("vstar") {
-            return foil(.fullCard, .vstarSheen, .none, .silver, 0.56)
+            // VSTAR: the Pokémon stays matte under the foil (2026-10-19 video check).
+            return foil(.outsideSubject, .vstarSheen, .none, .silver, 0.56)
         }
         if rarity.contains("special illustration") {
             // The dedicated pattern already contains the fine embossed ridges.
@@ -385,7 +456,9 @@ enum FoilMaterialCatalog {
             // Full-art Tera ex cards use the crystalline textured treatment as
             // well as Double Rare Tera cards. Without visual metadata these 34
             // bundled printings collapsed into the generic line foil.
-            return foil(.fullCard, .teraSheen, .scarletVioletEtched, .silver, 0.62)
+            // No straight crystal-web lines (2026-10-19 video check): the ordinary SV
+            // Pokémon UR material with art-following relief.
+            return foil(.fullCard, .line, .none, .silver, 0.60)
         }
         if ["bw1", "bw2", "bw3"].contains(setID) {
             // English BW full arts were still flat foil; raised, card-specific
@@ -407,8 +480,8 @@ enum FoilMaterialCatalog {
             return foil(.fullCard, isTrainer ? .satin : .tinsel,
                         .bwEtched, .silver, 0.56)
         case let id where id.hasPrefix("xy") || id == "g1" || id == "dc1":
-            return foil(.fullCard, isTrainer ? .satin : .sheen,
-                        .xyEtched, .silver, 0.57)
+            // XY full arts shine in vertical rainbow bands over the etch (2026-10-19).
+            return foil(.fullCard, .verticalLine, .xyEtched, .silver, 0.57)
         case let id where id.hasPrefix("sm") || id == "sma":
             return foil(.fullCard, isTrainer ? .satin : .waterWeb,
                         .sunMoonEtched, .silver, 0.59)
@@ -427,8 +500,9 @@ enum FoilMaterialCatalog {
             return foil(.fullCard, isTrainer ? .satin : .line,
                         isTrainer ? .scarletVioletEtched : .none, .silver, 0.60)
         case let id where id.hasPrefix("me"):
-            let pattern: FoilPattern = isEnergy ? .typeSymbols
-                : (isTrainer ? .satin : .mirage)
+            // ME Energy URs (Ignition Energy) have no repeated type symbols
+            // (2026-10-19 video check).
+            let pattern: FoilPattern = isTrainer ? .satin : .mirage
             // Mega Evolution continues the current fine-etch carrier. Its
             // card-specific background/subject geometry is the visible change;
             // no source supports inventing a new universal Mega emboss sheet.
@@ -447,7 +521,8 @@ enum FoilMaterialCatalog {
             // Shining Legends foils the Pokémon itself, not the artwork window.
             // The silhouette is estimated from this card's scan; it is not a
             // measured factory mask. Keep the ordinary yellow border unfoiled.
-            return foil(.artSubject, .satin, .sunMoonEtched, .paper, 0.67)
+            // A strong prismatic rainbow on the Pokémon (2026-10-19 video check).
+            return foil(.artSubject, .mirror, .sunMoonEtched, .paper, 0.67)
         }
         if setID == "neo4" {
             return foil(.artSubject, .refractor, .none, .paper, 0.62)
@@ -455,21 +530,30 @@ enum FoilMaterialCatalog {
         if rarity.contains("shining") {
             return foil(.artWindow, .refractor, .none, .silver, 0.52)
         }
+        // Gold Star: the gold star and colours are printed. The foil is ordinary
+        // rainbow Cosmos in the art background, or a plain sheen on the Pokémon for
+        // the δ stars, with a plain yellow border (2026-10-19 video check).
         if isRefractorGoldStar(cardID) {
-            return foil(.artAndBorder, .refractor, .none, .gold, 0.56)
+            return foil(.artSubject, .refractor, .none, .paper, 0.56)
         }
         if rarity.contains("holo star") {
-            return foil(.artAndBorder, .starSheen, .none, .gold, 0.54)
+            return foil(.artWindow, .cosmos, .none, .paper, 0.52)
         }
         if setID.hasPrefix("bw") && rarity == "rare secret" {
-            // B&W secret Shiny Pokémon use a raised sheet with gold trim, not
-            // the silver-bordered Shiny Vault treatment of later eras.
-            return foil(.artAndBorder, .starfield, .bwEtched, .gold, 0.55)
+            // B&W secret Shiny Pokémon. Before Boundaries Crossed: yellow border and
+            // foil in the art only. From Boundaries Crossed: the whole card is foil
+            // with the wavy BW relief and a gold border (2026-10-19 video check).
+            if ["bw1", "bw2", "bw3", "bw4", "bw5", "bw6"].contains(setID) {
+                return foil(.artWindow, .starfield, .bwEtched, .paper, 0.55)
+            }
+            return foil(.fullCard, .starfield, .bwEtched, .gold, 0.55)
         }
         if setID == "sma" {
             // Hidden Fates Shiny Vault: subdued silver sparkles over a tactile
             // surface, while the printed frame remains the older yellow style.
-            return foil(.artWindow, .starfield, .embossed, .paper, 0.52)
+            // The Pokémon stays matte; a radial silver sunburst shines behind it
+            // (2026-10-19 video check).
+            return foil(.artBackground, .starfield, .embossed, .paper, 0.52)
         }
         if setID == "swsh45sv" {
             // Shining Fates has brighter sparkles than Hidden Fates. Do not
@@ -480,8 +564,9 @@ enum FoilMaterialCatalog {
         if setID == "sv4pt5" {
             // Paldean Fates brings a reflective silver frame and a finer
             // textured carrier to its Shiny Rares.
-            return foil(.artAndBorder, .starfield, .scarletVioletEtched,
-                        .silver, 0.58)
+            // The Pokémon has no foil; a bright smooth silver mirror with a rainbow
+            // shift shines behind it, without grain (2026-10-19 video check).
+            return foil(.artBackground, .mirror, .none, .silver, 0.58)
         }
         return foil(.artAndBorder, .starfield, .fineLines, .silver, 0.55)
     }
@@ -544,7 +629,9 @@ enum FoilMaterialCatalog {
 
     private static func aceSpec(setID: String) -> FoilSpec {
         if setID.hasPrefix("bw") {
-            return foil(.fullCard, .tinsel, .none, .paper, 0.56)
+            // Vivid horizontal rainbow tinsel at rest and at every tilt, with a silver
+            // holo border (2026-10-19 video check).
+            return foil(.fullCard, .tinsel, .none, .silver, 0.70)
         }
         // Scarlet & Violet ACE SPEC cards carry a full-card holofoil treatment
         // (ComicBook/PokéBeach, Temporal Forces reveal); the art box is foiled too.
@@ -561,8 +648,10 @@ enum FoilMaterialCatalog {
         return foil(.fullCard, .monochrome, .etched, .blackWhite, 0.58)
     }
 
-    private static func radiantCollection(cardID: String, setID: String) -> FoilSpec {
+    private static func radiantCollection(cardID: String, setID: String, rarity: String) -> FoilSpec {
         if setID == "bw11" || setID == "bw11RC" {
+            // Legendary Treasures Radiant Collection: a dense field of small round
+            // rainbow glitter dots over the whole card, no relief (2026-10-19 video check).
             return foil(.fullCard, .starSheen, .none, .holo, 0.55)
         }
         // Generations RC is not XY's engraved EX full-art stock. The old
@@ -570,6 +659,11 @@ enum FoilMaterialCatalog {
         // See docs/reference/generations-rc-2026-09-28.md for evidence limits.
         if cardID == "g1-RC29" {
             return foil(.artWindow, .satin, .none, .paper, 0.50)
+        }
+        if setID == "g1" && rarity == "uncommon" {
+            // Generations RC uncommons: a bright mirror on the art background only;
+            // the yellow frame is paper (2026-10-19 video check).
+            return foil(.artBackground, .mirror, .none, .paper, 0.52)
         }
         return foil(.fullCard, .satin, .none, .holo, 0.50)
     }
@@ -637,6 +731,16 @@ enum FoilMaterialCatalog {
         "sv7": [71, 111],
         "sv8": [38, 55, 69, 96, 116, 132],
         "sv8pt5": [42, 43, 46, 55, 65, 104, 106, 107, 120, 121, 130],
+    ]
+
+    private static let futureReverseNumbers: [String: Set<Int>] = [
+        "sv4": [28, 56, 158, 164, 171, 180],
+        "sv5": [61, 62, 79, 80, 118, 121, 139, 149],
+        "sv6": [19, 62],
+        "sv6pt5": [9],
+        "sv7": [71],
+        "sv8": [55, 69, 132],
+        "sv8pt5": [46, 121, 130],
     ]
 
     private static let dualTypeReverseNumbers: [String: Set<Int>] = [

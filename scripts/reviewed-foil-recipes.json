@@ -99,7 +99,8 @@
     "subjectEtching": true,
     "paperEtching": false,
     "ruleBoxes": [],
-    "mattePanels": []
+    "mattePanels": [],
+    "backgroundMaterial": "microEtching"
   },
   "cel25c-114_A": {
     "finish": "celebrationsClassic",
@@ -121,7 +122,8 @@
     "subjectEtching": true,
     "paperEtching": false,
     "ruleBoxes": [],
-    "mattePanels": []
+    "mattePanels": [],
+    "backgroundMaterial": "microEtching"
   },
   "cel25c-145_A": {
     "finish": "celebrationsClassic",

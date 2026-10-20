@@ -23,6 +23,14 @@ enum FoilOpticsAudit {
                 paper += 1
                 continue
             }
+            if card.rarity == "Uncommon" {
+                // RC uncommons: a bright mirror on the art background, paper frame (2026-10-19).
+                try LocalAudit.require(resolved.finish == .radiantCollection && resolved.spec.texture == .none
+                    && resolved.spec.coverage == .artBackground && resolved.spec.border == .paper,
+                    "Generations RC uncommon foiled its frame: \(card.id)")
+                smooth += 1
+                continue
+            }
             try LocalAudit.require(resolved.finish == .radiantCollection
                 && resolved.spec.texture == .none && material(card.id, resolved.spec) == nil
                 && FoilSheetMaterial(pattern: resolved.spec.pattern, cardID: card.id) == .radiantCollection,
@@ -116,7 +124,8 @@ enum FoilOpticsAudit {
             }
             if spec.pattern == .doubleRareSheen { ordinaryEx += 1 }
         }
-        try LocalAudit.require(ordinaryEx == 220 && megaEx == 44,
+        // 285: the 65 Tera ex Double Rares now share the ordinary star glints (2026-10-19).
+        try LocalAudit.require(ordinaryEx == 285 && megaEx == 44,
             "Ordinary/Mega ex coverage changed: \(ordinaryEx)/\(megaEx)")
         try verifyDispersion(sample: FoilReliefMaterial.dispersedNormal)
         for angle in [-1.4, -0.2, 0, 0.8, 1.5] {
@@ -318,7 +327,8 @@ enum FoilOpticsAudit {
             ("cel25-1", .holo, .celebration), ("cel25-5", .holo, .celebration),
             ("cel25-25", .holo, nil), ("cel25-1", .normal, nil),
             ("base4-1", .holo, .cosmos), ("ex12-1", .reverseHolo, .cosmos),
-            ("hgss1-111", .holo, .legend), ("ex10-113", .shiny, .goldStar),
+            // Gold Star: ordinary rainbow Cosmos in the art, not a gold sheet (2026-10-19).
+            ("hgss1-111", .holo, .legend), ("ex10-113", .shiny, .cosmos),
             ("ex13-102", .shiny, .refractorGoldStar), ("neo4-107", .shiny, nil),
             ("ex11-1", .holo, .deltaSpecies), ("ex15-1", .holo, .deltaSpecies),
             ("ex10-1", .reverseHolo, .dimensionalBalls),

@@ -105,8 +105,9 @@ final class CardFinishResolverTests: XCTestCase {
         }
 
         let examples = [
+            // Base-era stars show only behind the opaque Pokémon (physical check 2026-10-19).
             Example(setID: "base1", rarity: "Rare Holo", tier: .doubleRare,
-                    finish: .holo, coverage: .artWindow, pattern: .starlight, texture: .none),
+                    finish: .holo, coverage: .artBackground, pattern: .starlight, texture: .none),
             Example(setID: "sv3pt5", rarity: "Reverse Holo", tier: .rare,
                     finish: .reverseHolo, coverage: .outsideArt,
                     pattern: .scarletVioletTiles, texture: .none),
@@ -120,7 +121,7 @@ final class CardFinishResolverTests: XCTestCase {
                     finish: .radiant, coverage: .fullCard, pattern: .crosshatch,
                     texture: .none),
             Example(setID: "swsh4", rarity: "Amazing Rare", tier: .amazing,
-                    finish: .amazingRare, coverage: .fullCard, pattern: .rainbowSplash,
+                    finish: .amazingRare, coverage: .outsideSubject, pattern: .rainbowSplash,
                     texture: .none),
             Example(setID: "sm12", rarity: "Rare Rainbow", tier: .hyperRare,
                     finish: .rainbow, coverage: .fullCard, pattern: .rainbow,
@@ -138,8 +139,8 @@ final class CardFinishResolverTests: XCTestCase {
                     finish: .megaAttack, coverage: .subjectAndAttack, pattern: .comicBurst,
                     texture: .none),
             Example(setID: "sv4pt5", rarity: "Shiny Rare", tier: .shiny,
-                    finish: .shiny, coverage: .artAndBorder, pattern: .starfield,
-                    texture: .scarletVioletEtched),
+                    finish: .shiny, coverage: .artBackground, pattern: .mirror,
+                    texture: .none),
             Example(setID: "swsh45", rarity: "Rare Holo VMAX", tier: .shinyUltra,
                     finish: .shinyFullArt, coverage: .fullCard, pattern: .shinyVMAX,
                     texture: .none),
@@ -159,7 +160,7 @@ final class CardFinishResolverTests: XCTestCase {
                     finish: .celebrationsClassic, coverage: .fullCard, pattern: .confetti,
                     texture: .none),
             Example(setID: "swsh1", rarity: "Rare Holo V", tier: .doubleRare,
-                    finish: .fullArt, coverage: .fullCard, pattern: .verticalLine,
+                    finish: .fullArt, coverage: .outsideSubject, pattern: .sheen,
                     texture: .none),
             Example(setID: "swsh7", rarity: "Rare Holo VMAX", tier: .tripleRare,
                     finish: .etched, coverage: .fullCard, pattern: .vmaxRays,
@@ -168,8 +169,8 @@ final class CardFinishResolverTests: XCTestCase {
                     finish: .fullArt, coverage: .fullCard, pattern: .doubleRareSheen,
                     texture: .none),
             Example(setID: "xy8", rarity: "Rare BREAK", tier: .doubleRare,
-                    finish: .breakFoil, coverage: .fullCard, pattern: .breakGrid,
-                    texture: .fineLines),
+                    finish: .breakFoil, coverage: .artBackground, pattern: .breakGrid,
+                    texture: .none),
         ]
 
         for example in examples {
@@ -186,7 +187,8 @@ final class CardFinishResolverTests: XCTestCase {
         let resolved = CardFinishResolver.resolve(
             setID: "cel25", originalRarity: "Rare", tier: .rare)
         XCTAssertEqual(resolved.finish, .holo)
-        XCTAssertEqual(resolved.spec.coverage, .artWindow)
+        // The Pokémon stays matte inside the art window (physical check 2026-10-19).
+        XCTAssertEqual(resolved.spec.coverage, .artBackground)
         XCTAssertEqual(resolved.spec.pattern, .celebrationSheen)
     }
 
@@ -255,15 +257,15 @@ final class CardFinishResolverTests: XCTestCase {
                     pattern: .fireworks),
             Example(cardID: "ecard2-1", setID: "ecard2", coverage: .outsideArt,
                     pattern: .mirror),
-            Example(cardID: "ex5-1", setID: "ex5", coverage: .artWindowAndMark,
+            Example(cardID: "ex5-1", setID: "ex5", coverage: .artBackgroundAndMark,
                     pattern: .energyTypeStamp),
-            Example(cardID: "ex6-1", setID: "ex6", coverage: .artWindowAndMark,
+            Example(cardID: "ex6-1", setID: "ex6", coverage: .artBackgroundAndMark,
                     pattern: .energyPokeBallStamp),
-            Example(cardID: "ex7-1", setID: "ex7", coverage: .artWindow,
+            Example(cardID: "ex7-1", setID: "ex7", coverage: .artBackground,
                     pattern: .energySetStamp),
-            Example(cardID: "ex8-1", setID: "ex8", coverage: .artWindow,
+            Example(cardID: "ex8-1", setID: "ex8", coverage: .artBackground,
                     pattern: .pinwheel),
-            Example(cardID: "ex9-1", setID: "ex9", coverage: .artWindow,
+            Example(cardID: "ex9-1", setID: "ex9", coverage: .artBackground,
                     pattern: .pokeBallStars),
             Example(cardID: "ex10-1", setID: "ex10", coverage: .artBackground,
                     pattern: .pokeBall3D),
@@ -271,9 +273,10 @@ final class CardFinishResolverTests: XCTestCase {
                     pattern: .cosmosStamp),
             // Delta-species reverses foil the Pokémon only, with a plain sheet
             // (real Dragon Frontiers Cyndaquil δ 45 and Holon Phantoms reverses).
-            Example(cardID: "ex13-1", setID: "ex13", coverage: .artSubject,
+            // Holo-rare δ reverses also foil the card border.
+            Example(cardID: "ex13-1", setID: "ex13", coverage: .artSubjectAndBorder,
                     pattern: .stampedMirror),
-            Example(cardID: "ex15-1", setID: "ex15", coverage: .artSubject,
+            Example(cardID: "ex15-1", setID: "ex15", coverage: .artSubjectAndBorder,
                     pattern: .stampedMirror),
             Example(cardID: "dp3-1", setID: "dp3", coverage: .outsideArt,
                     pattern: .mirror),
@@ -283,9 +286,10 @@ final class CardFinishResolverTests: XCTestCase {
                     pattern: .mirror),
             Example(cardID: "xy5-9", setID: "xy5", coverage: .traitBands,
                     pattern: .mirror),
-            Example(cardID: "xy11-11", setID: "xy11", coverage: .outsideArt,
+            // XY reverses keep the yellow border flat.
+            Example(cardID: "xy11-11", setID: "xy11", coverage: .outsideArtInsideBorder,
                     pattern: .splitTypeSymbols),
-            Example(cardID: "xy12-1", setID: "xy12", coverage: .outsideArt,
+            Example(cardID: "xy12-1", setID: "xy12", coverage: .outsideArtInsideBorder,
                     pattern: .mirror),
             Example(cardID: "sm8-1", setID: "sm8", coverage: .outsideArt,
                     pattern: .sunMoonSymbols),
@@ -293,7 +297,10 @@ final class CardFinishResolverTests: XCTestCase {
                     pattern: .swordShieldTiles),
             Example(cardID: "sv4-1", setID: "sv4", coverage: .outsideArt,
                     pattern: .scarletVioletTiles),
+            // Future cards: vertical rainbow stripes; Ancient cards keep the mirror.
             Example(cardID: "sv4-28", setID: "sv4", coverage: .outsideArt,
+                    pattern: .verticalLine),
+            Example(cardID: "sv4-86", setID: "sv4", coverage: .outsideArt,
                     pattern: .mirror),
             Example(cardID: "me1-1", setID: "me1", coverage: .outsideArt,
                     pattern: .mirror),
@@ -312,7 +319,8 @@ final class CardFinishResolverTests: XCTestCase {
             cardID: "ex7-21", setID: "ex7", originalRarity: "Rare Holo",
             tier: .doubleRare, explicitFinish: .reverseHolo)
         XCTAssertEqual(teamRocketRare.spec.pattern, .energySetStamp)
-        XCTAssertEqual(teamRocketRare.spec.border, .gold)
+        // A gold name, not a gold card edge.
+        XCTAssertEqual(teamRocketRare.spec.border, .silver)
     }
 
     func testFullArtEtchingFollowsEraAndCardFrame() throws {
@@ -334,8 +342,9 @@ final class CardFinishResolverTests: XCTestCase {
                     pattern: .satin, texture: .bwEtched),
             Example(cardID: "xy2-107", setID: "xy2", compactVisualKind: "pR",
                     pattern: .sheen, texture: .none, border: .gold),
+            // XY full arts shine in vertical rainbow bands.
             Example(cardID: "xy5-150", setID: "xy5", compactVisualKind: "pW",
-                    pattern: .sheen, texture: .xyEtched),
+                    pattern: .verticalLine, texture: .xyEtched),
             Example(cardID: "sm1-138", setID: "sm1", compactVisualKind: "pG",
                     pattern: .waterWeb, texture: .sunMoonEtched),
             Example(cardID: "sm1-147", setID: "sm1", compactVisualKind: "t",
@@ -368,7 +377,7 @@ final class CardFinishResolverTests: XCTestCase {
 
     func testGoldSheetsRemainEraSpecificWithoutGenericDoubleEtching() {
         let examples: [(String, String, FoilPattern)] = [
-            ("bw5-111", "bw5", .bwGold),
+            ("bw7-153", "bw7", .bwGold),
             ("xy5-161", "xy5", .xyGold),
             ("sm1-158", "sm1", .sunMoonGold),
             ("swsh1-211", "swsh1", .swordShieldGold),
@@ -410,16 +419,19 @@ final class CardFinishResolverTests: XCTestCase {
             let pattern: FoilPattern
             let texture: FoilTexture
             let border: FoilBorder
+            let coverage: FoilCoverage
         }
+        // Physical check 2026-10-19: BW shiny secrets before Boundaries Crossed are art-only
+        // with a yellow border; Hidden Fates and Paldean Fates keep the Pokémon matte.
         let examples = [
             Example(cardID: "bw1-115", sourceSetID: "bw", count: 24,
-                    pattern: .starfield, texture: .bwEtched, border: .gold),
+                    pattern: .starfield, texture: .bwEtched, border: .paper, coverage: .artWindow),
             Example(cardID: "sma-SV1", sourceSetID: "sma", count: 45,
-                    pattern: .starfield, texture: .embossed, border: .paper),
+                    pattern: .starfield, texture: .embossed, border: .paper, coverage: .artBackground),
             Example(cardID: "swsh45sv-SV001", sourceSetID: "swsh45sv", count: 104,
-                    pattern: .starfield, texture: .embossed, border: .paper),
+                    pattern: .starfield, texture: .embossed, border: .paper, coverage: .artWindow),
             Example(cardID: "sv4pt5-100", sourceSetID: "sv4pt5", count: 120,
-                    pattern: .starfield, texture: .scarletVioletEtched, border: .silver),
+                    pattern: .mirror, texture: .none, border: .silver, coverage: .artBackground),
         ]
 
         for example in examples {
@@ -429,9 +441,7 @@ final class CardFinishResolverTests: XCTestCase {
                 originalRarity: card.rarity, tier: card.tier,
                 visualKind: card.visualKind)
             XCTAssertEqual(resolved.finish, .shiny, example.cardID)
-            XCTAssertEqual(resolved.spec.coverage,
-                           example.border == .paper ? .artWindow : .artAndBorder,
-                           example.cardID)
+            XCTAssertEqual(resolved.spec.coverage, example.coverage, example.cardID)
             XCTAssertEqual(resolved.spec.pattern, example.pattern, example.cardID)
             XCTAssertEqual(resolved.spec.texture, example.texture, example.cardID)
             XCTAssertEqual(resolved.spec.border, example.border, example.cardID)
@@ -508,7 +518,9 @@ final class CardFinishResolverTests: XCTestCase {
             cardID: "sm12-241", setID: "sm12",
             originalRarity: "Rare Secret", tier: .ultraRare)
         XCTAssertEqual(cosmicCharacter.finish, .fullArt)
-        XCTAssertEqual(cosmicCharacter.spec.pattern, .satin)
+        // A strong prismatic rainbow sweep over the art (physical check 2026-10-19).
+        XCTAssertEqual(cosmicCharacter.spec.pattern, .mirror)
+        XCTAssertEqual(cosmicCharacter.spec.border, .paper)
 
         let evolutionsNovelty = CardFinishResolver.resolve(
             cardID: "xy12-110", setID: "xy12",
@@ -551,7 +563,9 @@ final class CardFinishResolverTests: XCTestCase {
         let tera = CardFinishResolver.resolve(
             cardID: "sv1-32", setID: "sv1", originalRarity: "Double Rare",
             tier: .doubleRare, visualKind: CardVisualKind(compactCode: "pD!"))
-        XCTAssertEqual(tera.spec.pattern, .teraSheen)
+        // Real Tera ex have no crystal-web lines; they share the ex star glints and keep
+        // a little more strength (physical check 2026-10-19).
+        XCTAssertEqual(tera.spec.pattern, .doubleRareSheen)
         XCTAssertEqual(tera.spec.texture, .scarletVioletEtched)
         XCTAssertGreaterThan(tera.spec.intensity, standard.spec.intensity)
     }
@@ -562,8 +576,9 @@ final class CardFinishResolverTests: XCTestCase {
             tier: .superRare, visualKind: CardVisualKind(compactCode: "pR!"))
 
         XCTAssertEqual(tera.finish, .etched)
-        XCTAssertEqual(tera.spec.pattern, .teraSheen)
-        XCTAssertEqual(tera.spec.texture, .scarletVioletEtched)
+        // The ordinary SV Pokémon UR relief, without crystal-web lines (2026-10-19).
+        XCTAssertEqual(tera.spec.pattern, .line)
+        XCTAssertEqual(tera.spec.texture, .none)
     }
 
     func testBlackWhiteRarePolarityIsCardSpecific() {

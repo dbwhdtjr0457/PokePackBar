@@ -23,7 +23,10 @@ struct HoloProfile: Equatable {
         let intensity = min(1, max(0, spec.intensity))
         let response = opticalResponse(for: spec.pattern)
         let sparkle: Double = switch spec.pattern {
-        case .starlight, .cosmos, .fireworks, .pokeBallStars, .crackedIce,
+        // Starlight draws its own coloured stars; the white sparkle sprites read as
+        // the bloom flares real Base-era holos do not have.
+        case .starlight: 0
+        case .cosmos, .fireworks, .pokeBallStars, .crackedIce,
              .refractor, .celebrationSheen, .starSheen, .starfield:
             0.16 + intensity * 0.24
         case .masterBall, .scarletVioletTiles, .futuristic:
@@ -518,7 +521,8 @@ enum HoloVisualDiagnostics {
             visualKind: card.visualKind,
             explicitFinish: request.finish)
         let sheet = FoilSheetMaterial(pattern: resolved.spec.pattern, cardID: card.id)
-        if [.artBackground, .artSubject, .artSubjectAndBorder].contains(resolved.spec.coverage)
+        if [.artBackground, .artSubject, .artSubjectAndBorder, .artBackgroundAndMark, .outsideSubject,
+            .artBackgroundAndPrismStar].contains(resolved.spec.coverage)
             || sheet == .cosmos || sheet == .goldStar {
             let bounds = FoilCoverageMask(coverage: resolved.spec.coverage, cardID: card.id)
                 .artRect(in: CGSize(width: 1, height: 1))
@@ -1244,9 +1248,27 @@ struct FoilCoverageMask: View {
 
     @ViewBuilder
     var body: some View {
-        if coverage == .artBackground || coverage == .artSubject || coverage == .artSubjectAndBorder {
+        if coverage == .artBackground || coverage == .artSubject || coverage == .artSubjectAndBorder
+            || coverage == .outsideSubject {
             ArtworkFoilMask(cardID: cardID, preloaded: preloaded, coverage: coverage,
                             art: artRect(in: CGSize(width: 1, height: 1)))
+        } else if coverage == .artBackgroundAndPrismStar {
+            ZStack {
+                ArtworkFoilMask(cardID: cardID, preloaded: preloaded, coverage: .artBackground,
+                                art: artRect(in: CGSize(width: 1, height: 1)))
+                Canvas { context, size in
+                    context.fill(FoilGeometry.prismStarPath(cardID: cardID, in: size), with: .color(.white))
+                }
+            }
+        } else if coverage == .artBackgroundAndMark {
+            ZStack {
+                ArtworkFoilMask(cardID: cardID, preloaded: preloaded, coverage: .artBackground,
+                                art: artRect(in: CGSize(width: 1, height: 1)))
+                Canvas { context, size in
+                    context.fill(Path(ellipseIn: FoilGeometry.parallelMarkRect(cardID: cardID, in: size)),
+                                 with: .color(.white))
+                }
+            }
         } else {
         Canvas { context, size in
             let full = CGRect(origin: .zero, size: size)
@@ -1259,11 +1281,16 @@ struct FoilCoverageMask: View {
             case .artWindow:
                 context.fill(artwork,
                              with: .color(.white))
-            case .artWindowAndMark:
-                context.fill(artwork,
-                             with: .color(.white))
-                context.fill(Path(ellipseIn: FoilGeometry.parallelMarkRect(cardID: cardID, in: size)),
-                    with: .color(.white))
+            case .artBackgroundAndMark, .artBackgroundAndPrismStar:
+                break // Image-derived background plus the mark or diamond, above.
+            case .outsideArtInsideBorder:
+                var path = Path()
+                let inner = full.insetBy(dx: size.width * 0.042, dy: size.width * 0.042)
+                path.addRoundedRect(in: inner, cornerSize: CGSize(width: size.width * 0.03, height: size.width * 0.03))
+                if let illustration = FoilGeometry.illustrationPath(cardID: cardID, in: size) {
+                    path.addPath(illustration)
+                }
+                context.fill(path, with: .color(.white), style: FillStyle(eoFill: true))
             case .artWindowAndPrismStar:
                 context.fill(artwork,
                              with: .color(.white))
@@ -1276,7 +1303,7 @@ struct FoilCoverageMask: View {
                                                                dy: size.width * 0.018),
                                     cornerRadius: size.width * 0.045),
                                with: .color(.white), lineWidth: size.width * 0.055)
-            case .artBackground, .artSubject, .artSubjectAndBorder:
+            case .artBackground, .artSubject, .artSubjectAndBorder, .outsideSubject:
                 break // Image-derived mask above.
             case .artNameAndBorder:
                 context.fill(artwork,
@@ -1289,7 +1316,8 @@ struct FoilCoverageMask: View {
                                with: .color(.white), lineWidth: size.width * 0.055)
             case .outsideArt:
                 var path = Path()
-                path.addRect(full)
+                // Rounded like the card, so tilted motifs never spill past its corners.
+                path.addRoundedRect(in: full, cornerSize: CGSize(width: size.width * 0.045, height: size.width * 0.045))
                 // Energy/full-bleed printings have no illustration window to
                 // punch out. A guessed window used to leave a matte rectangle.
                 if let illustration = FoilGeometry.illustrationPath(cardID: cardID, in: size) {
@@ -1624,10 +1652,21 @@ private struct FinishPatternLayer: View {
                 FoilSheetLayer(material: sheet, source: preloaded, cardID: cardID, tilt: tilt)
             }
         } else if pattern == .whiteEtched || pattern == .blackEtched || pattern == .monochrome {
-            ScannedFoilReliefLayer(cardID: cardID, preloaded: preloaded,
-                                  isWhite: pattern == .whiteEtched,
-                                  isMonochrome: pattern == .monochrome,
-                                  tilt: tilt)
+            ZStack {
+                ScannedFoilReliefLayer(cardID: cardID, preloaded: preloaded,
+                                      isWhite: pattern == .whiteEtched,
+                                      isMonochrome: pattern == .monochrome,
+                                      tilt: tilt)
+                if pattern != .monochrome {
+                    // Black Bolt Zekrom shows strong rainbow bands on its black
+                    // background when tilted; White Flare Reshiram a weaker rainbow
+                    // along its lines (2026-10-19 video check). At rest both stay
+                    // black/silver or white. Normal blending, as for the MUR band.
+                    plainHolographicSpectrum
+                        .mask { plainHolographicLightBand }
+                        .opacity((pattern == .blackEtched ? 0.55 : 0.20) * tilt.magnitude)
+                }
+            }
         } else if let material = FoilReliefMaterial(pattern: pattern, texture: texture, cardID: cardID) {
             ZStack {
                 ImageGuidedFoilRelief(cardID: cardID, preloaded: preloaded,
@@ -1640,6 +1679,13 @@ private struct FinishPatternLayer: View {
                     plainHolographicSpectrum
                         .mask { plainHolographicLightBand }
                         .opacity(0.10 + 0.42 * tilt.magnitude)
+                }
+                if material == .microEtched(.shinyGX) {
+                    // Shiny Vault GX: a strong prismatic rainbow sweeps over the card
+                    // (2026-10-19 video check). Normal blending, as for the MUR band.
+                    plainHolographicSpectrum
+                        .mask { plainHolographicLightBand }
+                        .opacity(0.12 + 0.50 * tilt.magnitude)
                 }
                 if material == .neoShining {
                     // 실물 샤이닝 라이츄(개봉 영상)는 기울이면 포켓몬 부분이 밝은 은색 거울로 빛난다.
@@ -2243,19 +2289,20 @@ private struct MegaAttackMaterialLayer: View {
     }
 
     private var attackStripes: some View {
+        // The big attack lettering is filled with fine glitter, not stripes
+        // (2026-10-19 video check).
         Canvas { context, size in
+            var random = SeededValues(seed: 0x4D41_5241_4C54)
             for bandRect in attackRects(in: size) {
-                var x = bandRect.minX - bandRect.height
-                while x < bandRect.maxX + bandRect.height {
-                    var stripe = Path()
-                    stripe.move(to: CGPoint(x: x, y: bandRect.maxY))
-                    stripe.addLine(to: CGPoint(x: x + bandRect.height,
-                                               y: bandRect.minY))
-                    let energy = 0.15 + 0.85 * pow(max(0, cos(tilt.nx * 3.4 + tilt.ny * 2.6 + x * 0.08)), 2)
-                    context.stroke(stripe, with: .color(Color(white: energy).opacity(0.86)),
-                                   lineWidth: 0.92)
-                    x += max(4, size.width * 0.018)
+                var specks = Path()
+                for _ in 0..<Int(bandRect.width * bandRect.height * 0.30) {
+                    let r = 0.45 + random.next() * 0.55
+                    let x = bandRect.minX + random.next() * bandRect.width
+                    let y = bandRect.minY + random.next() * bandRect.height
+                    specks.addEllipse(in: CGRect(x: x - r, y: y - r, width: r * 2, height: r * 2))
                 }
+                let energy = 0.45 + 0.55 * pow(max(0, cos(tilt.nx * 3.4 + tilt.ny * 2.6)), 2)
+                context.fill(specks, with: .color(Color(white: 1).opacity(0.95 * energy)))
             }
         }
     }
@@ -2358,8 +2405,9 @@ struct FinishPatternCanvas: View {
             case .pinwheel:
                 drawPinwheels(context: &context, size: size)
             case .pokeBallStars:
-                drawStampedBalls(context: &context, size: size)
-                drawStars(context: &context, size: size, count: 34)
+                // Emerald: solid foil Poké Balls and stars, not thin outlines.
+                drawStampedBalls(context: &context, size: size, filled: true)
+                drawFilledStars(context: &context, size: size, count: 34)
             case .pokeBall3D:
                 drawDimensionalBalls(context: &context, size: size)
             case .stampedMirror:
@@ -2391,7 +2439,11 @@ struct FinishPatternCanvas: View {
             case .aceDiamond:
                 drawAceDiamonds(context: &context, size: size)
             case .starSheen:
-                drawStarSheen(context: &context, size: size)
+                if sourceSetID == "bw11" {
+                    drawRoundRainbowGlitter(context: &context, size: size)
+                } else {
+                    drawStarSheen(context: &context, size: size)
+                }
             case .doubleRareSheen:
                 drawDoubleRareSheen(context: &context, size: size)
             case .teraSheen:
@@ -2431,7 +2483,13 @@ struct FinishPatternCanvas: View {
                 drawTeraSheen(context: &context, size: size)
                 drawStars(context: &context, size: size, count: 11)
             case .starfield:
-                drawStars(context: &context, size: size, count: 42)
+                if sourceSetID == "sma" {
+                    // Hidden Fates Shiny Vault: a radial silver sunburst behind the Pokémon.
+                    drawPrimeRays(context: &context, size: size)
+                    drawStars(context: &context, size: size, count: 18)
+                } else {
+                    drawStars(context: &context, size: size, count: 42)
+                }
             case .shinyGX:
                 drawRefractor(context: &context, size: size)
                 drawStars(context: &context, size: size, count: 18)
@@ -2448,10 +2506,18 @@ struct FinishPatternCanvas: View {
                 drawDoubleRareSheen(context: &context, size: size)
                 drawTeraSheen(context: &context, size: size, strength: 1.8)
                 drawStars(context: &context, size: size, count: 14)
-            case .pokeBall:
-                drawBallPattern(context: &context, size: size, master: false)
-            case .masterBall:
-                drawBallPattern(context: &context, size: size, master: true)
+            case .pokeBall, .masterBall:
+                let master = pattern == .masterBall
+                if sourceSetID == "sv8pt5" {
+                    // Prismatic Evolutions: one large ball in the text box over the SV
+                    // tile field (2026-10-19 video check).
+                    drawScarletVioletTiles(context: &context, size: size, emblem: false)
+                    drawLargeBallEmblem(context: &context, size: size, master: master)
+                } else if sourceSetID == "rsv10pt5" || sourceSetID == "zsv10pt5" {
+                    drawAlternatingBalls(context: &context, size: size, master: master)
+                } else {
+                    drawBallPattern(context: &context, size: size, master: master)
+                }
             case .confetti:
                 drawConfetti(context: &context, size: size)
             case .breakGrid:
@@ -2475,40 +2541,33 @@ struct FinishPatternCanvas: View {
     }
 
     private func drawStarlight(context: inout GraphicsContext, size: CGSize) {
+        // Base, Jungle, Fossil and Legendary Collection (and the Evolutions homage):
+        // many small stars, each catching its own colour, plus a few larger four-point
+        // stars. No white bloom discs (2026-10-19 video check). Coverage keeps the
+        // sheet off the Pokémon, which is printed opaque over the foil.
         var random = SeededValues(seed: seed)
-        for index in 0..<18 {
-            let center = CGPoint(x: (0.13 + random.next() * 0.74) * size.width,
-                                 y: (0.16 + random.next() * 0.37) * size.height)
-            let radius = 3.5 + random.next() * 11
-
-            // Base/Jungle/Fossil stars are soft silver blooms with an
-            // occasional cross flare, not a field of sharp white asterisks.
-            let halo = CGRect(x: center.x - radius, y: center.y - radius,
-                              width: radius * 2, height: radius * 2)
-            context.fill(Path(ellipseIn: halo),
-                         with: .radialGradient(
-                            Gradient(colors: [
-                                .white.opacity(0.34 + random.next() * 0.18),
-                                .white.opacity(0.10),
-                                .clear,
-                            ]), center: center,
-                            startRadius: 0, endRadius: radius))
-
-            guard index.isMultiple(of: 3) else { continue }
-            var rays = Path()
-            for ray in 0..<4 {
-                let angle = Double(ray) / 4 * Double.pi * 2
-                let inner = radius * 0.18
-                rays.move(to: CGPoint(x: center.x + cos(angle) * inner,
-                                      y: center.y + sin(angle) * inner))
-                rays.addLine(to: CGPoint(x: center.x + cos(angle) * radius * 1.35,
-                                         y: center.y + sin(angle) * radius * 1.35))
-            }
-            context.stroke(rays,
-                           with: .color(.white.opacity(index.isMultiple(of: 6)
-                            ? 0.43 : 0.29)),
-                           lineWidth: index.isMultiple(of: 6) ? 0.84 : 0.64)
+        let unit = size.width / 240
+        for index in 0..<120 {
+            let center = CGPoint(x: (0.10 + random.next() * 0.80) * size.width,
+                                 y: (0.12 + random.next() * 0.42) * size.height)
+            let large = index.isMultiple(of: 9)
+            let radius = (large ? 5.0 + random.next() * 4.5 : 1.4 + random.next() * 2.4) * unit
+            let color = Color(hue: random.next(), saturation: 0.55, brightness: 1)
+                .opacity(0.70 + random.next() * 0.30)
+            context.fill(fourPointStar(center: center, radius: radius), with: .color(color))
         }
+    }
+
+    private func fourPointStar(center: CGPoint, radius: CGFloat) -> Path {
+        var star = Path()
+        for k in 0..<8 {
+            let angle = Double(k) / 8 * .pi * 2 - .pi / 2
+            let r = k.isMultiple(of: 2) ? radius : radius * 0.28
+            let point = CGPoint(x: center.x + cos(angle) * r, y: center.y + sin(angle) * r)
+            if k == 0 { star.move(to: point) } else { star.addLine(to: point) }
+        }
+        star.closeSubpath()
+        return star
     }
 
     private func drawTinsel(context: inout GraphicsContext, size: CGSize) {
@@ -2642,12 +2701,81 @@ struct FinishPatternCanvas: View {
     }
 
     private func drawEnergySymbols(context: inout GraphicsContext, size: CGSize) {
-        drawRepeatingCardMotifs(context: &context, size: size,
-                                step: max(29, size.width * 0.19),
-                                opacity: 0.46)
+        switch sourceSetID {
+        case "ex5":
+            // Hidden Legends: a regular grid of equal-size, filled symbols of every type.
+            drawMixedTypeGrid(context: &context, size: size)
+        case "ex6", "ex7":
+            // FireRed & LeafGreen and Team Rocket Returns: mixed types at a few sizes,
+            // scattered over a fine Cosmos speckle.
+            drawScatteredMixedTypes(context: &context, size: size)
+        default:
+            drawRepeatingCardMotifs(context: &context, size: size,
+                                    step: max(29, size.width * 0.19),
+                                    opacity: 0.46)
+        }
     }
 
-    private func drawStampedBalls(context: inout GraphicsContext, size: CGSize) {
+    private static let mixedTypes: [CardVisualKind.Element] = [
+        .grass, .fire, .water, .lightning, .psychic, .fighting, .darkness, .metal, .colorless,
+    ]
+
+    /// A solid foil symbol: a disc that catches its own colour, with the type glyph on it.
+    private func drawFilledMotif(context: inout GraphicsContext, center: CGPoint, radius: CGFloat,
+                                 element: CardVisualKind.Element, hue: Double, opacity: Double) {
+        context.fill(Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius,
+                                            width: radius * 2, height: radius * 2)),
+                     with: .color(Color(hue: hue, saturation: 0.45, brightness: 1).opacity(opacity * 0.55)))
+        drawCardMotif(context: &context, center: center, radius: radius, element: element,
+                      trainer: false, opacity: opacity)
+    }
+
+    private func drawMixedTypeGrid(context: inout GraphicsContext, size: CGSize) {
+        let types = Self.mixedTypes
+        let step = max(26, size.width * 0.15)
+        var row = 0
+        var y = step * 0.45
+        while y < size.height + step {
+            var column = 0
+            var x = step * (row.isMultiple(of: 2) ? 0.45 : 0.95)
+            while x < size.width + step {
+                let index = (row * 4 + column) % types.count
+                drawFilledMotif(context: &context, center: CGPoint(x: x, y: y), radius: step * 0.30,
+                                element: types[index], hue: Double(index) / Double(types.count),
+                                opacity: 0.46)
+                column += 1
+                x += step
+            }
+            row += 1
+            y += step
+        }
+    }
+
+    private func drawScatteredMixedTypes(context: inout GraphicsContext, size: CGSize) {
+        var random = SeededValues(seed: seed)
+        var speckle = Path()
+        for _ in 0..<160 {
+            let r = (0.5 + random.next() * 0.6) * size.width / 240
+            speckle.addEllipse(in: CGRect(x: random.next() * size.width - r, y: random.next() * size.height * 0.62 - r,
+                                          width: r * 2, height: r * 2))
+        }
+        context.fill(speckle, with: .color(.white.opacity(0.36)))
+        let types = Self.mixedTypes
+        var placed: [(CGPoint, CGFloat)] = []
+        var attempts = 0
+        while placed.count < 30 && attempts < 400 {
+            attempts += 1
+            let radius = size.width * [0.035, 0.052, 0.075][Int(random.next() * 3) % 3]
+            let center = CGPoint(x: random.next() * size.width, y: random.next() * size.height * 0.62)
+            guard !placed.contains(where: { hypot($0.0.x - center.x, $0.0.y - center.y) < ($0.1 + radius) * 1.1 }) else { continue }
+            placed.append((center, radius))
+            let index = placed.count % types.count
+            drawFilledMotif(context: &context, center: center, radius: radius, element: types[index],
+                            hue: random.next(), opacity: 0.44)
+        }
+    }
+
+    private func drawStampedBalls(context: inout GraphicsContext, size: CGSize, filled: Bool = false) {
         let step = max(44, size.width * 0.29)
         let radius = step * 0.26
         var row = 0
@@ -2657,6 +2785,12 @@ struct FinishPatternCanvas: View {
             while x < size.width + step {
                 let circle = CGRect(x: x - radius, y: y - radius,
                                     width: radius * 2, height: radius * 2)
+                if filled {
+                    let hue = (Double(x / size.width) * 0.7 + Double(y / size.height) * 0.4)
+                        .truncatingRemainder(dividingBy: 1)
+                    context.fill(Path(ellipseIn: circle),
+                                 with: .color(Color(hue: hue, saturation: 0.45, brightness: 1).opacity(0.30)))
+                }
                 context.stroke(Path(ellipseIn: circle),
                                with: .color(.white.opacity(0.42)), lineWidth: 0.9)
                 var seam = Path()
@@ -2702,6 +2836,10 @@ struct FinishPatternCanvas: View {
     }
 
     private func drawPinwheels(context: inout GraphicsContext, size: CGSize) {
+        if sourceSetID == "ex8" {
+            drawTrianglePinwheels(context: &context, size: size)
+            return
+        }
         let step = max(34, size.width * 0.22)
         var row = 0
         var y = step * 0.45
@@ -2723,6 +2861,42 @@ struct FinishPatternCanvas: View {
             }
             row += 1
             y += step
+        }
+    }
+
+    /// Deoxys reverses: a dense tiling of small triangular facets set as three-blade
+    /// pinwheels, strongly rainbow (2026-10-19 video check, Shroomish ex8-72).
+    private func drawTrianglePinwheels(context: inout GraphicsContext, size: CGSize) {
+        let art = FoilGeometry.artRect(cardID: cardID, in: size)
+        let step = max(5, art.width / 34)
+        let buckets = 8
+        var paths = Array(repeating: Path(), count: buckets)
+        var row = 0
+        var y = art.minY + step * 0.5
+        while y < art.maxY + step {
+            var x = art.minX + (row.isMultiple(of: 2) ? step * 0.5 : step)
+            while x < art.maxX + step {
+                let spin = Double(row + Int(x / step)) * 0.7
+                for blade in 0..<3 {
+                    let a = spin + Double(blade) / 3 * .pi * 2
+                    let b = a + .pi * 0.30
+                    var triangle = Path()
+                    triangle.move(to: CGPoint(x: x, y: y))
+                    triangle.addLine(to: CGPoint(x: x + cos(a) * step * 0.55, y: y + sin(a) * step * 0.55))
+                    triangle.addLine(to: CGPoint(x: x + cos(b) * step * 0.55, y: y + sin(b) * step * 0.55))
+                    triangle.closeSubpath()
+                    let hue = (Double(blade) / 3 + Double(x - art.minX) / Double(art.width) * 0.6)
+                        .truncatingRemainder(dividingBy: 1)
+                    paths[Int(hue * Double(buckets)) % buckets].addPath(triangle)
+                }
+                x += step
+            }
+            row += 1
+            y += step * 0.87
+        }
+        for (index, path) in paths.enumerated() {
+            context.fill(path, with: .color(Color(hue: Double(index) / Double(buckets),
+                                                  saturation: 0.75, brightness: 1).opacity(0.62)))
         }
     }
 
@@ -2761,25 +2935,31 @@ struct FinishPatternCanvas: View {
     }
 
     private func drawLowerTypeStamp(context: inout GraphicsContext, size: CGSize) {
-        let elements = motifElements
+        // Hidden Legends rares: one large, faint symbol of the card's own type behind
+        // the attack text, about half the attack box high.
         let stamp = FoilGeometry.parallelMarkRect(cardID: cardID, in: size)
-        let radius = size.width * 0.055
-        let gap = radius * 1.25
-        for (index, element) in elements.prefix(2).enumerated() {
-            let offset = (CGFloat(index) - CGFloat(elements.prefix(2).count - 1) * 0.5) * gap
-            drawCardMotif(context: &context,
-                          center: CGPoint(x: stamp.midX + offset, y: stamp.midY),
-                          radius: radius, element: element,
-                          trainer: false, opacity: 0.48)
-        }
+        drawCardMotif(context: &context, center: CGPoint(x: stamp.midX, y: stamp.midY),
+                      radius: stamp.height * 0.46, element: motifElements[0],
+                      trainer: false, opacity: 0.32)
     }
 
     private func drawLowerPokeBallStamp(context: inout GraphicsContext, size: CGSize) {
+        // FireRed & LeafGreen rares: a large faint Poké Ball across the attack box,
+        // with small mixed symbols sparkling inside it.
         let stamp = FoilGeometry.parallelMarkRect(cardID: cardID, in: size)
-        drawCardMotif(context: &context,
-                      center: CGPoint(x: stamp.midX, y: stamp.midY),
-                      radius: size.width * 0.075, element: .colorless,
-                      trainer: true, opacity: 0.42)
+        let center = CGPoint(x: stamp.midX, y: stamp.midY)
+        let radius = stamp.width * 0.47
+        drawCardMotif(context: &context, center: center, radius: radius, element: .colorless,
+                      trainer: true, opacity: 0.30)
+        let types = Self.mixedTypes
+        for index in 0..<7 {
+            let angle = Double(index) / 7 * .pi * 2 + 0.4
+            let distance = radius * (index.isMultiple(of: 2) ? 0.62 : 0.40)
+            drawFilledMotif(context: &context,
+                            center: CGPoint(x: center.x + cos(angle) * distance, y: center.y + sin(angle) * distance),
+                            radius: radius * 0.11, element: types[index % types.count],
+                            hue: Double(index) / 7, opacity: 0.34)
+        }
     }
 
     private var sourceSetID: String {
@@ -2787,16 +2967,72 @@ struct FinishPatternCanvas: View {
     }
 
     private func drawTypeSymbols(context: inout GraphicsContext, size: CGSize) {
+        if sourceSetID.hasPrefix("xy") || sourceSetID == "g1" {
+            // XY reverses: the card's own type glyph without a ring, at 3-4 sizes up
+            // to about a quarter of the card width, scattered as low-contrast shapes
+            // (2026-10-19 video check). Coverage keeps them inside the yellow border.
+            var random = SeededValues(seed: seed)
+            var placed: [(CGPoint, CGFloat)] = []
+            var attempts = 0
+            while placed.count < 22 && attempts < 500 {
+                attempts += 1
+                let radius = size.width * [0.04, 0.065, 0.09, 0.125][Int(random.next() * 4) % 4]
+                let center = CGPoint(x: random.next() * size.width, y: random.next() * size.height)
+                guard !placed.contains(where: { hypot($0.0.x - center.x, $0.0.y - center.y) < ($0.1 + radius) * 1.05 }) else { continue }
+                placed.append((center, radius))
+                drawCardMotif(context: &context, center: center, radius: radius,
+                              element: motifElements[placed.count % motifElements.count],
+                              trainer: isTrainerMotif, opacity: 0.28, ring: false)
+            }
+            return
+        }
+        if sourceSetID.hasPrefix("bw") {
+            // BW reverses: own-type symbols at 2-3 sizes, placed irregularly, with
+            // softer outlines (2026-10-19 video check).
+            var random = SeededValues(seed: seed)
+            var placed: [(CGPoint, CGFloat)] = []
+            var attempts = 0
+            while placed.count < 34 && attempts < 500 {
+                attempts += 1
+                let radius = size.width * [0.032, 0.048, 0.068][Int(random.next() * 3) % 3]
+                let center = CGPoint(x: random.next() * size.width, y: random.next() * size.height)
+                guard !placed.contains(where: { hypot($0.0.x - center.x, $0.0.y - center.y) < ($0.1 + radius) * 1.15 }) else { continue }
+                placed.append((center, radius))
+                drawCardMotif(context: &context, center: center, radius: radius,
+                              element: motifElements[placed.count % motifElements.count],
+                              trainer: isTrainerMotif, opacity: 0.30)
+            }
+            return
+        }
         drawRepeatingCardMotifs(context: &context, size: size,
                                 step: max(30, size.width * 0.19),
                                 opacity: 0.40)
     }
 
+    /// Legendary Treasures Radiant Collection: dense small round dots, each with its
+    /// own rainbow hue, over the whole card.
+    private func drawRoundRainbowGlitter(context: inout GraphicsContext, size: CGSize) {
+        var random = SeededValues(seed: seed)
+        let unit = size.width / 240
+        let buckets = 8
+        var paths = Array(repeating: Path(), count: buckets)
+        for _ in 0..<1100 {
+            let r = (0.5 + random.next() * 0.9) * unit
+            let point = CGPoint(x: random.next() * size.width, y: random.next() * size.height)
+            paths[Int(random.next() * Double(buckets)) % buckets]
+                .addEllipse(in: CGRect(x: point.x - r, y: point.y - r, width: r * 2, height: r * 2))
+        }
+        for (index, path) in paths.enumerated() {
+            context.fill(path, with: .color(Color(hue: Double(index) / Double(buckets),
+                                                  saturation: 0.55, brightness: 1).opacity(0.55)))
+        }
+    }
+
+
     private func drawSplitTypeSymbols(context: inout GraphicsContext, size: CGSize) {
-        var divider = Path()
-        divider.move(to: CGPoint(x: -size.width * 0.10, y: size.height * 0.18))
-        divider.addLine(to: CGPoint(x: size.width * 1.10, y: size.height * 0.82))
-        context.stroke(divider, with: .color(.white.opacity(0.34)), lineWidth: 1.0)
+        // Steam Siege dual-type reverses split from top right to bottom left along the
+        // printed colour boundary: first type on the left/lower half. No line is drawn
+        // (2026-10-19 video check).
 
         let step = max(31, size.width * 0.20)
         let elements = motifElements
@@ -2807,7 +3043,7 @@ struct FinishPatternCanvas: View {
             var x = step * (row.isMultiple(of: 2) ? 0.42 : 0.92)
             while x < size.width + step {
                 let radius = step * 0.22
-                let isFirstType = y < size.height * 0.18 + x * 0.64
+                let isFirstType = y > size.height * 0.18 + (size.width - x) * 0.64
                 let elementIndex = isFirstType ? 0 : min(1, elements.count - 1)
                 drawCardMotif(context: &context, center: CGPoint(x: x, y: y),
                               radius: radius, element: elements[elementIndex],
@@ -2864,52 +3100,68 @@ struct FinishPatternCanvas: View {
         }
     }
 
-    private func drawScarletVioletTiles(context: inout GraphicsContext, size: CGSize) {
-        let step = max(23, size.width * 0.145)
-        // 실물(SV 151 텐타쿨 072 리버스)은 기술 칸 오른쪽에 타입 심볼을 품은 큰 원이 있고, 타일은
-        // 그 바깥에만 깔린다. 원은 타입 심볼이라 포켓몬만 그린다. 트레이너와 에너지는 확인한 자료가
-        // 없어 예전처럼 왼쪽 아래의 작은 심볼 하나다.
-        let hasEmblem = visualKind?.supertype == .pokemon
+    private func drawScarletVioletTiles(context: inout GraphicsContext, size: CGSize,
+                                        emblem: Bool = true) {
+        // Real SV reverses are irregular flagstone tiles packed edge to edge with
+        // thin gaps, and small type symbols sit in some gaps (2026-10-19 video
+        // check). Pokémon also get one large circled type emblem right of the attacks.
+        let hasEmblem = emblem && visualKind?.supertype == .pokemon
         let emblemCenter = CGPoint(x: size.width * 0.73, y: size.height * 0.64)
         let emblemRadius = size.width * 0.135
-        var row = 0
-        var y: CGFloat = 0
-        while y < size.height + step {
-            var column = 0
-            var x: CGFloat = row.isMultiple(of: 2) ? 0 : step * 0.5
-            while x < size.width + step {
-                if hasEmblem && hypot(x - emblemCenter.x, y - emblemCenter.y) < emblemRadius * 1.08 {
-                    column += 1
-                    x += step
+        var random = SeededValues(seed: seed ^ 0x5356_5449_4C45)
+        let step = size.width * 0.075
+        let columns = Int(size.width / step) + 2
+        let rows = Int(size.height / step) + 2
+        var nodes: [[CGPoint]] = []
+        for row in 0...rows {
+            var line: [CGPoint] = []
+            for column in 0...columns {
+                line.append(CGPoint(x: (CGFloat(column) - 0.5 + CGFloat(random.next() - 0.5) * 0.7) * step,
+                                    y: (CGFloat(row) - 0.5 + CGFloat(random.next() - 0.5) * 0.7) * step))
+            }
+            nodes.append(line)
+        }
+        var tiles = Path()
+        var gapSymbols: [CGPoint] = []
+        for row in 0..<rows {
+            for column in 0..<columns {
+                let corners = [nodes[row][column], nodes[row][column + 1],
+                               nodes[row + 1][column + 1], nodes[row + 1][column]]
+                let center = CGPoint(x: corners.map(\.x).reduce(0, +) / 4, y: corners.map(\.y).reduce(0, +) / 4)
+                if hasEmblem && hypot(center.x - emblemCenter.x, center.y - emblemCenter.y) < emblemRadius * 1.08 {
                     continue
                 }
-                let radius = step * 0.42
-                let wobble = (row + column).isMultiple(of: 2) ? 0.82 : 1.08
-                let pebble = CGRect(x: x - radius * wobble,
-                                    y: y - radius / wobble,
-                                    width: radius * wobble * 2,
-                                    height: radius / wobble * 2)
-                context.stroke(Path(ellipseIn: pebble),
-                               with: .color(.white.opacity(0.24)), lineWidth: 0.58)
-                if (row + column).isMultiple(of: 3) {
-                    let elements = motifElements
-                    drawCardMotif(context: &context, center: CGPoint(x: x, y: y),
-                                  radius: radius * 0.48,
-                                  element: elements[(row + column) % elements.count],
-                                  trainer: isTrainerMotif, opacity: 0.31)
+                // Inset each cell to leave a thin dark gap, and cut one corner on some
+                // cells so the stones read as 4-6 sided.
+                var points = corners.map { CGPoint(x: center.x + ($0.x - center.x) * 0.84,
+                                                   y: center.y + ($0.y - center.y) * 0.84) }
+                if random.next() < 0.45 {
+                    let k = Int(random.next() * 4) % 4
+                    let a = points[k], b = points[(k + 1) % 4], c = points[(k + 3) % 4]
+                    points[k] = CGPoint(x: (a.x * 2 + b.x) / 3, y: (a.y * 2 + b.y) / 3)
+                    points.insert(CGPoint(x: (a.x * 2 + c.x) / 3, y: (a.y * 2 + c.y) / 3), at: k)
                 }
-                column += 1
-                x += step
+                var tile = Path()
+                tile.addLines(points)
+                tile.closeSubpath()
+                tiles.addPath(tile)
+                if random.next() < 0.14 { gapSymbols.append(nodes[row][column]) }
             }
-            row += 1
-            y += step * 0.72
+        }
+        context.fill(tiles, with: .color(.white.opacity(0.13)))
+        context.stroke(tiles, with: .color(.white.opacity(0.22)), lineWidth: 0.5)
+        for point in gapSymbols {
+            drawCardMotif(context: &context, center: point, radius: step * 0.26,
+                          element: motifElements[0], trainer: isTrainerMotif, opacity: 0.30, ring: false)
         }
 
         guard hasEmblem else {
-            drawCardMotif(context: &context,
-                          center: CGPoint(x: size.width * 0.12, y: size.height * 0.60),
-                          radius: size.width * 0.07, element: motifElements[0],
-                          trainer: isTrainerMotif, opacity: 0.26)
+            if emblem {
+                drawCardMotif(context: &context,
+                              center: CGPoint(x: size.width * 0.12, y: size.height * 0.60),
+                              radius: size.width * 0.07, element: motifElements[0],
+                              trainer: isTrainerMotif, opacity: 0.26)
+            }
             return
         }
         let line = max(0.8, size.width * 0.006)
@@ -2970,16 +3222,19 @@ struct FinishPatternCanvas: View {
         radius: CGFloat,
         element: CardVisualKind.Element,
         trainer: Bool,
-        opacity: Double
+        opacity: Double,
+        ring: Bool = true
     ) {
         let x = center.x
         let y = center.y
         let stroke = Color.white.opacity(opacity)
 
-        context.stroke(Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
-                                              width: radius * 2, height: radius * 2)),
-                       with: .color(Color.white.opacity(opacity * 0.68)),
-                       lineWidth: 0.66)
+        if ring {
+            context.stroke(Path(ellipseIn: CGRect(x: x - radius, y: y - radius,
+                                                  width: radius * 2, height: radius * 2)),
+                           with: .color(Color.white.opacity(opacity * 0.68)),
+                           lineWidth: 0.66)
+        }
 
         if trainer {
             var ball = Path()
@@ -3176,6 +3431,19 @@ struct FinishPatternCanvas: View {
     }
 
     private func drawPrime(context: inout GraphicsContext, size: CGSize) {
+        // Prime art: a fine glitter sparkle, not radial rays (2026-10-19 video check).
+        var random = SeededValues(seed: seed)
+        let unit = size.width / 240
+        var glitter = Path()
+        for _ in 0..<520 {
+            let r = (0.35 + random.next() * 0.55) * unit
+            glitter.addEllipse(in: CGRect(x: random.next() * size.width - r, y: random.next() * size.height - r,
+                                          width: r * 2, height: r * 2))
+        }
+        context.fill(glitter, with: .color(.white.opacity(0.48)))
+    }
+
+    private func drawPrimeRays(context: inout GraphicsContext, size: CGSize) {
         let center = CGPoint(x: size.width * 0.52, y: size.height * 0.36)
         let maxRadius = max(size.width, size.height) * 0.82
         for ray in 0..<18 {
@@ -3336,6 +3604,28 @@ struct FinishPatternCanvas: View {
     }
 
     private func drawBreakGrid(context: inout GraphicsContext, size: CGSize) {
+        // BREAK: a checkerboard of square holo tiles (2026-10-19 video check).
+        let tile = max(14, size.width * 0.085)
+        var squares = Path()
+        var row = 0
+        var ty: CGFloat = 0
+        while ty < size.height {
+            var column = 0
+            var tx: CGFloat = 0
+            while tx < size.width {
+                if (row + column).isMultiple(of: 2) {
+                    squares.addRect(CGRect(x: tx, y: ty, width: tile, height: tile))
+                }
+                column += 1
+                tx += tile
+            }
+            row += 1
+            ty += tile
+        }
+        context.fill(squares, with: .color(.white.opacity(0.18)))
+    }
+
+    private func drawBreakGridLines(context: inout GraphicsContext, size: CGSize) {
         let spacing = max(14, size.width * 0.085)
         var x: CGFloat = 0
         while x < size.width + spacing {
@@ -3725,54 +4015,34 @@ struct FinishPatternCanvas: View {
     }
 
     private func drawRadiantCrosshatch(context: inout GraphicsContext, size: CGSize) {
-        // Radiant's criss-cross sheet needs two-sided etched relief to survive
-        // the 200pt detail view. Its blue rule/text field catches much more
-        // foil than the printed artwork; the yellow border remains paper.
-        let spacing: CGFloat = 11
-        var rising = Path()
-        var falling = Path()
+        // Radiant Rares: fine sandy glitter over the whole face inside the yellow
+        // border, Pokémon included, plus a large diamond lattice of sparkle bands,
+        // about 2.5-3 diamonds across the card (2026-10-19 video check).
+        let inner = CGRect(origin: .zero, size: size).insetBy(dx: size.width * 0.045, dy: size.height * 0.03)
+        var clipped = context
+        clipped.clip(to: Path(inner))
+        var random = SeededValues(seed: seed)
+        let unit = size.width / 240
+        var glitter = Path()
+        for _ in 0..<900 {
+            let r = (0.35 + random.next() * 0.45) * unit
+            glitter.addEllipse(in: CGRect(x: inner.minX + random.next() * inner.width - r,
+                                          y: inner.minY + random.next() * inner.height - r,
+                                          width: r * 2, height: r * 2))
+        }
+        clipped.fill(glitter, with: .color(.white.opacity(0.42)))
+        let period = size.width / 2.75
+        var bands = Path()
         var offset = -size.height
         while offset < size.width + size.height {
-            rising.move(to: CGPoint(x: offset, y: 0))
-            rising.addLine(to: CGPoint(x: offset + size.height, y: size.height))
-            falling.move(to: CGPoint(x: offset, y: 0))
-            falling.addLine(to: CGPoint(x: offset - size.height, y: size.height))
-            offset += spacing
+            bands.move(to: CGPoint(x: offset, y: 0))
+            bands.addLine(to: CGPoint(x: offset + size.height * 0.62, y: size.height))
+            bands.move(to: CGPoint(x: offset, y: 0))
+            bands.addLine(to: CGPoint(x: offset - size.height * 0.62, y: size.height))
+            offset += period
         }
-
-        let artwork = FoilGeometry.artRect(cardID: cardID, in: size)
-        var illustrationContext = context
-        var artworkClip = Path()
-        artworkClip.addRect(artwork)
-        illustrationContext.clip(to: artworkClip)
-        illustrationContext.stroke(rising,
-                                   with: .color(.white.opacity(0.23)), lineWidth: 0.70)
-        illustrationContext.stroke(falling,
-                                   with: .color(.white.opacity(0.19)), lineWidth: 0.70)
-
-        let inner = CGRect(origin: .zero, size: size).insetBy(dx: size.width * 0.055, dy: size.height * 0.03)
-        let brightRegions = [
-            CGRect(x: inner.minX, y: inner.minY, width: inner.width, height: max(0, artwork.minY - inner.minY)),
-            CGRect(x: inner.minX, y: artwork.maxY, width: inner.width, height: max(0, inner.maxY - artwork.maxY)),
-            CGRect(x: inner.minX, y: artwork.minY, width: max(0, artwork.minX - inner.minX), height: artwork.height),
-            CGRect(x: artwork.maxX, y: artwork.minY, width: max(0, inner.maxX - artwork.maxX), height: artwork.height),
-        ]
-        for region in brightRegions {
-            var frameContext = context
-            var clip = Path()
-            clip.addRect(region)
-            frameContext.clip(to: clip)
-            frameContext.stroke(rising.applying(CGAffineTransform(
-                translationX: 0, y: 0.65)),
-                with: .color(.black.opacity(0.25)), lineWidth: 1.05)
-            frameContext.stroke(falling.applying(CGAffineTransform(
-                translationX: 0, y: 0.65)),
-                with: .color(.black.opacity(0.25)), lineWidth: 1.05)
-            frameContext.stroke(rising,
-                                with: .color(.white.opacity(0.64)), lineWidth: 0.95)
-            frameContext.stroke(falling,
-                                with: .color(.white.opacity(0.54)), lineWidth: 0.95)
-        }
+        clipped.stroke(bands, with: .color(.white.opacity(0.16)), lineWidth: size.width * 0.045)
+        clipped.stroke(bands, with: .color(.white.opacity(0.30)), lineWidth: size.width * 0.012)
     }
 
     private func drawEtchedWaves(context: inout GraphicsContext, size: CGSize,
@@ -3861,6 +4131,17 @@ struct FinishPatternCanvas: View {
         context.fill(facets, with: .color(.white.opacity(0.48)))
     }
 
+    private func drawFilledStars(context: inout GraphicsContext, size: CGSize, count: Int) {
+        var random = SeededValues(seed: seed)
+        for _ in 0..<count {
+            let center = CGPoint(x: random.next() * size.width, y: random.next() * size.height)
+            let radius = (2 + random.next() * 4) * size.width / 240
+            context.fill(fourPointStar(center: center, radius: radius),
+                         with: .color(Color(hue: random.next(), saturation: 0.45, brightness: 1)
+                            .opacity(0.45 + random.next() * 0.35)))
+        }
+    }
+
     private func drawStars(context: inout GraphicsContext, size: CGSize, count: Int) {
         var random = SeededValues(seed: seed)
         for _ in 0..<count {
@@ -3874,6 +4155,91 @@ struct FinishPatternCanvas: View {
             path.addLine(to: CGPoint(x: center.x, y: center.y + radius))
             context.stroke(path, with: .color(.white.opacity(0.45 + random.next() * 0.45)),
                            lineWidth: 0.8)
+        }
+    }
+
+    /// Black Bolt / White Flare: offset rows of large and small balls, the top cap
+    /// filled with glitter, the rest drawn as outlines. The sheet continues faintly
+    /// over the illustration. The Master Ball has its two cap bumps and no "M".
+    private func drawAlternatingBalls(context: inout GraphicsContext, size: CGSize, master: Bool) {
+        let art = FoilGeometry.artRect(cardID: cardID, in: size)
+        let large = size.width * 0.10
+        var random = SeededValues(seed: seed ^ 0x4241_4C4C)
+        var row = 0
+        var y = large
+        while y < size.height + large {
+            var column = 0
+            var x = large + (row.isMultiple(of: 2) ? 0 : large * 1.2)
+            while x < size.width + large {
+                let radius = (row + column).isMultiple(of: 2) ? large : large * 0.65
+                let strength = art.contains(CGPoint(x: x, y: y)) ? 0.40 : 1.0
+                let circle = CGRect(x: x - radius, y: y - radius, width: radius * 2, height: radius * 2)
+                var cap = Path()
+                cap.addArc(center: CGPoint(x: x, y: y), radius: radius, startAngle: .degrees(180),
+                           endAngle: .degrees(360), clockwise: false)
+                cap.closeSubpath()
+                var glitter = context
+                glitter.clip(to: cap)
+                var specks = Path()
+                // Sparse enough that the shared dark-contrast pass, which reuses this
+                // motif as a mask, does not turn the glitter into dark dots.
+                for _ in 0..<Int(radius * radius * 0.10) {
+                    let r = 0.45 + random.next() * 0.5
+                    specks.addEllipse(in: CGRect(x: x - radius + random.next() * radius * 2 - r,
+                                                 y: y - radius + random.next() * radius - r,
+                                                 width: r * 2, height: r * 2))
+                }
+                glitter.fill(specks, with: .color((master ? Color(red: 0.92, green: 0.86, blue: 1) : .white)
+                    .opacity(0.40 * strength)))
+                context.stroke(Path(ellipseIn: circle), with: .color(.white.opacity(0.46 * strength)), lineWidth: 0.9)
+                var seam = Path()
+                seam.move(to: CGPoint(x: x - radius, y: y))
+                seam.addLine(to: CGPoint(x: x + radius, y: y))
+                context.stroke(seam, with: .color(.white.opacity(0.46 * strength)), lineWidth: 0.8)
+                context.stroke(Path(ellipseIn: CGRect(x: x - radius * 0.22, y: y - radius * 0.22,
+                                                      width: radius * 0.44, height: radius * 0.44)),
+                               with: .color(.white.opacity(0.55 * strength)), lineWidth: 0.8)
+                if master {
+                    for side in [-1.0, 1.0] {
+                        context.stroke(Path(ellipseIn: CGRect(x: x + CGFloat(side) * radius * 0.52 - radius * 0.20,
+                                                              y: y - radius * 0.62, width: radius * 0.40,
+                                                              height: radius * 0.30)),
+                                       with: .color(.white.opacity(0.46 * strength)), lineWidth: 0.8)
+                    }
+                }
+                column += 1
+                x += large * 2.4
+            }
+            row += 1
+            y += large * 1.9
+        }
+    }
+
+    /// Prismatic Evolutions: one ball about 55-60% of the card wide, centred in the text box.
+    private func drawLargeBallEmblem(context: inout GraphicsContext, size: CGSize, master: Bool) {
+        let art = FoilGeometry.artRect(cardID: cardID, in: size)
+        let radius = size.width * 0.29
+        let center = CGPoint(x: size.width * 0.5, y: art.maxY + (size.height * 0.93 - art.maxY) * 0.5)
+        context.stroke(Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius,
+                                              width: radius * 2, height: radius * 2)),
+                       with: .color(.white.opacity(0.52)), lineWidth: 1.2)
+        var seam = Path()
+        seam.move(to: CGPoint(x: center.x - radius, y: center.y))
+        seam.addLine(to: CGPoint(x: center.x + radius, y: center.y))
+        context.stroke(seam, with: .color(.white.opacity(0.48)), lineWidth: 1.0)
+        context.stroke(Path(ellipseIn: CGRect(x: center.x - radius * 0.2, y: center.y - radius * 0.2,
+                                              width: radius * 0.4, height: radius * 0.4)),
+                       with: .color(.white.opacity(0.6)), lineWidth: 1.0)
+        if master {
+            let labelY = center.y - radius * 0.46
+            var monogram = Path()
+            monogram.move(to: CGPoint(x: center.x - radius * 0.30, y: labelY + radius * 0.14))
+            monogram.addLine(to: CGPoint(x: center.x - radius * 0.30, y: labelY - radius * 0.14))
+            monogram.addLine(to: CGPoint(x: center.x, y: labelY + radius * 0.06))
+            monogram.addLine(to: CGPoint(x: center.x + radius * 0.30, y: labelY - radius * 0.14))
+            monogram.addLine(to: CGPoint(x: center.x + radius * 0.30, y: labelY + radius * 0.14))
+            context.stroke(monogram, with: .color(Color(red: 0.88, green: 0.78, blue: 1.0).opacity(0.9)),
+                           style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
         }
     }
 
@@ -3995,10 +4361,9 @@ private struct FinishTextureLayer: View {
             case .etched:
                 drawFlowEtch(context: &context, size: size)
             case .bwEtched:
-                drawEraFlowEtch(context: &context, size: size, rows: 40,
-                                cycles: 3.1, amplitude: 0.0080,
-                                slopeScale: 0.025, majorEvery: 5,
-                                salt: 0x4257_2D45_5443_4801)
+                // BW textured cards share a fine "fingerprint" of concentric wavy
+                // lines (2026-10-19 video check: BCR+ shiny secrets, gold, Trainers).
+                drawFingerprintEtch(context: &context, size: size)
             case .xyEtched:
                 drawEraFlowEtch(context: &context, size: size, rows: 44,
                                 cycles: 4.7, amplitude: 0.0072,
@@ -4083,6 +4448,27 @@ private struct FinishTextureLayer: View {
                                 ? 0.48 : 0.31)),
                            lineWidth: row.isMultiple(of: 7) ? 0.54 : 0.30)
         }
+    }
+
+    private func drawFingerprintEtch(context: inout GraphicsContext, size: CGSize) {
+        let center = CGPoint(x: size.width * 0.5, y: size.height * 0.42)
+        let spacing = max(2.2, size.width / 110)
+        let maxRadius = hypot(size.width, size.height) * 0.62
+        var rings = Path()
+        var radius = spacing
+        var index = 0
+        while radius < maxRadius {
+            for step in 0...96 {
+                let angle = Double(step) / 96 * .pi * 2
+                let wobble = 1 + 0.035 * sin(angle * 5 + Double(index) * 0.37)
+                let point = CGPoint(x: center.x + cos(angle) * radius * wobble,
+                                    y: center.y + sin(angle) * radius * wobble)
+                if step == 0 { rings.move(to: point) } else { rings.addLine(to: point) }
+            }
+            radius += spacing
+            index += 1
+        }
+        context.stroke(rings, with: .color(.white.opacity(0.22)), lineWidth: 0.5)
     }
 
     private func drawEraFlowEtch(

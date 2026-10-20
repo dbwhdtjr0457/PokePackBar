@@ -81,6 +81,13 @@ enum FoilGeometry {
     static func parallelMarkRect(cardID: String, in size: CGSize) -> CGRect {
         let art = artRect(cardID: cardID, in: size)
         let centerY = art.maxY + max(0, size.height * 0.90 - art.maxY) * 0.38
+        // Hidden Legends: one own-type symbol about half the attack box high.
+        // FireRed & LeafGreen: a Poké Ball across the attack box (2026-10-19 video check).
+        let side: CGFloat? = cardID.hasPrefix("ex5-") ? size.height * 0.115
+            : cardID.hasPrefix("ex6-") ? size.height * 0.28 : nil
+        if let side {
+            return CGRect(x: size.width * 0.5 - side / 2, y: centerY - side / 2, width: side, height: side)
+        }
         return CGRect(x: size.width * 0.37, y: centerY - size.height * 0.055,
                       width: size.width * 0.26, height: size.height * 0.11)
     }

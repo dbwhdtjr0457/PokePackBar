@@ -62,7 +62,9 @@ enum ReviewedFoilAudit {
             } == false, "25th yellow paper was replaced with 30th gold foil")
         }
         for id in ["cel25c-113_A", "cel25c-114_A"] {
-            try LocalAudit.require(contains(try layer(id, "illustration-confetti"), 0.5, 0.35),
+            // Full-art reprints are silver with fine wavy etched lines, no confetti (2026-10-19).
+            let etch = try layer(id, "illustration-etch")
+            try LocalAudit.require(etch.material == .microEtching && contains(etch, 0.5, 0.35),
                                    "Full-art subject was universally excluded")
         }
         for number in 23...52 {

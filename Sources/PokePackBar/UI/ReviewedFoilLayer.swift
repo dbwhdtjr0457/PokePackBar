@@ -193,7 +193,7 @@ private enum ReviewedFacetCache {
     private static let capacity = 24
 
     static func groups(seed: UInt64, material: ReviewedFoilProfiles.Material) -> [Path] {
-        let key = "v2#\(seed)#\(material.rawValue)"
+        let key = "v3#\(seed)#\(material.rawValue)"
         if let cached = cache[key] { return cached }
         var random = PackSeedGenerator(seed: seed)
         func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
@@ -226,7 +226,9 @@ private enum ReviewedFacetCache {
                                      seed: UInt64,
                                      random: inout PackSeedGenerator) -> [Path] {
         func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
-        let columns = material == .goldFragments ? 116 : 144
+        // Classic Collection confetti flakes are large and dense, about 1/40-1/50 of
+        // the card width (2026-10-19 video check, Charizard and Blastoise reprints).
+        let columns = material == .goldFragments ? 116 : material == .confetti ? 46 : 144
         let rows = Int(Double(columns) / 0.717)
         var points: [CGPoint] = []
         for row in 0...rows {

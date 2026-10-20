@@ -113,7 +113,8 @@ enum CatalogueFoilAudit {
                         throw LocalAudit.Failure(description: "Missing source image")
                     }
                     let art = FoilGeometry.artRect(cardID: card.id, in: CGSize(width: 1, height: 1))
-                    if [.artBackground, .artSubject, .artSubjectAndBorder].contains(spec.coverage)
+                    if [.artBackground, .artSubject, .artSubjectAndBorder, .artBackgroundAndMark, .outsideSubject,
+                         .artBackgroundAndPrismStar].contains(spec.coverage)
                         || [.cosmos, .goldStar].contains(FoilSheetMaterial(pattern: spec.pattern, cardID: card.id)) {
                         _ = await ArtworkMaskCache.prepare(cardID: card.id, source: source, art: art)
                     }

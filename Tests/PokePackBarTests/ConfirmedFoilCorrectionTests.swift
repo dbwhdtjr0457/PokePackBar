@@ -15,7 +15,8 @@ final class ConfirmedFoilCorrectionTests: XCTestCase {
             let result = try resolve("cel25-25", finish: finish)
             XCTAssertEqual(result.finish, .holo)
             XCTAssertEqual(result.spec.pattern, .swordShieldGold)
-            XCTAssertEqual(result.spec.coverage, .fullCard)
+            // Mew itself stays smooth printed colour (physical check 2026-10-19).
+            XCTAssertEqual(result.spec.coverage, .outsideSubject)
             XCTAssertEqual(result.spec.border, .gold)
             XCTAssertEqual(FoilReliefMaterial(pattern: result.spec.pattern), .gold(.swordShieldGold))
         }
@@ -30,7 +31,8 @@ final class ConfirmedFoilCorrectionTests: XCTestCase {
         XCTAssertGreaterThan(art.minX, 0.03)
         XCTAssertLessThan(art.maxX, 0.97)
         let result = try resolve("cel25-5")
-        XCTAssertEqual(result.spec.coverage, .artWindow)
+        // Pikachu itself stays matte (physical check 2026-10-19).
+        XCTAssertEqual(result.spec.coverage, .artBackground)
         XCTAssertEqual(result.spec.texture, .none)
         XCTAssertEqual(result.spec.border, .paper)
     }

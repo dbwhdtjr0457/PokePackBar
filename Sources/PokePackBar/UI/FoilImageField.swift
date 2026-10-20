@@ -92,7 +92,9 @@ struct ImageGuidedFoilRelief: View {
     @State private var loadedID: String?
     var body: some View {
         FoilReliefLayer(material: material, seed: seed, tilt: tilt,
-            imageField: FoilImageFieldCache.field(loadedID == cardID ? loaded : preloaded, cardID: cardID))
+            imageField: FoilImageFieldCache.field(loadedID == cardID ? loaded : preloaded, cardID: cardID),
+            allowsPrism: !(material == .gold(.swordShieldGold)
+                && CardIndex.shared?.card(cardID)?.visualKind?.supertype == .pokemon))
             .task(id: cardID) {
                 guard preloaded == nil else { return }
                 let image = await CardImageLoader.image(cardID: cardID, hires: true)
@@ -126,6 +128,32 @@ enum ArtworkMaskCache {
     /// 전경 분리가 아무것도 찾지 못하는 그림이 있다(언노운 I, M 처럼 글자 모양 포켓몬, ex13-2 릴리요).
     /// 그때만 "눈에 띄는 물체" 열지도로 부드러운 윤곽을 만든다. 거친 덩어리지만, 배경만 칠할 포일이
     /// 포켓몬까지 덮거나 포켓몬만 칠할 포일이 그림 칸 전체로 번지는 것보다 실물에 가깝다.
+    /// Alpha mask of gold-coloured ink (hue about 30-60 degrees, saturated, not dark).
+    nonisolated static func goldInkMask(_ image: CGImage) -> CGImage? {
+        let width = min(360, image.width)
+        let height = max(1, Int(Double(image.height) * Double(width) / Double(image.width)))
+        var rgba = [UInt8](repeating: 0, count: width * height * 4)
+        guard let context = CGContext(data: &rgba, width: width, height: height, bitsPerComponent: 8,
+                                      bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        var mask = [UInt8](repeating: 0, count: width * height)
+        for p in 0..<(width * height) {
+            let r = Double(rgba[p * 4]) / 255, g = Double(rgba[p * 4 + 1]) / 255, b = Double(rgba[p * 4 + 2]) / 255
+            let maxC = max(r, g, b), minC = min(r, g, b), delta = maxC - minC
+            guard maxC > 0.30, delta / max(maxC, 0.001) > 0.28, r >= g, g > b else { continue }
+            let hue = (g - b) / max(delta, 0.001) / 6 // red-to-yellow sector, 0...1/6
+            if hue > 0.08 && hue <= 1.0 / 6 { mask[p] = 255 }
+        }
+        guard let provider = CGDataProvider(data: Data(mask) as CFData) else { return nil }
+        return CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: width,
+                       space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue),
+                       provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+            .map { CIImage(cgImage: $0).applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 1.2])
+                .cropped(to: CGRect(x: 0, y: 0, width: width, height: height)).applyingFilter("CIMaskToAlpha") }
+            .flatMap { CIContext().createCGImage($0, from: CGRect(x: 0, y: 0, width: width, height: height)) }
+    }
+
     nonisolated static func salientObjectMask(handler: VNImageRequestHandler, size: CGSize) -> CGImage? {
         let request = VNGenerateObjectnessBasedSaliencyImageRequest()
         guard (try? handler.perform([request])) != nil,
@@ -159,7 +187,12 @@ enum ArtworkMaskCache {
         let crop = CGRect(x: art.minX * Double(cg.width), y: art.minY * Double(cg.height),
                           width: art.width * Double(cg.width), height: art.height * Double(cg.height))
         guard let artwork = cg.cropping(to: crop) else { return nil }
+        // BREAK Pokémon are printed in gold over a coloured background, and the
+        // foreground model takes almost the whole card as the subject. Use the
+        // gold ink itself as the subject there (2026-10-19 render check).
+        let goldSubject = CardIndex.shared?.card(cardID)?.rarity == "Rare BREAK"
         let result = await Task.detached(priority: .utility) {
+            if goldSubject { return ArtworkMaskCache.goldInkMask(artwork) }
             let request = VNGenerateForegroundInstanceMaskRequest()
             let handler = VNImageRequestHandler(cgImage: artwork)
             guard (try? handler.perform([request])) != nil,
@@ -221,6 +254,14 @@ struct ArtworkFoilMask: View {
             // New background substrate must never flash over opaque Pokémon
             // ink while asynchronous foreground separation is still loading.
             if requirePreparedMask && preparedMask == nil { return }
+            if coverage == .outsideSubject {
+                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white))
+                if let mask = preparedMask {
+                    artContext.blendMode = .destinationOut
+                    artContext.draw(Image(decorative: mask, scale: 1), in: rect)
+                }
+                return
+            }
             // 분리가 실패하면(그림에서 포켓몬을 찾지 못함) 포켓몬만 칠할 포일이 통째로 사라졌다
             // (예: ex13-2 리버스). 실패한 카드는 예전처럼 그림 칸 전체에 포일을 둔다.
             if coverage == .artSubject, preparedMask == nil,

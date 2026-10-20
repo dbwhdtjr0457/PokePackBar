@@ -30,6 +30,17 @@ enum PhysicalFoilFixes {
     /// 같은 세트의 Energy Retrieval(xy7-99)과 같은 금색 시크릿 아이템. 풀아트 트레이너로 분류됐다.
     static let xyGoldItemStoredAsEtched: Set<String> = ["xy7-100"]
 
+    /// 시크릿 Pokémon-ex(로켓단의 라이코 ex, 로켓단의 페르시온 ex, 세레비 ex). Rare Ultra 로
+    /// 들어왔지만 실물은 다른 Pokémon-ex 처럼 그림 칸 코스모와 은빛 테두리 포일이다
+    /// (2026-10-19 영상, 사진 확인).
+    static let exSecretPokemonEX: Set<String> = ["ex8-108", "ex10-116", "ex10-117"]
+
+    /// 금색 카드로 분류됐지만 실물은 노란 테두리에 그림 칸만 홀로인 카드(포켓몬 캐처 bw5-111).
+    static let holoStoredAsGold: Set<String> = ["bw5-111"]
+
+    /// 리버스처럼 그림만 일반 인쇄이고 나머지가 포일인 시크릿(HGSS 갸라도스 123/123).
+    static let reverseStyleSecret: Set<String> = ["hgss1-123"]
+
     /// 영문 첫 홀로 테두리 트레이너. 그림 칸만이 아니라 테두리도 홀로다(Bulbapedia).
     static let holoBorderTrainer: Set<String> = ["dp2-124"]
 
@@ -47,6 +58,8 @@ enum PhysicalFoilFixes {
             .gold
         case .gold where swordShieldShinyStoredAsGold.contains(cardID):
             .shinyFullArt
+        case .gold where holoStoredAsGold.contains(cardID):
+            .holo
         default:
             stored
         }

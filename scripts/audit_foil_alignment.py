@@ -15,7 +15,7 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 RES = ROOT / "Sources/PokePackBar/Resources"
-WINDOWS = {"artWindow", "artWindowAndMark", "artAndBorder", "artNameAndBorder",
+WINDOWS = {"artWindow", "artBackgroundAndMark", "artAndBorder", "artNameAndBorder",
            "artSubject", "artBackground", "artSubjectAndBorder", "traitBands"}
 # These scans intentionally have full-face foil (not a missing illustration).
 FULL_FACE_HOLOS = {"cel25-25", "g1-25", "g1-29"}

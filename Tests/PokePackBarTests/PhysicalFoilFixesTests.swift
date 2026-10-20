@@ -70,8 +70,9 @@ final class PhysicalFoilFixesTests: XCTestCase {
     func testDeltaEraReversesFoilBackgroundOrPokemon() throws {
         XCTAssertEqual(try spec("ex13-78", .reverseHolo).coverage, .artBackground)
         XCTAssertEqual(try spec("ex15-45", .reverseHolo).coverage, .artSubject)
-        XCTAssertEqual(try spec("ex13-1", .reverseHolo).coverage, .artSubject)
-        XCTAssertEqual(try spec("ex14-2", .reverseHolo).coverage, .artSubject)
+        // δ holo-rare reverses also foil the card border.
+        XCTAssertEqual(try spec("ex13-1", .reverseHolo).coverage, .artSubjectAndBorder)
+        XCTAssertEqual(try spec("ex14-2", .reverseHolo).coverage, .artSubjectAndBorder)
         let index = try XCTUnwrap(CardIndex.shared)
         let deltaCommon = try XCTUnwrap(index.cards(inSet: "ex13").first {
             index.card($0)?.name.contains("δ") == true && index.card($0)?.rarity == "Common"
