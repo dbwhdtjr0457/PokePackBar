@@ -1265,8 +1265,18 @@ struct FoilCoverageMask: View {
                 ArtworkFoilMask(cardID: cardID, preloaded: preloaded, coverage: .artBackground,
                                 art: artRect(in: CGSize(width: 1, height: 1)))
                 Canvas { context, size in
-                    context.fill(Path(ellipseIn: FoilGeometry.parallelMarkRect(cardID: cardID, in: size)),
-                                 with: .color(.white))
+                    let mark = FoilGeometry.parallelMarkRect(cardID: cardID, in: size)
+                    if cardID.hasPrefix("ex6-") {
+                        // The FireRed & LeafGreen ball is a faint outline across the
+                        // attack box; a solid foil disc washed out the attack text.
+                        var ball = Path(ellipseIn: mark)
+                        ball.move(to: CGPoint(x: mark.minX, y: mark.midY))
+                        ball.addLine(to: CGPoint(x: mark.maxX, y: mark.midY))
+                        ball.addEllipse(in: mark.insetBy(dx: mark.width * 0.39, dy: mark.height * 0.39))
+                        context.stroke(ball, with: .color(.white), lineWidth: max(1.2, mark.width * 0.035))
+                    } else {
+                        context.fill(Path(ellipseIn: mark), with: .color(.white))
+                    }
                 }
             }
         } else {
@@ -2354,6 +2364,11 @@ struct FinishPatternCanvas: View {
     let visualKind: CardVisualKind?
     var alphaGain: Float = 1
 
+    /// The flash and shadow passes reuse this canvas as a mask with its alpha multiplied
+    /// 5-7x. Solid fills then turn into dark discs and dots (2026-10-20 render check), so
+    /// fills drawn for the motif itself stay very faint in that use.
+    private var fillScale: Double { alphaGain == 1 ? 1 : 0.12 }
+
     var body: some View {
         Canvas { context, size in
             if alphaGain != 1 {
@@ -2725,7 +2740,7 @@ struct FinishPatternCanvas: View {
                                  element: CardVisualKind.Element, hue: Double, opacity: Double) {
         context.fill(Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius,
                                             width: radius * 2, height: radius * 2)),
-                     with: .color(Color(hue: hue, saturation: 0.45, brightness: 1).opacity(opacity * 0.55)))
+                     with: .color(Color(hue: hue, saturation: 0.45, brightness: 1).opacity(opacity * 0.55 * fillScale)))
         drawCardMotif(context: &context, center: center, radius: radius, element: element,
                       trainer: false, opacity: opacity)
     }
@@ -2789,7 +2804,7 @@ struct FinishPatternCanvas: View {
                     let hue = (Double(x / size.width) * 0.7 + Double(y / size.height) * 0.4)
                         .truncatingRemainder(dividingBy: 1)
                     context.fill(Path(ellipseIn: circle),
-                                 with: .color(Color(hue: hue, saturation: 0.45, brightness: 1).opacity(0.30)))
+                                 with: .color(Color(hue: hue, saturation: 0.45, brightness: 1).opacity(0.30 * fillScale)))
                 }
                 context.stroke(Path(ellipseIn: circle),
                                with: .color(.white.opacity(0.42)), lineWidth: 0.9)
@@ -2998,9 +3013,14 @@ struct FinishPatternCanvas: View {
                 let center = CGPoint(x: random.next() * size.width, y: random.next() * size.height)
                 guard !placed.contains(where: { hypot($0.0.x - center.x, $0.0.y - center.y) < ($0.1 + radius) * 1.15 }) else { continue }
                 placed.append((center, radius))
+                // A faint filled disc keeps the symbol readable on yellow and white
+                // card colours, where a thin outline alone vanished (2026-10-20 check).
+                context.fill(Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius,
+                                                    width: radius * 2, height: radius * 2)),
+                             with: .color(.white.opacity(0.14 * fillScale)))
                 drawCardMotif(context: &context, center: center, radius: radius,
                               element: motifElements[placed.count % motifElements.count],
-                              trainer: isTrainerMotif, opacity: 0.30)
+                              trainer: isTrainerMotif, opacity: 0.46)
             }
             return
         }
@@ -3024,7 +3044,7 @@ struct FinishPatternCanvas: View {
         }
         for (index, path) in paths.enumerated() {
             context.fill(path, with: .color(Color(hue: Double(index) / Double(buckets),
-                                                  saturation: 0.55, brightness: 1).opacity(0.55)))
+                                                  saturation: 0.55, brightness: 1).opacity(0.55 * fillScale)))
         }
     }
 
@@ -3047,7 +3067,7 @@ struct FinishPatternCanvas: View {
                 let elementIndex = isFirstType ? 0 : min(1, elements.count - 1)
                 drawCardMotif(context: &context, center: CGPoint(x: x, y: y),
                               radius: radius, element: elements[elementIndex],
-                              trainer: isTrainerMotif, opacity: 0.40)
+                              trainer: isTrainerMotif, opacity: 0.40, ring: false)
                 column += 1
                 x += step
             }
@@ -3148,7 +3168,7 @@ struct FinishPatternCanvas: View {
                 if random.next() < 0.14 { gapSymbols.append(nodes[row][column]) }
             }
         }
-        context.fill(tiles, with: .color(.white.opacity(0.13)))
+        context.fill(tiles, with: .color(.white.opacity(0.13 * fillScale)))
         context.stroke(tiles, with: .color(.white.opacity(0.22)), lineWidth: 0.5)
         for point in gapSymbols {
             drawCardMotif(context: &context, center: point, radius: step * 0.26,
@@ -3622,7 +3642,7 @@ struct FinishPatternCanvas: View {
             row += 1
             ty += tile
         }
-        context.fill(squares, with: .color(.white.opacity(0.18)))
+        context.fill(squares, with: .color(.white.opacity(0.18 * fillScale)))
     }
 
     private func drawBreakGridLines(context: inout GraphicsContext, size: CGSize) {
@@ -4138,7 +4158,7 @@ struct FinishPatternCanvas: View {
             let radius = (2 + random.next() * 4) * size.width / 240
             context.fill(fourPointStar(center: center, radius: radius),
                          with: .color(Color(hue: random.next(), saturation: 0.45, brightness: 1)
-                            .opacity(0.45 + random.next() * 0.35)))
+                            .opacity((0.45 + random.next() * 0.35) * fillScale)))
         }
     }
 
@@ -4190,7 +4210,7 @@ struct FinishPatternCanvas: View {
                                                  width: r * 2, height: r * 2))
                 }
                 glitter.fill(specks, with: .color((master ? Color(red: 0.92, green: 0.86, blue: 1) : .white)
-                    .opacity(0.40 * strength)))
+                    .opacity(0.40 * strength * fillScale)))
                 context.stroke(Path(ellipseIn: circle), with: .color(.white.opacity(0.46 * strength)), lineWidth: 0.9)
                 var seam = Path()
                 seam.move(to: CGPoint(x: x - radius, y: y))

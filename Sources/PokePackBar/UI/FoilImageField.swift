@@ -123,6 +123,30 @@ enum ArtworkMaskCache {
     /// Keys whose last segmentation found no foreground. A retry still runs; this only lets
     /// a subject-only foil fall back to the whole illustration instead of vanishing.
     private static var failures: Set<String> = []
+    /// Share of the illustration the found subject covers, per key.
+    private static var coverages: [String: Double] = [:]
+
+    /// On full-bleed art the foreground model sometimes takes the whole illustration, or even
+    /// the text box, as the Pokémon. A foil that leaves the subject out then vanishes
+    /// (2026-10-20 render check: VSTAR, SM GX, Galarian Gallery). Above this share the
+    /// separation is treated as failed and the foil keeps its whole area, as it used to.
+    static let implausibleSubjectShare = 0.70
+
+    static func subjectTooLarge(key: String) -> Bool {
+        (coverages[key] ?? 0) > implausibleSubjectShare
+    }
+
+    nonisolated static func alphaShare(_ image: CGImage) -> Double {
+        let side = 48
+        var rgba = [UInt8](repeating: 0, count: side * side * 4)
+        guard let context = CGContext(data: &rgba, width: side, height: side, bitsPerComponent: 8,
+                                      bytesPerRow: side * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return 0 }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
+        var total = 0
+        for p in 0..<(side * side) { total += Int(rgba[p * 4 + 3]) }
+        return Double(total) / Double(side * side * 255)
+    }
     static func mask(key: String) -> CGImage? { cache.object(forKey: key as NSString)?.image }
     static func failed(key: String) -> Bool { failures.contains(key) }
     /// 전경 분리가 아무것도 찾지 못하는 그림이 있다(언노운 I, M 처럼 글자 모양 포켓몬, ex13-2 릴리요).
@@ -208,6 +232,7 @@ enum ArtworkMaskCache {
         // Failed segmentation is retryable; don't permanently cache a miss.
         if let result {
             cache.setObject(Entry(result, source: source), forKey: cacheKey)
+            coverages[cacheKey as String] = alphaShare(result)
             failures.remove(cacheKey as String)
         } else {
             failures.insert(cacheKey as String)
@@ -254,9 +279,10 @@ struct ArtworkFoilMask: View {
             // New background substrate must never flash over opaque Pokémon
             // ink while asynchronous foreground separation is still loading.
             if requirePreparedMask && preparedMask == nil { return }
+            let implausible = ArtworkMaskCache.subjectTooLarge(key: key)
             if coverage == .outsideSubject {
                 context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white))
-                if let mask = preparedMask {
+                if let mask = preparedMask, !implausible {
                     artContext.blendMode = .destinationOut
                     artContext.draw(Image(decorative: mask, scale: 1), in: rect)
                 }
@@ -270,7 +296,7 @@ struct ArtworkFoilMask: View {
                 return
             }
             if coverage == .artBackground { artContext.fill(artwork, with: .color(.white)) }
-            if let mask = preparedMask {
+            if let mask = preparedMask, !(coverage == .artBackground && implausible) {
                 if coverage == .artBackground { artContext.blendMode = .destinationOut }
                 artContext.draw(Image(decorative: mask, scale: 1), in: rect)
             }
