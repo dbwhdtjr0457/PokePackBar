@@ -207,6 +207,38 @@ enum OnlineGameAudit {
         if let summary = buyer.notificationSummary {
             try LocalAudit.require(summary.incoming_trades == 1, "Trade offer missing from the notification summary")
         }
+        // Exercise the account form's actual response-envelope/request boundary.
+        _ = try await mutate(buyer, "profile", ["action": "profile", "nickname": "Before audit",
+            "collection_public": true, "wishlist_public": false, "binder_public": true, "trade_list_public": false])
+        let freshProfile = try await read(buyer, "profile")
+        let nicknameBody = try OnlineSettingsView.nicknameMutation("After audit", from: freshProfile)
+        _ = try await buyer.onlineMutation(path: "v1/profile", body: JSONSerialization.data(withJSONObject: nicknameBody))
+        let savedProfile = try await read(buyer, "profile")["profile"] as? [String: Any] ?? [:]
+        try LocalAudit.require(savedProfile.string("nickname") == "After audit"
+            && savedProfile.bool("collection_public") && !savedProfile.bool("wishlist_public")
+            && savedProfile.bool("binder_public") && !savedProfile.bool("trade_list_public"),
+            "Nickname update reset profile privacy")
+        // Actual notification mutations through the same visit-aware loop as UI.
+        let hub = OnlineHubModel(wallet: WalletStore(fileURL: root.appendingPathComponent("alerts-fixture.json")))
+        hub.visible = true; hub.attentive = true; hub.section = .trades
+        hub.showing(.trades, ids: [tradeID])
+        let notes = try await read(buyer, "notifications?newest=true")["items"] as? [[String: Any]] ?? []
+        let expected = Set(OnlineHubModel.alertsAnswered(by: [.trades: [tradeID]], among: notes))
+        try LocalAudit.require(!expected.isEmpty, "Unread trade alert fixture missing")
+        let marked = try await hub.readAnsweredAlerts(notes, during: hub.alertVisit) { id in
+            _ = try await mutate(buyer, "notifications", ["action": "notification_read", "notification_id": id])
+        }
+        let afterNotes = try await read(buyer, "notifications?newest=true")["items"] as? [[String: Any]] ?? []
+        try LocalAudit.require(marked == expected && afterNotes.filter { expected.contains($0.int("id")) }.allSatisfy { $0.bool("read") },
+            "Seen trade alert was not read")
+        let unrelatedBefore = Set(notes.filter { !expected.contains($0.int("id")) && !$0.bool("read") }.map { $0.int("id") })
+        let unrelatedAfter = Set(afterNotes.filter { !expected.contains($0.int("id")) && !$0.bool("read") }.map { $0.int("id") })
+        try LocalAudit.require(unrelatedBefore == unrelatedAfter, "Reading a trade cleared unrelated alerts")
+        hub.clearPrivateData()
+        // Later binder checks require the original public-spares fixture policy.
+        _ = try await mutate(buyer, "profile", ["action": "profile", "nickname": "After audit",
+            "collection_public": true, "wishlist_public": false, "binder_public": true, "trade_list_public": true])
+        print("PASS native profile/alerts: nested nickname update preserves privacy; foreground target reads settle through HTTP and retain unrelated alerts; isolated fixtures")
         _ = try await mutate(buyer, "trades", ["action": "trade_accept", "target_id": tradeID, "target_version": 0])
         await buyer.refreshNotificationSummary()
         if let summary = buyer.notificationSummary {

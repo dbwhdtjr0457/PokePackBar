@@ -11,6 +11,26 @@ read_when:
 
 # 결함 대응 축적 규칙
 
+### 2026-10-20 — Preserve nested profile data and foreground alert visits
+
+- The nickname form read `/v1/profile` as a flat dictionary despite the server's
+  `{revision, profile}` envelope. Existing rendering fixtures bypassed that read,
+  hiding blank names and privacy flags resetting on save. Read nested values and
+  build edits from that reply's revision; reject malformed privacy data.
+- Auto-read checked foreground status before awaiting notifications, then sent
+  requests after focus, tabs or login state could change. Pure target-matching
+  tests did not exercise the async continuation. Recheck an epoch/token visit
+  before sending each request and invalidate it on leaving or clearing data.
+- Nickname and alert-visit regressions exercise the production request builder
+  and sending loop. Injecting a privacy reset and disabling visit checks makes
+  those tests fail. Successful unchanged visits continue processing normally.
+- Sweep: wishlist edits already bind nested data to its read revision; the
+  friend-binder cache uses the same logout epoch discipline. Late notification
+  responses now retain that boundary too.
+- The local Swift 6.2.4 compiler timed out inferring a new Canvas squiggle
+  expression although PR CI passed. Extract its drawing body and explicitly
+  type the same calculations; build/test gates verify the shipping toolchain.
+
 ### 2026-10-19 — Keep replacement data and its revision together
 
 - The card-detail wishlist read fresh data, waited for background sync, then

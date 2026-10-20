@@ -33,10 +33,11 @@ final class LocalReliabilityTests: XCTestCase {
     }
 
     func testBabyShinyPaperBordersAreOutsideTheFoilMask() {
-        for (id, set) in [("sma-SV1", "sma"), ("swsh45sv-SV001", "swsh45sv")] {
+        for (id, set, coverage) in [("sma-SV1", "sma", FoilCoverage.artBackground),
+                                    ("swsh45sv-SV001", "swsh45sv", .artWindow)] {
             let resolved = CardFinishResolver.resolve(cardID: id, setID: set,
                 originalRarity: "Rare Shiny", tier: .shiny)
-            XCTAssertEqual(resolved.spec.coverage, .artWindow)
+            XCTAssertEqual(resolved.spec.coverage, coverage)
             XCTAssertEqual(resolved.spec.border, .paper)
         }
     }

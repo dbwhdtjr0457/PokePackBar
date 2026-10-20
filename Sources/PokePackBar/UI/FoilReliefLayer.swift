@@ -77,6 +77,7 @@ enum FoilReliefMaterial: Equatable {
         case .illustration: 260
         case .gold(.megaGold): 400
         case .gold: 250
+        case .engraved(.rainbowSplash, _): 180 // coarser, discrete Amazing Rare sparkles
         case .engraved: 280
         case .linear: 280
         case .white, .black: 144
@@ -94,6 +95,11 @@ enum FoilReliefMaterial: Equatable {
         case .neoShining:
             [Color(white: 0.98), Color(white: 0.72), Color(white: 0.88)]
         case .microEtched(let finish): finish.reflectionColors
+        case .gold(.bwGold):
+            // BW gold is a deeper brass than later lemon golds (2026-10-19 video check).
+            [Color(red: 0.95, green: 0.80, blue: 0.45),
+             Color(red: 0.82, green: 0.62, blue: 0.20),
+             Color(red: 0.99, green: 0.90, blue: 0.62)]
         case .gold:
             [Color(red: 1.0, green: 0.95, blue: 0.64),
              Color(red: 1.0, green: 0.81, blue: 0.23),
@@ -224,6 +230,7 @@ enum FoilReliefMaterial: Equatable {
         case .gold: 0.52
         case .neoShining: 0.12
         case .engraved(.starfield, _), .engraved(.cosmos, _): 0.40
+        case .engraved(.rainbowSplash, _): 0.30 // short facets read as separate sparkles
         case .engraved: 0.62
         case .linear: 0.42
         case .chrome: 0.24
@@ -276,7 +283,8 @@ enum FoilReliefMaterial: Equatable {
     /// (Bleeding Cool, Gold Secret Rares). Other gold families stay warm metal.
     var hasPrismLinework: Bool {
         if case .gold(let pattern) = self {
-            return pattern == .sunMoonGold || pattern == .swordShieldGold
+            // BW gold also shows rainbow glints when tilted (Random Receiver, Rocky Helmet).
+            return pattern == .sunMoonGold || pattern == .swordShieldGold || pattern == .bwGold
         }
         return false
     }
@@ -333,6 +341,9 @@ struct FoilReliefLayer: View {
     let tilt: TiltVector
     var imageField: FoilImageField? = nil
     var coatingScale: Double = 1
+    /// Sword & Shield gold Pokémon cards show warm gold glitter with no coloured
+    /// specks; the prism linework stays for gold Trainers (2026-10-19 video check).
+    var allowsPrism = true
 
     private static let lightLevels = 8
     private static let prismHues = 6
@@ -436,7 +447,7 @@ struct FoilReliefLayer: View {
                 }
             }
             context.fill(peaks, with: .color(colors[0].opacity(min(1, 0.92 * highlightGain))))
-            if material.hasPrismLinework {
+            if material.hasPrismLinework && allowsPrism {
                 for bucket in 0..<Self.prismHues {
                     context.stroke(prisms[bucket],
                                    with: .color(Color(hue: Double(bucket) / Double(Self.prismHues),
@@ -603,16 +614,20 @@ private enum FoilReliefCache {
             switch pattern {
             case .megaGold:
                 // Dense metal grain, not rectangular patches or rainbow
-                // scratches. A scan cannot supply the exact emboss plate.
+                // scratches. The real card's rainbow is a broad tilted band,
+                // drawn by the sheen layer. A scan cannot supply the exact emboss plate.
                 let facet = sin(x * 739 + y * 1031 + phase)
                     * cos(x * 617 - y * 887 + phase)
                 return (facet * 2.7, facet * .pi, facet * 0.1)
             case .bwGold:
-                let facet = sin(floor(x * 18) * 2.4 + floor(y * 24) * 1.7 + phase)
-                return (facet * 2.9, facet * 2.0, x * 0.2)
+                // Fine concentric wavy lines, not blocky facets.
+                let ring = hypot(x - 0.5, y - 0.42) * 88 + sin(atan2(y - 0.42, x - 0.5) * 5 + phase) * 0.8
+                let wave = sin(ring)
+                return (wave * 2.8, atan2(y - 0.42, x - 0.5) + .pi / 2, x * 0.2)
             case .xyGold:
-                let hatch = sin((x + y * 0.76) * 31 + phase)
-                return (hatch * 2.6, .pi * (hatch > 0 ? 0.24 : -0.24), y * 0.2)
+                // Fine diagonal brushed lines, all running one way (2026-10-19 video check).
+                let hatch = sin((x + y * 0.76) * 84 + phase)
+                return (hatch * 2.6, .pi * 0.24, y * 0.2)
             case .swordShieldGold:
                 let groove = sin(x * 32 + sin(y * 9 + phase) * 1.4)
                 return (groove * 2.8, .pi * 0.5 + sin(y * 12) * 0.15, x * 0.2)

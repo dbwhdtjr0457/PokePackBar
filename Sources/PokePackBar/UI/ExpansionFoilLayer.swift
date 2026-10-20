@@ -31,7 +31,12 @@ struct ExpansionFoilLayer: View {
                 AnniversaryFlakes(seed: seed, tilt: tilt, fireworks: true)
             }
         case .futuristic30:
-            relief(.chrome)
+            // Dense squiggle-line relief over the whole card with the opalescent
+            // sheen (2026-10-19 video check), not a fine sparkle grain.
+            ZStack {
+                relief(.chrome).opacity(0.55)
+                FuturisticSquiggles(seed: seed, tilt: tilt)
+            }
         case .rgb30:
             relief(.printedRGB).opacity(0.88)
         case .megaDoubleRare:
@@ -174,5 +179,44 @@ private struct AscendedMark: View {
             ]), startPoint: rect.origin, endPoint: CGPoint(x: rect.maxX, y: rect.maxY)),
                 style: FillStyle(eoFill: true))
         }
+    }
+}
+
+/// Short random squiggle lines, about 1-2% of the card width, catching light by angle.
+@MainActor
+struct FuturisticSquiggles: View {
+    let seed: UInt64
+    let tilt: TiltVector
+
+    var body: some View {
+        Canvas { context, size in draw(in: &context, size: size) }
+    }
+
+    private func draw(in context: inout GraphicsContext, size: CGSize) {
+            var random = PackSeedGenerator(seed: seed &+ 0x5351_5549)
+            func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
+            let buckets = 6
+            var paths = Array(repeating: Path(), count: buckets)
+            for _ in 0..<1400 {
+                let x: Double = next() * Double(size.width)
+                let y: Double = next() * Double(size.height)
+                let length: Double = Double(size.width) * (0.010 + next() * 0.010)
+                let angle: Double = next() * Double.pi * 2
+                var path = Path()
+                path.move(to: CGPoint(x: x, y: y))
+                path.addQuadCurve(to: CGPoint(x: x + cos(angle) * length, y: y + sin(angle) * length),
+                                  control: CGPoint(x: x + cos(angle + 1.2) * length * 0.7,
+                                                   y: y + sin(angle + 1.2) * length * 0.7))
+                let facing = (angle / (.pi * 2) + tilt.nx * 0.35 - tilt.ny * 0.25)
+                paths[Int((facing - floor(facing)) * Double(buckets)) % buckets].addPath(path)
+            }
+            for (index, path) in paths.enumerated() {
+                let phase: Double = Double(index) / Double(buckets) * Double.pi * 2 + tilt.nx * 2.4
+                let light: Double = pow(max(0, cos(phase)), 2)
+                let color = Color(hue: Double(index) / Double(buckets), saturation: 0.35,
+                                  brightness: 1).opacity(0.10 + light * 0.45)
+                context.stroke(path, with: .color(color),
+                               lineWidth: 0.6)
+            }
     }
 }

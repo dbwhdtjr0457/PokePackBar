@@ -86,19 +86,12 @@ extension L {
 
     // MARK: 알림 탭
 
-    var markAllRead: String {
-        t("모두 읽음", "Mark all read", "すべて既読にする", "Marcar todo como leído", "Tout marquer comme lu",
-          "Marcar tudo como lido")
-    }
-    func unreadAlerts(_ n: Int) -> String {
-        t("안 읽은 알림 \(n)개", "\(n) unread", "未読 \(n)件", "\(n) sin leer", "\(n) non lues", "\(n) não lidas")
+    /// 이번에 처음 본 알림 수. 보고 있으면 저절로 읽음이 되므로 「안 읽은」 대신 「새」 라고 한다.
+    func newAlerts(_ n: Int) -> String {
+        t("새 알림 \(n)개", "\(n) new", "新着 \(n)件", "\(n) nuevas", "\(n) nouvelles", "\(n) novas")
     }
     var allAlertsRead: String {
         t("모두 읽었어요", "All caught up", "すべて既読です", "Todo leído", "Tout est lu", "Tudo lido")
-    }
-    func alertsMarkedRead(_ n: Int) -> String {
-        t("알림 \(n)개를 읽음으로 바꿨어요", "Marked \(n) as read", "\(n)件を既読にしました", "\(n) marcadas como leídas",
-          "\(n) marquées comme lues", "\(n) marcadas como lidas")
     }
 
     var justNow: String { t("방금", "Just now", "たった今", "Ahora", "À l’instant", "Agora") }

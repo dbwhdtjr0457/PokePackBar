@@ -7,7 +7,6 @@ import SwiftUI
 @MainActor
 struct OnlineSocialView: View {
     @Bindable var model: OnlineHubModel
-    @State private var nickname = ""
     @State private var code = ""
     @State private var collectionPublic = false
     @State private var wishlistPublic = false
@@ -37,7 +36,7 @@ struct OnlineSocialView: View {
             case .wishlist: OnlineText.l.wishlistTitle
             case .binder: OnlineText.l.binderTitle
             case .cards: OnlineText.l.myCardsTitle
-            case .profile: OnlineText.l.myProfileTitle
+            case .profile: OnlineText.l.friendSettingsTitle
             }
         }
     }
@@ -56,7 +55,7 @@ struct OnlineSocialView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 30) {
                         switch page {
-                        case .friends: friends
+                        case .friends: friends.readsOnlineAlerts(model, .friends, in: model.items("friends"))
                         case .wishlist: wishlist
                         case .binder: binder
                         case .cards: inventory
@@ -111,13 +110,16 @@ struct OnlineSocialView: View {
     // MARK: 내 프로필
 
     private var profile: some View {
-        OnlineSection(title: OnlineText.l.myProfileTitle, subtitle: OnlineText.l.profilePrivacyNote) {
+        OnlineSection(title: OnlineText.l.friendSettingsTitle, subtitle: OnlineText.l.profilePrivacyNote) {
             VStack(alignment: .leading, spacing: 12) {
+                // 닉네임은 계정에 속해 계정 창의 프로필로 옮겼다. 여기서는 바로 가는 길만 둔다.
                 HStack(spacing: 10) {
                     Text(OnlineText.l.nicknameLabel).font(Typography.labelSemibold).frame(width: 64, alignment: .leading)
-                    TextField(OnlineText.l.nicknamePlaceholder, text: $nickname).textFieldStyle(.roundedBorder).frame(maxWidth: 240)
-                    Button(OnlineText.l.saveAction) { saveProfile() }
-                        .disabled(!model.canWrite || nickname.isEmpty || nickname == model.profile.string("nickname"))
+                    Text(model.profile.string("nickname")).lineLimit(1)
+                    Button(OnlineText.l.changeNicknameEllipsis) {
+                        AccountWindow.shared.show(wallet: model.wallet, section: .profile)
+                    }
+                    .buttonStyle(.borderless)
                 }
                 HStack(spacing: 10) {
                     Text(OnlineText.l.friendCodeLabel).font(Typography.labelSemibold).frame(width: 64, alignment: .leading)
@@ -417,7 +419,7 @@ struct OnlineSocialView: View {
     }
 
     private func saveProfile() {
-        var values: [String: Any] = ["action": "profile", "nickname": nickname.isEmpty ? model.profile.string("nickname") : nickname,
+        var values: [String: Any] = ["action": "profile", "nickname": model.profile.string("nickname"),
                                      "collection_public": collectionPublic, "wishlist_public": wishlistPublic, "binder_public": binderPublic]
         // 이 설정을 모르는 옛 서버는 모르는 값이 오면 요청 전체를 거절한다.
         if tradeListSupported { values["trade_list_public"] = tradeListPublic }
@@ -426,7 +428,6 @@ struct OnlineSocialView: View {
 
     private func loadDraft() {
         guard !draftLoaded, !model.profile.isEmpty else { return }
-        nickname = model.profile.string("nickname")
         collectionPublic = model.profile.bool("collection_public")
         wishlistPublic = model.profile.bool("wishlist_public")
         binderPublic = model.profile.bool("binder_public")
@@ -744,7 +745,7 @@ struct OnlinePrintingDetail: View {
         let key = CardPrintingKey(storageKey: printing)
         VStack(spacing: 12) {
             Text(OnlineText.cardName(key.cardID)).font(Typography.heading)
-            Text("\(OnlineText.l.cardFinishName(key.finish)), \(CardIndex.shared?.card(key.cardID).flatMap { CardIndex.shared?.set($0.setID)?.name } ?? "")")
+            Text("\(OnlineText.l.cardFinishName(key.finish, cardID: key.cardID)), \(CardIndex.shared?.card(key.cardID).flatMap { CardIndex.shared?.set($0.setID)?.name } ?? "")")
                 .font(Typography.label).foregroundStyle(.secondary)
             OnlinePrintingArt(printing: printing, width: 260)
             if let won = OnlineText.referenceWon(printing), let prices = CardPrices.shared {

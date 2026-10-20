@@ -22,7 +22,7 @@ struct OnlineSettingsView: View {
     @State private var credential: ServerCredential?
     @State private var message: String?
     /// 계정 창의 탭.
-    enum AccountTab: String, CaseIterable, Sendable { case connection, security, devices, server }
+    enum AccountTab: String, CaseIterable, Sendable { case profile, connection, security, devices, server }
     @State private var section: AccountTab = .connection
     @State private var devices: [AccountDevice] = []
     @State private var jobs: [AccountJob] = []
@@ -36,13 +36,22 @@ struct OnlineSettingsView: View {
     @State private var tokenPolicy = AccountTokenPolicy(collector_device_id: nil, version: 0)
     @State private var latencies: [String: AccountLatency] = [:]
     @State private var confirmingTokenPolicy: Bool?
+    /// 프로필 탭의 닉네임. 저장된 값과 다를 때만 저장할 수 있다.
+    @State private var nicknameDraft = ""
+    @State private var savedNickname: String?
     private var actionsDisabled: Bool { busy || wallet.remote?.busy == true || wallet.isOpeningPacks }
     private var unconfirmed: Bool { wallet.remote.map { $0.hasPending || $0.hasOnlinePending } ?? false }
 
-    init(wallet: WalletStore, auditSection: AccountTab? = nil, signedIn: Bool = false) {
+    init(wallet: WalletStore, auditSection: AccountTab? = nil, signedIn: Bool = false,
+         initialSection: AccountTab? = nil) {
         self.wallet = wallet
         auditing = auditSection != nil
+        if let initialSection { _section = State(initialValue: initialSection) }
         if let auditSection {
+            if auditSection == .profile {
+                _savedNickname = State(initialValue: "Layout Trainer")
+                _nicknameDraft = State(initialValue: "Layout Trainer")
+            }
             _section = State(initialValue: auditSection)
             _enabled = State(initialValue: false)
             _address = State(initialValue: "http://127.0.0.1:8000")
@@ -70,10 +79,15 @@ struct OnlineSettingsView: View {
             Picker(OnlineText.l.accountSections, selection: $section) {
                 ForEach(AccountTab.allCases, id: \.self) { Text(OnlineText.l.accountTab($0)).tag($0) }
             }.pickerStyle(.segmented).labelsHidden().frame(maxWidth: .infinity, alignment: .leading).disabled(busy)
-                .onChange(of: section) { clearSecrets(); if section != .connection && !auditing { refreshAccount() } }
+                .onChange(of: section) {
+                    clearSecrets()
+                    if section == .profile { if !auditing { loadNickname() } }
+                    else if section != .connection && !auditing { refreshAccount() }
+                }
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    if section == .connection { connection }
+                    if section == .profile { profile }
+                    else if section == .connection { connection }
                     else if section == .security { security }
                     else if section == .devices { deviceList }
                     else { serverStatus }
@@ -92,7 +106,10 @@ struct OnlineSettingsView: View {
                 }
             }
         }
-        .task { if !auditing { loadSavedLogin() } }
+        .task {
+            if !auditing { loadSavedLogin() }
+            if section == .profile && !auditing { loadNickname() }
+        }
         .onDisappear { clearSecrets(); devices = []; jobs = []; credential = nil }
         .alert(OnlineText.l.revokeDeviceQuestion, isPresented: Binding(
             get: { confirmingRevoke != nil }, set: { if !$0 { confirmingRevoke = nil } })) {
@@ -112,6 +129,97 @@ struct OnlineSettingsView: View {
         } message: {
             Text(OnlineText.l.tokenPolicyNote)
         }
+    }
+
+    // MARK: 프로필
+
+    /// 닉네임은 계정에 속한다. 예전에는 친구 탭의 「내 프로필」에서만 바꿀 수 있었다.
+    private var profile: some View {
+        GroupBox(OnlineText.l.nicknameLabel) {
+            VStack(alignment: .leading, spacing: 10) {
+                if wallet.remote == nil && !auditing {
+                    Text(OnlineText.l.nicknameNeedsSignIn)
+                        .font(Typography.body).foregroundStyle(.secondary)
+                } else {
+                    HStack(spacing: 10) {
+                        TextField(OnlineText.l.nicknamePlaceholder, text: $nicknameDraft)
+                            .textFieldStyle(.roundedBorder).frame(maxWidth: 280)
+                            .onSubmit { saveNickname() }
+                        Button(OnlineText.l.saveAction) { saveNickname() }
+                            .disabled(!canSaveNickname)
+                    }
+                    Text(OnlineText.l.nicknameNote)
+                        .font(Typography.label).foregroundStyle(.secondary)
+                }
+            }.padding(6).frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private var trimmedNickname: String { nicknameDraft.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    private var canSaveNickname: Bool {
+        !busy && savedNickname != nil && !trimmedNickname.isEmpty && trimmedNickname.count <= 40
+            && trimmedNickname != savedNickname
+    }
+
+    private func loadNickname() {
+        guard let remote = wallet.remote, !busy else { return }
+        busy = true
+        Task {
+            defer { busy = false }
+            do {
+                let profile = try JSONSerialization.jsonObject(with: try await remote.api("v1/profile")) as? [String: Any] ?? [:]
+                let name = (profile["profile"] as? [String: Any])?.string("nickname") ?? ""
+                savedNickname = name
+                nicknameDraft = name
+            } catch {
+                message = OnlineText.l.profileLoadFailed
+                AppLog.write("[online] profile load failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// 서버의 프로필 저장은 닉네임과 공개 범위를 함께 덮어쓴다. 공개 범위를 꺼 버리지 않게
+    /// 보내기 직전에 프로필을 다시 읽어 지금 값을 그대로 보낸다.
+    private func saveNickname() {
+        guard canSaveNickname, let remote = wallet.remote else { return }
+        let name = trimmedNickname
+        busy = true
+        Task {
+            defer { busy = false }
+            do {
+                let fresh = try JSONSerialization.jsonObject(with: try await remote.api("v1/profile")) as? [String: Any] ?? [:]
+                let body = try Self.nicknameMutation(name, from: fresh)
+                for _ in 0..<30 where remote.busy { try await Task.sleep(for: .milliseconds(100)) }
+                _ = try await remote.onlineMutation(path: "v1/profile",
+                                                    body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
+                savedNickname = name
+                nicknameDraft = name
+                message = OnlineText.l.nicknameSaved
+                NotificationCenter.default.post(name: .onlineProfileChanged, object: nil)
+            } catch {
+                message = OnlineText.l.nicknameSaveFailed
+                AppLog.write("[online] nickname save failed: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Keep privacy choices and their concurrency revision from the same read.
+    static func nicknameMutation(_ name: String, from reply: [String: Any]) throws -> [String: Any] {
+        guard let profile = reply["profile"] as? [String: Any],
+              let revision = reply["revision"] as? Int,
+              let collection = profile["collection_public"] as? Bool,
+              let wishlist = profile["wishlist_public"] as? Bool,
+              let binder = profile["binder_public"] as? Bool else {
+            throw RemoteGameSession.Failure(message: OnlineText.l.profileLoadFailed)
+        }
+        var body: [String: Any] = [
+            "action": "profile", "nickname": name, "collection_public": collection,
+            "wishlist_public": wishlist, "binder_public": binder,
+            "expected_revision": revision, "request_id": UUID().uuidString,
+        ]
+        if let tradeList = profile["trade_list_public"] as? Bool { body["trade_list_public"] = tradeList }
+        return body
     }
 
     private var connection: some View {
@@ -585,4 +693,9 @@ struct AccountJob: Decodable, Identifiable {
     @MainActor var title: String { OnlineText.l.serverJobName(name) }
     @MainActor var label: String { OnlineText.l.serverJobState(state) }
     var needsAttention: Bool { ["failed", "stale", "disabled"].contains(state) }
+}
+
+extension Notification.Name {
+    /// 계정 창에서 닉네임을 바꿨다. 온라인 창이 열려 있으면 머리글과 프로필을 다시 읽는다.
+    static let onlineProfileChanged = Notification.Name("ppb.online.profileChanged")
 }

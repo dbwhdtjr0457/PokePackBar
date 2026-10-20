@@ -92,7 +92,9 @@ struct ImageGuidedFoilRelief: View {
     @State private var loadedID: String?
     var body: some View {
         FoilReliefLayer(material: material, seed: seed, tilt: tilt,
-            imageField: FoilImageFieldCache.field(loadedID == cardID ? loaded : preloaded, cardID: cardID))
+            imageField: FoilImageFieldCache.field(loadedID == cardID ? loaded : preloaded, cardID: cardID),
+            allowsPrism: !(material == .gold(.swordShieldGold)
+                && CardIndex.shared?.card(cardID)?.visualKind?.supertype == .pokemon))
             .task(id: cardID) {
                 guard preloaded == nil else { return }
                 let image = await CardImageLoader.image(cardID: cardID, hires: true)
@@ -118,7 +120,87 @@ enum ArtworkMaskCache {
         let identity = source.map { String(describing: ObjectIdentifier($0)) } ?? "missing"
         return "\(cardID)#\(identity)#\(art)"
     }
+    /// Keys whose last segmentation found no foreground. A retry still runs; this only lets
+    /// a subject-only foil fall back to the whole illustration instead of vanishing.
+    private static var failures: Set<String> = []
+    /// Share of the illustration the found subject covers, per key.
+    private static var coverages: [String: Double] = [:]
+
+    /// On full-bleed art the foreground model sometimes takes the whole illustration, or even
+    /// the text box, as the Pokémon. A foil that leaves the subject out then vanishes
+    /// (2026-10-20 render check: VSTAR, SM GX, Galarian Gallery). Above this share the
+    /// separation is treated as failed and the foil keeps its whole area, as it used to.
+    static let implausibleSubjectShare = 0.70
+
+    static func subjectTooLarge(key: String) -> Bool {
+        (coverages[key] ?? 0) > implausibleSubjectShare
+    }
+
+    nonisolated static func alphaShare(_ image: CGImage) -> Double {
+        let side = 48
+        var rgba = [UInt8](repeating: 0, count: side * side * 4)
+        guard let context = CGContext(data: &rgba, width: side, height: side, bitsPerComponent: 8,
+                                      bytesPerRow: side * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return 0 }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
+        var total = 0
+        for p in 0..<(side * side) { total += Int(rgba[p * 4 + 3]) }
+        return Double(total) / Double(side * side * 255)
+    }
     static func mask(key: String) -> CGImage? { cache.object(forKey: key as NSString)?.image }
+    static func failed(key: String) -> Bool { failures.contains(key) }
+    /// 전경 분리가 아무것도 찾지 못하는 그림이 있다(언노운 I, M 처럼 글자 모양 포켓몬, ex13-2 릴리요).
+    /// 그때만 "눈에 띄는 물체" 열지도로 부드러운 윤곽을 만든다. 거친 덩어리지만, 배경만 칠할 포일이
+    /// 포켓몬까지 덮거나 포켓몬만 칠할 포일이 그림 칸 전체로 번지는 것보다 실물에 가깝다.
+    /// Alpha mask of gold-coloured ink (hue about 30-60 degrees, saturated, not dark).
+    nonisolated static func goldInkMask(_ image: CGImage) -> CGImage? {
+        let width = min(360, image.width)
+        let height = max(1, Int(Double(image.height) * Double(width) / Double(image.width)))
+        var rgba = [UInt8](repeating: 0, count: width * height * 4)
+        guard let context = CGContext(data: &rgba, width: width, height: height, bitsPerComponent: 8,
+                                      bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        var mask = [UInt8](repeating: 0, count: width * height)
+        for p in 0..<(width * height) {
+            let r = Double(rgba[p * 4]) / 255, g = Double(rgba[p * 4 + 1]) / 255, b = Double(rgba[p * 4 + 2]) / 255
+            let maxC = max(r, g, b), minC = min(r, g, b), delta = maxC - minC
+            guard maxC > 0.30, delta / max(maxC, 0.001) > 0.28, r >= g, g > b else { continue }
+            let hue = (g - b) / max(delta, 0.001) / 6 // red-to-yellow sector, 0...1/6
+            if hue > 0.08 && hue <= 1.0 / 6 { mask[p] = 255 }
+        }
+        guard let provider = CGDataProvider(data: Data(mask) as CFData) else { return nil }
+        return CGImage(width: width, height: height, bitsPerComponent: 8, bitsPerPixel: 8, bytesPerRow: width,
+                       space: CGColorSpaceCreateDeviceGray(), bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.none.rawValue),
+                       provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+            .map { CIImage(cgImage: $0).applyingFilter("CIGaussianBlur", parameters: ["inputRadius": 1.2])
+                .cropped(to: CGRect(x: 0, y: 0, width: width, height: height)).applyingFilter("CIMaskToAlpha") }
+            .flatMap { CIContext().createCGImage($0, from: CGRect(x: 0, y: 0, width: width, height: height)) }
+    }
+
+    nonisolated static func salientObjectMask(handler: VNImageRequestHandler, size: CGSize) -> CGImage? {
+        let request = VNGenerateObjectnessBasedSaliencyImageRequest()
+        guard (try? handler.perform([request])) != nil,
+              let observation = request.results?.first,
+              observation.salientObjects?.isEmpty == false else { return nil }
+        let heat = CIImage(cvPixelBuffer: observation.pixelBuffer)
+        let scaled = heat.transformed(by: CGAffineTransform(scaleX: size.width / heat.extent.width,
+                                                            y: size.height / heat.extent.height))
+        // 열지도 0.35~0.60 을 부드러운 가장자리로 펴서 0~1 마스크로 만든다.
+        let gain: CGFloat = 4, bias: CGFloat = -1.4
+        let mask = scaled
+            .applyingFilter("CIColorMatrix", parameters: [
+                "inputRVector": CIVector(x: gain, y: 0, z: 0, w: 0),
+                "inputGVector": CIVector(x: gain, y: 0, z: 0, w: 0),
+                "inputBVector": CIVector(x: gain, y: 0, z: 0, w: 0),
+                "inputAVector": CIVector(x: 0, y: 0, z: 0, w: 1),
+                "inputBiasVector": CIVector(x: bias, y: bias, z: bias, w: 0),
+            ])
+            .applyingFilter("CIColorClamp")
+            .applyingFilter("CIMaskToAlpha")
+        return CIContext().createCGImage(mask, from: CGRect(origin: .zero, size: size))
+    }
+
     static func prepare(cardID: String, source: NSImage, art: CGRect) async -> CGImage? {
         // Registered cards use immutable, source-hash-bound paths below. Never
         // silently replace an absent/stale reviewed path with fresh segmentation.
@@ -129,18 +211,32 @@ enum ArtworkMaskCache {
         let crop = CGRect(x: art.minX * Double(cg.width), y: art.minY * Double(cg.height),
                           width: art.width * Double(cg.width), height: art.height * Double(cg.height))
         guard let artwork = cg.cropping(to: crop) else { return nil }
+        // BREAK Pokémon are printed in gold over a coloured background, and the
+        // foreground model takes almost the whole card as the subject. Use the
+        // gold ink itself as the subject there (2026-10-19 render check).
+        let goldSubject = CardIndex.shared?.card(cardID)?.rarity == "Rare BREAK"
         let result = await Task.detached(priority: .utility) {
+            if goldSubject { return ArtworkMaskCache.goldInkMask(artwork) }
             let request = VNGenerateForegroundInstanceMaskRequest()
             let handler = VNImageRequestHandler(cgImage: artwork)
             guard (try? handler.perform([request])) != nil,
                   let observation = request.results?.first, !observation.allInstances.isEmpty,
                   let buffer = try? observation.generateScaledMaskForImage(forInstances: observation.allInstances,
-                                                                           from: handler) else { return Optional<CGImage>.none }
+                                                                           from: handler) else {
+                return ArtworkMaskCache.salientObjectMask(handler: handler, size: CGSize(width: artwork.width,
+                                                                                         height: artwork.height))
+            }
             let image = CIImage(cvPixelBuffer: buffer).applyingFilter("CIMaskToAlpha")
             return CIContext().createCGImage(image, from: image.extent)
         }.value
         // Failed segmentation is retryable; don't permanently cache a miss.
-        if let result { cache.setObject(Entry(result, source: source), forKey: cacheKey) }
+        if let result {
+            cache.setObject(Entry(result, source: source), forKey: cacheKey)
+            coverages[cacheKey as String] = alphaShare(result)
+            failures.remove(cacheKey as String)
+        } else {
+            failures.insert(cacheKey as String)
+        }
         return result
     }
 }
@@ -183,8 +279,24 @@ struct ArtworkFoilMask: View {
             // New background substrate must never flash over opaque Pokémon
             // ink while asynchronous foreground separation is still loading.
             if requirePreparedMask && preparedMask == nil { return }
+            let implausible = ArtworkMaskCache.subjectTooLarge(key: key)
+            if coverage == .outsideSubject {
+                context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.white))
+                if let mask = preparedMask, !implausible {
+                    artContext.blendMode = .destinationOut
+                    artContext.draw(Image(decorative: mask, scale: 1), in: rect)
+                }
+                return
+            }
+            // 분리가 실패하면(그림에서 포켓몬을 찾지 못함) 포켓몬만 칠할 포일이 통째로 사라졌다
+            // (예: ex13-2 리버스). 실패한 카드는 예전처럼 그림 칸 전체에 포일을 둔다.
+            if coverage == .artSubject, preparedMask == nil,
+               maskKey == key || ArtworkMaskCache.failed(key: key) {
+                artContext.fill(artwork, with: .color(.white))
+                return
+            }
             if coverage == .artBackground { artContext.fill(artwork, with: .color(.white)) }
-            if let mask = preparedMask {
+            if let mask = preparedMask, !(coverage == .artBackground && implausible) {
                 if coverage == .artBackground { artContext.blendMode = .destinationOut }
                 artContext.draw(Image(decorative: mask, scale: 1), in: rect)
             }

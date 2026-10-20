@@ -68,7 +68,9 @@ struct RegisteredCrackedIceLayer: View {
             for facet in entry.facets {
                 let path = ReviewedFoilProfiles.path(facet.regions, size: size)
                 let response = RegisteredCrackedIce.response(phase: facet.phase, tilt: tilt)
-                context.fill(path, with: .color(.black.opacity((1-response)*0.76)), style: FillStyle(eoFill: true))
+                // 빛을 덜 받는 조각은 조금만 어둡게 한다. 0.76 이면 글자 칸 위에서 검푸른 얼룩이 됐다
+                // (2026-10-19 전체 렌더 점검, 레지아이스 ex 와 로토무 RT).
+                context.fill(path, with: .color(.black.opacity((1-response)*0.30)), style: FillStyle(eoFill: true))
                 let hue = (facet.phase / (.pi*2) + tilt.nx*0.20 - tilt.ny*0.16 + 2)
                     .truncatingRemainder(dividingBy: 1)
                 var reflection = context

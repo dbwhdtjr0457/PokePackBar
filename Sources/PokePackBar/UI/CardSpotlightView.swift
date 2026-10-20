@@ -332,12 +332,12 @@ struct CardSpotlightView: View {
                     Button {
                         selectedFinish = candidate
                     } label: {
-                        Text("\(l.cardFinishName(candidate)) · ×\(count)")
+                        Text("\(l.cardFinishName(candidate, cardID: cardID)) · ×\(count)")
                     }
                 }
             } label: {
                 HStack(spacing: 3) {
-                    Text(l.cardFinishName(displayedFinish))
+                    Text(l.cardFinishName(displayedFinish, cardID: cardID))
                     Image(systemName: "chevron.up.chevron.down")
                         .imageScale(.small)
                 }
@@ -347,7 +347,7 @@ struct CardSpotlightView: View {
             .menuStyle(.borderlessButton)
             .fixedSize()
         } else {
-            Text(l.cardFinishName(displayedFinish))
+            Text(l.cardFinishName(displayedFinish, cardID: cardID))
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.secondary)
         }

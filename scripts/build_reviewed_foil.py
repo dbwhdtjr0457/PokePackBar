@@ -220,8 +220,13 @@ def build():
                 background = union(shape, background, [rect(*box) for box in recipe['extraFoilBoxes']])
             border = expansion[cid]['goldFrame'] if classic30 else perimeter(shape, [.052,.041,.948,.958])
             exclusions = union(shape, subject, stamp, matte, border if classic30 else [], ink if recipe.get('fullArt') else [])
-            layer('illustration-confetti', 'confetti', background,
-                  exclusions, .86)
+            if recipe.get('backgroundMaterial') == 'microEtching':
+                # Full-art reprints such as Zekrom and Reshiram: silver all over with
+                # fine wavy etched lines and no confetti (2026-10-19 video check).
+                layer('illustration-etch', 'microEtching', background, exclusions, .86)
+            else:
+                layer('illustration-confetti', 'confetti', background,
+                      exclusions, .86)
             if recipe.get('backgroundStars'):
                 layer('illustration-stars', 'spectralStars', background, exclusions, .76)
             if recipe.get('subjectEtching') and subject:

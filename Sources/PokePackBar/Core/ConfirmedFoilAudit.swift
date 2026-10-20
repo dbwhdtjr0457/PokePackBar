@@ -14,8 +14,9 @@ enum ConfirmedFoilAudit {
         }
         for finish in [nil, CardFinish.holo] {
             let mew = try resolved("cel25-25", finish: finish)
+            // Mew itself is smooth printed colour inside the gold card (2026-10-19).
             try LocalAudit.require(mew.finish == .holo && mew.spec.pattern == .swordShieldGold
-                && mew.spec.coverage == .fullCard && mew.spec.border == .gold,
+                && mew.spec.coverage == .outsideSubject && mew.spec.border == .gold,
                 "Gold Mew lost legacy-key-compatible gold optics")
         }
         try LocalAudit.require(try resolved("cel25-11").spec.pattern == .celebrationSheen,
@@ -28,7 +29,8 @@ enum ConfirmedFoilAudit {
         try LocalAudit.require(art.minY < 0.04 && art.maxY > 0.96
             && art.minX > 0.03 && art.maxX < 0.97, "Pikachu artwork or paper frame clipped incorrectly")
         let pikachu = try resolved("cel25-5")
-        try LocalAudit.require(pikachu.spec.coverage == .artWindow && pikachu.spec.border == .paper
+        // Pikachu itself stays matte inside its full-illustration window (2026-10-19).
+        try LocalAudit.require(pikachu.spec.coverage == .artBackground && pikachu.spec.border == .paper
             && pikachu.spec.texture == .none, "Untextured full-art Pikachu material changed")
         for number in 106...113 {
             let card = try resolved("neo4-\(number)")
@@ -67,7 +69,8 @@ enum ConfirmedFoilAudit {
                 if eligible { parallelCount += 1 }
             }
         }
-        try LocalAudit.require(reliefCount == 106, "Unexpected corrected-relief coverage: \(reliefCount)")
+        // 107: the Champion's Path shiny Charizard V (swsh35-79) joined the shiny V relief.
+        try LocalAudit.require(reliefCount == 107, "Unexpected corrected-relief coverage: \(reliefCount)")
         try LocalAudit.require(legendaryReverseCount == 71, "Legendary reverse audit omissions")
         try LocalAudit.require(parallelCount == 471, "Ball audit range drift: \(parallelCount)")
         try LocalAudit.require(try resolved("cel30c-14").spec.treatment == .classic30,

@@ -16,12 +16,15 @@ final class FoilMicroReliefTests: XCTestCase {
             XCTAssertEqual(FoilReliefMaterial(pattern: resolved.spec.pattern,
                                              texture: resolved.spec.texture),
                            .microEtched(family), card.id)
-            XCTAssertEqual(resolved.spec.coverage, .fullCard, card.id)
+            // VSTAR keeps the Pokémon matte (physical check 2026-10-19).
+            XCTAssertEqual(resolved.spec.coverage,
+                           family == .vstar ? .outsideSubject : .fullCard, card.id)
             // The relief renderer owns the fine geometry. A second coarse
             // texture layer must not be required to rescue a missing material.
             XCTAssertEqual(resolved.spec.texture, .none, card.id)
         }
-        XCTAssertEqual(counts, [.vstar: 43, .shinyGX: 35, .shinyV: 9,
+        // shinyV 10: Shining Fates 9 plus Champion's Path shiny Charizard V (swsh35-79).
+        XCTAssertEqual(counts, [.vstar: 43, .shinyGX: 35, .shinyV: 10,
                                 .shinyVMAX: 7, .shinyEx: 10, .teraShinyEx: 2])
     }
 

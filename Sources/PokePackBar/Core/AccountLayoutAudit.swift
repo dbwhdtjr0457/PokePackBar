@@ -61,7 +61,7 @@ import SwiftUI
             window.close()
             try LocalAudit.require(window.contentView == nil, "Hidden account form retained")
         }
-        print("PASS account layout: 4 compact settings sections, 9 native states, light/dark, close/reopen and form disposal; isolated fixtures, no login")
+        print("PASS account layout: 4 compact settings sections, 11 native states, light/dark, close/reopen and form disposal; isolated fixtures, no login")
     }
 }
 

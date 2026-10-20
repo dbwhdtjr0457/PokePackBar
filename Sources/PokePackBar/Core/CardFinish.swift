@@ -54,8 +54,10 @@ enum CardFinish: String, Codable, Sendable, CaseIterable {
         case .amazingRare:
             // The rainbow splash is already printed in each source image and
             // is card-specific. Add only a restrained full-face pearly grain
-            // plus the energy/rarity glints drawn by `rainbowSplash`.
-            return FoilSpec(coverage: .fullCard, pattern: .rainbowSplash, texture: .none,
+            // plus the energy/rarity glints drawn by `rainbowSplash`. The
+            // Pokémon itself stays smooth; only its outline glitters (2026-10-19
+            // video check, Rayquaza 138/185).
+            return FoilSpec(coverage: .outsideSubject, pattern: .rainbowSplash, texture: .none,
                             border: .paper, intensity: 0.46)
         case .rainbow:
             return FoilSpec(coverage: .fullCard, pattern: .rainbow, texture: .etched,
@@ -88,8 +90,10 @@ enum CardFinish: String, Codable, Sendable, CaseIterable {
             return FoilSpec(coverage: .artWindowAndPrismStar, pattern: .waterWeb, texture: .none,
                             border: .blackWhite, intensity: 0.58)
         case .breakFoil:
-            return FoilSpec(coverage: .fullCard, pattern: .breakGrid,
-                            texture: .fineLines, border: .gold, intensity: 0.64)
+            // BREAK: square holo tiles behind a plain gold Pokémon, paper border,
+            // no relief (2026-10-19 video check).
+            return FoilSpec(coverage: .artBackground, pattern: .breakGrid,
+                            texture: .none, border: .paper, intensity: 0.64)
         case .blackWhite:
             return FoilSpec(coverage: .fullCard, pattern: .monochrome, texture: .etched,
                             border: .blackWhite, intensity: 0.60)
@@ -135,16 +139,24 @@ struct CardPrintingKey: Hashable, Codable, Sendable, Identifiable {
 enum FoilCoverage: String, Codable, Sendable, CaseIterable {
     case none
     case artWindow
-    /// EX Hidden Legends / FireRed & LeafGreen rare parallels: art foil plus
-    /// one type or Poké Ball impression in the lower attack box.
-    case artWindowAndMark
+    /// EX Hidden Legends / FireRed & LeafGreen rare parallels: foil on the art
+    /// background plus one type or Poké Ball impression in the lower attack box.
+    case artBackgroundAndMark
     /// Prism Star: art foil plus the diamond printed in the text box. Text,
     /// rule box and the black border stay matte.
     case artWindowAndPrismStar
+    /// Prism Star Pokémon: foil on the art background (the Pokémon is matte) plus the diamond.
+    case artBackgroundAndPrismStar
     case artAndBorder
     case artBackground
     case artSubject
     case artSubjectAndBorder
+    /// The whole card except the Pokémon (and trainer) figure, which is printed
+    /// opaque over the foil on many Sword & Shield full-face cards.
+    case outsideSubject
+    /// XY-era reverses: everything outside the illustration but inside the yellow
+    /// border, which stays flat paper.
+    case outsideArtInsideBorder
     case artNameAndBorder
     case outsideArt
     case fullCard
@@ -182,7 +194,6 @@ enum FoilPattern: String, Codable, Sendable, CaseIterable {
     case pokeBall3D
     case stampedMirror
     case cosmosStamp
-    case subjectStamp
     case typeSymbols
     case sunMoonSymbols
     case swordShieldTiles
@@ -354,8 +365,8 @@ enum CardFinishResolver {
         }
 
         if rarity.contains("black white") { return .blackWhite }
-        // Mega Hyper Rare(MUR)는 금색 단색 계열이다. 공격명과 컬러 버스트가 강조되는
-        // Mega Attack Rare와 같은 판형으로 묶으면 무지개빛이 과하게 올라온다.
+        // Mega Hyper Rare(MUR)는 금색 판형이다. 기울이면 넓은 무지개 띠가 지나가지만(재질에서
+        // 그린다), 공격명과 컬러 버스트가 강조되는 Mega Attack Rare 판형과는 다르다.
         if rarity.contains("mega hyper") { return .gold }
         if rarity.contains("mega attack") { return .megaAttack }
         if rarity.contains("radiant") { return .radiant }
