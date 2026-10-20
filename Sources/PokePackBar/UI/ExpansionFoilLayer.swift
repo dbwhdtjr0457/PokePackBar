@@ -189,15 +189,19 @@ struct FuturisticSquiggles: View {
     let tilt: TiltVector
 
     var body: some View {
-        Canvas { context, size in
+        Canvas { context, size in draw(in: &context, size: size) }
+    }
+
+    private func draw(in context: inout GraphicsContext, size: CGSize) {
             var random = PackSeedGenerator(seed: seed &+ 0x5351_5549)
             func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
             let buckets = 6
             var paths = Array(repeating: Path(), count: buckets)
             for _ in 0..<1400 {
-                let x = next() * size.width, y = next() * size.height
-                let length = size.width * (0.010 + next() * 0.010)
-                let angle = next() * .pi * 2
+                let x: Double = next() * Double(size.width)
+                let y: Double = next() * Double(size.height)
+                let length: Double = Double(size.width) * (0.010 + next() * 0.010)
+                let angle: Double = next() * Double.pi * 2
                 var path = Path()
                 path.move(to: CGPoint(x: x, y: y))
                 path.addQuadCurve(to: CGPoint(x: x + cos(angle) * length, y: y + sin(angle) * length),
@@ -207,11 +211,12 @@ struct FuturisticSquiggles: View {
                 paths[Int((facing - floor(facing)) * Double(buckets)) % buckets].addPath(path)
             }
             for (index, path) in paths.enumerated() {
-                let light = pow(max(0, cos(Double(index) / Double(buckets) * .pi * 2 + tilt.nx * 2.4)), 2)
-                context.stroke(path, with: .color(Color(hue: Double(index) / Double(buckets), saturation: 0.35,
-                                                        brightness: 1).opacity(0.10 + light * 0.45)),
+                let phase: Double = Double(index) / Double(buckets) * Double.pi * 2 + tilt.nx * 2.4
+                let light: Double = pow(max(0, cos(phase)), 2)
+                let color = Color(hue: Double(index) / Double(buckets), saturation: 0.35,
+                                  brightness: 1).opacity(0.10 + light * 0.45)
+                context.stroke(path, with: .color(color),
                                lineWidth: 0.6)
             }
-        }
     }
 }

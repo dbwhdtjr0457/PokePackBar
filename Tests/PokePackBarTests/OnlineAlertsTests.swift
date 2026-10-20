@@ -352,6 +352,46 @@ final class OnlineAlertsTests: XCTestCase {
         XCTAssertTrue(OnlineHubView.isNew(["id": 9, "read": false], fresh: []))
     }
 
+    func testAutoReadStopsAfterForegroundVisitChanges() async throws {
+        for change in 0..<5 {
+            let model = hub()
+            model.visible = true; model.attentive = true; model.section = .trades
+            model.showing(.trades, ids: ["trade"])
+            let visit = model.alertVisit
+            let notes: [[String: Any]] = (1...2).map {
+                ["id": $0, "kind": "trade_request", "target": "trade", "read": false]
+            }
+            var sent: [Int] = []
+            let marked = try await model.readAnsweredAlerts(notes, during: visit) { id in
+                sent.append(id)
+                switch change {
+                case 0: model.attentive = false
+                case 1: model.visible = false
+                case 2: model.section = .market
+                case 3: model.clearPrivateData()
+                default: model.showing(.trades, ids: [])
+                }
+            }
+            XCTAssertEqual(sent, [1], "A later notification was read after leaving the visit: \(change)")
+            XCTAssertEqual(marked, [1])
+            let again = try await model.readAnsweredAlerts(notes, during: visit) { sent.append($0) }
+            XCTAssertTrue(again.isEmpty)
+        }
+    }
+
+    func testAutoReadContinuesForAnUnchangedForegroundVisit() async throws {
+        let model = hub()
+        model.visible = true; model.attentive = true; model.section = .trades
+        model.showing(.trades, ids: ["trade"])
+        let notes: [[String: Any]] = (1...2).map {
+            ["id": $0, "kind": "trade_request", "target": "trade", "read": false]
+        }
+        var sent: [Int] = []
+        let marked = try await model.readAnsweredAlerts(notes, during: model.alertVisit) { sent.append($0) }
+        XCTAssertEqual(sent, [1, 2])
+        XCTAssertEqual(marked, [1, 2])
+    }
+
     /// 교환에 담을 카드는 값으로 견준다. 시세 없는 카드는 어느 가격순에서도 뒤에 온다.
     func testStockSortsByPriceWithUnpricedLast() {
         func stock(_ key: String, _ won: Int?) -> OnlineStock {

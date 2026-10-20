@@ -169,7 +169,7 @@ struct OnlineSettingsView: View {
             defer { busy = false }
             do {
                 let profile = try JSONSerialization.jsonObject(with: try await remote.api("v1/profile")) as? [String: Any] ?? [:]
-                let name = profile["nickname"] as? String ?? ""
+                let name = (profile["profile"] as? [String: Any])?.string("nickname") ?? ""
                 savedNickname = name
                 nicknameDraft = name
             } catch {
@@ -189,16 +189,8 @@ struct OnlineSettingsView: View {
             defer { busy = false }
             do {
                 let fresh = try JSONSerialization.jsonObject(with: try await remote.api("v1/profile")) as? [String: Any] ?? [:]
-                var body: [String: Any] = [
-                    "action": "profile", "nickname": name,
-                    "collection_public": fresh["collection_public"] as? Bool ?? false,
-                    "wishlist_public": fresh["wishlist_public"] as? Bool ?? false,
-                    "binder_public": fresh["binder_public"] as? Bool ?? false,
-                ]
-                if let tradeList = fresh["trade_list_public"] as? Bool { body["trade_list_public"] = tradeList }
+                let body = try Self.nicknameMutation(name, from: fresh)
                 for _ in 0..<30 where remote.busy { try await Task.sleep(for: .milliseconds(100)) }
-                body["request_id"] = UUID().uuidString
-                body["expected_revision"] = remote.revision
                 _ = try await remote.onlineMutation(path: "v1/profile",
                                                     body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
                 savedNickname = name
@@ -210,6 +202,24 @@ struct OnlineSettingsView: View {
                 AppLog.write("[online] nickname save failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    /// Keep privacy choices and their concurrency revision from the same read.
+    static func nicknameMutation(_ name: String, from reply: [String: Any]) throws -> [String: Any] {
+        guard let profile = reply["profile"] as? [String: Any],
+              let revision = reply["revision"] as? Int,
+              let collection = profile["collection_public"] as? Bool,
+              let wishlist = profile["wishlist_public"] as? Bool,
+              let binder = profile["binder_public"] as? Bool else {
+            throw RemoteGameSession.Failure(message: OnlineText.l.profileLoadFailed)
+        }
+        var body: [String: Any] = [
+            "action": "profile", "nickname": name, "collection_public": collection,
+            "wishlist_public": wishlist, "binder_public": binder,
+            "expected_revision": revision, "request_id": UUID().uuidString,
+        ]
+        if let tradeList = profile["trade_list_public"] as? Bool { body["trade_list_public"] = tradeList }
+        return body
     }
 
     private var connection: some View {

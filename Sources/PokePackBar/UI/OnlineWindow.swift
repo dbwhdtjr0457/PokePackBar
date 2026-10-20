@@ -64,11 +64,14 @@ final class OnlineHubModel {
     enum Phase { case idle, loading, ready, failed(String) }
     let wallet: WalletStore
     var visible = false {
-        didSet { if !visible { freshAlerts = [] } }
+        didSet { if !visible { freshAlerts = []; alertReadToken += 1 } }
     }
     /// 창이 앞에 있어 사용자가 보고 있는지. 이때만 본 알림을 읽음으로 바꾼다.
     var attentive = false {
-        didSet { if attentive, !oldValue { scheduleAlertRead() } }
+        didSet {
+            if !attentive { alertReadToken += 1 }
+            else if !oldValue { scheduleAlertRead() }
+        }
     }
     var phase: Phase = .idle
     /// 마지막 실패 그대로. 배너가 종류와 요청 번호를 고를 때 쓴다.
@@ -82,6 +85,7 @@ final class OnlineHubModel {
     var section: Tab = .market {
         didSet {
             guard section != oldValue else { return }
+            alertReadToken += 1
             shownTargets = [:]
             if oldValue == .alerts { freshAlerts = [] }
         }
@@ -286,6 +290,25 @@ final class OnlineHubModel {
     /// 화면에 놓인 지 이만큼 지나야 본 것으로 친다. 탭을 스쳐 지나간 것까지 읽음으로 바꾸지 않는다.
     static let alertDwell: Duration = .seconds(1)
 
+    struct AlertVisit: Equatable { let token: Int; let epoch: Int }
+    var alertVisit: AlertVisit { AlertVisit(token: alertReadToken, epoch: privateDataEpoch) }
+    func continuesAlertVisit(_ visit: AlertVisit) -> Bool {
+        attentive && visible && visit == alertVisit
+    }
+
+    /// Recheck the foreground visit after fetching and between individual sends.
+    func readAnsweredAlerts(_ notifications: [[String: Any]], during visit: AlertVisit,
+                            send: (Int) async throws -> Void) async throws -> Set<Int> {
+        let answered = Self.alertsAnswered(by: shownTargets, among: notifications)
+        var marked = Set<Int>()
+        for id in answered {
+            guard continuesAlertVisit(visit) else { break }
+            try await send(id)
+            marked.insert(id)
+        }
+        return marked
+    }
+
     /// 화면에 보인 항목을 가리키는 안 읽은 알림의 번호.
     nonisolated static func alertsAnswered(by shown: [AlertScreen: Set<String>],
                                            among notifications: [[String: Any]]) -> [Int] {
@@ -300,7 +323,7 @@ final class OnlineHubModel {
     func showing(_ screen: AlertScreen, ids: [String]) {
         let ids = Set(ids.filter { !$0.isEmpty })
         shownTargets[screen] = ids.isEmpty ? nil : ids
-        if !ids.isEmpty { scheduleAlertRead() }
+        if !ids.isEmpty { scheduleAlertRead() } else { alertReadToken += 1 }
     }
 
     /// 잠깐 머문 뒤에 확인한다. 그 사이 다시 부르면 처음부터 다시 잰다.
@@ -321,19 +344,18 @@ final class OnlineHubModel {
         guard attentive, visible, !readingAlerts, canWrite, let remote, !remote.busy else { return }
         readingAlerts = true
         defer { readingAlerts = false }
+        let visit = alertVisit
         if section == .alerts {
-            await readShownNotifications(remote)
+            await readShownNotifications(remote, during: visit)
             return
         }
         guard let summary = remote.notificationSummary, summary.unread > 0, !shownTargets.isEmpty,
               let recent = await recentNotifications(summary) else { return }
-        let answered = Self.alertsAnswered(by: shownTargets, among: recent)
-        guard !answered.isEmpty else { return }
+        guard continuesAlertVisit(visit) else { return }
         var marked = Set<Int>()
         await quietly {
-            for id in answered {
+            marked = try await self.readAnsweredAlerts(recent, during: visit) { id in
                 try await self.send(["action": "notification_read", "notification_id": id], remote)
-                marked.insert(id)
             }
         }
         guard !marked.isEmpty else { return }
@@ -343,7 +365,7 @@ final class OnlineHubModel {
 
     /// 알림 탭: 보여 준 것 가운데 가장 새 알림까지 모두 읽음으로 바꾼다. 그 뒤에 온 것은 남는다.
     /// 읽음으로 바꾼 줄은 탭을 떠날 때까지 새 알림으로 표시해 둔다. 무엇이 새로 왔는지 보고 있는 중이다.
-    private func readShownNotifications(_ remote: RemoteGameSession) async {
+    private func readShownNotifications(_ remote: RemoteGameSession, during visit: AlertVisit) async {
         let shown = items("notifications")
         guard let boundary = Self.shownNotificationBoundary(shown) else { return }
         let unread = shown.filter { !$0.bool("read") }.map { $0.int("id") }.filter { $0 > 0 }
@@ -352,21 +374,23 @@ final class OnlineHubModel {
         // 새로 온 것만 남았으면 목록을 다시 받을 때 처리한다.
         let olderUnread = summary.map { $0.unread > 0 && ($0.latest_id ?? .max) <= boundary } ?? false
         guard !unread.isEmpty || olderUnread else { return }
-        freshAlerts.formUnion(unread)
         var marked = Set<Int>()
         await quietly {
+            guard self.continuesAlertVisit(visit) else { return }
             if summary?.latest_id != nil {
                 try await self.send(["action": "notification_read_all", "notification_id": boundary], remote)
                 marked = Set(shown.map { $0.int("id") })
             } else {
                 // 한 번에 바꾸는 명령이 없는 예전 서버: 보이는 것만 하나씩 바꾼다.
                 for id in unread {
+                    guard self.continuesAlertVisit(visit) else { break }
                     try await self.send(["action": "notification_read", "notification_id": id], remote)
                     marked.insert(id)
                 }
             }
         }
-        guard !marked.isEmpty else { return }
+        guard !marked.isEmpty, continuesAlertVisit(visit) else { return }
+        freshAlerts.formUnion(unread.filter { marked.contains($0) })
         if var page = documents["notifications"] {
             page["items"] = shown.map { item in
                 guard marked.contains(item.int("id")) else { return item }
@@ -382,10 +406,11 @@ final class OnlineHubModel {
 
     /// 다른 탭에서 맞춰 볼 최근 알림. 안 읽은 수나 최신 번호가 그대로면 다시 받지 않는다.
     private func recentNotifications(_ summary: RemoteGameSession.NotificationSummary) async -> [[String: Any]]? {
+        let epoch = privateDataEpoch
         let key = "\(summary.latest_id ?? -1)/\(summary.unread)"
         if let recentAlerts, recentAlerts.key == key { return recentAlerts.items }
         guard !legacyAlerts, let page = try? await read("v1/notifications?newest=true"),
-              page["order"] as? String == "desc" else { return nil }
+              page["order"] as? String == "desc", epoch == privateDataEpoch else { return nil }
         let items = page["items"] as? [[String: Any]] ?? []
         recentAlerts = (key, items)
         return items
@@ -493,6 +518,8 @@ final class OnlineHubModel {
 
     func clearPrivateData() {
         privateDataEpoch += 1
+        alertReadToken += 1
+        recentAlerts = nil; shownTargets = [:]; freshAlerts = []
         data = [:]; documents = [:]; selectedFriend = ""; tradeDraft = nil; message = nil
         friendBinders = [:]
         openingJobs = []; openingProgress = nil; stopOpening = true
