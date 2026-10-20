@@ -235,6 +235,9 @@ enum OnlineGameAudit {
         let unrelatedAfter = Set(afterNotes.filter { !expected.contains($0.int("id")) && !$0.bool("read") }.map { $0.int("id") })
         try LocalAudit.require(unrelatedBefore == unrelatedAfter, "Reading a trade cleared unrelated alerts")
         hub.clearPrivateData()
+        // Later binder checks require the original public-spares fixture policy.
+        _ = try await mutate(buyer, "profile", ["action": "profile", "nickname": "After audit",
+            "collection_public": true, "wishlist_public": false, "binder_public": true, "trade_list_public": true])
         print("PASS native profile/alerts: nested nickname update preserves privacy; foreground target reads settle through HTTP and retain unrelated alerts; isolated fixtures")
         _ = try await mutate(buyer, "trades", ["action": "trade_accept", "target_id": tradeID, "target_version": 0])
         await buyer.refreshNotificationSummary()
