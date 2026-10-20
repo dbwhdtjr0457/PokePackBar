@@ -73,6 +73,21 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.20.0
+
+시대별 홀로 무늬·색·빛나는 영역을 보정했다. 포켓몬의 불투명 인쇄와 배경을 구분하고,
+금색·리버스·글리터 재질과 특수 에너지의 포일 영역을 다듬었다.
+기존 카드의 저장 판형과 시세, 계정·재화는 유지한다.
+
+닉네임은 계정 창의 ‘프로필’ 탭에서 바꾼다. 온라인 창의 닉네임을 누르면 바로 열리며
+공개 범위 설정을 유지한다. 앞에 열린 온라인 창에서 알림을 확인하거나 관련 교환·친구·
+마켓 항목을 보면 자동으로 읽음 처리한다. 창을 떠나거나 로그아웃하면 처리를 멈춘다.
+
+![계정 프로필](docs/reference/screenshots/account-profile-020-ko.png)
+![온라인 알림](docs/reference/screenshots/alerts-020-ko.png)
+
+서버는 기존 `0408c1f`와 스키마 `20261015_0009`를 유지하며 기존 API로 연동한다.
+
 ## 0.19.0
 
 교환 한쪽에 돈을 얹고, 트레이너 판매 글에 판매가의 절반 이상인 가격을 제안할 수 있다.

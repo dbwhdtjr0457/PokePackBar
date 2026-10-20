@@ -56,6 +56,26 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.20.0", lines: [
+                t("시대별 홀로 효과의 무늬·색·적용 영역을 보정했습니다. 카드의 저장 판형과 시세는 유지합니다.",
+                  "Refined era-specific foil patterns, colors and coverage. Stored card finishes and prices are unchanged.",
+                  "時代別のホロ模様・色・適用範囲を調整しました。保存された加工と相場は維持します。",
+                  "Ajustamos patrones, colores y áreas del holográfico por época. Los acabados guardados y precios se conservan.",
+                  "Motifs, couleurs et zones holographiques affinés selon les époques. Les finitions enregistrées et les prix restent identiques.",
+                  "Ajustamos padrões, cores e áreas holográficas por época. Acabamentos salvos e preços são mantidos."),
+                t("계정 창의 프로필 탭에서 닉네임을 바꿉니다. 온라인 창의 닉네임을 누르면 열리며 기존 공개 설정을 유지합니다.",
+                  "Change your nickname in the account Profile tab, opened from your online nickname. Existing privacy choices are preserved.",
+                  "アカウントのプロフィールタブでニックネームを変更できます。オンライン画面の名前から開け、公開設定は維持します。",
+                  "Cambia el apodo en Perfil de la cuenta, accesible desde tu nombre online. Se conservan las opciones de privacidad.",
+                  "Modifiez votre pseudo dans Profil du compte, accessible depuis votre nom en ligne. Vos choix de confidentialité sont conservés.",
+                  "Altere o apelido no Perfil da conta, acessível pelo nome online. As opções de privacidade são mantidas."),
+                t("앞에 열린 온라인 창에서 알림을 확인하면 자동으로 읽음 처리합니다. 교환·친구·마켓에서도 해당 항목의 알림을 정리하며, 창을 떠나면 처리를 멈춥니다.",
+                  "Alerts are marked read automatically in the foreground online window. Trade, friend and market views clear related alerts; leaving the window stops processing.",
+                  "手前のオンライン画面で確認した通知を自動で既読にします。交換・フレンド・マーケットの関連通知も整理し、画面を離れると停止します。",
+                  "Los avisos se leen automáticamente con la ventana online en primer plano. Las vistas relacionadas limpian sus avisos; al salir se detiene el proceso.",
+                  "Les alertes sont lues automatiquement dans la fenêtre au premier plan. Les vues associées traitent leurs alertes ; quitter la fenêtre arrête le traitement.",
+                  "Alertas são lidos automaticamente com a janela online em primeiro plano. As telas relacionadas limpam seus alertas; sair da janela interrompe o processo.")
+            ]),
             ReleaseNote(version: "0.19.0", lines: [
                 t("교환 한쪽에 돈을 더하고, 트레이너 판매 글에 가격을 제안할 수 있습니다. 돈은 수락할 때 정산하며 잔액과 재고를 다시 확인합니다.",
                   "Add money to one side of a trade and offer a price on trainer listings. Payment settles on acceptance after balance and stock checks.",
