@@ -988,6 +988,17 @@ extension View {
     }
 }
 
+extension View {
+    /// 이 목록에 보인 항목을 가리키는 알림을 확인한 것으로 친다. 교환 알림을 받고 교환 탭에서 그
+    /// 교환을 봤으면 알림 탭에 가서 따로 확인할 필요가 없다. 목록이 화면에서 사라지면 거둔다.
+    @MainActor
+    func readsOnlineAlerts(_ model: OnlineHubModel, _ screen: OnlineHubModel.AlertScreen,
+                           in items: [[String: Any]]) -> some View {
+        onChange(of: model.generation, initial: true) { model.showing(screen, ids: items.map { $0.string("id") }) }
+            .onDisappear { model.showing(screen, ids: []) }
+    }
+}
+
 extension OnlineHubModel {
     func revealFocus(in items: [[String: Any]], with scroller: ScrollViewProxy) {
         guard let id = takeFocus(among: items.map { $0.string("id") }),

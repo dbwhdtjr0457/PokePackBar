@@ -180,7 +180,6 @@ extension L {
     var signInNeeded: String { t("로그인 필요", "Sign-in needed", "ログインが必要", "Falta iniciar sesión", "Connexion requise", "Falta entrar") }
     var noNewAlerts: String { t("새 알림이 없어요", "No new notifications", "新しい通知はありません", "No hay avisos nuevos", "Aucune nouvelle alerte", "Nenhum alerta novo") }
     var alertsEmptyHint: String { t("친구 신청, 교환 제안, 마켓 판매 소식이 여기에 와요.", "Friend requests, trade offers and market sales show up here.", "フレンド申請、交換の提案、マーケットの販売のお知らせがここに届きます。", "Aquí llegan solicitudes de amistad, ofertas de intercambio y ventas del mercado.", "Les demandes d’ami, les offres d’échange et les ventes du marché arrivent ici.", "Pedidos de amizade, propostas de troca e vendas no mercado aparecem aqui.") }
-    var markRead: String { t("확인", "Mark read", "既読にする", "Marcar leído", "Marquer comme lu", "Marcar como lido") }
     var backToStart: String { t("처음으로", "Back to start", "最初へ", "Al inicio", "Au début", "Voltar ao início") }
     var showMore: String { t("더 보기", "Show more", "もっと見る", "Ver más", "Voir plus", "Ver mais") }
     var bulkOpeningIntro: String {

@@ -55,7 +55,7 @@ struct OnlineSocialView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 30) {
                         switch page {
-                        case .friends: friends
+                        case .friends: friends.readsOnlineAlerts(model, .friends, in: model.items("friends"))
                         case .wishlist: wishlist
                         case .binder: binder
                         case .cards: inventory

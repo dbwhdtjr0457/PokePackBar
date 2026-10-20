@@ -311,6 +311,47 @@ final class OnlineAlertsTests: XCTestCase {
         XCTAssertNil(OnlineHubModel.shownNotificationBoundary([["id": 0]]))
     }
 
+    /// 그 일을 보여 주는 화면에서 항목을 봤으면 그 알림은 확인한 것이다. 번호는 표마다 따로 매기므로
+    /// 같은 번호라도 다른 종류의 알림은 건드리지 않는다.
+    func testShownItemsAnswerTheirOwnAlertsOnly() {
+        let alerts: [[String: Any]] = [
+            ["id": 1, "kind": "trade_request", "target": "5", "read": false],
+            ["id": 2, "kind": "listing_sold", "target": "5", "read": false],
+            ["id": 3, "kind": "trade_countered", "target": "8", "read": false],
+            ["id": 4, "kind": "trade_accepted", "target": "5", "read": true],
+            ["id": 5, "kind": "friend_request", "target": "5", "read": false],
+            ["id": 6, "kind": "trade_request", "target": 9, "read": false],
+        ]
+        XCTAssertEqual(OnlineHubModel.alertsAnswered(by: [.trades: ["5", "9"]], among: alerts), [1, 6],
+                       "보인 교환만, 이미 읽은 것과 다른 표의 같은 번호는 빼고, 숫자로 온 번호도 맞춘다")
+        XCTAssertEqual(OnlineHubModel.alertsAnswered(by: [.friends: ["5"], .myListings: ["5"]], among: alerts), [2, 5])
+        XCTAssertEqual(OnlineHubModel.alertsAnswered(by: [:], among: alerts), [])
+    }
+
+    /// 판매 글 번호는 「사기」 와 「내 판매」 가 같이 쓴다. 각 화면은 자기 일의 알림만 받는다.
+    func testMarketScreensSplitListingAndOfferAlerts() {
+        let screens: [OnlineHubModel.AlertScreen] = [.trades, .friends, .marketBuy, .myListings, .receivedOffers, .sentOffers]
+        func answering(_ kind: String) -> [OnlineHubModel.AlertScreen] { screens.filter { $0.answers(kind) } }
+        XCTAssertEqual(answering("wishlist_listing"), [.marketBuy])
+        XCTAssertEqual(answering("listing_sold"), [.myListings])
+        XCTAssertEqual(answering("listing_expired"), [.myListings])
+        XCTAssertEqual(answering("offer_received"), [.receivedOffers])
+        for kind in ["offer_accepted", "offer_rejected", "offer_expired"] {
+            XCTAssertEqual(answering(kind), [.sentOffers], kind)
+        }
+        XCTAssertEqual(answering("trade_expired"), [.trades])
+        XCTAssertEqual(answering("friend_accepted"), [.friends])
+        XCTAssertEqual(answering("listing_bought"), [], "내가 산 기록은 처음부터 읽은 채로 온다")
+    }
+
+    /// 알림 탭에서 이번에 읽음으로 바꾼 줄은 탭을 떠날 때까지 새 알림으로 남는다.
+    func testAlertsReadOnThisVisitStayMarkedNew() {
+        let read: [String: Any] = ["id": 7, "read": true]
+        XCTAssertTrue(OnlineHubView.isNew(read, fresh: [7]))
+        XCTAssertFalse(OnlineHubView.isNew(read, fresh: [8]))
+        XCTAssertTrue(OnlineHubView.isNew(["id": 9, "read": false], fresh: []))
+    }
+
     /// 교환에 담을 카드는 값으로 견준다. 시세 없는 카드는 어느 가격순에서도 뒤에 온다.
     func testStockSortsByPriceWithUnpricedLast() {
         func stock(_ key: String, _ won: Int?) -> OnlineStock {

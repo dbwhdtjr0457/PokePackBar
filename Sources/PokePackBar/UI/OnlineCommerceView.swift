@@ -165,6 +165,8 @@ struct OnlineMarketView: View {
             }
             .padding(.horizontal, -OnlineFocus.gutter)
             .revealsOnlineFocus(model, in: listings, with: scroller)
+            // 위시리스트 알림은 남의 판매 글을 가리킨다. 「내 판매」 에서 막 넘어와 아직 남은 내 글은 빼고 본다.
+            .readsOnlineAlerts(model, .marketBuy, in: listings.filter { !$0.bool("mine") })
             }
         }
     }
@@ -297,6 +299,11 @@ struct OnlineMarketView: View {
                 }
             }
             .revealsOnlineFocus(model, in: listings, with: scroller)
+            // 「사기」 에서 막 넘어왔으면 목록을 새로 받기 전이다. 내 글만 본 것으로 친다.
+            .readsOnlineAlerts(model, .myListings, in: listings.filter { $0.bool("mine") })
+            .readsOnlineAlerts(model, .receivedOffers, in: model.items("offersReceived").filter { offer in
+                listings.contains { $0.bool("mine") && $0.string("id") == offer.string("listing_id") }
+            })
             }
         }
     }
@@ -399,6 +406,7 @@ struct OnlineMarketView: View {
                 }
             }
             .revealsOnlineFocus(model, in: offers, with: scroller)
+            .readsOnlineAlerts(model, .sentOffers, in: offers)
         }
     }
 
@@ -809,6 +817,7 @@ struct OnlineTradingView: View {
             .padding(.bottom, 12)
         }
         .revealsOnlineFocus(model, in: model.items("trades"), with: scroller)
+        .readsOnlineAlerts(model, .trades, in: model.items("trades"))
         }
         .onAppear { if let draft = model.tradeDraft { loadDraft(draft); model.tradeDraft = nil } }
         .onChange(of: friend) {

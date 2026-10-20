@@ -53,6 +53,8 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) { model?.visible = false }
+    func windowDidBecomeKey(_ notification: Notification) { model?.attentive = true }
+    func windowDidResignKey(_ notification: Notification) { model?.attentive = false }
     func windowDidMiniaturize(_ notification: Notification) { model?.visible = false }
     func windowDidDeminiaturize(_ notification: Notification) { model?.visible = true }
 }
@@ -61,7 +63,13 @@ final class OnlineWindow: NSObject, NSWindowDelegate {
 final class OnlineHubModel {
     enum Phase { case idle, loading, ready, failed(String) }
     let wallet: WalletStore
-    var visible = false
+    var visible = false {
+        didSet { if !visible { freshAlerts = [] } }
+    }
+    /// 창이 앞에 있어 사용자가 보고 있는지. 이때만 본 알림을 읽음으로 바꾼다.
+    var attentive = false {
+        didSet { if attentive, !oldValue { scheduleAlertRead() } }
+    }
     var phase: Phase = .idle
     /// 마지막 실패 그대로. 배너가 종류와 요청 번호를 고를 때 쓴다.
     var failure: (any Error)?
@@ -71,7 +79,13 @@ final class OnlineHubModel {
     var setID = ""
     /// 탭. 서버 조회 분기와 레이아웃 감사가 이 값을 쓰고, 보이는 이름은 언어에 따라 바뀐다.
     enum Tab: String, CaseIterable, Sendable { case market, trades, social, stats, jobs, alerts }
-    var section: Tab = .market
+    var section: Tab = .market {
+        didSet {
+            guard section != oldValue else { return }
+            shownTargets = [:]
+            if oldValue == .alerts { freshAlerts = [] }
+        }
+    }
     var message: String?
     /// 교환이 성사된 순간. 창 가운데에 잠깐 띄운다.
     var celebration: OnlineCelebration?
@@ -115,6 +129,13 @@ final class OnlineHubModel {
     var openingProgress: String?
     private var refreshAgain = false
     private var refreshAgainFull = false
+    /// 알림 탭에서 이번에 읽음으로 바꾼 알림. 탭을 떠날 때까지 새 알림으로 표시한다.
+    var freshAlerts: Set<Int> = []
+    /// 목록마다 지금 화면에 보이는 항목 번호. 그 항목을 가리키는 알림을 확인한 것으로 친다.
+    @ObservationIgnored private var shownTargets: [AlertScreen: Set<String>] = [:]
+    @ObservationIgnored private var alertReadToken = 0
+    @ObservationIgnored private var readingAlerts = false
+    @ObservationIgnored private var recentAlerts: (key: String, items: [[String: Any]])?
     /// 알림을 최신순으로 주지 못하는 예전 서버. 한 번 확인하면 그 뒤로는 예전 방식으로만 묻는다.
     private(set) var legacyAlerts = false
     init(wallet: WalletStore) { self.wallet = wallet }
@@ -243,45 +264,153 @@ final class OnlineHubModel {
         items.map { $0.int("id") }.filter { $0 > 0 }.max()
     }
 
-    /// 안 읽은 알림을 한 번에 읽음으로 바꾼다.
-    ///
-    /// 서버가 한 번에 처리하면 그 명령 하나를 보낸다. 마지막으로 확인한 알림까지만 바꾸므로 누르는
-    /// 사이에 새로 온 것은 안 읽음으로 남는다. 그 명령이 없는 예전 서버에서는 지금 보이는 것만
-    /// 하나씩 바꾼다.
-    func markAllNotificationsRead() async {
-        guard canWrite, let remote else { return }
-        let unread = remote.notificationSummary?.unread ?? 0
-        if remote.notificationSummary?.latest_id != nil {
-            // The summary can advance while this page remains on screen.
-            // Preserve notifications that arrived after the displayed page.
-            guard let latest = Self.shownNotificationBoundary(items("notifications")) else { return }
-            var values: [String: Any] = ["action": "notification_read_all"]
-            values["notification_id"] = latest
-            if await mutate("notifications", values, quiet: true), unread > 0 {
-                message = OnlineText.l.alertsMarkedRead(unread)
+    // MARK: 알림 자동 확인
+
+    /// 알림이 가리키는 항목을 보여 주는 목록. 그 항목이 목록에 보이면 그 알림은 확인한 것으로 친다.
+    /// 서버의 `target` 은 교환, 친구 관계, 판매 글, 가격 제안이 각자 매긴 번호라 목록마다 받을 알림을 정해 둔다.
+    enum AlertScreen: Hashable, Sendable {
+        case trades, friends, marketBuy, myListings, receivedOffers, sentOffers
+
+        func answers(_ kind: String) -> Bool {
+            switch self {
+            case .trades: kind.hasPrefix("trade_")
+            case .friends: kind.hasPrefix("friend_")
+            case .marketBuy: kind == "wishlist_listing"
+            case .myListings: kind == "listing_sold" || kind == "listing_expired"
+            case .receivedOffers: kind == "offer_received"
+            case .sentOffers: ["offer_accepted", "offer_rejected", "offer_expired"].contains(kind)
             }
+        }
+    }
+
+    /// 화면에 놓인 지 이만큼 지나야 본 것으로 친다. 탭을 스쳐 지나간 것까지 읽음으로 바꾸지 않는다.
+    static let alertDwell: Duration = .seconds(1)
+
+    /// 화면에 보인 항목을 가리키는 안 읽은 알림의 번호.
+    nonisolated static func alertsAnswered(by shown: [AlertScreen: Set<String>],
+                                           among notifications: [[String: Any]]) -> [Int] {
+        notifications.compactMap { item in
+            let id = item.int("id"), kind = item.string("kind"), target = item.string("target")
+            guard id > 0, !item.bool("read"), !target.isEmpty else { return nil }
+            return shown.contains { $0.key.answers(kind) && $0.value.contains(target) } ? id : nil
+        }
+    }
+
+    /// 목록이 지금 보여 주는 항목. 빈 목록은 그 목록이 화면에서 사라졌다는 뜻이다.
+    func showing(_ screen: AlertScreen, ids: [String]) {
+        let ids = Set(ids.filter { !$0.isEmpty })
+        shownTargets[screen] = ids.isEmpty ? nil : ids
+        if !ids.isEmpty { scheduleAlertRead() }
+    }
+
+    /// 잠깐 머문 뒤에 확인한다. 그 사이 다시 부르면 처음부터 다시 잰다.
+    func scheduleAlertRead() {
+        alertReadToken += 1
+        let token = alertReadToken
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.alertDwell)
+            guard let self, self.alertReadToken == token else { return }
+            await self.readSeenAlerts()
+        }
+    }
+
+    /// 사용자가 본 알림을 읽음으로 바꾼다. 알림 탭은 보이는 것을 모두, 다른 탭은 화면에 보인 항목을
+    /// 가리키는 알림만 바꾼다. 창이 앞에 있을 때만 한다. 뒤에 깔린 창이 15초마다 새로 받은 것까지
+    /// 읽은 것으로 치면 안 된다. 실패해도 조용히 넘기고 다음에 다시 한다.
+    func readSeenAlerts() async {
+        guard attentive, visible, !readingAlerts, canWrite, let remote, !remote.busy else { return }
+        readingAlerts = true
+        defer { readingAlerts = false }
+        if section == .alerts {
+            await readShownNotifications(remote)
             return
         }
-        mutating = true
-        var marked = 0
-        for item in items("notifications") where !item.bool("read") {
-            let body: [String: Any] = ["action": "notification_read", "notification_id": item.int("id"),
-                                       "request_id": UUID().uuidString, "expected_revision": remote.revision]
-            do {
-                _ = try await remote.onlineMutation(
-                    path: "v1/notifications", body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
-                marked += 1
-            } catch {
-                mutating = false
-                fail(error, while: "notifications")
-                return
+        guard let summary = remote.notificationSummary, summary.unread > 0, !shownTargets.isEmpty,
+              let recent = await recentNotifications(summary) else { return }
+        let answered = Self.alertsAnswered(by: shownTargets, among: recent)
+        guard !answered.isEmpty else { return }
+        var marked = Set<Int>()
+        await quietly {
+            for id in answered {
+                try await self.send(["action": "notification_read", "notification_id": id], remote)
+                marked.insert(id)
             }
         }
-        mutating = false
-        guard marked > 0 else { return }
-        message = OnlineText.l.alertsMarkedRead(marked)
-        await refresh()
+        guard !marked.isEmpty else { return }
+        recentAlerts = nil
         await remote.refreshNotificationSummary()
+    }
+
+    /// 알림 탭: 보여 준 것 가운데 가장 새 알림까지 모두 읽음으로 바꾼다. 그 뒤에 온 것은 남는다.
+    /// 읽음으로 바꾼 줄은 탭을 떠날 때까지 새 알림으로 표시해 둔다. 무엇이 새로 왔는지 보고 있는 중이다.
+    private func readShownNotifications(_ remote: RemoteGameSession) async {
+        let shown = items("notifications")
+        guard let boundary = Self.shownNotificationBoundary(shown) else { return }
+        let unread = shown.filter { !$0.bool("read") }.map { $0.int("id") }.filter { $0 > 0 }
+        let summary = remote.notificationSummary
+        // 이 쪽은 다 읽었어도 더 오래된 알림이 안 읽은 채 남아 있을 수 있다. 다만 목록을 받은 뒤에
+        // 새로 온 것만 남았으면 목록을 다시 받을 때 처리한다.
+        let olderUnread = summary.map { $0.unread > 0 && ($0.latest_id ?? .max) <= boundary } ?? false
+        guard !unread.isEmpty || olderUnread else { return }
+        freshAlerts.formUnion(unread)
+        var marked = Set<Int>()
+        await quietly {
+            if summary?.latest_id != nil {
+                try await self.send(["action": "notification_read_all", "notification_id": boundary], remote)
+                marked = Set(shown.map { $0.int("id") })
+            } else {
+                // 한 번에 바꾸는 명령이 없는 예전 서버: 보이는 것만 하나씩 바꾼다.
+                for id in unread {
+                    try await self.send(["action": "notification_read", "notification_id": id], remote)
+                    marked.insert(id)
+                }
+            }
+        }
+        guard !marked.isEmpty else { return }
+        if var page = documents["notifications"] {
+            page["items"] = shown.map { item in
+                guard marked.contains(item.int("id")) else { return item }
+                var item = item
+                item["read"] = true
+                return item
+            }
+            documents["notifications"] = page
+        }
+        recentAlerts = nil
+        await remote.refreshNotificationSummary()
+    }
+
+    /// 다른 탭에서 맞춰 볼 최근 알림. 안 읽은 수나 최신 번호가 그대로면 다시 받지 않는다.
+    private func recentNotifications(_ summary: RemoteGameSession.NotificationSummary) async -> [[String: Any]]? {
+        let key = "\(summary.latest_id ?? -1)/\(summary.unread)"
+        if let recentAlerts, recentAlerts.key == key { return recentAlerts.items }
+        guard !legacyAlerts, let page = try? await read("v1/notifications?newest=true"),
+              page["order"] as? String == "desc" else { return nil }
+        let items = page["items"] as? [[String: Any]] ?? []
+        recentAlerts = (key, items)
+        return items
+    }
+
+    /// 자동 확인은 사용자가 누른 일이 아니다. 그동안 다른 버튼이 같은 요청 칸을 쓰지 않게 막고,
+    /// 실패해도 오류 안내를 띄우지 않는다. 그 사이 미뤄진 새로 고침은 끝나고 이어서 한다.
+    private func quietly(_ work: () async throws -> Void) async {
+        mutating = true
+        do { try await work() } catch {
+            AppLog.write("[online] auto read failed: \(String(describing: error).prefix(200))")
+        }
+        mutating = false
+        if refreshAgain {
+            let again = refreshAgainFull
+            refreshAgain = false
+            refreshAgainFull = false
+            await refresh(full: again)
+        }
+    }
+
+    private func send(_ values: [String: Any], _ remote: RemoteGameSession) async throws {
+        let body = values.merging(["request_id": UUID().uuidString, "expected_revision": remote.revision]) { _, right in right }
+        _ = try await remote.onlineMutation(
+            path: "v1/notifications", body: JSONSerialization.data(withJSONObject: body, options: [.sortedKeys]))
     }
 
     /// 마켓의 「사기」를 그 카드 이름과 출처 팩으로 찾아 둔다. 위시리스트 알림을 누를 때와 같은 방식이고,
@@ -599,11 +728,13 @@ struct OnlineHubView: View {
     // MARK: 알림
 
     /// 알림 한 줄. 누르면 그 일을 처리할 탭으로 옮겨 가고 읽음으로 바꾼다.
+    /// 보고 있으면 저절로 읽음이 되므로 줄마다 「확인」 을 누를 일은 없다. 이번에 처음 본 알림은
+    /// 탭을 떠날 때까지 새 알림으로 표시해, 무엇이 새로 왔는지 알아볼 수 있게 한다.
     @ViewBuilder
     private func notificationRow(_ item: [String: Any]) -> some View {
         let kind = item.string("kind")
         let info = OnlineText.notification(kind)
-        let unread = !item.bool("read")
+        let unread = Self.isNew(item, fresh: model.freshAlerts)
         let destination = OnlineText.destination(kind)
         let when = OnlineText.timeAgo(item.int("created_at"))
         let row = HStack(spacing: 12) {
@@ -618,12 +749,6 @@ struct OnlineHubView: View {
                 }
             }
             Spacer()
-            if unread {
-                Button(OnlineText.l.markRead) {
-                    Task { await model.mutate("notifications", ["action": "notification_read", "notification_id": item.int("id")]) }
-                }
-                .disabled(!model.canWrite)
-            }
             if destination != nil {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
@@ -658,24 +783,22 @@ struct OnlineHubView: View {
                      printing: (item["detail"] as? [String: Any])?["printing"] as? String)
     }
 
+    nonisolated static func isNew(_ item: [String: Any], fresh: Set<Int>) -> Bool {
+        !item.bool("read") || fresh.contains(item.int("id"))
+    }
+
     private var notifications: some View {
         let items = model.items("notifications")
-        let unread = model.remote?.notificationSummary?.unread ?? items.filter { !$0.bool("read") }.count
+        let new = items.filter { Self.isNew($0, fresh: model.freshAlerts) }.count
         return ScrollView {
             VStack(alignment: .leading, spacing: 8) {
                 if items.isEmpty {
                     OnlineEmptyState(icon: "bell", title: OnlineText.l.noNewAlerts,
                                      message: OnlineText.l.alertsEmptyHint)
                 } else {
-                    // 알림이 여러 개 쌓였을 때 하나씩 「확인」 을 누르지 않아도 되게 한다.
-                    HStack(spacing: 10) {
-                        Text(unread > 0 ? OnlineText.l.unreadAlerts(unread) : OnlineText.l.allAlertsRead)
-                            .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
-                        Spacer()
-                        Button(OnlineText.l.markAllRead) { Task { await model.markAllNotificationsRead() } }
-                            .disabled(unread == 0 || !model.canWrite)
-                    }
-                    .padding(.horizontal, 10)
+                    Text(new > 0 ? OnlineText.l.newAlerts(new) : OnlineText.l.allAlertsRead)
+                        .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+                        .padding(.horizontal, 10)
                 }
                 ForEach(items, id: \.onlineID) { item in
                     notificationRow(item)
@@ -691,6 +814,8 @@ struct OnlineHubView: View {
             // 새 알림은 위에서 밀려 들어온다. 15초마다 새로 고칠 때 줄이 툭 끼어들지 않게 한다.
             .animation(.snappy(duration: 0.3), value: items.map(\.onlineID))
         }
+        // 알림 탭을 열어 보고 있으면 보이는 알림을 모두 확인한 것으로 친다.
+        .onChange(of: model.generation, initial: true) { model.scheduleAlertRead() }
     }
 
     // MARK: 대량 개봉
