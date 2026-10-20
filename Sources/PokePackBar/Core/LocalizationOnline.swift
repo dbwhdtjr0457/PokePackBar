@@ -510,12 +510,20 @@ extension L {
 extension L {
     func accountTab(_ tab: OnlineSettingsView.AccountTab) -> String {
         switch tab {
+        case .profile: t("프로필", "Profile", "プロフィール", "Perfil", "Profil", "Perfil")
         case .connection: t("연결", "Connection", "接続", "Conexión", "Connexion", "Conexão")
         case .security: t("보안", "Security", "セキュリティ", "Seguridad", "Sécurité", "Segurança")
         case .devices: t("기기", "Devices", "デバイス", "Dispositivos", "Appareils", "Dispositivos")
         case .server: t("서버 상태", "Server status", "サーバー状態", "Estado del servidor", "État du serveur", "Status do servidor")
         }
     }
+    var nicknameNote: String { t("마켓, 교환, 친구 목록에서 다른 사람에게 보이는 이름이에요. 40자까지 쓸 수 있어요.", "The name others see in the market, trades and friend lists. Up to 40 characters.", "マーケット、交換、フレンド一覧でほかの人に表示される名前です。40文字まで使えます。", "El nombre que ven los demás en el mercado, los intercambios y las listas de amigos. Hasta 40 caracteres.", "Le nom que les autres voient dans le marché, les échanges et les listes d’amis. 40 caractères au maximum.", "O nome que os outros veem no mercado, nas trocas e nas listas de amigos. Até 40 caracteres.") }
+    var nicknameNeedsSignIn: String { t("온라인 모드에서 로그인하면 닉네임을 바꿀 수 있어요.", "Sign in with online mode on to change your nickname.", "オンラインモードでログインするとニックネームを変更できます。", "Inicia sesión con el modo en línea activado para cambiar tu apodo.", "Connectez-vous en mode en ligne pour changer votre pseudo.", "Entre com o modo online ativado para mudar seu apelido.") }
+    var nicknameSaved: String { t("닉네임을 바꿨어요.", "Nickname changed.", "ニックネームを変更しました。", "Apodo cambiado.", "Pseudo modifié.", "Apelido alterado.") }
+    var nicknameSaveFailed: String { t("닉네임을 바꾸지 못했어요. 잠시 뒤에 다시 해 주세요.", "Couldn’t change the nickname. Try again shortly.", "ニックネームを変更できませんでした。しばらくしてからもう一度お試しください。", "No se pudo cambiar el apodo. Inténtalo de nuevo en un momento.", "Impossible de changer le pseudo. Réessayez dans un instant.", "Não foi possível mudar o apelido. Tente de novo daqui a pouco.") }
+    var profileLoadFailed: String { t("프로필을 불러오지 못했어요.", "Couldn’t load your profile.", "プロフィールを読み込めませんでした。", "No se pudo cargar tu perfil.", "Impossible de charger votre profil.", "Não foi possível carregar seu perfil.") }
+    var changeNicknameEllipsis: String { t("닉네임 바꾸기…", "Change nickname…", "ニックネームを変更…", "Cambiar apodo…", "Changer de pseudo…", "Mudar apelido…") }
+    var friendSettingsTitle: String { t("친구 설정", "Friend settings", "フレンド設定", "Ajustes de amigos", "Réglages des amis", "Configurações de amigos") }
     var accountAndServerTitle: String { t("계정 및 서버", "Account and server", "アカウントとサーバー", "Cuenta y servidor", "Compte et serveur", "Conta e servidor") }
     var accountSubtitle: String { t("로그인하면 여러 Mac에서 같은 컬렉션을 써요", "Sign in to use the same collection on several Macs", "ログインすると複数のMacで同じコレクションを使えます", "Inicia sesión para usar la misma colección en varios Mac", "Connectez-vous pour utiliser la même collection sur plusieurs Mac", "Entre para usar a mesma coleção em vários Macs") }
     var accountSections: String { t("계정 관리 분류", "Account sections", "アカウント管理の分類", "Secciones de la cuenta", "Sections du compte", "Seções da conta") }

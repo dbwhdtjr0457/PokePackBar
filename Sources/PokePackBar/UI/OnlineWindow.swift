@@ -552,7 +552,16 @@ struct OnlineHubView: View {
                 Text(OnlineText.l.online).font(Typography.display)
                 HStack(spacing: 6) {
                     Circle().fill(connectionStatus.color).frame(width: 7, height: 7)
-                    Text(connectionStatus.text)
+                    if model.connection == .connected {
+                        // 닉네임을 누르면 계정 창의 프로필에서 바로 바꿀 수 있다.
+                        Button(connectionStatus.text) {
+                            AccountWindow.shared.show(wallet: model.wallet, section: .profile)
+                        }
+                        .buttonStyle(.plain)
+                        .help(OnlineText.l.changeNicknameEllipsis)
+                    } else {
+                        Text(connectionStatus.text)
+                    }
                     if let status = model.remote?.priceStatus, let last = status.last_success {
                         Text(OnlineText.l.priceAsOf(Date(timeIntervalSince1970: Double(last)).formatted(date: .abbreviated, time: .omitted)))
                             .padding(.leading, 6)
@@ -568,6 +577,10 @@ struct OnlineHubView: View {
                 .help(OnlineText.l.refresh).disabled(model.loading)
             Button { AccountWindow.shared.show(wallet: model.wallet) } label: { Image(systemName: "person.crop.circle") }
                 .help(OnlineText.l.accountAndServer)
+        }
+        // 계정 창에서 닉네임을 바꾸면 머리글과 친구 설정이 다음 동기화를 기다리지 않게 다시 읽는다.
+        .onReceive(NotificationCenter.default.publisher(for: .onlineProfileChanged)) { _ in
+            reload(full: true, force: true)
         }
     }
 
