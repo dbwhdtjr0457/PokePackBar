@@ -146,6 +146,11 @@ import SwiftUI
         try await capturePicker("trade-picker", OnlineStockPicker(
             wallet: wallet, title: OnlineText.l.addCardsToGive, actionTitle: OnlineText.l.addAction,
             source: pickable) { _, _ in })
+        // 여러 장을 고른 상태. 고른 칸의 바탕, 표시, 장수 조절과 아래 합계가 함께 보여야 한다.
+        try await capturePicker("trade-picker-selected", OnlineStockPicker(
+            wallet: wallet, title: OnlineText.l.addCardsToGive, actionTitle: OnlineText.l.addAction,
+            source: pickable,
+            initialSelection: [pickable[0].key: 1, pickable[2].key: 2, pickable[4].key: 1]) { _, _ in })
 
         // 교환 칸: 고른 친구에게 남는 카드 가운데 내게 없는 것이 창을 열지 않아도 보여야 한다.
         // 친구에게 남는 아홉 장 가운데 앞의 두 장은 내가 이미 가진 카드로 둔다.
