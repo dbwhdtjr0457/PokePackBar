@@ -55,12 +55,13 @@ struct CardSpotlightView: View {
             // 보유 줄(중복이 있을 때만 생기고 중복 판매 버튼이 붙는다)과 도감 배지 줄(아직 완성하지
             // 않은 조합에 들 때만 생긴다)은 늘 자리를 잡아 둔다. 카드마다 있고 없고에 따라 카드가
             // 줄어들면 같은 화면에서 어떤 카드는 크고 어떤 카드는 작아 보인다.
+            // 도감 배지 줄의 자리는 뒤로가기와 즐겨찾기 줄을 카드 옆에 겹쳐 놓아 만든다. 배지 줄
+            // 높이만큼 카드를 줄여 맞췄더니 모든 카드가 작아 보였다.
             let informationHeight: CGFloat = 160 + 21 + (wallet.isOnline ? 21 : 0)
-            let dexHeight: CGFloat = 42
             // 판매 확인과 판매 완료 안내는 잠깐 뜨는 것이라 그때만 카드를 줄여 버튼이 보이게 한다.
             let saleHeight: CGFloat = confirmingSale || lastRefund != nil ? saleControlsHeight + 9 : 0
             let cardWidth = min(230, max(150,
-                ((geometry.size.height - informationHeight - dexHeight - saleHeight) * 0.717).rounded(.down)))
+                ((geometry.size.height - informationHeight - saleHeight) * 0.717).rounded(.down)))
             ScrollView {
                 detail(cardWidth: cardWidth)
                     .frame(minHeight: geometry.size.height)
@@ -83,13 +84,6 @@ struct CardSpotlightView: View {
     private func detail(cardWidth: CGFloat) -> some View {
         let l = wallet.l
         return VStack(spacing: 0) {
-            // 뒤로가기는 왼쪽, 손대는 것은 오른쪽. 다른 화면과 같은 자리다.
-            HStack {
-                BackButton(action: onClose, hint: l.close)
-                Spacer()
-                favoriteButton(l)
-            }
-
             Spacer(minLength: 0)
 
             // 마우스를 올리면 기울고 광택이 흐른다 — 확대 화면에서만 준다.
@@ -168,6 +162,15 @@ struct CardSpotlightView: View {
                 .padding(.bottom, 4)
         }
         .frame(maxWidth: .infinity)
+        // 뒤로가기는 왼쪽, 손대는 것은 오른쪽. 다른 화면과 같은 자리다. 줄을 따로 두지 않고 카드
+        // 양옆의 빈 곳에 겹쳐 둔다. 카드는 가운데에 놓여 두 버튼과 겹치지 않는다.
+        .overlay(alignment: .top) {
+            HStack {
+                BackButton(action: onClose, hint: l.close)
+                Spacer()
+                favoriteButton(l)
+            }
+        }
     }
 
     /// 이 카드를 처음 얻은 날. **값 줄 끝에 붙인다.**
