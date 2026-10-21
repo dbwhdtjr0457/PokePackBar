@@ -52,10 +52,11 @@ struct CardSpotlightView: View {
             // The shop has an extra picker above this view. Measure its real
             // height instead of assuming that every caller gets the whole tab.
             // 뽑힐 확률 줄은 거의 모든 카드에 있어 늘 자리를 잡는다. 마켓 줄은 온라인일 때만.
-            // 보유 줄(중복이 있을 때만 생기고 중복 판매 버튼이 붙는다)은 늘 자리를 잡아 둔다.
-            // 중복이 생겼다고 카드가 줄어들면 같은 카드인데 화면마다 크기가 달라 보인다.
+            // 보유 줄(중복이 있을 때만 생기고 중복 판매 버튼이 붙는다)과 도감 배지 줄(아직 완성하지
+            // 않은 조합에 들 때만 생긴다)은 늘 자리를 잡아 둔다. 카드마다 있고 없고에 따라 카드가
+            // 줄어들면 같은 화면에서 어떤 카드는 크고 어떤 카드는 작아 보인다.
             let informationHeight: CGFloat = 160 + 21 + (wallet.isOnline ? 21 : 0)
-            let dexHeight: CGFloat = relatedDexes.shown.isEmpty ? 0 : 42
+            let dexHeight: CGFloat = 42
             // 판매 확인과 판매 완료 안내는 잠깐 뜨는 것이라 그때만 카드를 줄여 버튼이 보이게 한다.
             let saleHeight: CGFloat = confirmingSale || lastRefund != nil ? saleControlsHeight + 9 : 0
             let cardWidth = min(230, max(150,
@@ -458,6 +459,15 @@ struct CardSpotlightView: View {
                 }
             }
             .lineLimit(1)
+        } else {
+            // 배지가 없어도 같은 높이를 비워 둔다. 남는 자리가 카드 위아래로 나뉘면 카드가 내려앉아,
+            // 크기는 같아도 넘겨 볼 때 카드 위치가 들쭉날쭉해진다.
+            VStack(spacing: 3) {
+                Text(verbatim: " ").font(Typography.caption)
+                Text(verbatim: " ").font(.system(size: 14, weight: .semibold)).padding(.vertical, 2.5)
+            }
+            .hidden()
+            .accessibilityHidden(true)
         }
     }
 
