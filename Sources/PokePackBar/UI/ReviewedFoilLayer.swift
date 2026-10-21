@@ -59,9 +59,16 @@ struct ReviewedFoilLayer: View {
         }
     }
 
+    /// Only the 25th Celebrations Classic Collection has the large confetti flakes
+    /// (2026-10-19 video check, Charizard and Blastoise reprints). The 30th classic
+    /// reprints and full arts keep the fine glitter they had in 0.19.0; the large
+    /// flakes read as coarse, over-glittered shards on them.
+    nonisolated static func largeConfetti(cardID: String) -> Bool { cardID.hasPrefix("cel25c-") }
+
     private func drawFacets(context: inout GraphicsContext, size: CGSize,
                             material: ReviewedFoilProfiles.Material, seed: UInt64) {
-        let groups = ReviewedFacetCache.groups(seed: seed, material: material)
+        let groups = ReviewedFacetCache.groups(seed: seed, material: material,
+                                               largeConfetti: Self.largeConfetti(cardID: profile.cardID))
         context.scaleBy(x: size.width, y: size.height)
         if material != .microEtching {
             context.fill(Path(CGRect(x: 0, y: 0, width: 1, height: 1)),
@@ -192,13 +199,15 @@ private enum ReviewedFacetCache {
     private static var order: [String] = []
     private static let capacity = 24
 
-    static func groups(seed: UInt64, material: ReviewedFoilProfiles.Material) -> [Path] {
-        let key = "v3#\(seed)#\(material.rawValue)"
+    static func groups(seed: UInt64, material: ReviewedFoilProfiles.Material,
+                       largeConfetti: Bool = false) -> [Path] {
+        let large = largeConfetti && material == .confetti
+        let key = "v3#\(seed)#\(material.rawValue)\(large ? "#large" : "")"
         if let cached = cache[key] { return cached }
         var random = PackSeedGenerator(seed: seed)
         func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
         if material != .microEtching {
-            let mesh = fragmentMesh(material: material, seed: seed, random: &random)
+            let mesh = fragmentMesh(material: material, large: large, seed: seed, random: &random)
             remember(mesh, key: key)
             return mesh
         }
@@ -223,12 +232,12 @@ private enum ReviewedFacetCache {
     /// Jittered, split cells have finite flake faces and dark seams. Overlapping
     /// random polygons reduced to colored TV noise at the actual 240pt size.
     private static func fragmentMesh(material: ReviewedFoilProfiles.Material,
+                                     large: Bool,
                                      seed: UInt64,
                                      random: inout PackSeedGenerator) -> [Path] {
         func next() -> Double { Double(random.next() >> 11) / Double(1 << 53) }
-        // Classic Collection confetti flakes are large and dense, about 1/40-1/50 of
-        // the card width (2026-10-19 video check, Charizard and Blastoise reprints).
-        let columns = material == .goldFragments ? 116 : material == .confetti ? 46 : 144
+        // 25th Classic Collection confetti flakes are about 1/40-1/50 of the card width.
+        let columns = large ? 46 : material == .goldFragments ? 116 : 144
         let rows = Int(Double(columns) / 0.717)
         var points: [CGPoint] = []
         for row in 0...rows {

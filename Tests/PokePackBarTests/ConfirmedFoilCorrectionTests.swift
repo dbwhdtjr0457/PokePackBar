@@ -10,6 +10,16 @@ final class ConfirmedFoilCorrectionTests: XCTestCase {
             explicitFinish: finish)
     }
 
+    /// The large confetti flakes belong to the 25th Classic Collection only. On the 30th
+    /// classic reprints and full arts they looked coarse and over-glittered (2026-10-21).
+    func testOnlyTwentyFifthClassicCollectionUsesLargeConfetti() {
+        XCTAssertTrue(ReviewedFoilLayer.largeConfetti(cardID: "cel25c-4_A"))
+        XCTAssertTrue(ReviewedFoilLayer.largeConfetti(cardID: "cel25c-15_A1"))
+        for id in ["cel30c-1", "cel30c-30", "cel30-23", "cel30-52"] {
+            XCTAssertFalse(ReviewedFoilLayer.largeConfetti(cardID: id), id)
+        }
+    }
+
     func testGoldMewCorrectsBothNewAndPreviouslySavedHoloOpticsWithoutChangingKeys() throws {
         for finish in [nil, CardFinish.holo] {
             let result = try resolve("cel25-25", finish: finish)

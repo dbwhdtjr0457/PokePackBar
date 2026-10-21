@@ -168,6 +168,19 @@ final class BundledDexTests: XCTestCase {
         XCTAssertTrue(missing.isEmpty, "테마 도감이 없는 세트: \(missing.joined(separator: ", "))")
     }
 
+    /// **서브셋에도 조합이 있다.** 트레이너 갤러리, 샤이니 볼트, 갈라리안 갤러리, 클래식 컬렉션은
+    /// 부모 세트의 팩에서 나오지만 따로 번호가 붙는 카드라, 세트 단위 검사로는 빠져도 모른다.
+    /// 2026-09-28 에 들어온 서브셋 카드가 한 달 가까이 어떤 조합에도 없었다.
+    func testEverySubsetAppearsInAThemeDex() throws {
+        let (cards, dexes) = try loadIndexes()
+        func prefix(_ id: String) -> String { id.split(separator: "-").dropLast().joined(separator: "-") }
+        let subsets = Set(cards.cards.map { prefix($0.id) }.filter { cards.set($0) == nil })
+        XCTAssertFalse(subsets.isEmpty, "서브셋을 하나도 찾지 못했다")
+        let themed = Set(dexes.dexes.filter { $0.kind == .theme }.flatMap(\.cards).map(prefix))
+        let missing = subsets.subtracting(themed).sorted()
+        XCTAssertTrue(missing.isEmpty, "조합이 없는 서브셋: \(missing.joined(separator: ", "))")
+    }
+
     /// 보상 통로를 전부 토큰으로 환산한다. 통로마다 값이 실리는 방식이 달라 한자리에 모은다.
     private func rewardValue(_ reward: DexReward, packPrice: Double) -> Double {
         var total = Double(reward.packs) * packPrice + Double(reward.tokens)
