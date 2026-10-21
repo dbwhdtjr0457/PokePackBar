@@ -340,6 +340,36 @@ ADDITIONS = {
          "One standout Pikachu from each era, from the EX Gold Star to Mega Evolution special art.",
          ["ex13-104", "pl2-112", "bw1-115", "sm12-241", "swsh4-188", "sv8-238", "me2pt5-276"]),
     ],
+    "neo4": [
+        ("neo-shining-ten", "빛나는 포켓몬 열 마리", "Ten Shining Pokémon",
+         "네오 레벌루션과 네오 데스티니의 빛나는 포켓몬 열 장 전부. 이로치 포켓몬이 처음 카드가 된 시리즈다.",
+         "All ten Shining Pokémon from Neo Revelation and Neo Destiny, the series that first put shiny Pokémon on cards.",
+         ["neo3-65", "neo3-66", "neo4-106", "neo4-107", "neo4-108", "neo4-109", "neo4-110", "neo4-111", "neo4-112", "neo4-113"]),
+    ],
+    "sm35": [
+        ("sm35-shining-six", "빛나는 전설 여섯 전부", "All Six Shining Legends",
+         "샤이닝 레전드의 빛나는 포켓몬 여섯 장 전부. 「다시 빛나는 것들」의 세 장에 셋이 더 붙는다.",
+         "All six Shining Pokémon in Shining Legends: the three from Shining Again plus three more.",
+         ["9", "27", "40", "42", "56", "57"]),
+    ],
+    "ex10": [
+        ("ex10-gold-star-beasts", "골드스타 전설의 셋", "Gold Star Legendary Beasts",
+         "앤테이, 라이코, 스이쿤이 모두 골드스타로 한 세트에 들어 있다.",
+         "Entei, Raikou and Suicune, all three as Gold Stars in one set.",
+         ["113", "114", "115"]),
+    ],
+    "sv3pt5": [
+        ("sv3pt5-special-arts", "151의 스페셜아트와 금빛 뮤", "151 Special Arts and Gold Mew",
+         "151에 들어 있는 스페셜아트 일곱 장과 금빛 뮤 ex 한 장.",
+         "The seven special art cards in 151 and the gold Mew ex.",
+         ["198", "199", "200", "201", "202", "203", "204", "205"]),
+    ],
+    "zsv10pt5": [
+        ("black-white-rares", "블랙 화이트 레어 둘", "The Two Black White Rares",
+         "블랙 볼트와 화이트 플레어에 한 장씩 있는 블랙 화이트 레어. 두 세트를 다 열어야 짝이 맞는다.",
+         "The Black White Rare in Black Bolt and the one in White Flare. Both sets are needed to pair them.",
+         ["zsv10pt5-172", "rsv10pt5-173"]),
+    ],
 }
 SET_TIER_FLOOR = "SAR"
 
