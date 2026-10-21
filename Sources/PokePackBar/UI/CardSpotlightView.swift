@@ -52,9 +52,12 @@ struct CardSpotlightView: View {
             // The shop has an extra picker above this view. Measure its real
             // height instead of assuming that every caller gets the whole tab.
             // 뽑힐 확률 줄은 거의 모든 카드에 있어 늘 자리를 잡는다. 마켓 줄은 온라인일 때만.
-            let informationHeight: CGFloat = (ownedCount > 1 ? 182 : 160) + 21 + (wallet.isOnline ? 21 : 0)
+            // 보유 줄(중복이 있을 때만 생기고 중복 판매 버튼이 붙는다)은 늘 자리를 잡아 둔다.
+            // 중복이 생겼다고 카드가 줄어들면 같은 카드인데 화면마다 크기가 달라 보인다.
+            let informationHeight: CGFloat = 160 + 21 + (wallet.isOnline ? 21 : 0)
             let dexHeight: CGFloat = relatedDexes.shown.isEmpty ? 0 : 42
-            let saleHeight: CGFloat = wallet.spareCount(cardID) == 0 ? 0 : saleControlsHeight + 9
+            // 판매 확인과 판매 완료 안내는 잠깐 뜨는 것이라 그때만 카드를 줄여 버튼이 보이게 한다.
+            let saleHeight: CGFloat = confirmingSale || lastRefund != nil ? saleControlsHeight + 9 : 0
             let cardWidth = min(230, max(150,
                 ((geometry.size.height - informationHeight - dexHeight - saleHeight) * 0.717).rounded(.down)))
             ScrollView {
@@ -254,35 +257,43 @@ struct CardSpotlightView: View {
         Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 3) {
             if case let (prices, unit)? = price {
                 // 개별 가격은 자르지 않는다. 중복 보유 총액은 별도 행을 쓴다.
+                // 시세의 기준(판형별, 카드 대표값, 실거래 참고가)은 줄을 따로 두지 않고 툴팁으로 둔다.
+                // 판형 시세가 아닐 때만 정보 표시를 붙여 눈여겨볼 값이라는 것만 알린다.
                 GridRow {
                     infoLabel(l.marketPrice)
                     HStack(spacing: 5) {
                         if let displayedFinish { finishPicker(l, displayedFinish) }
                         Text(prices.formattedWithKRW(unit, language: wallet.language))
                             .font(Typography.bodySemibold).monospacedDigit()
+                        if !usesExactPrintingPrice(prices) {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 13)).foregroundStyle(.tertiary)
+                                .accessibilityLabel(Text(priceBasisText(l, prices)))
+                        }
                         if ownedCount <= 1 { acquiredTag(l) }
                     }
                     .lineLimit(1).minimumScaleFactor(0.75)
-                    .help(l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
+                    .help(priceBasisText(l, prices) + "\n"
+                          + l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
                 }
+                // 중복 판매 버튼은 보유 줄 끝에 붙는다. 따로 줄을 두면 중복이 있는 카드만 카드가
+                // 작아졌다. 자리가 모자라면 처음 얻은 날, 그다음 판매 금액 순으로 툴팁으로 넘긴다.
                 if ownedCount > 1 {
                     GridRow {
                         infoLabel(l.marketHoldings)
-                        HStack(spacing: 5) {
-                            let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
-                                $0 + MarketEconomy.usd($1.printing, prices: prices) * Double($1.count)
-                            }
-                            Text(WonFormatter.money(prices.krw(total), language: wallet.language))
-                                .font(Typography.bodySemibold).monospacedDigit()
-                                .foregroundStyle(Color.accentColor)
-                            acquiredTag(l)
+                        let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
+                            $0 + MarketEconomy.usd($1.printing, prices: prices) * Double($1.count)
                         }
-                        .lineLimit(1).minimumScaleFactor(0.75)
+                        let value = Text(WonFormatter.money(prices.krw(total), language: wallet.language))
+                            .font(Typography.bodySemibold).monospacedDigit()
+                            .foregroundStyle(Color.accentColor)
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: 5) { value; acquiredTag(l); spareSaleButton(l, showsAmount: true) }
+                            HStack(spacing: 5) { value; spareSaleButton(l, showsAmount: true) }
+                            HStack(spacing: 5) { value; spareSaleButton(l, showsAmount: false) }
+                        }
+                        .lineLimit(1)
                     }
-                }
-                GridRow {
-                    infoLabel(l.priceBasis)
-                    priceBasisLabel(l, prices).lineLimit(1).minimumScaleFactor(0.8)
                 }
             }
             if let source, let chance = source.chanceText(l) {
@@ -308,7 +319,12 @@ struct CardSpotlightView: View {
             .gridColumnAlignment(.trailing)
     }
 
-    private func priceBasisLabel(_ l: L, _ prices: CardPrices) -> some View {
+    private func usesExactPrintingPrice(_ prices: CardPrices) -> Bool {
+        !prices.isReference(cardID: cardID, finish: displayedFinish)
+            && displayedFinish.flatMap({ prices.exactPrice(cardID: cardID, finish: $0) }) != nil
+    }
+
+    private func priceBasisText(_ l: L, _ prices: CardPrices) -> String {
         let label: String
         if prices.isReference(cardID: cardID, finish: displayedFinish) {
             label = l.completedSalesReference
@@ -317,8 +333,7 @@ struct CardSpotlightView: View {
         } else {
             label = l.exactPrintingPrice
         }
-        return Text(label).font(Typography.label).foregroundStyle(.secondary)
-            .help(l.cardPriceSource(prices, cardID: cardID, finish: displayedFinish))
+        return "\(l.priceBasis): \(label)"
     }
 
     /// 판형이 둘 이상이면 이름 자체를 메뉴로 쓴다. 별도 행을 만들지 않아 작은 팝오버에서도
@@ -491,43 +506,61 @@ struct CardSpotlightView: View {
                     Text(l.sellLowestFinishFirst)
                         .font(Typography.caption).foregroundStyle(.tertiary)
                 }
-                HStack(spacing: 8) {
-                    Button(l.sellSpares) {
-                        Task {
-                            let got = await wallet.sellSparesOnlineAware(cardID: cardID, tier: tier, count: spare)
-                            confirmingSale = false
-                            lastRefund = got > 0 ? got : nil
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(wallet.resourceActionsDisabled)
-                    Button(l.cancel) { confirmingSale = false }
-                        .buttonStyle(.borderless)
+                // 제값을 받는 마켓 판매도 여기서 고른다. 두 버튼이 한 줄에 안 들어가는 언어는 위아래로.
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { confirmSaleButtons(l, spare: spare) }
+                    VStack(spacing: 6) { confirmSaleButtons(l, spare: spare) }
                 }
                 .font(Typography.button)
             }
         } else {
-            // 두 버튼이 한 줄에 들어가지 않는 언어에서는 위아래로 놓는다.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 6) { quickSaleButton(l, spare: spare, refund: refund); marketSaleButton(l) }
-                VStack(spacing: 6) { quickSaleButton(l, spare: spare, refund: refund); marketSaleButton(l) }
-            }
+            // 판매 버튼은 보유 줄에 있다. 여기는 확인과 완료 안내만 뜬다.
+            EmptyView()
         }
     }
 
-    private func quickSaleButton(_ l: L, spare: Int, refund: Int) -> some View {
-        Button {
-            confirmingSale = true
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "wonsign.circle")
-                Text("\(l.sellSpares) ×\(spare)")
-                Text("+\(MarketEconomy.money(tokens: refund, language: wallet.language))")
-                    .monospacedDigit().foregroundStyle(.secondary)
+    /// 보유 줄 끝의 중복 판매 버튼. 누르면 아래에 확인이 뜨고, 거기서 바로 팔지 마켓에 팔지 고른다.
+    @ViewBuilder
+    private func spareSaleButton(_ l: L, showsAmount: Bool) -> some View {
+        let spare = wallet.spareCount(cardID)
+        if spare > 0, !confirmingSale, lastRefund == nil {
+            let amount = "+\(MarketEconomy.money(tokens: wallet.spareSaleValue(cardID: cardID), language: wallet.language))"
+            Button {
+                confirmingSale = true
+            } label: {
+                // 도감 칩과 같은 알약 모양. 기본 크기 버튼은 이 줄보다 키가 커서 줄 높이가 달라진다.
+                HStack(spacing: 4) {
+                    Image(systemName: "wonsign.circle").foregroundStyle(Color.accentColor)
+                    Text("\(l.sellSpares) ×\(spare)")
+                    if showsAmount {
+                        Text(amount).monospacedDigit().foregroundStyle(.secondary)
+                    }
+                }
+                .font(.system(size: 14, weight: .semibold))
+                .padding(.horizontal, 7).padding(.vertical, 2.5)
+                .background(Color.secondary.opacity(0.14), in: Capsule())
+                .contentShape(Capsule())
             }
-            .font(Typography.button)
+            .buttonStyle(.plain)
+            .hoverHighlight(cornerRadius: 11)
+            .help(showsAmount ? l.quickSaleNote : "\(amount)\n\(l.quickSaleNote)")
         }
-        .buttonStyle(.bordered)
+    }
+
+    @ViewBuilder
+    private func confirmSaleButtons(_ l: L, spare: Int) -> some View {
+        Button(l.sellSpares) {
+            Task {
+                let got = await wallet.sellSparesOnlineAware(cardID: cardID, tier: tier, count: spare)
+                confirmingSale = false
+                lastRefund = got > 0 ? got : nil
+            }
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(wallet.resourceActionsDisabled)
+        marketSaleButton(l)
+        Button(l.cancel) { confirmingSale = false }
+            .buttonStyle(.borderless)
     }
 
     /// 제값을 받는 길. 온라인 마켓의 「팔기」를 이 카드로 연다. 로그인하지 않았으면 마켓이 없다.
