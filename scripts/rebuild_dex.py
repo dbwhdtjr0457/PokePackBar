@@ -185,6 +185,10 @@ ADDITIONS = {
          "퓨처울트라레어로 다시 나온 뮤 ex 와 뮤츠 ex.",
          "Mew ex and Mewtwo ex again, this time as Futuristic Ultra Rares.",
          ["157", "158"]),
+        ("cel30-rgb-mew", "빛의 삼원색 뮤", "Mew in Red, Green and Blue",
+         "빨강, 초록, 파랑 판의 뮤 세 장. 클래식 컬렉션 칸에서 만 팩에 세 번꼴로 나와 도감에서 손꼽히게 먼 목표다.",
+         "Mew in red, green and blue. They come from the Classic Collection position about three times in ten thousand packs, one of the longest goals in the dex.",
+         ["R_RGB", "G_RGB", "B_RGB"]),
     ],
     "cel25": [
         ("cel25-base-trio", "1999년의 세 장, 다시", "Base Set Trio, Again",
@@ -289,6 +293,52 @@ ADDITIONS = {
          "파이리, 리자드, 그리고 검은 리자몽 GX. 이 세트를 대표하는 한 장이 마지막이다.",
          "Charmander, Charmeleon and the black Charizard-GX, the card this set is known for.",
          ["sma-SV6", "sma-SV7", "sma-SV49"]),
+    ],
+    "me1": [
+        ("mega-hyper-rares", "메가 하이퍼레어 여덟", "Eight Mega Hyper Rares",
+         "메가진화 시리즈 여섯 세트에 흩어진 메가 하이퍼레어 여덟 장. 세트마다 한두 장뿐인 금빛 카드다.",
+         "All eight Mega Hyper Rares, spread over six Mega Evolution sets. Each set has only one or two of these gold cards.",
+         ["me1-187", "me1-188", "me2-130", "me2pt5-294", "me2pt5-295", "me3-124", "me4-122", "me5-120"]),
+    ],
+    "ex7": [
+        ("gold-star-all", "골드스타 스물다섯 장", "All Twenty-Five Gold Stars",
+         "팀 로켓 리턴즈부터 파워 키퍼스까지, EX 시리즈 아홉 세트에 흩어진 골드스타 전부.",
+         "Every Gold Star from Team Rocket Returns to Power Keepers, spread over nine EX sets.",
+         ["ex7-107", "ex7-108", "ex7-109", "ex8-105", "ex8-106", "ex8-107", "ex10-113", "ex10-114", "ex10-115", "ex11-111", "ex11-112", "ex11-113", "ex12-90", "ex12-91", "ex12-92", "ex13-102", "ex13-103", "ex13-104", "ex14-99", "ex14-100", "ex15-100", "ex15-101", "ex16-100", "ex16-101", "ex16-102"]),
+        ("ex7-gold-star-starters", "골드스타 호연 스타터", "Gold Star Hoenn Starters",
+         "나무지기, 아차모, 물짱이. 골드스타가 처음 나온 세트에 셋이 함께 들어 있다.",
+         "Treecko, Torchic and Mudkip, together in the set where Gold Stars began.",
+         ["107", "108", "109"]),
+    ],
+    "ecard3": [
+        ("crystal-nine", "크리스탈 포켓몬 아홉", "Nine Crystal Pokémon",
+         "e카드 시리즈 마지막 두 세트에만 나온 크리스탈 포켓몬 아홉 장 전부.",
+         "All nine Crystal Pokémon, which appeared only in the last two e-Card sets.",
+         ["ecard2-148", "ecard2-149", "ecard2-150", "ecard3-145", "ecard3-146", "ecard3-147", "ecard3-148", "ecard3-149", "ecard3-150"]),
+    ],
+    "sv3": [
+        ("charizard-ten-eras", "열 시대의 리자몽", "Charizard Across Ten Eras",
+         "네오부터 메가진화까지, 시대마다 손꼽히는 리자몽 한 장씩. 열 세트의 팩을 모두 열어야 한다.",
+         "One standout Charizard from each era, Neo to Mega Evolution. Packs from ten sets are needed.",
+         ["neo4-107", "ecard3-146", "ex15-100", "dp7-103", "bw8-136", "xy2-108", "sm3-150", "swsh35-74", "sv3-228", "me2-130"]),
+    ],
+    "sv8pt5": [
+        ("sv8pt5-eevee-sar", "프리즘 이브이 SAR 아홉", "Nine Prismatic Eevee SARs",
+         "이브이와 여덟 진화형의 스페셜아트 아홉 장 전부.",
+         "The special art cards of Eevee and all eight of its evolutions.",
+         ["167", "144", "146", "149", "150", "153", "155", "156", "161"]),
+    ],
+    "swsh7": [
+        ("umbreon-by-moonlight", "달빛의 블래키 여섯", "Umbreon by Moonlight",
+         "여섯 세트에 흩어진 블래키의 귀한 판본 여섯 장. 금색 별부터 스페셜아트까지 다 모은다.",
+         "Six prized Umbreon printings from six sets, from the Gold Star reprint to special art.",
+         ["swsh7-215", "sv8pt5-161", "sm1-154", "sma-SV69", "swsh9tg-TG23", "cel25c-17_A"]),
+    ],
+    "ex13": [
+        ("pikachu-seven-eras", "일곱 시대의 피카츄", "Pikachu Across Seven Eras",
+         "EX 의 골드스타부터 메가진화의 스페셜아트까지, 시대마다 손꼽히는 피카츄 한 장씩.",
+         "One standout Pikachu from each era, from the EX Gold Star to Mega Evolution special art.",
+         ["ex13-104", "pl2-112", "bw1-115", "sm12-241", "swsh4-188", "sv8-238", "me2pt5-276"]),
     ],
 }
 SET_TIER_FLOOR = "SAR"

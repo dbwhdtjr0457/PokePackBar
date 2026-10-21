@@ -127,7 +127,7 @@
    ]
   },
   {
-   "completed": 336,
+   "completed": 345,
    "title": {
     "ko": "도감 완성자",
     "en": "Dex Completionist"
@@ -10042,7 +10042,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10078,7 +10078,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10117,7 +10117,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -10158,7 +10158,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -10194,7 +10194,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10231,7 +10231,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10267,7 +10267,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10305,7 +10305,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10341,7 +10341,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10378,7 +10378,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -10414,7 +10414,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10451,7 +10451,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10487,7 +10487,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10524,7 +10524,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10560,7 +10560,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10632,7 +10632,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10675,7 +10675,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10714,7 +10714,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10751,7 +10751,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -10824,7 +10824,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -10861,7 +10861,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -10903,7 +10903,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10939,7 +10939,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -10975,7 +10975,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -11011,7 +11011,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -11049,7 +11049,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -11168,7 +11168,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0009
+      "value": 0.0008
      }
     ],
     "tokens": 0,
@@ -11205,7 +11205,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -11242,7 +11242,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -11277,7 +11277,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -11314,7 +11314,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -11351,7 +11351,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -11426,7 +11426,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -11463,7 +11463,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -11499,7 +11499,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -11534,7 +11534,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -11571,7 +11571,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -11606,7 +11606,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0016
+      "value": 0.0015
      }
     ],
     "tokens": 0,
@@ -11642,7 +11642,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -11796,7 +11796,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -11838,7 +11838,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0067
+      "value": 0.005
      }
     ],
     "tokens": 0,
@@ -11920,7 +11920,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0018
+      "value": 0.0009
      }
     ],
     "tokens": 0,
@@ -11962,7 +11962,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0019
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -12085,7 +12085,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -12122,7 +12122,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -12193,7 +12193,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -12264,7 +12264,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0018
+      "value": 0.0009
      }
     ],
     "tokens": 0,
@@ -12637,7 +12637,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0009
+      "value": 0.0008
      }
     ],
     "tokens": 0,
@@ -12674,7 +12674,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0009
+      "value": 0.0008
      }
     ],
     "tokens": 0,
@@ -12853,7 +12853,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0026
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -13114,7 +13114,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0027
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -13157,7 +13157,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0054
+      "value": 0.0045
      }
     ],
     "tokens": 0,
@@ -13201,7 +13201,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0148
+      "value": 0.0077
      }
     ],
     "tokens": 0,
@@ -13334,7 +13334,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0028
+      "value": 0.0019
      }
     ],
     "tokens": 0,
@@ -13422,7 +13422,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0027
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -13511,7 +13511,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0072
+      "value": 0.0054
      }
     ],
     "tokens": 0,
@@ -13599,7 +13599,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0019
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -13772,7 +13772,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0051
+      "value": 0.0034
      }
     ],
     "tokens": 0,
@@ -13815,7 +13815,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0043
+      "value": 0.0034
      }
     ],
     "tokens": 0,
@@ -13901,7 +13901,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.006
+      "value": 0.0042
      }
     ],
     "tokens": 0,
@@ -14015,7 +14015,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0036
+      "value": 0.0027
      }
     ],
     "tokens": 0,
@@ -14093,7 +14093,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0028
+      "value": 0.0019
      }
     ],
     "tokens": 0,
@@ -14136,7 +14136,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0027
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -14253,7 +14253,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -14408,7 +14408,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0045
+      "value": 0.0036
      }
     ],
     "tokens": 0,
@@ -14560,7 +14560,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0018
+      "value": 0.0009
      }
     ],
     "tokens": 0,
@@ -14653,7 +14653,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0062
+      "value": 0.0027
      }
     ],
     "tokens": 0,
@@ -14697,7 +14697,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0034
+      "value": 0.0026
      }
     ],
     "tokens": 0,
@@ -14864,7 +14864,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0118
+      "value": 0.0066
      }
     ],
     "tokens": 0,
@@ -14908,7 +14908,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0036
+      "value": 0.0027
      }
     ],
     "tokens": 0,
@@ -14951,7 +14951,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0053
+      "value": 0.0027
      }
     ],
     "tokens": 0,
@@ -14994,7 +14994,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0018
+      "value": 0.0009
      }
     ],
     "tokens": 0,
@@ -15167,7 +15167,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0151
+      "value": 0.0091
      }
     ],
     "tokens": 0,
@@ -15212,7 +15212,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0078
+      "value": 0.0052
      }
     ],
     "tokens": 0,
@@ -15258,7 +15258,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.014
+      "value": 0.0052
      }
     ],
     "tokens": 0,
@@ -15302,7 +15302,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0027
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -15346,7 +15346,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0099
+      "value": 0.0071
      }
     ],
     "tokens": 0,
@@ -15390,7 +15390,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.017
+      "value": 0.0115
      }
     ],
     "tokens": 0,
@@ -15434,7 +15434,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0018
+      "value": 0.0009
      }
     ],
     "tokens": 0,
@@ -15478,7 +15478,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0053
+      "value": 0.0052
      }
     ],
     "tokens": 0,
@@ -15522,7 +15522,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.007
+      "value": 0.0035
      }
     ],
     "tokens": 0,
@@ -15566,7 +15566,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0053
+      "value": 0.0027
      }
     ],
     "tokens": 0,
@@ -15610,7 +15610,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0116
+      "value": 0.0098
      }
     ],
     "tokens": 0,
@@ -15654,7 +15654,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0093
+      "value": 0.0059
      }
     ],
     "tokens": 0,
@@ -15835,7 +15835,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0045
+      "value": 0.0028
      }
     ],
     "tokens": 0,
@@ -15968,7 +15968,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0026
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -16101,7 +16101,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0018
+      "value": 0.0009
      }
     ],
     "tokens": 0,
@@ -16145,7 +16145,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0218
+      "value": 0.0148
      }
     ],
     "tokens": 0,
@@ -16188,7 +16188,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0027
+      "value": 0.0018
      }
     ],
     "tokens": 0,
@@ -16508,7 +16508,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -16670,7 +16670,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -16832,7 +16832,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17160,7 +17160,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -17200,7 +17200,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17287,7 +17287,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17326,7 +17326,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -17362,7 +17362,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17399,7 +17399,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17441,7 +17441,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17479,7 +17479,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0008
+      "value": 0.0007
      }
     ],
     "tokens": 0,
@@ -17518,7 +17518,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17557,7 +17557,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17593,7 +17593,7 @@
     "perks": [
      {
       "kind": "dustBonus",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -17692,7 +17692,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0034
+      "value": 0.0026
      }
     ],
     "tokens": 0,
@@ -18035,7 +18035,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -18200,7 +18200,7 @@
     "perks": [
      {
       "kind": "tokenGain",
-      "value": 0.0007
+      "value": 0.0006
      }
     ],
     "tokens": 0,
@@ -18235,7 +18235,7 @@
     "perks": [
      {
       "kind": "packDiscount",
-      "value": 0.0009
+      "value": 0.0008
      }
     ],
     "tokens": 0,
@@ -18486,7 +18486,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0018
+      "value": 0.0009
      }
     ],
     "tokens": 0,
@@ -18806,7 +18806,7 @@
     "perks": [
      {
       "kind": "hitOdds",
-      "value": 0.0036
+      "value": 0.0028
      }
     ],
     "tokens": 0,
@@ -18862,6 +18862,455 @@
     ],
     "card": {
      "targetUSD": 279.1293,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "cel30-rgb-mew",
+   "kind": "theme",
+   "name": {
+    "ko": "빛의 삼원색 뮤",
+    "en": "Mew in Red, Green and Blue"
+   },
+   "blurb": {
+    "ko": "빨강, 초록, 파랑 판의 뮤 세 장. 클래식 컬렉션 칸에서 만 팩에 세 번꼴로 나와 도감에서 손꼽히게 먼 목표다.",
+    "en": "Mew in red, green and blue. They come from the Classic Collection position about three times in ten thousand packs, one of the longest goals in the dex."
+   },
+   "homeSet": "cel30",
+   "cards": [
+    "cel30-R_RGB",
+    "cel30-G_RGB",
+    "cel30-B_RGB"
+   ],
+   "tier": 5,
+   "medianPacks": 15784,
+   "medianTokens": 241136776928,
+   "valueUSD": 11594.96,
+   "hardPacks": 33664,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "packDiscount",
+      "value": 0.0136
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 9083.9197,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "mega-hyper-rares",
+   "kind": "theme",
+   "name": {
+    "ko": "메가 하이퍼레어 여덟",
+    "en": "Eight Mega Hyper Rares"
+   },
+   "blurb": {
+    "ko": "메가진화 시리즈 여섯 세트에 흩어진 메가 하이퍼레어 여덟 장. 세트마다 한두 장뿐인 금빛 카드다.",
+    "en": "All eight Mega Hyper Rares, spread over six Mega Evolution sets. Each set has only one or two of these gold cards."
+   },
+   "homeSet": "me1",
+   "cards": [
+    "me1-187",
+    "me1-188",
+    "me2-130",
+    "me2pt5-294",
+    "me2pt5-295",
+    "me3-124",
+    "me4-122",
+    "me5-120"
+   ],
+   "tier": 5,
+   "medianPacks": 7849,
+   "medianTokens": 32960714816,
+   "valueUSD": 1653.94,
+   "hardPacks": 22126,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "dustBonus",
+      "value": 0.0036
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 1241.6708,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "gold-star-all",
+   "kind": "theme",
+   "name": {
+    "ko": "골드스타 스물다섯 장",
+    "en": "All Twenty-Five Gold Stars"
+   },
+   "blurb": {
+    "ko": "팀 로켓 리턴즈부터 파워 키퍼스까지, EX 시리즈 아홉 세트에 흩어진 골드스타 전부.",
+    "en": "Every Gold Star from Team Rocket Returns to Power Keepers, spread over nine EX sets."
+   },
+   "homeSet": "ex7",
+   "cards": [
+    "ex7-107",
+    "ex7-108",
+    "ex7-109",
+    "ex8-105",
+    "ex8-106",
+    "ex8-107",
+    "ex10-113",
+    "ex10-114",
+    "ex10-115",
+    "ex11-111",
+    "ex11-112",
+    "ex11-113",
+    "ex12-90",
+    "ex12-91",
+    "ex12-92",
+    "ex13-102",
+    "ex13-103",
+    "ex13-104",
+    "ex14-99",
+    "ex14-100",
+    "ex15-100",
+    "ex15-101",
+    "ex16-100",
+    "ex16-101",
+    "ex16-102"
+   ],
+   "tier": 5,
+   "medianPacks": 3942,
+   "medianTokens": 1166632629859,
+   "valueUSD": 64148.05,
+   "hardPacks": 8584,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "hitOdds",
+      "value": 0.0168
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 43948.4895,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "ex7-gold-star-starters",
+   "kind": "theme",
+   "name": {
+    "ko": "골드스타 호연 스타터",
+    "en": "Gold Star Hoenn Starters"
+   },
+   "blurb": {
+    "ko": "나무지기, 아차모, 물짱이. 골드스타가 처음 나온 세트에 셋이 함께 들어 있다.",
+    "en": "Treecko, Torchic and Mudkip, together in the set where Gold Stars began."
+   },
+   "homeSet": "ex7",
+   "cards": [
+    "ex7-107",
+    "ex7-108",
+    "ex7-109"
+   ],
+   "tier": 5,
+   "medianPacks": 509,
+   "medianTokens": 124526871378,
+   "valueUSD": 7869.68,
+   "hardPacks": 1085,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "tokenGain",
+      "value": 0.0213
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 4691.0808,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "crystal-nine",
+   "kind": "theme",
+   "name": {
+    "ko": "크리스탈 포켓몬 아홉",
+    "en": "Nine Crystal Pokémon"
+   },
+   "blurb": {
+    "ko": "e카드 시리즈 마지막 두 세트에만 나온 크리스탈 포켓몬 아홉 장 전부.",
+    "en": "All nine Crystal Pokémon, which appeared only in the last two e-Card sets."
+   },
+   "homeSet": "ecard3",
+   "cards": [
+    "ecard2-148",
+    "ecard2-149",
+    "ecard2-150",
+    "ecard3-145",
+    "ecard3-146",
+    "ecard3-147",
+    "ecard3-148",
+    "ecard3-149",
+    "ecard3-150"
+   ],
+   "tier": 5,
+   "medianPacks": 486,
+   "medianTokens": 231127440869,
+   "valueUSD": 12934.72,
+   "hardPacks": 941,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "packDiscount",
+      "value": 0.0068
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 8706.8556,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "charizard-ten-eras",
+   "kind": "theme",
+   "name": {
+    "ko": "열 시대의 리자몽",
+    "en": "Charizard Across Ten Eras"
+   },
+   "blurb": {
+    "ko": "네오부터 메가진화까지, 시대마다 손꼽히는 리자몽 한 장씩. 열 세트의 팩을 모두 열어야 한다.",
+    "en": "One standout Charizard from each era, Neo to Mega Evolution. Packs from ten sets are needed."
+   },
+   "homeSet": "sv3",
+   "cards": [
+    "me2-130",
+    "ecard3-146",
+    "dp7-103",
+    "bw8-136",
+    "xy2-108",
+    "sv3-228",
+    "sm3-150",
+    "swsh35-74",
+    "neo4-107",
+    "ex15-100"
+   ],
+   "tier": 5,
+   "medianPacks": 2566,
+   "medianTokens": 188920721169,
+   "valueUSD": 29344.41,
+   "hardPacks": 8513,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "dustBonus",
+      "value": 0.0145
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 7116.8765,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "sv8pt5-eevee-sar",
+   "kind": "theme",
+   "name": {
+    "ko": "프리즘 이브이 SAR 아홉",
+    "en": "Nine Prismatic Eevee SARs"
+   },
+   "blurb": {
+    "ko": "이브이와 여덟 진화형의 스페셜아트 아홉 장 전부.",
+    "en": "The special art cards of Eevee and all eight of its evolutions."
+   },
+   "homeSet": "sv8pt5",
+   "cards": [
+    "sv8pt5-167",
+    "sv8pt5-144",
+    "sv8pt5-146",
+    "sv8pt5-149",
+    "sv8pt5-150",
+    "sv8pt5-153",
+    "sv8pt5-155",
+    "sv8pt5-156",
+    "sv8pt5-161"
+   ],
+   "tier": 5,
+   "medianPacks": 2372,
+   "medianTokens": 17157252396,
+   "valueUSD": 3732.47,
+   "hardPacks": 4059,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "hitOdds",
+      "value": 0.0045
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 646.3349,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "umbreon-by-moonlight",
+   "kind": "theme",
+   "name": {
+    "ko": "달빛의 블래키 여섯",
+    "en": "Umbreon by Moonlight"
+   },
+   "blurb": {
+    "ko": "여섯 세트에 흩어진 블래키의 귀한 판본 여섯 장. 금색 별부터 스페셜아트까지 다 모은다.",
+    "en": "Six prized Umbreon printings from six sets, from the Gold Star reprint to special art."
+   },
+   "homeSet": "swsh7",
+   "cards": [
+    "swsh7-215",
+    "sm1-154",
+    "sv8pt5-161",
+    "sma-SV69",
+    "swsh9tg-TG23",
+    "cel25c-17_A"
+   ],
+   "tier": 5,
+   "medianPacks": 2783,
+   "medianTokens": 31338889446,
+   "valueUSD": 4374.68,
+   "hardPacks": 9242,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "tokenGain",
+      "value": 0.0116
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 1180.5746,
+     "tierFloor": "BWR"
+    }
+   },
+   "milestones": []
+  },
+  {
+   "id": "pikachu-seven-eras",
+   "kind": "theme",
+   "name": {
+    "ko": "일곱 시대의 피카츄",
+    "en": "Pikachu Across Seven Eras"
+   },
+   "blurb": {
+    "ko": "EX 의 골드스타부터 메가진화의 스페셜아트까지, 시대마다 손꼽히는 피카츄 한 장씩.",
+    "en": "One standout Pikachu from each era, from the EX Gold Star to Mega Evolution special art."
+   },
+   "homeSet": "ex13",
+   "cards": [
+    "pl2-112",
+    "bw1-115",
+    "sm12-241",
+    "swsh4-188",
+    "sv8-238",
+    "me2pt5-276",
+    "ex13-104"
+   ],
+   "tier": 5,
+   "medianPacks": 2411,
+   "medianTokens": 118854685972,
+   "valueUSD": 5349.67,
+   "hardPacks": 8008,
+   "reward": {
+    "packs": 0,
+    "perks": [
+     {
+      "kind": "packDiscount",
+      "value": 0.0061
+     }
+    ],
+    "tokens": 0,
+    "coupons": [
+     {
+      "value": 0.5,
+      "count": 20
+     }
+    ],
+    "card": {
+     "targetUSD": 4477.4026,
      "tierFloor": "BWR"
     }
    },
