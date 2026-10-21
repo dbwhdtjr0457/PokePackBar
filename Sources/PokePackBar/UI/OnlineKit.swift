@@ -668,6 +668,9 @@ struct OnlineCatalogueSearch: View {
 }
 
 /// 내 카드 중 거래할 수 있는 것만 보여 주고 골라 담는 시트.
+///
+/// 카드를 누를 때마다 고르고 다시 누르면 뺀다. 여러 장을 한 번에 담는다. 예전에는 한 종류를
+/// 담을 때마다 창이 닫혀서, 카드 다섯 종을 내놓으려면 창을 다섯 번 열어야 했다.
 @MainActor
 struct OnlineStockPicker: View {
     let wallet: WalletStore
@@ -683,20 +686,25 @@ struct OnlineStockPicker: View {
     /// 내 컬렉션에 없는 카드를 표시하고 그것만 가려 볼 수 있게 한다. 친구의 교환 바인더에서 켠다.
     var marksMissing = false
     var startsMissingOnly = false
+    /// 처음부터 골라 둔 카드. 레이아웃 감사가 고른 상태를 그릴 때 쓴다.
+    var initialSelection: [String: Int] = [:]
+    /// 고른 카드마다 한 번씩 부른다. 목록 순서대로다.
     let onPick: (_ key: String, _ quantity: Int) -> Void
 
     @State private var query = ""
     @State private var appliedQuery = ""
-    @State private var picked: OnlineStock?
-    @State private var quantity = 1
+    /// 고른 카드와 장수.
+    @State private var selection: [String: Int] = [:]
     @State private var order = Order.priceHigh
     @State private var missingOnly = false
     @Environment(\.dismiss) private var dismiss
 
     enum Order: CaseIterable { case priceHigh, priceLow, name }
 
+    private var allStock: [OnlineStock] { source ?? OnlineStock.sellable(wallet: wallet) }
+
     private var stock: [OnlineStock] {
-        var all = Self.sorted(source ?? OnlineStock.sellable(wallet: wallet), by: order)
+        var all = Self.sorted(allStock, by: order)
         if marksMissing, missingOnly { all = all.filter(isMissing) }
         let needle = DexCardSearch.normalized(appliedQuery)
         guard !needle.isEmpty else { return all }
@@ -704,6 +712,9 @@ struct OnlineStockPicker: View {
     }
 
     private func isMissing(_ item: OnlineStock) -> Bool { wallet.cardCount(item.cardID) == 0 }
+
+    /// 이미 담은 것을 빼고 더 담을 수 있는 장수.
+    private func remaining(_ item: OnlineStock) -> Int { max(0, item.available - (alreadyPicked[item.key] ?? 0)) }
 
     /// 시세 없는 카드는 어느 가격순에서도 뒤에 둔다. 낮은 순 맨 앞에 값 모르는 카드가 몰리면
     /// 싼 카드를 찾는 사람에게 쓸모가 없다.
@@ -720,6 +731,24 @@ struct OnlineStockPicker: View {
         }
     }
 
+    /// 누를 때마다 고르고 뺀다. 더 담을 수 없는 카드는 고를 수 없다.
+    static func toggled(_ selection: [String: Int], key: String, remaining: Int) -> [String: Int] {
+        var next = selection
+        if next[key] != nil { next[key] = nil } else if remaining > 0 { next[key] = 1 }
+        return next
+    }
+
+    /// 담을 순서와 장수. 지금 목록의 순서를 따르고, 남은 장수를 넘지 않게 자른다.
+    /// 검색이나 거르기로 가려진 카드도 고른 것이면 담는다.
+    static func picks(_ selection: [String: Int], in stock: [OnlineStock],
+                      alreadyPicked: [String: Int]) -> [(key: String, quantity: Int)] {
+        stock.compactMap { item in
+            guard let wanted = selection[item.key] else { return nil }
+            let quantity = min(wanted, max(0, item.available - (alreadyPicked[item.key] ?? 0)))
+            return quantity > 0 ? (item.key, quantity) : nil
+        }
+    }
+
     private func title(_ order: Order) -> String {
         switch order {
         case .priceHigh: OnlineText.l.sortPriceHigh
@@ -729,102 +758,140 @@ struct OnlineStockPicker: View {
     }
 
     var body: some View {
+        let chosen = Self.picks(selection, in: Self.sorted(allStock, by: order), alreadyPicked: alreadyPicked)
         VStack(alignment: .leading, spacing: 14) {
             Text(title).font(Typography.heading)
-            if let picked {
-                let remaining = max(1, picked.available)
-                HStack(alignment: .top, spacing: 16) {
-                    CardImageView(cardID: picked.cardID, hires: true, width: 150)
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text(OnlineText.cardName(picked.cardID)).font(Typography.title)
-                        Text(OnlineText.l.cardFinishName(picked.finish, cardID: picked.cardID))
-                            .font(Typography.label).foregroundStyle(.secondary)
-                        Text(OnlineText.l.offerableCount(picked.available))
-                            .font(Typography.label)
-                        if let won = picked.referenceWon {
-                            Text(OnlineText.l.priceEach(OnlineText.wonText(won)))
-                                .font(Typography.bodySemibold).monospacedDigit()
-                            if quantity > 1 {
-                                Text(OnlineText.l.priceTotal(quantity, OnlineText.wonText(won * quantity)))
-                                    .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
-                            }
-                        } else {
-                            Text(OnlineText.l.noMarketPrice).font(Typography.label).foregroundStyle(.secondary)
-                        }
-                        OnlineQuantity(value: $quantity, range: 1...min(1000, remaining))
-                        Button(OnlineText.l.pickAnotherCard) { self.picked = nil }.buttonStyle(.borderless)
-                    }
+            HStack(spacing: 10) {
+                TextField(searchPlaceholder ?? OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
+                    .debouncedSearch(query, into: $appliedQuery)
+                Picker(OnlineText.l.sortBy, selection: $order) {
+                    ForEach(Order.allCases, id: \.self) { Text(title($0)).tag($0) }
                 }
-            } else {
-                HStack(spacing: 10) {
-                    TextField(searchPlaceholder ?? OnlineText.l.searchMyCards, text: $query).textFieldStyle(.roundedBorder)
-                        .debouncedSearch(query, into: $appliedQuery)
-                    Picker(OnlineText.l.sortBy, selection: $order) {
-                        ForEach(Order.allCases, id: \.self) { Text(title($0)).tag($0) }
-                    }
-                    .labelsHidden().fixedSize()
-                    .help(OnlineText.l.sortBy)
-                    if marksMissing {
-                        Toggle(OnlineText.l.missingOnlyToggle, isOn: $missingOnly).toggleStyle(.checkbox).fixedSize()
-                    }
+                .labelsHidden().fixedSize()
+                .help(OnlineText.l.sortBy)
+                if marksMissing {
+                    Toggle(OnlineText.l.missingOnlyToggle, isOn: $missingOnly).toggleStyle(.checkbox).fixedSize()
                 }
-                ScrollView {
-                    if stock.isEmpty {
-                        if marksMissing, missingOnly, query.isEmpty, !(source ?? []).isEmpty {
-                            // 친구에게 남는 카드는 있는데 내게 없는 것이 없다. 바인더가 빈 것과는 다르다.
-                            OnlineEmptyState(icon: "checkmark.circle", title: OnlineText.l.noMissingCardsTitle,
-                                             message: OnlineText.l.noMissingCardsHint)
-                        } else {
-                            OnlineEmptyState(icon: "square.stack",
-                                             title: query.isEmpty ? emptyTitle ?? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
-                                             message: query.isEmpty ? emptyMessage ?? OnlineText.l.spareCardsHint : nil)
-                        }
-                    } else {
-                        // 「아직 없음」 표시가 붙은 칸과 없는 칸의 높이가 달라도 카드 윗선은 맞춘다.
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 12, alignment: .top)], spacing: 14) {
-                            ForEach(stock) { item in
-                                Button {
-                                    picked = OnlineStock(key: item.key, cardID: item.cardID, finish: item.finish,
-                                                         available: item.available - (alreadyPicked[item.key] ?? 0),
-                                                         referenceWon: item.referenceWon)
-                                    quantity = 1
-                                } label: {
-                                    OnlineCardTile(cardID: item.cardID, finish: item.finish.rawValue, width: 92,
-                                                   badge: marksMissing && isMissing(item)
-                                                       ? (OnlineText.l.missingBadge, .accentColor) : nil) {
-                                        // 고르기 전에 값이 보여야 한다. 눌러 들어가야만 시세가 나오면
-                                        // 카드마다 들어갔다 나오며 견줘야 한다.
-                                        Text(item.referenceWon.map(OnlineText.wonText) ?? OnlineText.l.noMarketPrice)
-                                            .font(Typography.captionMedium).monospacedDigit()
-                                            .foregroundStyle(item.referenceWon == nil ? .secondary : .primary)
-                                            .lineLimit(1).minimumScaleFactor(0.75)
-                                        Text(OnlineText.l.availableCount(item.available)).font(Typography.caption).foregroundStyle(.secondary)
-                                    }
-                                    .help(OnlineText.printingSummary(item.key))
-                                }
-                                .buttonStyle(.plain)
-                                .disabled(item.available - (alreadyPicked[item.key] ?? 0) <= 0)
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-                .frame(height: 360)
             }
-            HStack {
+            ScrollView {
+                if stock.isEmpty {
+                    if marksMissing, missingOnly, query.isEmpty, !(source ?? []).isEmpty {
+                        // 친구에게 남는 카드는 있는데 내게 없는 것이 없다. 바인더가 빈 것과는 다르다.
+                        OnlineEmptyState(icon: "checkmark.circle", title: OnlineText.l.noMissingCardsTitle,
+                                         message: OnlineText.l.noMissingCardsHint)
+                    } else {
+                        OnlineEmptyState(icon: "square.stack",
+                                         title: query.isEmpty ? emptyTitle ?? OnlineText.l.noOfferableCards : OnlineText.l.noMatchingCards,
+                                         message: query.isEmpty ? emptyMessage ?? OnlineText.l.spareCardsHint : nil)
+                    }
+                } else {
+                    // 「아직 없음」 표시가 붙은 칸과 없는 칸의 높이가 달라도 카드 윗선은 맞춘다.
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 8, alignment: .top)], spacing: 10) {
+                        ForEach(stock) { item in tile(item) }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+            .frame(height: 380)
+            HStack(spacing: 10) {
                 Button(OnlineText.l.close) { dismiss() }.keyboardShortcut(.cancelAction)
                 Spacer()
+                summary(chosen)
                 Button(actionTitle) {
-                    if let picked { onPick(picked.key, quantity) }
+                    for pick in chosen { onPick(pick.key, pick.quantity) }
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(picked == nil || (picked?.available ?? 0) < 1)
+                .keyboardShortcut(.defaultAction)
+                .disabled(chosen.isEmpty)
             }
         }
         .padding(24)
         .frame(width: 560)
-        .onAppear { missingOnly = startsMissingOnly }
+        .onAppear {
+            missingOnly = startsMissingOnly
+            if selection.isEmpty { selection = initialSelection }
+        }
+    }
+
+    /// 고른 종류와 장수, 아는 시세의 합. 아무것도 고르지 않았으면 고르는 법을 적는다.
+    @ViewBuilder
+    private func summary(_ chosen: [(key: String, quantity: Int)]) -> some View {
+        if chosen.isEmpty {
+            Text(OnlineText.l.pickCardsHint).font(Typography.label).foregroundStyle(.secondary)
+        } else {
+            let cards = chosen.reduce(0) { $0 + $1.quantity }
+            let won = chosen.reduce(0) { total, pick in
+                total + (allStock.first { $0.key == pick.key }?.referenceWon ?? 0) * pick.quantity
+            }
+            Text(won > 0 ? "\(OnlineText.l.pickedKinds(chosen.count)), "
+                           + OnlineText.l.priceTotal(cards, OnlineText.wonText(won))
+                         : "\(OnlineText.l.pickedKinds(chosen.count)), \(OnlineText.l.cardsCount(cards))")
+                .font(Typography.labelSemibold).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.8)
+        }
+    }
+
+    /// 카드 한 칸. 그림을 누르면 고르고 빼며, 고른 카드가 두 장 이상 담을 수 있으면 장수를 바꾼다.
+    /// 장수 버튼을 카드 버튼 안에 넣지 않는다. 버튼 안의 버튼은 눌리지 않는다.
+    private func tile(_ item: OnlineStock) -> some View {
+        let left = remaining(item)
+        let quantity = selection[item.key]
+        return VStack(alignment: .leading, spacing: 4) {
+            Button {
+                selection = Self.toggled(selection, key: item.key, remaining: left)
+            } label: {
+                OnlineCardTile(cardID: item.cardID, finish: item.finish.rawValue, width: 92,
+                               badge: marksMissing && isMissing(item)
+                                   ? (OnlineText.l.missingBadge, .accentColor) : nil) {
+                    // 고르기 전에 값이 보여야 한다. 눌러 들어가야만 시세가 나오면
+                    // 카드마다 들어갔다 나오며 견줘야 한다.
+                    Text(item.referenceWon.map(OnlineText.wonText) ?? OnlineText.l.noMarketPrice)
+                        .font(Typography.captionMedium).monospacedDigit()
+                        .foregroundStyle(item.referenceWon == nil ? .secondary : .primary)
+                        .lineLimit(1).minimumScaleFactor(0.75)
+                    if quantity == nil {
+                        Text(OnlineText.l.availableCount(left)).font(Typography.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if quantity != nil {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, Color.accentColor)
+                            .padding(4)
+                    }
+                }
+                .help(OnlineText.printingSummary(item.key))
+            }
+            .buttonStyle(.plain)
+            .disabled(left <= 0)
+            .accessibilityValue(Text(quantity.map(OnlineText.l.cardsCount) ?? ""))
+            .accessibilityAddTraits(quantity != nil ? .isSelected : [])
+            if let quantity {
+                quantityStepper(item.key, quantity: quantity, limit: left)
+            }
+        }
+        // 고른 칸은 칸 전체에 옅은 바탕을 깐다. 카드 둘레에 선을 두르면 그림 가장자리와 어긋나 떠 보인다.
+        .padding(6)
+        .background(quantity != nil ? Color.accentColor.opacity(0.14) : Color.clear,
+                    in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    private func quantityStepper(_ key: String, quantity: Int, limit: Int) -> some View {
+        HStack(spacing: 6) {
+            Button { selection[key] = max(1, quantity - 1) } label: { Image(systemName: "minus") }
+                .disabled(quantity <= 1)
+            Text(OnlineText.l.cardsCount(quantity))
+                .font(Typography.labelSemibold).monospacedDigit()
+                .frame(minWidth: 34)
+            Button { selection[key] = min(limit, quantity + 1) } label: { Image(systemName: "plus") }
+                .disabled(quantity >= limit)
+        }
+        .buttonStyle(.borderless)
+        .font(Typography.label)
+        .frame(width: 92)
     }
 }
 

@@ -392,6 +392,30 @@ final class OnlineAlertsTests: XCTestCase {
         XCTAssertEqual(marked, [1, 2])
     }
 
+    /// 카드 고르는 창은 누를 때마다 고르고 뺀다. 더 담을 수 없는 카드는 고를 수 없다.
+    func testPickerTogglesSelection() {
+        var selection: [String: Int] = [:]
+        selection = OnlineStockPicker.toggled(selection, key: "a", remaining: 2)
+        selection = OnlineStockPicker.toggled(selection, key: "b", remaining: 1)
+        XCTAssertEqual(selection, ["a": 1, "b": 1])
+        selection = OnlineStockPicker.toggled(selection, key: "a", remaining: 2)
+        XCTAssertEqual(selection, ["b": 1], "다시 누르면 뺀다")
+        XCTAssertEqual(OnlineStockPicker.toggled(selection, key: "c", remaining: 0), ["b": 1],
+                       "더 담을 수 없는 카드는 고르지 않는다")
+    }
+
+    /// 고른 카드는 목록 순서대로 한 번씩 담고, 이미 담은 것까지 합쳐 가진 장수를 넘지 않는다.
+    func testPickerAddsEverySelectedCardWithinWhatIsLeft() {
+        func stock(_ key: String, _ available: Int) -> OnlineStock {
+            OnlineStock(key: key, cardID: key, finish: .holo, available: available, referenceWon: nil)
+        }
+        let all = [stock("a", 3), stock("b", 2), stock("c", 1)]
+        let picks = OnlineStockPicker.picks(["c": 1, "a": 5, "b": 2], in: all, alreadyPicked: ["b": 1])
+        XCTAssertEqual(picks.map(\.key), ["a", "b", "c"], "목록 순서를 따른다")
+        XCTAssertEqual(picks.map(\.quantity), [3, 1, 1], "가진 장수와 이미 담은 장수를 넘지 않는다")
+        XCTAssertTrue(OnlineStockPicker.picks(["b": 1], in: all, alreadyPicked: ["b": 2]).isEmpty)
+    }
+
     /// 교환에 담을 카드는 값으로 견준다. 시세 없는 카드는 어느 가격순에서도 뒤에 온다.
     func testStockSortsByPriceWithUnpricedLast() {
         func stock(_ key: String, _ won: Int?) -> OnlineStock {

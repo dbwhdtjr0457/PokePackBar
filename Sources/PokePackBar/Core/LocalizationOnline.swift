@@ -33,6 +33,15 @@ extension L {
     var searching: String { t("찾는 중…", "Searching…", "検索中…", "Buscando…", "Recherche…", "Buscando…") }
     var noMatchingCards: String { t("맞는 카드가 없어요", "No matching cards", "一致するカードがありません", "No hay cartas que coincidan", "Aucune carte correspondante", "Nenhuma carta encontrada") }
     var searchMyCards: String { t("내 카드에서 찾기", "Search my cards", "自分のカードから探す", "Buscar en mis cartas", "Chercher dans mes cartes", "Buscar nas minhas cartas") }
+    /// 카드 고르는 창에서 아무것도 고르지 않았을 때. 여러 장을 한 번에 담을 수 있다는 것을 알린다.
+    var pickCardsHint: String {
+        t("카드를 눌러 여러 장 고르세요", "Tap cards to pick several", "カードを押して複数選べます",
+          "Toca cartas para elegir varias", "Touchez des cartes pour en choisir plusieurs",
+          "Toque nas cartas para escolher várias")
+    }
+    func pickedKinds(_ n: Int) -> String {
+        t("\(n)종 선택", "\(n) picked", "\(n)種を選択", "\(n) elegidas", "\(n) choisies", "\(n) escolhidas")
+    }
     var pickAnotherCard: String { t("다른 카드 고르기", "Choose another card", "別のカードを選ぶ", "Elegir otra carta", "Choisir une autre carte", "Escolher outra carta") }
     var spareCardsHint: String {
         t("같은 카드를 2장 이상 가지고 있으면 여기에 나타나요. 한 장은 늘 남겨 둬요.",
