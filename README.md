@@ -73,6 +73,21 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.21.0
+
+전체 도감을 350개로 늘렸다. 조합 223개는 별 1~5개로 묶어 보고, 검색하면 한 목록에서
+찾는다. 최신 세트·서브세트와 고난도 조합을 추가하고 보상을 보강했다.
+영구 혜택은 종류별 총량과 상한을 유지한 채 재분배하며, 기존 재화와 수령 내역은 보존한다.
+
+교환 카드 선택 창에서 여러 종류와 장수를 한 번에 고른다. 카드 상세는 중복 카드가
+있어도 같은 크기를 유지하며, 30주년 카드의 고운 반짝이를 복원했다.
+
+![별 개수로 묶은 도감 조합](docs/reference/screenshots/dex-stars-021-ko.png)
+![여러 카드를 한 번에 선택](docs/reference/screenshots/trade-multi-select-021-ko.png)
+
+서버와 도감 규칙 버전이 함께 바뀐다. **온라인 기기는 앱을 0.21.0으로 업데이트해야 한다.**
+DB 스키마는 0009를 유지하며 기본 가격과 팩 봉입 규칙은 그대로다.
+
 ## 0.20.0
 
 시대별 홀로 무늬·색·빛나는 영역을 보정했다. 포켓몬의 불투명 인쇄와 배경을 구분하고,

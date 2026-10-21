@@ -56,6 +56,26 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.21.0", lines: [
+                t("도감 조합을 223개, 전체 도감을 350개로 늘리고 별 개수로 묶었습니다. 최신 세트와 서브세트 조합, 고난도 조합과 보상을 추가하고 영구 혜택을 재분배했습니다.",
+                  "Expanded to 223 themed combinations and 350 dexes, grouped by stars. Added recent-set, subset and endgame combinations, rewards and redistributed permanent perks.",
+                  "テーマ組み合わせ223種、全図鑑350種に拡張し、星別に整理しました。最新セットやサブセット、高難度の組み合わせと報酬を追加し、永続特典を再配分しました。",
+                  "Ampliamos a 223 combinaciones y 350 registros, agrupados por estrellas. Añadimos combinaciones recientes, de subconjuntos y avanzadas, con recompensas y ventajas redistribuidas.",
+                  "223 combinaisons et 350 collections, regroupées par étoiles. Ajout de combinaisons récentes, de sous-ensembles et difficiles, avec récompenses et bonus permanents redistribués.",
+                  "Agora são 223 combinações e 350 coleções, agrupadas por estrelas. Novas combinações recentes, de subconjuntos e avançadas, com recompensas e vantagens redistribuídas."),
+                t("교환 카드 선택 창에서 여러 종류와 장수를 한 번에 골라 담을 수 있습니다. 카드 상세는 중복 보유 여부와 관계없이 같은 크기를 유지합니다.",
+                  "Select multiple card types and quantities in one trade picker. Card details keep the same image size regardless of duplicate ownership.",
+                  "交換画面で複数のカードと枚数をまとめて選べます。重複所持に関係なくカード詳細の画像サイズを維持します。",
+                  "Elige varios tipos y cantidades de cartas de una vez. El detalle mantiene el tamaño de imagen aunque tengas duplicados.",
+                  "Sélectionnez plusieurs cartes et quantités à la fois. L’image des détails garde sa taille même avec des doubles.",
+                  "Selecione vários tipos e quantidades de cartas de uma vez. Os detalhes mantêm o tamanho da imagem mesmo com cópias repetidas."),
+                t("30주년 카드의 고운 반짝이를 복원했습니다. 새 도감 규칙을 사용하려면 온라인 기기의 앱을 0.21.0으로 업데이트해 주세요. 기존 재화와 수령 내역은 유지합니다.",
+                  "Restored fine glitter on 30th-anniversary cards. Update online devices to 0.21.0 for the new dex rules. Existing resources and claimed rewards are preserved.",
+                  "30周年カードの細かな輝きを復元しました。新しい図鑑ルールにはオンライン端末を0.21.0へ更新してください。既存資源と受取履歴は維持します。",
+                  "Restauramos el brillo fino del 30.º aniversario. Actualiza los dispositivos online a 0.21.0. Se conservan los recursos y recompensas ya reclamadas.",
+                  "Le scintillement fin du 30e anniversaire est restauré. Mettez les appareils en ligne à jour vers 0.21.0. Ressources et récompenses reçues sont conservées.",
+                  "Restauramos o brilho fino do 30º aniversário. Atualize os dispositivos online para 0.21.0. Recursos e recompensas já recebidas são mantidos.")
+            ]),
             ReleaseNote(version: "0.20.0", lines: [
                 t("시대별 홀로 효과의 무늬·색·적용 영역을 보정했습니다. 카드의 저장 판형과 시세는 유지합니다.",
                   "Refined era-specific foil patterns, colors and coverage. Stored card finishes and prices are unchanged.",
