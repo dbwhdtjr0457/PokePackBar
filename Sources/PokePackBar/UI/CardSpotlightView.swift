@@ -41,9 +41,6 @@ struct CardSpotlightView: View {
     @State private var selectedFinish: CardFinish? = nil
     /// 방금 받은 액수. 잠깐 보여주고 지운다.
     @State private var lastRefund: Int?
-    /// 판매 줄의 실제 높이. 언어에 따라 두 버튼(바로 팔기, 마켓에 팔기)이 한 줄이나 두 줄이 되고,
-    /// 확인 단계에는 안내 줄이 붙는다. 어림값으로 두면 카드가 덜 줄어 마지막 버튼이 화면 밖으로 밀린다.
-    @State private var saleControlsHeight: CGFloat = 27
     /// 출처 팩과 뽑힐 확률. 세트 전체를 훑어 세므로 카드가 바뀔 때만 다시 구한다.
     @State private var source: CardSource?
 
@@ -58,15 +55,27 @@ struct CardSpotlightView: View {
             // 도감 배지 줄의 자리는 뒤로가기와 즐겨찾기 줄을 카드 옆에 겹쳐 놓아 만든다. 배지 줄
             // 높이만큼 카드를 줄여 맞췄더니 모든 카드가 작아 보였다.
             let informationHeight: CGFloat = 160 + 21 + (wallet.isOnline ? 21 : 0)
-            // 판매 확인과 판매 완료 안내는 잠깐 뜨는 것이라 그때만 카드를 줄여 버튼이 보이게 한다.
-            let saleHeight: CGFloat = confirmingSale || lastRefund != nil ? saleControlsHeight + 9 : 0
             let cardWidth = min(230, max(150,
-                ((geometry.size.height - informationHeight - saleHeight) * 0.717).rounded(.down)))
-            ScrollView {
-                detail(cardWidth: cardWidth)
-                    .frame(minHeight: geometry.size.height)
+                ((geometry.size.height - informationHeight) * 0.717).rounded(.down)))
+            // 판매 확인과 판매 완료 안내는 카드를 줄여 자리를 만들지 않고 그쪽으로 스크롤한다.
+            // 카드가 줄거나 움직이면 같은 카드를 보는 중에 화면이 출렁인다.
+            ScrollViewReader { scroller in
+                ScrollView {
+                    detail(cardWidth: cardWidth)
+                        .frame(minHeight: geometry.size.height)
+                }
+                .scrollIndicators(.hidden)
+                .onChange(of: confirmingSale) {
+                    withAnimation(Motion.shift) {
+                        scroller.scrollTo(confirmingSale ? SaleAnchor.controls : SaleAnchor.top,
+                                          anchor: confirmingSale ? .bottom : .top)
+                    }
+                }
+                .onChange(of: lastRefund) {
+                    guard lastRefund != nil else { return }
+                    withAnimation(Motion.shift) { scroller.scrollTo(SaleAnchor.controls, anchor: .bottom) }
+                }
             }
-            .scrollIndicators(.hidden)
         }
         .onAppear {
             selectedFinish = finish ?? wallet.bestOwnedFinish(cardID: cardID)
@@ -83,8 +92,11 @@ struct CardSpotlightView: View {
 
     private func detail(cardWidth: CGFloat) -> some View {
         let l = wallet.l
+        // 카드는 늘 맨 위에 붙인다. 남는 높이를 카드 위아래로 나누면 아래 정보 줄 수에 따라
+        // 카드가 오르내린다. 남는 자리는 맨 아래로 보낸다.
         return VStack(spacing: 0) {
-            Spacer(minLength: 0)
+            // 위 여백은 고정이다. 후광이 화면 위 끝에 닿아 잘리지 않을 만큼만 둔다.
+            Color.clear.frame(height: 8).id(SaleAnchor.top)
 
             // 마우스를 올리면 기울고 광택이 흐른다 — 확대 화면에서만 준다.
             // 격자에서는 크기가 작아 각도가 읽히지 않고, 지나가는 커서마다 반응하면 산만하다.
@@ -104,8 +116,6 @@ struct CardSpotlightView: View {
                 .environment(\.tierGlowScale, 0.5)
                 .scaleEffect(landed ? 1 : 0.9)
                 .opacity(landed ? 1 : 0)
-
-            Spacer(minLength: 0)
 
             // 글자를 키우면서 줄 수를 줄였다. 등급·세트·보유량을 한 줄에 모으고 이름을
             // 한 줄로 묶는다. 작은 창이나 긴 판매 안내는 스크롤로 끝까지 볼 수 있다.
@@ -157,9 +167,11 @@ struct CardSpotlightView: View {
                 .padding(.top, 6)
 
             saleControls(l)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { saleControlsHeight = $0 }
                 .padding(.top, 5)
                 .padding(.bottom, 4)
+                .id(SaleAnchor.controls)
+
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
         // 뒤로가기는 왼쪽, 손대는 것은 오른쪽. 다른 화면과 같은 자리다. 줄을 따로 두지 않고 카드
@@ -172,6 +184,8 @@ struct CardSpotlightView: View {
             }
         }
     }
+
+    private enum SaleAnchor: Hashable { case top, controls }
 
     /// 이 카드를 처음 얻은 날. **값 줄 끝에 붙인다.**
     ///
