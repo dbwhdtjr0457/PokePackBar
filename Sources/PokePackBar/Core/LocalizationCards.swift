@@ -970,6 +970,21 @@ extension L {
 
     func dexProgress(_ owned: Int, _ total: Int) -> String { "\(owned) / \(total)" }
 
+    /// 조합 탭에서 별 개수로 묶은 칸의 이름. 별만으로는 3개와 4개의 차이가 말로 읽히지 않는다.
+    func dexTierName(_ tier: Int) -> String {
+        switch tier {
+        case 1: t("쉬움", "Easy", "やさしい", "Fácil", "Facile", "Fácil")
+        case 2: t("보통", "Steady", "ふつう", "Normal", "Normal", "Normal")
+        case 3: t("도전", "Challenging", "挑戦", "Reto", "Défi", "Desafio")
+        case 4: t("어려움", "Hard", "むずかしい", "Difícil", "Difficile", "Difícil")
+        default: t("끝판", "Endgame", "最終目標", "Meta final", "Ultime", "Meta final")
+        }
+    }
+    func dexTierLabel(_ tier: Int) -> String {
+        t("별 \(tier)개, \(dexTierName(tier))", "\(tier) of 5 stars, \(dexTierName(tier))",
+          "星\(tier)つ、\(dexTierName(tier))", "\(tier) de 5 estrellas, \(dexTierName(tier))",
+          "\(tier) étoiles sur 5, \(dexTierName(tier))", "\(tier) de 5 estrelas, \(dexTierName(tier))")
+    }
     func dexCountSummary(_ done: Int, _ total: Int) -> String {
         t("완성 \(done) / \(total)", "\(done) of \(total) complete", "\(total) 中 \(done) 完成",
            "\(done) de \(total) completos", "\(done) sur \(total) complétés", "\(done) de \(total) completos")

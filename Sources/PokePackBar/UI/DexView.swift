@@ -14,6 +14,8 @@ struct DexView: View {
 
     @State private var section: Section = .theme
     @State private var openedEra: String?
+    /// 조합 탭에서 연 별 개수. 조합이 200개를 넘어 한 목록으로는 쉬운 것과 끝판이 뒤섞인다.
+    @State private var openedTier: Int?
     @State private var selected: String?
     @State private var searchText = ""
     /// 입력이 멈춘 뒤 실제로 거르는 검색어.
@@ -27,11 +29,12 @@ struct DexView: View {
     /// 한 단계 들어가는 중인가. 상점과 같이 들어갈 때는 오른쪽에서, 나올 때는 왼쪽에서 온다.
     @State private var navForward = true
 
-    init(wallet: WalletStore, index: CardIndex?, initialSearchText: String = "") {
+    init(wallet: WalletStore, index: CardIndex?, initialSearchText: String = "", initialTier: Int? = nil) {
         self.wallet = wallet
         self.index = index
         _searchText = State(initialValue: initialSearchText)
         _appliedSearch = State(initialValue: initialSearchText)
+        _openedTier = State(initialValue: initialTier)
     }
 
     private func statuses(_ dexes: [Dex]) -> [DexStatus] {
@@ -61,7 +64,7 @@ struct DexView: View {
                     sectionPicker
                     searchField
                     switch section {
-                    case .theme: themeList
+                    case .theme: themeBrowser
                     case .set:   setBrowser
                     }
                 }
@@ -117,27 +120,99 @@ struct DexView: View {
             .debouncedSearch(searchText, into: $appliedSearch)
     }
 
-    /// 조합 도감 — 예전 목록 그대로. 140개라 스크롤로 훑는다.
-    private var themeList: some View {
+    /// 조합 도감 — 별 개수(난이도)를 한 단계 두고 그 안에서 조합을 늘어놓는다.
+    /// 세트 탭의 시대 목록과 같은 구조다. 검색할 때는 별과 상관없이 한 목록으로 보인다.
+    @ViewBuilder
+    private var themeBrowser: some View {
         let all = statuses(wallet.dexes.filter { $0.kind == .theme })
-        let visible = filtered(all)
+        if !DexCardSearch.normalized(appliedSearch).isEmpty {
+            let visible = filtered(all)
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    header(all)
+                    if visible.isEmpty { searchEmpty }
+                    ForEach(visible) { status in
+                        // 버튼으로 감싸지 않는다. 버튼 라벨 안에 들어간 자식 뷰는
+                        // 마우스를 버튼이 가져가 `.help` 툴팁이 뜨지 않는다.
+                        DexRow(wallet: wallet, index: index, status: status,
+                               searchMatches: searchMatchNames(status.dex),
+                               onGranted: show)
+                            .contentShape(Rectangle())
+                            .onTapGesture { enter { selected = status.id } }
+                    }
+                }
+            }
+        } else if let openedTier {
+            let rows = all.filter { $0.dex.tier == openedTier }
+            VStack(spacing: 6) {
+                HStack(spacing: 6) {
+                    BackButton(action: { leave { self.openedTier = nil } })
+                    DexStars(tier: openedTier)
+                    Text(wallet.l.dexTierName(openedTier)).font(Typography.bodySemibold)
+                    Spacer(minLength: 0)
+                    Text(wallet.l.dexCountSummary(rows.filter(\.claimed).count, rows.count))
+                        .font(Typography.label).foregroundStyle(.secondary).monospacedDigit()
+                }
+                .accessibilityElement(children: .contain)
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(rows) { status in
+                            DexRow(wallet: wallet, index: index, status: status, onGranted: show)
+                                .contentShape(Rectangle())
+                                .onTapGesture { enter { selected = status.id } }
+                        }
+                    }
+                }
+            }
+            .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
+        } else {
+            tierList(all)
+                .transition(.screen(forward: navForward, reduceMotion: reduceMotion))
+        }
+    }
+
+    /// 별 1개부터 5개까지. 칸마다 그 별의 조합 진행을 요약한다.
+    private func tierList(_ all: [DexStatus]) -> some View {
+        let byTier = Dictionary(grouping: all) { $0.dex.tier }
         return ScrollView {
             LazyVStack(spacing: 8) {
                 header(all)
-                if visible.isEmpty, !DexCardSearch.normalized(appliedSearch).isEmpty {
-                    searchEmpty
-                }
-                ForEach(visible) { status in
-                    // 버튼으로 감싸지 않는다. 버튼 라벨 안에 들어간 자식 뷰는
-                    // 마우스를 버튼이 가져가 `.help` 툴팁이 뜨지 않는다.
-                    DexRow(wallet: wallet, index: index, status: status,
-                           searchMatches: searchMatchNames(status.dex),
-                           onGranted: show)
-                        .contentShape(Rectangle())
-                        .onTapGesture { enter { selected = status.id } }
+                ForEach(1...Dex.maxTier, id: \.self) { tier in
+                    if let rows = byTier[tier], !rows.isEmpty {
+                        tierRow(tier, rows)
+                            .contentShape(Rectangle())
+                            .onTapGesture { enter { openedTier = tier } }
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(Text(wallet.l.dexTierLabel(tier)))
+                            .accessibilityValue(Text(wallet.l.dexCountSummary(rows.filter(\.claimed).count,
+                                                                                rows.count)))
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityAction { enter { openedTier = tier } }
+                    }
                 }
             }
         }
+    }
+
+    private func tierRow(_ tier: Int, _ rows: [DexStatus]) -> some View {
+        let claimable = rows.contains { $0.isClaimable }
+        return HStack(spacing: 8) {
+            DexStars(tier: tier)
+            Text(wallet.l.dexTierName(tier)).font(Typography.bodySemibold).lineLimit(1)
+            Spacer(minLength: 0)
+            if claimable {
+                Image(systemName: "gift.fill")
+                    .font(.system(size: 14)).foregroundStyle(Color.accentColor)
+            }
+            Text("\(rows.filter(\.claimed).count) / \(rows.count)")
+                .font(Typography.body).foregroundStyle(.secondary).monospacedDigit()
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold)).foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 9).padding(.horizontal, CardGrid.dexRowPadding)
+        .background(claimable ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.07),
+                    in: RoundedRectangle(cornerRadius: 9))
+        .hoverHighlight(cornerRadius: 9)
     }
 
     /// 받은 카드를 뒤집어 보는 화면으로 넘긴다.

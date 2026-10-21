@@ -87,6 +87,12 @@ enum PopoverLayoutAudit {
                 .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
                 .padding(PopoverMetrics.padding)),
             fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
+        try await capture("dex-tier-5", view: AnyView(
+            DexView(wallet: wallet, index: index, initialTier: 5)
+                .environment(PopoverNavigation())
+                .frame(width: PopoverMetrics.contentWidth, height: PopoverMetrics.tabHeight)
+                .padding(PopoverMetrics.padding)),
+            fixedHeight: PopoverMetrics.tabHeight + PopoverMetrics.padding * 2)
         try await capture("dex-search", view: AnyView(
             DexView(wallet: wallet, index: index, initialSearchText: "피카츄")
                 .environment(PopoverNavigation())
