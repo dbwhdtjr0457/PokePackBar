@@ -514,17 +514,19 @@ final class RemoteGameSession {
     /// 키체인은 세션마다 한 번, 메인 스레드 밖에서 읽는다. 앱 서명이 바뀐 뒤(업데이트 등) 첫 읽기는
     /// macOS 의 접근 허용 창에 답할 때까지 멈추는데, 메인 스레드에서 읽으면 그동안 메뉴바 아이콘조차
     /// 그리지 못해 앱이 실행되지 않은 것처럼 보였다(v0.12.0 업데이트 직후 실제로 겪음).
+    ///
+    /// 저장된 만료 시각으로 토큰을 버리지 않는다. 서버가 쓰는 동안 세션을 늘려 주므로 끝났는지는
+    /// 서버가 401 로 알려 준다. 예전에는 로그인할 때 받은 7일이 지나면 서버에 묻지도 않고
+    /// 로그인 화면으로 보내, 매주 다시 로그인해야 했다.
     private func accessToken() async throws -> String? {
         if let tokenProvider { return try tokenProvider() }
-        let now = Int(Date().timeIntervalSince1970)
-        if let cached = cachedCredential, cached.expires_at > now { return cached.access_token }
+        if let cached = cachedCredential { return cached.access_token }
         let configuration = self.configuration
         let credential = try await Task.detached(priority: .userInitiated) {
             try ServerCredentialStore.load(configuration)
         }.value
         cachedCredential = credential
-        guard let credential, credential.expires_at > now else { return nil }
-        return credential.access_token
+        return credential?.access_token
     }
 
     private func urlRequest(_ path: String) async throws -> URLRequest {
