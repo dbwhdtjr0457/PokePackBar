@@ -54,7 +54,8 @@ struct CardSpotlightView: View {
             // 줄어들면 같은 화면에서 어떤 카드는 크고 어떤 카드는 작아 보인다.
             // 도감 배지 줄의 자리는 뒤로가기와 즐겨찾기 줄을 카드 옆에 겹쳐 놓아 만든다. 배지 줄
             // 높이만큼 카드를 줄여 맞췄더니 모든 카드가 작아 보였다.
-            let informationHeight: CGFloat = 160 + 21 + (wallet.isOnline ? 21 : 0)
+            // 위 여백 16pt 가 여기 들어 있다.
+            let informationHeight: CGFloat = 174 + 21 + (wallet.isOnline ? 21 : 0)
             let cardWidth = min(230, max(150,
                 ((geometry.size.height - informationHeight) * 0.717).rounded(.down)))
             // 판매 확인과 판매 완료 안내는 카드를 줄여 자리를 만들지 않고 그쪽으로 스크롤한다.
@@ -95,8 +96,9 @@ struct CardSpotlightView: View {
         // 카드는 늘 맨 위에 붙인다. 남는 높이를 카드 위아래로 나누면 아래 정보 줄 수에 따라
         // 카드가 오르내린다. 남는 자리는 맨 아래로 보낸다.
         return VStack(spacing: 0) {
-            // 위 여백은 고정이다. 후광이 화면 위 끝에 닿아 잘리지 않을 만큼만 둔다.
-            Color.clear.frame(height: 8).id(SaleAnchor.top)
+            // 위 여백은 고정이다. 후광이 위 끝에 닿지 않고 뒤로가기, 즐겨찾기 버튼과 카드 윗단 사이가
+            // 답답하지 않을 만큼 둔다.
+            Color.clear.frame(height: 16).id(SaleAnchor.top)
 
             // 마우스를 올리면 기울고 광택이 흐른다 — 확대 화면에서만 준다.
             // 격자에서는 크기가 작아 각도가 읽히지 않고, 지나가는 커서마다 반응하면 산만하다.
@@ -288,7 +290,6 @@ struct CardSpotlightView: View {
                                 .font(.system(size: 13)).foregroundStyle(.tertiary)
                                 .accessibilityLabel(Text(priceBasisText(l, prices)))
                         }
-                        if ownedCount <= 1 { acquiredTag(l) }
                     }
                     .lineLimit(1).minimumScaleFactor(0.75)
                     .help(priceBasisText(l, prices) + "\n"
@@ -296,7 +297,8 @@ struct CardSpotlightView: View {
                 }
                 // 중복 판매 버튼은 보유 줄 끝에 붙는다. 따로 줄을 두면 중복이 있는 카드만 카드가
                 // 작아졌다. 자리가 모자라면 처음 얻은 날, 그다음 판매 금액 순으로 툴팁으로 넘긴다.
-                if ownedCount > 1 {
+                // 한 장만 있어도 이 줄을 둔다. 장수에 따라 줄 수가 달라지면 아래가 비어 보인다.
+                if ownedCount > 0 {
                     GridRow {
                         infoLabel(l.marketHoldings)
                         let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
@@ -429,6 +431,11 @@ struct CardSpotlightView: View {
         out.sort { a, b in
             if a.missing.count != b.missing.count { return a.missing.count < b.missing.count }
             return a.dex.id < b.dex.id
+        }
+        // 남은 조합이 없으면 이 카드가 나오는 세트의 도감을 보여 준다. 모든 카드가 세트 도감에는
+        // 들어 있어서, 조합이 없는 카드만 아래가 비어 보이지 않는다.
+        if out.isEmpty, let setDex = wallet.dexes.first(where: { $0.kind == .set && $0.homeSet == setID }) {
+            return ([wallet.dexStatus(setDex)], 0)
         }
         return (Array(out.prefix(2)), max(0, out.count - 2))
     }
