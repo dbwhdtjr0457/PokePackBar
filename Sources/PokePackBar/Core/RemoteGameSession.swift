@@ -145,6 +145,8 @@ final class RemoteGameSession {
     @ObservationIgnored private let cacheWriter = DispatchQueue(label: "PokePackBar.online-state-cache", qos: .utility)
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private let tokenProvider: (() throws -> String?)?
+    /// Injectable credential reads keep expiry regressions independent of personal Keychain data.
+    @ObservationIgnored private let credentialLoader: @Sendable () throws -> ServerCredential?
     /// 키체인에서 한 번 읽은 로그인 정보. 요청마다 키체인을 다시 읽지 않는다.
     @ObservationIgnored private var cachedCredential: ServerCredential?
     /// 서버에 연속으로 닿지 못하거나 5xx 를 받은 횟수와, 그다음 동기화를 미룰 시각.
@@ -154,9 +156,11 @@ final class RemoteGameSession {
     private var pendingURL: URL { directory.appendingPathComponent("pending.json") }
     var cacheURL: URL { directory.appendingPathComponent("game-state.json") }
 
-    init(configuration: RemoteGameConfiguration, localRoot: URL, tokenProvider: (() throws -> String?)? = nil) {
+    init(configuration: RemoteGameConfiguration, localRoot: URL, tokenProvider: (() throws -> String?)? = nil,
+         credentialLoader: (@Sendable () throws -> ServerCredential?)? = nil) {
         self.configuration = configuration
         self.tokenProvider = tokenProvider
+        self.credentialLoader = credentialLoader ?? { try ServerCredentialStore.load(configuration) }
         directory = localRoot.appendingPathComponent("online-\(configuration.storageKey)", isDirectory: true)
         collector = WalletStore(fileURL: directory.appendingPathComponent("device-collection.json"))
         hasPending = FileManager.default.fileExists(atPath: directory.appendingPathComponent("pending.json").path)
@@ -518,12 +522,12 @@ final class RemoteGameSession {
     /// 저장된 만료 시각으로 토큰을 버리지 않는다. 서버가 쓰는 동안 세션을 늘려 주므로 끝났는지는
     /// 서버가 401 로 알려 준다. 예전에는 로그인할 때 받은 7일이 지나면 서버에 묻지도 않고
     /// 로그인 화면으로 보내, 매주 다시 로그인해야 했다.
-    private func accessToken() async throws -> String? {
+    func accessToken() async throws -> String? {
         if let tokenProvider { return try tokenProvider() }
         if let cached = cachedCredential { return cached.access_token }
-        let configuration = self.configuration
+        let load = credentialLoader
         let credential = try await Task.detached(priority: .userInitiated) {
-            try ServerCredentialStore.load(configuration)
+            try load()
         }.value
         cachedCredential = credential
         return credential?.access_token

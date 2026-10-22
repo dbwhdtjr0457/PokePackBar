@@ -3,6 +3,28 @@ import XCTest
 
 @MainActor
 final class RemoteGameSessionTests: XCTestCase {
+    func testSavedExpiryDoesNotDiscardLoadedOrCachedSession() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("credential-expiry-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let config = configuration()
+        let saved = ServerCredential(access_token: "synthetic-session", account_id: config.accountID,
+            device_id: config.deviceID, email: "fixture@example.invalid", expires_at: 0)
+        let session = RemoteGameSession(configuration: config, localRoot: root, credentialLoader: { saved })
+        let loaded = try await session.accessToken()
+        let cached = try await session.accessToken()
+        XCTAssertEqual(loaded, saved.access_token)
+        XCTAssertEqual(cached, saved.access_token)
+        XCTAssertFalse(session.authenticationExpired)
+    }
+
+    func testAbsentSavedCredentialStillHasNoToken() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("credential-missing-\(UUID())")
+        defer { try? FileManager.default.removeItem(at: root) }
+        let session = RemoteGameSession(configuration: configuration(), localRoot: root, credentialLoader: { nil })
+        let token = try await session.accessToken()
+        XCTAssertNil(token)
+    }
+
     private func withRoot(_ operation: (URL) throws -> Void) throws {
         let root = FileManager.default.temporaryDirectory
             .appendingPathComponent("remote-session-\(UUID())", isDirectory: true)

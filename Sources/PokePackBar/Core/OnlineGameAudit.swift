@@ -18,6 +18,13 @@ enum OnlineGameAudit {
             register: true, deviceID: UUID())
         let account = login.account_id
         let configuration = RemoteGameConfiguration(baseURL: url, accountID: account, deviceID: login.device_id)
+        let staleMetadata = ServerCredential(access_token: login.access_token, account_id: account,
+            device_id: login.device_id, email: email, expires_at: 0)
+        let stored = RemoteGameSession(configuration: configuration, localRoot: root.appendingPathComponent("stored-expiry"),
+            credentialLoader: { staleMetadata })
+        await stored.synchronize()
+        try LocalAudit.require(stored.ready, "Stored expiry prevented server session validation")
+        _ = try await stored.api("v1/state")
         let first = RemoteGameSession(configuration: configuration, localRoot: root,
             tokenProvider: { login.access_token })
         var firstState = GameState()
@@ -90,6 +97,14 @@ enum OnlineGameAudit {
         try await commerce(address: url, first: restored, root: root)
         try await operations(address: url, credential: login, root: root.appendingPathComponent("operations"))
         _ = try await ServerAuthentication.request(url: url, path: "auth/logout-all", credential: login)
+        do {
+            _ = try await stored.api("v1/state")
+            throw LocalAudit.Failure(description: "Revoked stored session still authenticated")
+        } catch let error as RemoteGameSession.Failure {
+            try LocalAudit.require(error.status == 401 && stored.authenticationExpired,
+                                   "Server rejection did not invalidate stored session")
+        }
+        print("PASS stored session: stale expiry survives first load and cache; HTTP 401 remains authoritative; isolated credential loader, no personal Keychain access")
         await second.synchronize()
         try LocalAudit.require(!second.ready, "Logout-all left another device authenticated")
         print("PASS online API: email/password, UUID-only rejection, two devices, collection delta, purchase/open, lost-response restart, logout/re-login replay without redraw, revision conflict, logout-all; isolated account and wallet; no personal Keychain access")

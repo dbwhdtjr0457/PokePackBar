@@ -11,6 +11,22 @@ read_when:
 
 # 결함 대응 축적 규칙
 
+### 2026-10-22 — Validate sliding sessions at the server boundary
+
+- The app rejected a stored login expiry before contacting the server. Once the
+  server renews sessions, that original timestamp is stale and caused recurring
+  sign-outs despite a valid server session. Existing native audits injected a
+  token directly, bypassing both credential loading and the cache branch.
+- Preserve the normal background/non-interactive Keychain reader and inject an
+  isolated credential loader for tests. Saved expiry metadata never gates the
+  loaded or cached token; HTTP 401 remains the authoritative rejection.
+- A regression exercises both actual loading/cache paths with expired metadata.
+  Restoring either old local-expiry gate makes it fail. Native HTTP audits also
+  accept stale metadata on a valid session and reject it after server revocation.
+- Sweep: credential storage checks account/device identity but not expiry;
+  account requests already rely on server responses. Trade/listing expiry fields
+  describe different server-owned lifecycles and keep their existing handling.
+
 ### 2026-10-20 — Preserve nested profile data and foreground alert visits
 
 - The nickname form read `/v1/profile` as a flat dictionary despite the server's
