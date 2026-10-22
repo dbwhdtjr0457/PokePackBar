@@ -41,9 +41,6 @@ struct CardSpotlightView: View {
     @State private var selectedFinish: CardFinish? = nil
     /// 방금 받은 액수. 잠깐 보여주고 지운다.
     @State private var lastRefund: Int?
-    /// 판매 줄의 실제 높이. 언어에 따라 두 버튼(바로 팔기, 마켓에 팔기)이 한 줄이나 두 줄이 되고,
-    /// 확인 단계에는 안내 줄이 붙는다. 어림값으로 두면 카드가 덜 줄어 마지막 버튼이 화면 밖으로 밀린다.
-    @State private var saleControlsHeight: CGFloat = 27
     /// 출처 팩과 뽑힐 확률. 세트 전체를 훑어 세므로 카드가 바뀔 때만 다시 구한다.
     @State private var source: CardSource?
 
@@ -52,19 +49,34 @@ struct CardSpotlightView: View {
             // The shop has an extra picker above this view. Measure its real
             // height instead of assuming that every caller gets the whole tab.
             // 뽑힐 확률 줄은 거의 모든 카드에 있어 늘 자리를 잡는다. 마켓 줄은 온라인일 때만.
-            // 보유 줄(중복이 있을 때만 생기고 중복 판매 버튼이 붙는다)은 늘 자리를 잡아 둔다.
-            // 중복이 생겼다고 카드가 줄어들면 같은 카드인데 화면마다 크기가 달라 보인다.
-            let informationHeight: CGFloat = 160 + 21 + (wallet.isOnline ? 21 : 0)
-            let dexHeight: CGFloat = relatedDexes.shown.isEmpty ? 0 : 42
-            // 판매 확인과 판매 완료 안내는 잠깐 뜨는 것이라 그때만 카드를 줄여 버튼이 보이게 한다.
-            let saleHeight: CGFloat = confirmingSale || lastRefund != nil ? saleControlsHeight + 9 : 0
+            // 보유 줄(중복이 있을 때만 생기고 중복 판매 버튼이 붙는다)과 도감 배지 줄(아직 완성하지
+            // 않은 조합에 들 때만 생긴다)은 늘 자리를 잡아 둔다. 카드마다 있고 없고에 따라 카드가
+            // 줄어들면 같은 화면에서 어떤 카드는 크고 어떤 카드는 작아 보인다.
+            // 도감 배지 줄의 자리는 뒤로가기와 즐겨찾기 줄을 카드 옆에 겹쳐 놓아 만든다. 배지 줄
+            // 높이만큼 카드를 줄여 맞췄더니 모든 카드가 작아 보였다.
+            // 위 여백 16pt 가 여기 들어 있다.
+            let informationHeight: CGFloat = 174 + 21 + (wallet.isOnline ? 21 : 0)
             let cardWidth = min(230, max(150,
-                ((geometry.size.height - informationHeight - dexHeight - saleHeight) * 0.717).rounded(.down)))
-            ScrollView {
-                detail(cardWidth: cardWidth)
-                    .frame(minHeight: geometry.size.height)
+                ((geometry.size.height - informationHeight) * 0.717).rounded(.down)))
+            // 판매 확인과 판매 완료 안내는 카드를 줄여 자리를 만들지 않고 그쪽으로 스크롤한다.
+            // 카드가 줄거나 움직이면 같은 카드를 보는 중에 화면이 출렁인다.
+            ScrollViewReader { scroller in
+                ScrollView {
+                    detail(cardWidth: cardWidth)
+                        .frame(minHeight: geometry.size.height)
+                }
+                .scrollIndicators(.hidden)
+                .onChange(of: confirmingSale) {
+                    withAnimation(Motion.shift) {
+                        scroller.scrollTo(confirmingSale ? SaleAnchor.controls : SaleAnchor.top,
+                                          anchor: confirmingSale ? .bottom : .top)
+                    }
+                }
+                .onChange(of: lastRefund) {
+                    guard lastRefund != nil else { return }
+                    withAnimation(Motion.shift) { scroller.scrollTo(SaleAnchor.controls, anchor: .bottom) }
+                }
             }
-            .scrollIndicators(.hidden)
         }
         .onAppear {
             selectedFinish = finish ?? wallet.bestOwnedFinish(cardID: cardID)
@@ -81,15 +93,12 @@ struct CardSpotlightView: View {
 
     private func detail(cardWidth: CGFloat) -> some View {
         let l = wallet.l
+        // 카드는 늘 맨 위에 붙인다. 남는 높이를 카드 위아래로 나누면 아래 정보 줄 수에 따라
+        // 카드가 오르내린다. 남는 자리는 맨 아래로 보낸다.
         return VStack(spacing: 0) {
-            // 뒤로가기는 왼쪽, 손대는 것은 오른쪽. 다른 화면과 같은 자리다.
-            HStack {
-                BackButton(action: onClose, hint: l.close)
-                Spacer()
-                favoriteButton(l)
-            }
-
-            Spacer(minLength: 0)
+            // 위 여백은 고정이다. 후광이 위 끝에 닿지 않고 뒤로가기, 즐겨찾기 버튼과 카드 윗단 사이가
+            // 답답하지 않을 만큼 둔다.
+            Color.clear.frame(height: 16).id(SaleAnchor.top)
 
             // 마우스를 올리면 기울고 광택이 흐른다 — 확대 화면에서만 준다.
             // 격자에서는 크기가 작아 각도가 읽히지 않고, 지나가는 커서마다 반응하면 산만하다.
@@ -109,8 +118,6 @@ struct CardSpotlightView: View {
                 .environment(\.tierGlowScale, 0.5)
                 .scaleEffect(landed ? 1 : 0.9)
                 .opacity(landed ? 1 : 0)
-
-            Spacer(minLength: 0)
 
             // 글자를 키우면서 줄 수를 줄였다. 등급·세트·보유량을 한 줄에 모으고 이름을
             // 한 줄로 묶는다. 작은 창이나 긴 판매 안내는 스크롤로 끝까지 볼 수 있다.
@@ -162,12 +169,25 @@ struct CardSpotlightView: View {
                 .padding(.top, 6)
 
             saleControls(l)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { saleControlsHeight = $0 }
                 .padding(.top, 5)
                 .padding(.bottom, 4)
+                .id(SaleAnchor.controls)
+
+            Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity)
+        // 뒤로가기는 왼쪽, 손대는 것은 오른쪽. 다른 화면과 같은 자리다. 줄을 따로 두지 않고 카드
+        // 양옆의 빈 곳에 겹쳐 둔다. 카드는 가운데에 놓여 두 버튼과 겹치지 않는다.
+        .overlay(alignment: .top) {
+            HStack {
+                BackButton(action: onClose, hint: l.close)
+                Spacer()
+                favoriteButton(l)
+            }
+        }
     }
+
+    private enum SaleAnchor: Hashable { case top, controls }
 
     /// 이 카드를 처음 얻은 날. **값 줄 끝에 붙인다.**
     ///
@@ -270,7 +290,6 @@ struct CardSpotlightView: View {
                                 .font(.system(size: 13)).foregroundStyle(.tertiary)
                                 .accessibilityLabel(Text(priceBasisText(l, prices)))
                         }
-                        if ownedCount <= 1 { acquiredTag(l) }
                     }
                     .lineLimit(1).minimumScaleFactor(0.75)
                     .help(priceBasisText(l, prices) + "\n"
@@ -278,7 +297,8 @@ struct CardSpotlightView: View {
                 }
                 // 중복 판매 버튼은 보유 줄 끝에 붙는다. 따로 줄을 두면 중복이 있는 카드만 카드가
                 // 작아졌다. 자리가 모자라면 처음 얻은 날, 그다음 판매 금액 순으로 툴팁으로 넘긴다.
-                if ownedCount > 1 {
+                // 한 장만 있어도 이 줄을 둔다. 장수에 따라 줄 수가 달라지면 아래가 비어 보인다.
+                if ownedCount > 0 {
                     GridRow {
                         infoLabel(l.marketHoldings)
                         let total = wallet.ownedPrintings(cardID: cardID).reduce(0.0) {
@@ -412,6 +432,11 @@ struct CardSpotlightView: View {
             if a.missing.count != b.missing.count { return a.missing.count < b.missing.count }
             return a.dex.id < b.dex.id
         }
+        // 남은 조합이 없으면 이 카드가 나오는 세트의 도감을 보여 준다. 모든 카드가 세트 도감에는
+        // 들어 있어서, 조합이 없는 카드만 아래가 비어 보이지 않는다.
+        if out.isEmpty, let setDex = wallet.dexes.first(where: { $0.kind == .set && $0.homeSet == setID }) {
+            return ([wallet.dexStatus(setDex)], 0)
+        }
         return (Array(out.prefix(2)), max(0, out.count - 2))
     }
 
@@ -458,6 +483,15 @@ struct CardSpotlightView: View {
                 }
             }
             .lineLimit(1)
+        } else {
+            // 배지가 없어도 같은 높이를 비워 둔다. 남는 자리가 카드 위아래로 나뉘면 카드가 내려앉아,
+            // 크기는 같아도 넘겨 볼 때 카드 위치가 들쭉날쭉해진다.
+            VStack(spacing: 3) {
+                Text(verbatim: " ").font(Typography.caption)
+                Text(verbatim: " ").font(.system(size: 14, weight: .semibold)).padding(.vertical, 2.5)
+            }
+            .hidden()
+            .accessibilityHidden(true)
         }
     }
 

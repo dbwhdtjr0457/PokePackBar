@@ -448,8 +448,9 @@ extension L {
     var allSets: String { t("전체", "All", "すべて", "Todos", "Tous", "Todos") }
     func collectedOf(_ owned: Int, _ total: Int) -> String { "\(owned) / \(total)" }
     func copiesOwned(_ count: Int) -> String {
-        t("\(count)장 보유", "\(count) copies", "\(count)枚所持",
-           "\(count) copias", "\(count) exemplaires", "\(count) cópias")
+        t("\(count)장 보유", count == 1 ? "1 copy" : "\(count) copies", "\(count)枚所持",
+           count == 1 ? "1 copia" : "\(count) copias", count == 1 ? "1 exemplaire" : "\(count) exemplaires",
+           count == 1 ? "1 cópia" : "\(count) cópias")
     }
 
     // MARK: 설정
