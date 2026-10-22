@@ -73,6 +73,20 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.22.0
+
+카드 상세의 크기와 위치를 고정했다. 도감 배지나 보유 수, 판매 확인 상태에 따라
+카드가 줄거나 오르내리지 않는다. 판매 확인은 해당 영역으로 스크롤하고,
+1장 보유 문구는 영어·스페인어·프랑스어·포르투갈어에서 단수로 표시한다.
+
+로그인 세션은 1년간 유효하며, 남은 기간이 반년 미만이면 사용 중 다시 1년으로 연장한다.
+앱은 저장된 만료 시각 대신 서버 응답으로 유효성을 판단한다. 로그아웃·비밀번호 변경·
+기기 세션 폐기는 유지하며, 이미 만료되거나 폐기된 세션은 다시 로그인해야 한다.
+게임 규칙·가격·DB 스키마는 그대로다.
+
+![고정된 카드 상세](docs/reference/screenshots/card-detail-022-ko.png)
+![한 장 보유 카드 상세](docs/reference/screenshots/card-detail-022-en.png)
+
 ## 0.21.0
 
 전체 도감을 350개로 늘렸다. 조합 223개는 별 1~5개로 묶어 보고, 검색하면 한 목록에서

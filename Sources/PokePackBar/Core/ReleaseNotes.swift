@@ -56,6 +56,26 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.22.0", lines: [
+                t("로그인 세션을 1년으로 늘리고 사용 중 자동 연장합니다. 저장된 만료 시각 대신 서버 응답으로 로그인 상태를 판단하며, 로그아웃·비밀번호 변경 시 세션 폐기는 유지합니다.",
+                  "Login sessions last a year and renew while used. Server responses determine validity instead of saved expiry metadata; logout and password changes still revoke sessions.",
+                  "ログインは1年間有効で、使用中は自動延長します。保存された期限ではなくサーバー応答で有効性を判断し、ログアウトやパスワード変更時は引き続き失効します。",
+                  "Las sesiones duran un año y se renuevan con el uso. El servidor valida la sesión; cerrar sesión o cambiar la contraseña sigue revocándola.",
+                  "Les sessions durent un an et se prolongent à l’usage. Le serveur confirme leur validité ; déconnexion et changement de mot de passe les révoquent toujours.",
+                  "As sessões duram um ano e são renovadas com o uso. O servidor valida a sessão; sair ou alterar a senha continua revogando o acesso."),
+                t("카드 상세에서 도감 배지·보유 수·판매 확인 상태와 관계없이 카드 크기와 위치를 고정했습니다. 판매 확인은 카드 크기를 바꾸지 않고 해당 영역으로 스크롤합니다.",
+                  "Card details keep a fixed image size and position across dex badges, ownership counts and sale confirmation. Sale controls scroll into view without resizing the card.",
+                  "図鑑バッジ・所持数・売却確認に関係なくカード詳細の大きさと位置を固定しました。売却確認はカードを縮めず該当箇所へスクロールします。",
+                  "El detalle mantiene tamaño y posición con insignias, duplicados o venta. Los controles de venta aparecen al desplazarse sin reducir la carta.",
+                  "La taille et la position restent fixes malgré badges, doubles ou vente. La confirmation défile à l’écran sans réduire la carte.",
+                  "Os detalhes mantêm tamanho e posição com insígnias, cópias ou venda. Os controles aparecem por rolagem sem reduzir a carta."),
+                t("카드 1장 보유 문구의 영어·스페인어·프랑스어·포르투갈어 단수 표현을 수정했습니다.",
+                  "Corrected singular ownership labels in English, Spanish, French and Portuguese.",
+                  "英語・スペイン語・フランス語・ポルトガル語の1枚所持表記を修正しました。",
+                  "Corregimos las etiquetas de una copia en inglés, español, francés y portugués.",
+                  "Libellés au singulier corrigés en anglais, espagnol, français et portugais.",
+                  "Corrigimos os rótulos de uma cópia em inglês, espanhol, francês e português.")
+            ]),
             ReleaseNote(version: "0.21.0", lines: [
                 t("도감 조합을 223개, 전체 도감을 350개로 늘리고 별 개수로 묶었습니다. 최신 세트와 서브세트 조합, 고난도 조합과 보상을 추가하고 영구 혜택을 재분배했습니다.",
                   "Expanded to 223 themed combinations and 350 dexes, grouped by stars. Added recent-set, subset and endgame combinations, rewards and redistributed permanent perks.",
