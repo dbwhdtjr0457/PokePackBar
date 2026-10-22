@@ -108,9 +108,7 @@ struct CelebrationLayer: View {
                     .padding(.top, 6)
                     .transition(.move(edge: .top).combined(with: .opacity))
                     .id(notice.id)
-                    // 알림마다 걷는 시계를 새로 건다. 그냥 `.task` 로 두면 보상을 잇달아 받아 알림이
-                    // 바뀔 때 시계가 다시 돌지 않는다. 먼저 돌던 시계는 「내 알림이 아니다」 하고 물러나서,
-                    // 나중 알림은 앱을 끌 때까지 떠 있었다.
+                    // Restart dismissal when a new reward replaces this banner.
                     .task(id: notice.id) {
                         try? await Task.sleep(for: .seconds(2.8))
                         guard nav.rewardNotice?.id == notice.id else { return }

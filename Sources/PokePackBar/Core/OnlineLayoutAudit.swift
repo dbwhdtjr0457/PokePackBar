@@ -96,6 +96,11 @@ import SwiftUI
             model.section = section
             for width in [CGFloat(740), CGFloat(980)] { try await capture(section.rawValue, width: width) }
         }
+        // Capture the transient listing overlay with a catalogue-backed printing.
+        model.section = .market
+        model.celebration = OnlineCelebration(kind: .listed(printing: "\(card)#holo"))
+        try await capture("listing-celebration", width: 980)
+        model.celebration = nil
         // 알림을 눌러 들어왔을 때: 그 친구 줄과 판매 글에 테두리가 잘리지 않고 둘러져야 한다.
         model.follow(kind: "friend_accept", target: friends[1].string("id"))
         try await capture("social-from-alert", width: 980)

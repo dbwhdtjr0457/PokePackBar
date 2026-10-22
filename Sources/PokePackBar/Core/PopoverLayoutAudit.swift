@@ -71,6 +71,11 @@ enum PopoverLayoutAudit {
             try await capture("tab-\(tab)", view: AnyView(PopoverView()
                 .environment(usage).environment(wallet).environment(updater).environment(nav)))
         }
+        let rewardNav = PopoverNavigation()
+        rewardNav.tab = .dex
+        rewardNav.rewardNotice = RewardNotice(reward: DexReward(packs: 0, perks: [], tokens: 2_000_000), homeSet: "base1")
+        try await capture("reward-banner", view: AnyView(PopoverView()
+            .environment(usage).environment(wallet).environment(updater).environment(rewardNav)))
         // 처음 연 사람의 화면. 카드가 한 장도 없어야 안내 카드가 뜬다. 폴더를 따로 둔다 — 같은
         // 폴더에 두면 위 지갑의 백업을 찾아 복구해 버린다.
         let firstRunFolder = fixture.appendingPathComponent("first-run", isDirectory: true)

@@ -73,6 +73,15 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.23.0
+
+도감 보상을 연속으로 받아도 마지막 보상 배너가 자동으로 사라진다.
+온라인 창의 교환·구매·판매 등록 축하 표시도 새 표시마다 타이머를 다시 시작한다.
+게임 규칙·가격·로그인 정책은 유지한다.
+
+![도감 보상 배너](docs/reference/screenshots/reward-banner-023-ko.png)
+![온라인 판매 등록 표시](docs/reference/screenshots/listing-celebration-023-ko.png)
+
 ## 0.22.0
 
 카드 상세의 크기와 위치를 고정했다. 도감 배지나 보유 수, 판매 확인 상태에 따라

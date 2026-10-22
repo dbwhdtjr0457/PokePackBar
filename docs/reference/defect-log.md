@@ -11,6 +11,19 @@ read_when:
 
 # 결함 대응 축적 규칙
 
+### 2026-10-23 — Restart transient banners by presentation identity
+
+- Replacing a visible reward/online celebration updated its content while a
+  plain `.task` kept the first dismissal timer. Its identity guard then skipped
+  the replacement, leaving that banner visible indefinitely.
+- Key each dismissal task by the current notice ID. Hosted SwiftUI regressions
+  exercise a single reward and consecutive reward/online presentations. Removing
+  both task IDs makes both replacement regressions fail while the single notice
+  still passes; single-presentation tests alone would miss this defect.
+- Sweep: sparks and pack flights already use UUID-keyed `ForEach` children, so
+  each presentation owns its lifecycle. Snapshot audits include both banners;
+  timed hosted tests establish dismissal, while snapshots establish layout.
+
 ### 2026-10-22 — Validate sliding sessions at the server boundary
 
 - The app rejected a stored login expiry before contacting the server. Once the

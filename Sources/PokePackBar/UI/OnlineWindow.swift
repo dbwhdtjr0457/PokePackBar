@@ -679,7 +679,7 @@ struct OnlineHubView: View {
             if let celebration = model.celebration {
                 OnlineCelebrationView(celebration: celebration)
                     .transition(.scale(scale: 0.9).combined(with: .opacity))
-                    // 표시마다 걷는 시계를 새로 건다. 잇달아 사거나 올려 표시가 바뀌어도 나중 것이 남지 않게 한다.
+                    // Restart dismissal for consecutive purchases, listings or trades.
                     .task(id: celebration.id) {
                         try? await Task.sleep(for: .seconds(2.6))
                         guard model.celebration?.id == celebration.id else { return }

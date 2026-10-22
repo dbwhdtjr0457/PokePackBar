@@ -56,6 +56,14 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.23.0", lines: [
+                t("도감 보상을 연속으로 받아도 마지막 보상 배너가 자동으로 사라집니다. 온라인 창의 교환·구매·판매 등록 축하 표시에도 같은 수정을 적용했습니다.",
+                  "Consecutive dex rewards now dismiss the last banner automatically. The same fix applies to trade, purchase and listing celebrations in the online window.",
+                  "図鑑報酬を続けて受け取っても最後のバナーが自動で消えます。オンライン画面の交換・購入・出品のお祝い表示にも適用しました。",
+                  "El último aviso se cierra automáticamente al recibir recompensas seguidas. También se aplica a intercambios, compras y anuncios en la ventana online.",
+                  "La dernière bannière disparaît automatiquement après des récompenses successives. Même correction pour les échanges, achats et mises en vente en ligne.",
+                  "O último aviso desaparece automaticamente após recompensas seguidas. A correção também vale para trocas, compras e anúncios na janela online.")
+            ]),
             ReleaseNote(version: "0.22.0", lines: [
                 t("로그인 세션을 1년으로 늘리고 사용 중 자동 연장합니다. 저장된 만료 시각 대신 서버 응답으로 로그인 상태를 판단하며, 로그아웃·비밀번호 변경 시 세션 폐기는 유지합니다.",
                   "Login sessions last a year and renew while used. Server responses determine validity instead of saved expiry metadata; logout and password changes still revoke sessions.",
