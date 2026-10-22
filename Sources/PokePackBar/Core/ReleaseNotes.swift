@@ -56,6 +56,20 @@ extension L {
 
     var releaseNotes: [ReleaseNote] {
         [
+            ReleaseNote(version: "0.24.0", lines: [
+                t("서버 로그인 토큰을 이 Mac의 앱 전용 파일에 저장합니다. 앱 실행·동기화는 Keychain을 읽지 않아 반복 승인 창을 없앴습니다. 비밀번호는 저장하지 않으며 파일 보호는 Keychain보다 약합니다.",
+                  "Server session tokens now use an app-local file. Startup and sync never read Keychain, removing repeated approval prompts. Passwords are not saved; file protection is weaker than Keychain.",
+                  "サーバーログインはアプリ専用ファイルに保存します。起動・同期ではキーチェーンを読まず、繰り返す許可画面を解消しました。パスワードは保存せず、ファイルの保護はキーチェーンより弱くなります。",
+                  "La sesión se guarda en un archivo local. El inicio y la sincronización no leen el llavero, evitando avisos repetidos. No se guardan contraseñas; la protección es menor que en el llavero.",
+                  "La session utilise un fichier local. Démarrage et synchronisation ne lisent plus le trousseau, évitant les autorisations répétées. Aucun mot de passe enregistré ; protection moindre que le trousseau.",
+                  "A sessão usa um arquivo local. Início e sincronização não leem o Keychain, evitando avisos repetidos. A senha não é salva; a proteção é menor que no Keychain."),
+                t("기존 사용자는 계정 창의 이전 로그인 가져오기를 누르거나 다시 로그인해 주세요. 가져올 때 macOS 승인이 한 번 필요할 수 있으며, 로그아웃·비밀번호 변경의 세션 폐기는 유지합니다.",
+                  "Existing users can choose Import previous sign-in in the account window, or sign in again. Import may require one final macOS approval; logout and password-change revocation remain unchanged.",
+                  "既存のログインはアカウント画面の取り込みボタンで移行するか、再ログインしてください。取り込み時にmacOSの許可が一度必要な場合があります。ログアウトとパスワード変更の失効処理は維持します。",
+                  "Importa tu sesión anterior desde la cuenta o vuelve a entrar. La importación puede pedir permiso una vez; se mantiene la revocación al salir o cambiar la contraseña.",
+                  "Importez l’ancienne connexion depuis le compte ou reconnectez-vous. Une autorisation macOS peut être nécessaire une fois ; déconnexion et changement de mot de passe révoquent toujours la session.",
+                  "Importe o login anterior na janela da conta ou entre novamente. A importação pode pedir uma última permissão; sair e alterar a senha continuam revogando a sessão.")
+            ]),
             ReleaseNote(version: "0.23.0", lines: [
                 t("도감 보상을 연속으로 받아도 마지막 보상 배너가 자동으로 사라집니다. 온라인 창의 교환·구매·판매 등록 축하 표시에도 같은 수정을 적용했습니다.",
                   "Consecutive dex rewards now dismiss the last banner automatically. The same fix applies to trade, purchase and listing celebrations in the online window.",

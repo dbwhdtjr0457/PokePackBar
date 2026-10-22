@@ -12,7 +12,9 @@
    Homebrew 가 `<소유자>/tap` 을 `<소유자>/homebrew-tap` 으로 찾는다.
 
 3. **서명 신원을 만든다.** `./scripts/create-signing-cert.sh`
-   없이도 배포는 되지만 ad-hoc 서명이라 빌드마다 Keychain 승인을 다시 묻는다.
+   고정 서명을 유지한다. 서버 로그인은 0.24.0부터 로컬 세션 파일을 사용한다.
+   기존 로그인은 계정 창의 **이전 로그인 가져오기**로 한 번 이전한다.
+   이 명시적 동작에서만 Keychain 승인이 필요할 수 있다.
 
 ## 매 배포
 
@@ -49,6 +51,12 @@ brew upgrade --cask poke-pack-bar
 
 **zip 은 `ditto` 로 묶는다.** 일반 `zip` 은 심볼릭 링크와 리소스 포크를 잃어
 코드 서명이 깨진다.
+
+**서버 로그인 파일은 배포물에 넣지 않는다.** 실행 시 Application Support의
+`PokePackBar/server-credentials/<server-account-device-hash>.json`을 사용한다.
+폴더는 0700, 파일은 0600이며 토큰은 암호화하지 않는다. 비밀번호는 저장하지 않는다.
+이전 키체인 항목은 복구용으로 보존하고 자동 조회·저장·삭제 경로에서 사용하지 않는다.
+수동 이전은 계정 창 버튼 또는 설치된 앱의 `--import-server-session` 명령으로 수행한다.
 
 **업데이트 버튼은 brew 로 설치했을 때만 brew 를 쓴다.** 그 외에는 릴리스 페이지를 연다.
 

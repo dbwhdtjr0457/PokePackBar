@@ -73,6 +73,21 @@ brew upgrade --cask poke-pack-bar
 ![계정 연결 화면](docs/reference/screenshots/account-connection.png)
 ![대량 개봉 작업 화면](docs/reference/screenshots/online-jobs.png)
 
+## 0.24.0
+
+서버 로그인 토큰을 이 Mac의 앱 전용 파일에 저장한다. 앱 실행·동기화·계정 창 열기는
+키체인을 조회하지 않아 업데이트 뒤 반복되던 서버 로그인 승인 팝업을 없앴다.
+비밀번호는 저장하지 않는다. 파일은 암호화하지 않으며 같은 macOS 사용자 권한으로
+실행되는 프로그램에 대한 보호는 키체인보다 약하다.
+
+기존 사용자는 계정 창의 **이전 로그인 가져오기**를 한 번 누르거나 다시 로그인한다.
+가져올 때 macOS 승인이 한 번 필요할 수 있다. 이후 실행은 저장한 파일을 사용하고,
+로그아웃·비밀번호 변경 시 서버의 세션 폐기와 로컬 파일 삭제를 유지한다.
+예전 키체인 항목은 복구용으로 남겨두며 자동으로 다시 사용하지 않는다.
+
+![이전 로그인 가져오기](docs/reference/screenshots/account-session-024-ko.png)
+![Local session storage](docs/reference/screenshots/account-session-024-en.png)
+
 ## 0.23.0
 
 도감 보상을 연속으로 받아도 마지막 보상 배너가 자동으로 사라진다.
