@@ -49,4 +49,13 @@ final class LocalizationInterpolationTests: XCTestCase {
         XCTAssertFalse(dropped.contains(Self.a),
                        "letting a sentinel-less string pass would make the guard meaningless")
     }
+
+    /// 한 장은 단수로 적는다. 카드 상세에 「1 copies」 가 뜨고 있었다.
+    func testOneCopyReadsAsSingular() {
+        XCTAssertEqual(L(.en).copiesOwned(1), "1 copy")
+        XCTAssertEqual(L(.en).copiesOwned(4), "4 copies")
+        XCTAssertEqual(L(.es).copiesOwned(1), "1 copia")
+        XCTAssertEqual(L(.fr).copiesOwned(1), "1 exemplaire")
+        XCTAssertEqual(L(.pt).copiesOwned(1), "1 cópia")
+    }
 }
